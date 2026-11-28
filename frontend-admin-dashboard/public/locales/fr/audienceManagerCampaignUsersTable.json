@@ -1,0 +1,227 @@
+{
+    "heading": {
+        "fallbackTitle": "Liste d'audience",
+        "addResponse": "Ajouter une réponse",
+        "loadingRespondents": "Chargement des répondants…",
+        "respondentsCount_one": "{{formattedCount}} répondant",
+        "respondentsCount_other": "{{formattedCount}} répondants",
+        "respondentsCount_many": "{{formattedCount}} répondants"
+    },
+    "filters": {
+        "tiers": {
+            "label": "Tous les niveaux",
+            "hot": "Chaud",
+            "warm": "Tiède",
+            "cold": "Froid"
+        },
+        "leadStatus": {
+            "label": "Tous les prospects",
+            "active": "Actif (non inscrit)",
+            "converted": "Inscrit / Converti"
+        },
+        "sla": {
+            "label": "Tous les états SLA",
+            "anyOverdue": "En retard (tous types)",
+            "reachOutOverdue": "Prise de contact en retard",
+            "reachOutDueSoon": "Prise de contact bientôt due",
+            "followUpDue": "Suivi à faire",
+            "followUpOverdue": "Suivi en retard"
+        },
+        "callHistory": {
+            "placeholder": "Historique d'appels",
+            "notCalled": "Non appelé",
+            "called": "Appelé (tous)",
+            "calledOnce": "Appelé une fois",
+            "calledTwicePlus": "Appelé 2 fois ou plus",
+            "aiCalled": "Appelé par l'IA",
+            "manualCalled": "Appelé manuellement"
+        },
+        "moreFilters": "Plus de filtres",
+        "dateFrom": "Du",
+        "dateTo": "Au",
+        "applyDates": "Appliquer les dates",
+        "clearAll": "Tout effacer"
+    },
+    "chips": {
+        "search": "Recherche : {{query}}",
+        "datePlaceholder": "…",
+        "date": "Date : {{from}} → {{to}}",
+        "tier": "Niveau : {{values}}",
+        "status": "Statut : {{values}}",
+        "statusActive": "Actif",
+        "statusConverted": "Converti",
+        "sla": "SLA : {{values}}",
+        "counsellor": "Conseiller : {{values}}",
+        "counsellorUnassigned": "Non assigné",
+        "counsellorSelected": "Sélectionné",
+        "customField": "{{fieldName}} : {{value}}",
+        "customFieldFallback": "Champ",
+        "removeAriaLabel": "Supprimer {{label}}"
+    },
+    "toolbar": {
+        "sendMessage": "Envoyer un message",
+        "importCsv": "Importer un CSV",
+        "exporting": "Exportation…",
+        "export": "Exporter"
+    },
+    "search": {
+        "placeholder": "Rechercher des prospects",
+        "ariaLabel": "Rechercher des prospects",
+        "loadingResults": "Chargement des résultats…",
+        "resultsCount_one": "Affichage de {{shown}} sur {{total}} résultat",
+        "resultsCount_other": "Affichage de {{shown}} sur {{total}} résultats",
+        "resultsCount_many": "Affichage de {{shown}} sur {{total}} résultats"
+    },
+    "bulkToolbar": {
+        "selectedCount_one": "{{count}} sélectionné",
+        "selectedCount_other": "{{count}} sélectionnés",
+        "selecting": "Sélection en cours…",
+        "selectAll": "Tout sélectionner ({{count}})",
+        "clear": "Effacer",
+        "bulkActions": "Actions groupées",
+        "assignLeads": "Assigner les prospects",
+        "unassignLeads": "Désassigner les prospects",
+        "deleteLeads": "Supprimer les prospects",
+        "selectedCount_many": "{{count}} sélectionnés",
+        "sendMessage": "Envoyer un message",
+        "changeStatus": null
+    },
+    "emptyState": {
+        "errorTitle": "Impossible de charger les répondants",
+        "errorDescription": "Une erreur s'est produite lors de la récupération des utilisateurs de la campagne. Réessayez.",
+        "noResultsTitle": "Aucun répondant ne correspond à ces filtres",
+        "noResultsDescription": "Essayez de réinitialiser les filtres pour voir plus de résultats.",
+        "noDataTitle": "Aucun répondant pour l'instant",
+        "noDataDescription": "Lorsque des personnes rempliront ce formulaire d'audience, elles apparaîtront ici."
+    },
+    "exportColumns": {
+        "leadId": "ID du prospect",
+        "submittedAt": "Envoyé le",
+        "name": "Nom",
+        "email": "E-mail",
+        "mobile": "Mobile",
+        "leadStatus": "Statut du prospect",
+        "counsellor": "Conseiller",
+        "activityNotes": "Activité et notes",
+        "notesCount": "Nombre de notes",
+        "leadJourney": "Parcours du prospect (disposition et notes)"
+    },
+    "csv": {
+        "headers": {
+            "leadId": "ID du prospect",
+            "submittedAt": "Envoyé le",
+            "name": "Nom",
+            "email": "E-mail",
+            "mobile": "Mobile",
+            "leadStatus": "Statut du prospect",
+            "counsellor": "Conseiller",
+            "activityNotes": "Activité et notes",
+            "notesCount": "Nombre de notes",
+            "leadJourney": "Parcours du prospect (disposition et notes)"
+        },
+        "noteFallbackLabel": "Note",
+        "updatedByLabel": "mis à jour par",
+        "dateLabel": "date"
+    },
+    "toasts": {
+        "selectAllFailed": "Échec de la sélection de tous les prospects",
+        "noLeadsToExport": "Aucun prospect à exporter",
+        "exportStarting": "Exportation en cours…",
+        "noDataToExport": "Aucune donnée à exporter",
+        "exportSuccess_one": "{{count}} prospect exporté",
+        "exportSuccess_other": "{{count}} prospects exportés",
+        "exportFailed": "Échec de l'exportation des prospects",
+        "exportSuccess_many": "{{count}} prospects exportés"
+    },
+    "campaignFields": {
+        "optedOutFrom": "Désinscrit de"
+    },
+    "dialogs": {
+        "campaignFallbackName": "Campagne"
+    },
+    "detail": {
+        "status": {
+            "ACTIVE": "Active",
+            "DRAFT": "Draft",
+            "INACTIVE": "Inactive"
+        },
+        "runs": "runs {{start}} → {{end}}",
+        "editList": "Edit list",
+        "none": "Not set",
+        "loadingList": "Loading list details…",
+        "pool": {
+            "title": "Leads from this list are assigned through the \"{{name}}\" pool",
+            "members_one": "{{count}} counsellor",
+            "members_other": "{{count}} counsellors"
+        },
+        "tabs": {
+            "ariaLabel": "List sections",
+            "leads": "Leads",
+            "history": "Messages sent",
+            "share": "Share & form",
+            "auto": "Automations"
+        },
+        "share": {
+            "linkTitle": "Form link",
+            "linkSub": "Share it anywhere — every response lands in this list",
+            "copy": "Copy link",
+            "copied": "Link copied",
+            "copyFailed": "Could not copy the link",
+            "open": "Preview public form",
+            "inactive": "Set this list to Active to get a shareable link.",
+            "changeStatus": "Change status",
+            "qrTitle": "QR code",
+            "qrText": "For posters and flyers — scanning it opens this form.",
+            "qrOpen": "Show QR code",
+            "embedTitle": "Embed on your website",
+            "embedText": "A button with a pop-up, or the whole form in an iFrame.",
+            "embedOpen": "Get embed code",
+            "apiTitle": "API & Zapier",
+            "apiText": "Send leads into this list from your other tools.",
+            "apiOpen": "API details",
+            "fieldsTitle": "Form fields",
+            "fieldsSub_one": "{{count}} field",
+            "fieldsSub_other": "{{count}} fields",
+            "fieldsEmpty": "No custom fields — the form asks only the standard details.",
+            "editForm": "Edit form",
+            "required": "Required",
+            "optional": "Optional",
+            "afterTitle": "After submit & look",
+            "afterText": "Thank-you screen, redirect and how the public form looks.",
+            "afterEdit": "Edit",
+            "objective": "Objective",
+            "description": "Description"
+        },
+        "auto": {
+            "workflowsTitle": "Workflows",
+            "workflowsSub_one": "{{count}} workflow runs when a lead arrives",
+            "workflowsSub_other": "{{count}} workflows run when a lead arrives",
+            "viewAll": "View all linked workflows",
+            "configure": "Configure workflow",
+            "loading": "Loading workflows…",
+            "loadError": "Could not load workflows.",
+            "workflowsEmpty": "No workflow runs when a lead arrives on this list.",
+            "thisList": "This list",
+            "allLists": "All lists",
+            "workflowsFoot": "Scheduled workflows that pick leads from this list are listed in View all linked workflows.",
+            "bookingTitle": "Booking page",
+            "bookingText": "Let leads book a call or meeting from a public page.",
+            "bookingOpen": "Booking settings",
+            "poolTitle": "Counsellor pool",
+            "poolNone": "No pool linked",
+            "leadSettings": "Lead Settings",
+            "poolEmpty": "Leads from this list stay unassigned until someone assigns them. Add the list to a pool in Lead Settings.",
+            "poolNoMembers": "This pool has no active counsellors.",
+            "counsellorFallback": "Counsellor",
+            "monthlyTarget_one": "target {{count}} / month",
+            "monthlyTarget_other": "target {{count}} / month",
+            "notifyTitle": "Notifications & scoring",
+            "edit": "Edit",
+            "teamNotify": "Team notifications",
+            "respondentEmail": "Confirmation email to the respondent",
+            "on": "On",
+            "off": "Off",
+            "initialScore": "Initial lead score"
+        }
+    }
+}

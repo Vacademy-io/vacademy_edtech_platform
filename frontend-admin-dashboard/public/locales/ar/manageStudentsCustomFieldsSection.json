@@ -1,0 +1,19 @@
+{
+    "header": {
+        "title": "حقول النموذج ({{count}})",
+        "subtitle": "اسحب لإعادة ترتيب الحقول"
+    },
+    "quickAddButtons": {
+        "gender": "إضافة الجنس",
+        "state": "إضافة الولاية",
+        "city": "إضافة المدينة",
+        "schoolCollege": "إضافة المدرسة/الكلية",
+        "address": "إضافة العنوان",
+        "pincode": "الرمز البريدي",
+        "fatherName": "اسم الأب",
+        "motherName": "اسم الأم",
+        "parentPhoneNumber": "رقم هاتف ولي الأمر",
+        "parentEmail": "البريد الإلكتروني لولي الأمر"
+    },
+    "addCustomFieldButton": "إضافة حقل مخصص"
+}

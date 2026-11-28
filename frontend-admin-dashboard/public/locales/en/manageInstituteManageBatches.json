@@ -1,0 +1,46 @@
+{
+    "navHeading": "Manage Batches",
+    "fetchError": "Unable to fetch batches. Please try again later.",
+    "heading": "{{learner}} Batches",
+    "subheading": "Manage and organize your {{learner}} batches by {{session}}.",
+    "selectSessionPlaceholder": "Select {{session}}",
+    "emptyState": {
+        "noBatchesForSession": "No batches found for {{session}}",
+        "noSessionsAvailable": "No sessions available",
+        "createBatchHint": "Create a new batch in this session to get started.",
+        "createSessionHint": "Please create a session first before adding batches.",
+        "noMatches": "No {{term}} matches these filters.",
+        "clearFilters": "Clear filters"
+    },
+    "createBatch": "Create {{term}}",
+    "toolbar": {
+        "searchPlaceholder": "Search batches or invite code…",
+        "sort": {
+            "newest": "Newest First",
+            "oldest": "Oldest First",
+            "name": "Name (A–Z)",
+            "learners": "Most Learners"
+        },
+        "statusLabel": "Status",
+        "status": {
+            "all": "All statuses",
+            "active": "Active",
+            "upcoming": "Upcoming",
+            "inactive": "Inactive"
+        },
+        "dateRange": "Date Range",
+        "dateHint": "Show batches that start between these dates.",
+        "from": "From",
+        "to": "To",
+        "clearDates": "Clear dates",
+        "gridView": "Grid view",
+        "listView": "List view"
+    },
+    "export": "Export",
+    "summary": "{{shown}} of {{total}} {{batches}} · {{learners}} {{learnerTerm}}",
+    "csv": {
+        "status": "Status",
+        "inviteCode": "Invite code",
+        "startDate": "Start date"
+    }
+}

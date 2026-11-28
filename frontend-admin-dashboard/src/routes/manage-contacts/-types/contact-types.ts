@@ -31,6 +31,9 @@ export interface ContactListRequest {
     // learner answer or any of their lead answers. operator: IN (default) |
     // CONTAINS | IS_EMPTY | NOT_EMPTY | BETWEEN | GTE | LTE.
     custom_field_filters?: { field_id: string; operator?: string; values: string[] }[];
+    // Campaign (UTM) attribution filter — same wire shape on every list
+    // surface; see services/utm-list-filters.
+    utm_filters?: import('@/services/utm-list-filters').UtmListFiltersPayload;
     page: number;
     size: number;
     sort_by?: string;

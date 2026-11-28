@@ -1,4 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import {
     YooptaPlugin,
     useYooptaEditor,
@@ -20,22 +22,31 @@ interface TabItem {
     color?: string; // optional per-tab colour-coding (empty → default accent)
 }
 
+// Used only outside React (Yoopta's HTML deserializer parses legacy/pasted
+// markup with no data-tabs attribute at all — that code path has no `t`
+// available), so this fallback intentionally stays English-only.
 const DEFAULT_TABS: TabItem[] = [
     { label: 'Tab 1', content: '' },
     { label: 'Tab 2', content: '' },
 ];
 
+// The component-facing default, with translated tab labels.
+const buildDefaultTabs = (t: TFunction): TabItem[] => [
+    { label: t('defaultTabLabel', { number: 1 }), content: '' },
+    { label: t('defaultTabLabel', { number: 2 }), content: '' },
+];
+
 // Curated palette for colour-coding tabs. Empty value → the default accent.
-const TAB_COLORS: { value: string; label: string }[] = [
-    { value: '', label: 'Default' },
-    { value: '#2563eb', label: 'Blue' }, // design-lint-ignore: user-selectable tab colour
-    { value: '#16a34a', label: 'Green' }, // design-lint-ignore: user-selectable tab colour
-    { value: '#dc2626', label: 'Red' }, // design-lint-ignore: user-selectable tab colour
-    { value: '#ea580c', label: 'Orange' }, // design-lint-ignore: user-selectable tab colour
-    { value: '#9333ea', label: 'Purple' }, // design-lint-ignore: user-selectable tab colour
-    { value: '#0d9488', label: 'Teal' }, // design-lint-ignore: user-selectable tab colour
-    { value: '#db2777', label: 'Pink' }, // design-lint-ignore: user-selectable tab colour
-    { value: '#4b5563', label: 'Gray' }, // design-lint-ignore: user-selectable tab colour
+const buildTabColors = (t: TFunction): { value: string; label: string }[] => [
+    { value: '', label: t('tabColors.default') },
+    { value: '#2563eb', label: t('tabColors.blue') }, // design-lint-ignore: user-selectable tab colour
+    { value: '#16a34a', label: t('tabColors.green') }, // design-lint-ignore: user-selectable tab colour
+    { value: '#dc2626', label: t('tabColors.red') }, // design-lint-ignore: user-selectable tab colour
+    { value: '#ea580c', label: t('tabColors.orange') }, // design-lint-ignore: user-selectable tab colour
+    { value: '#9333ea', label: t('tabColors.purple') }, // design-lint-ignore: user-selectable tab colour
+    { value: '#0d9488', label: t('tabColors.teal') }, // design-lint-ignore: user-selectable tab colour
+    { value: '#db2777', label: t('tabColors.pink') }, // design-lint-ignore: user-selectable tab colour
+    { value: '#4b5563', label: t('tabColors.gray') }, // design-lint-ignore: user-selectable tab colour
 ];
 
 // Tab chrome colours — centralised so the file carries no scattered literal hex.
@@ -62,11 +73,12 @@ export function TabsBlock({
     children,
     blockId,
 }: PluginElementRenderProps) {
+    const { t } = useTranslation('studyLibraryTabsEditor');
     const editor = useYooptaEditor();
     const isReadOnly = useYooptaReadOnly();
     const hasStoredTabs = Array.isArray(element?.props?.tabs) && element.props.tabs.length > 0;
     const [tabs, setTabs] = useState<TabItem[]>(
-        hasStoredTabs ? element!.props!.tabs : DEFAULT_TABS.map((t) => ({ ...t }))
+        hasStoredTabs ? element!.props!.tabs : buildDefaultTabs(t)
     );
     const [activeTab, setActiveTab] = useState(0);
     const [isEditing, setIsEditing] = useState(!isReadOnly && !hasStoredTabs);
@@ -141,7 +153,10 @@ export function TabsBlock({
 
     const addTab = () => {
         const current = tabsRef.current;
-        commitTabs([...current, { label: `Tab ${current.length + 1}`, content: '' }]);
+        commitTabs([
+            ...current,
+            { label: t('defaultTabLabel', { number: current.length + 1 }), content: '' },
+        ]);
         setActiveTab(current.length);
     };
 
@@ -180,7 +195,7 @@ export function TabsBlock({
                     }}
                 >
                     <span style={{ fontSize: '14px', fontWeight: 600, color: C.text }}>
-                        Tabbed Content
+                        {t('tabbedContent')}
                     </span>
                     <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
                         {isEditing && (
@@ -196,7 +211,7 @@ export function TabsBlock({
                                     cursor: 'pointer',
                                 }}
                             >
-                                + Add Tab
+                                {t('addTab')}
                             </button>
                         )}
                         <button
@@ -214,7 +229,7 @@ export function TabsBlock({
                                 cursor: 'pointer',
                             }}
                         >
-                            {isEditing ? 'Preview' : 'Edit'}
+                            {isEditing ? t('preview') : t('edit')}
                         </button>
                     </div>
                 </div>
@@ -245,7 +260,7 @@ export function TabsBlock({
                             onDoubleClick={() => {
                                 if (isEditing) setRenamingIndex(index);
                             }}
-                            title={isEditing && !isRenaming ? 'Click to switch · Double-click to rename' : undefined}
+                            title={isEditing && !isRenaming ? t('switchOrRenameHint') : undefined}
                             style={{
                                 display: 'flex',
                                 alignItems: 'center',
@@ -302,13 +317,13 @@ export function TabsBlock({
                                     }}
                                 />
                             ) : (
-                                <span style={{ userSelect: 'none' }}>{tab.label || 'Untitled'}</span>
+                                <span style={{ userSelect: 'none' }}>{tab.label || t('untitled')}</span>
                             )}
                             {isEditing && !isRenaming && (
                                 <span
                                     role="button"
-                                    aria-label="Rename tab"
-                                    title="Rename tab"
+                                    aria-label={t('renameTab')}
+                                    title={t('renameTab')}
                                     onClick={(e) => {
                                         e.stopPropagation();
                                         setRenamingIndex(index);
@@ -342,8 +357,8 @@ export function TabsBlock({
                             {isEditing && tabs.length > 1 && !isRenaming && (
                                 <span
                                     role="button"
-                                    aria-label="Remove tab"
-                                    title="Remove tab"
+                                    aria-label={t('removeTab')}
+                                    title={t('removeTab')}
                                     onClick={(e) => {
                                         e.stopPropagation();
                                         removeTab(index);
@@ -399,8 +414,8 @@ export function TabsBlock({
                                 flexWrap: 'wrap',
                             }}
                         >
-                            <span style={{ fontSize: '11px', color: C.muted }}>Tab colour:</span>
-                            {TAB_COLORS.map((c) => {
+                            <span style={{ fontSize: '11px', color: C.muted }}>{t('tabColorLabel')}</span>
+                            {buildTabColors(t).map((c) => {
                                 const selected = (tabs[activeTab]?.color || '') === c.value;
                                 return (
                                     <button
@@ -428,7 +443,9 @@ export function TabsBlock({
                             key={activeTab}
                             value={tabs[activeTab]?.content || ''}
                             onChange={(html) => updateTabContent(activeTab, html)}
-                            placeholder={`Content for "${tabs[activeTab]?.label || 'Tab'}"…`}
+                            placeholder={t('contentPlaceholder', {
+                                label: tabs[activeTab]?.label || t('genericTab'),
+                            })}
                             minHeight={100}
                         />
                     </>
@@ -439,7 +456,7 @@ export function TabsBlock({
                     />
                 ) : (
                     <div style={{ fontSize: '14px', color: C.iconMuted, fontStyle: 'italic', padding: '8px' }}>
-                        Empty tab content
+                        {t('emptyTabContent')}
                     </div>
                 )}
             </div>

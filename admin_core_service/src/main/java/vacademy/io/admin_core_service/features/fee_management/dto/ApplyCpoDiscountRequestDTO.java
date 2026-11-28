@@ -7,6 +7,9 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
+import java.util.Map;
+
 /**
  * Side-view request to apply/modify/remove the whole-CPO discount on a UserPlan.
  *
@@ -25,4 +28,14 @@ public class ApplyCpoDiscountRequestDTO {
 
     private DiscountSpecDTO discount;
     private boolean remove;
+
+    /**
+     * How to spread the discount over the installments (CpoDiscountAllocator modes:
+     * ALL_PROPORTIONAL, UNPAID_PROPORTIONAL, UNPAID_EQUAL, LAST_FIRST, NEXT_FIRST, CUSTOM).
+     * Null = ALL_PROPORTIONAL, the original behaviour.
+     */
+    private String allocation;
+
+    /** For CUSTOM: installment (sfp) id → amount off it. The discount is their sum. */
+    private Map<String, BigDecimal> customShares;
 }

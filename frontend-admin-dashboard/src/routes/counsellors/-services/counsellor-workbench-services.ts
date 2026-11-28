@@ -94,6 +94,10 @@ export interface ReassignPayload {
      * counsellor's whole pipeline.
      */
     lead_ids?: string[];
+    /** Move at most this many leads in this call; the response reports remaining_leads. */
+    batch_size?: number;
+    /** ROUND_ROBIN batches: leads already moved, so the rotation continues fairly. */
+    rotation_offset?: number;
 }
 
 export interface ReassignResult {
@@ -107,6 +111,8 @@ export interface ReassignResult {
         to_user_name: string | null;
     }>;
     marked_inactive?: boolean;
+    /** Batched calls only: open leads still to move. 0 = done. */
+    remaining_leads?: number | null;
 }
 
 export interface StatusChangeResponse {

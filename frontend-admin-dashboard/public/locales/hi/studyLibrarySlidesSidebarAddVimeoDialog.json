@@ -1,0 +1,23 @@
+{
+    "validation": {
+        "urlRequired": "URL आवश्यक है",
+        "enterValidUrl": "कृपया एक मान्य URL दर्ज करें",
+        "enterValidVimeoUrl": "कृपया एक मान्य Vimeo URL दर्ज करें"
+    },
+    "defaultVideoName": "Vimeo वीडियो",
+    "urlPlaceholder": "https://vimeo.com/...",
+    "videoThumbnailAlt": "वीडियो थंबनेल",
+    "updatingLink": "लिंक अपडेट हो रहा है...",
+    "addingVideo": "वीडियो जोड़ा जा रहा है...",
+    "updateVimeoLink": "Vimeo लिंक अपडेट करें",
+    "addVimeoVideo": "Vimeo वीडियो जोड़ें",
+    "toast": {
+        "invalidVimeoUrl": "अमान्य Vimeo URL",
+        "durationReadFailed": "Vimeo से वीडियो की अवधि नहीं पढ़ी जा सकी। वीडियो निजी हो सकता है या oEmbed विफल रहा। कृपया फिर से कोशिश करें।",
+        "linkUpdated": "Vimeo लिंक सफलतापूर्वक अपडेट हो गया!",
+        "videoAdded": "Vimeo वीडियो सफलतापूर्वक जोड़ा गया!",
+        "updateLinkFailed": "लिंक अपडेट करने में विफल",
+        "addVideoFailed": "वीडियो जोड़ने में विफल",
+        "reorderFailed": "स्लाइड बन गई लेकिन पुनः क्रमबद्ध करना विफल रहा"
+    }
+}

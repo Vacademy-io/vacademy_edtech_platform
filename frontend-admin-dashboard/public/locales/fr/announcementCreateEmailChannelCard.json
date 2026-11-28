@@ -1,0 +1,16 @@
+{
+    "emailTemplate": "Modèle d'e-mail",
+    "manageTemplates": "Gérer les modèles",
+    "writeFromScratch": "Rédiger à partir de zéro — utiliser le contenu ci-dessus",
+    "templateAppliedHint": "L'application d'un modèle a remplacé le titre et le contenu à l'étape 1. Modifiez-les là-bas si besoin.",
+    "defaultContentHint": "L'objet et le corps proviennent du titre et du contenu de l'étape 1.",
+    "sendFrom": "Envoyer depuis",
+    "noSenderTitle": "Aucune adresse d'expéditeur vérifiée",
+    "noSenderDescription": "Les e-mails ne peuvent pas être envoyés tant que cet établissement n'a pas au moins une adresse d'envoi vérifiée.",
+    "configureSending": "Configurer l'envoi",
+    "chooseSender": "Choisir une adresse d'expéditeur",
+    "searchTemplates": "Rechercher vos modèles d'e-mail",
+    "subject": "Objet",
+    "usesAnnouncementTitle": "Utilise le titre de l'annonce",
+    "subjectHint": "Laisser vide pour réutiliser le titre de l'annonce."
+}

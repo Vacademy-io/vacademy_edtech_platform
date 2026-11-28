@@ -1,0 +1,14 @@
+{
+    "overdueSummary": {
+        "title": "{{amount}} अतिदेय शुल्क",
+        "subtitle": "पूरे संस्थान में देय तिथि बीत चुकी और अदत्त"
+    },
+    "pendingApproval": {
+        "title": "{{name}} के समायोजन को स्वीकृति दें",
+        "subtitle": "{{type}} · {{amount}}",
+        "defaultType": "समायोजन"
+    },
+    "unreadAlert": {
+        "defaultTitle": "सूचना"
+    }
+}

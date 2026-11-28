@@ -7,6 +7,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
 import java.util.Map;
 
 @Data
@@ -40,6 +41,10 @@ public class SendAudienceMessageRequestDTO {
 
     // Optional filters to narrow recipients
     private AudienceFilterConfig filters;
+
+    // Explicit recipient subset: audience_response ids picked in the lead table.
+    // Empty/null means "every active lead in this audience" (the original blast).
+    private List<String> responseIds;
 
     // Who is sending
     private String createdBy;

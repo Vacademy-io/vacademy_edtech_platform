@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { Preferences } from "@capacitor/preferences";
 import { useParentPortalStore } from "@/stores/parent-portal-store";
 import { ParentPortalShell } from "@/routes/parent/-components/ParentPortalShell";
@@ -20,6 +21,7 @@ export const Route = createFileRoute("/parent/")({
 export default ParentPortalIndex;
 
 function ParentPortalIndex() {
+  const { t } = useTranslation("parent");
   const { selectedChild, selectChild, setChildren, setLoadingChildren, children: storeChildren } =
     useParentPortalStore();
 
@@ -52,7 +54,7 @@ function ParentPortalIndex() {
 
     if (error) {
       console.error("Failed to load parent data:", error);
-      toast.error("Failed to load children data");
+      toast.error(t("admissionPortal.index.loadChildrenFailed"));
       setLoadingChildren(false);
       return;
     }
@@ -167,11 +169,10 @@ function ParentPortalIndex() {
             </svg>
           </div>
           <h2 className="text-2xl font-bold text-foreground mb-3">
-            No Children Found
+            {t("admissionPortal.index.noChildrenFound")}
           </h2>
           <p className="text-muted-foreground text-sm leading-relaxed mb-6">
-            No children are linked to your account. Please contact support to
-            add children.
+            {t("admissionPortal.index.noChildrenFoundBody")}
           </p>
         </motion.div>
       </div>
@@ -191,8 +192,8 @@ function ParentPortalIndex() {
             email: child.childInfo.email,
             date_of_birth: child.childInfo.date_of_birth,
             gender: child.childInfo.gender,
-            grade_applying: child.enrollments?.[0]?.applyingForClass ?? "N/A",
-            academic_year: child.enrollments?.[0]?.academicYear ?? "N/A",
+            grade_applying: child.enrollments?.[0]?.applyingForClass ?? t("admissionPortal.notAvailable"),
+            academic_year: child.enrollments?.[0]?.academicYear ?? t("admissionPortal.notAvailable"),
             admission_status: (child.applications?.[0]?.overallStatus ||
               "ENQUIRY") as any,
             institute_id: "",
@@ -227,11 +228,10 @@ function ParentPortalIndex() {
             </svg>
           </div>
           <h2 className="text-2xl font-bold text-foreground mb-3">
-            Select a Child
+            {t("admissionPortal.index.selectAChild")}
           </h2>
           <p className="text-muted-foreground text-sm leading-relaxed mb-6">
-            Choose a child to view their admission status and manage their
-            application.
+            {t("admissionPortal.index.selectAChildBody")}
           </p>
           <div className="space-y-2">
             {childProfiles.map((child) => (
@@ -254,7 +254,7 @@ function ParentPortalIndex() {
     );
   }
 
-  const parentName = "Parent";
+  const parentName = t("admissionPortal.parentFallbackName");
   const childProfiles: ChildProfile[] =
     storeChildren.length === parentData.children.length
       ? storeChildren
@@ -266,8 +266,8 @@ function ParentPortalIndex() {
           email: child.childInfo.email,
           date_of_birth: child.childInfo.date_of_birth,
           gender: child.childInfo.gender,
-          grade_applying: child.enrollments?.[0]?.applyingForClass ?? "N/A",
-          academic_year: child.enrollments?.[0]?.academicYear ?? "N/A",
+          grade_applying: child.enrollments?.[0]?.applyingForClass ?? t("admissionPortal.notAvailable"),
+          academic_year: child.enrollments?.[0]?.academicYear ?? t("admissionPortal.notAvailable"),
           admission_status: (child.applications?.[0]?.overallStatus ||
             "ENQUIRY") as any,
           institute_id: "",

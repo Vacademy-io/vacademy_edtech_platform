@@ -1,0 +1,60 @@
+{
+    "emptyState": {
+        "title": "Aucun {{term}} associé",
+        "hint": "Cet apprenant n'est associé à aucun {{term}}."
+    },
+    "picker": {
+        "label": "{{term}} pour"
+    },
+    "error": {
+        "title": "Impossible de charger les détails de {{term}}",
+        "hint": "Une erreur s'est produite lors du chargement de ce {{term}}. Veuillez réessayer.",
+        "toast": "Échec de la récupération des détails de {{term}}"
+    },
+    "role": {
+        "admin": "Administrateur",
+        "member": "Membre"
+    },
+    "actions": {
+        "openManagementPortal": "Ouvrir le portail de gestion"
+    },
+    "credentials": {
+        "heading": "Identifiants administrateur",
+        "usernameLabel": "Nom d'utilisateur",
+        "passwordLabel": "Mot de passe",
+        "usernameCopied": "Nom d'utilisateur copié !",
+        "passwordCopied": "Mot de passe copié !"
+    },
+    "members": {
+        "heading_one": "Membre géré ({{count}})",
+        "heading_many": "Membres gérés ({{count}})",
+        "heading_other": "Membres gérés ({{count}})",
+        "emptyTitle": "Aucun membre trouvé",
+        "emptyHint": "Aucun apprenant n'est actuellement géré sous ce {{term}}."
+    },
+    "admins": {
+        "heading": "Administrateurs {{term}}",
+        "emptyTitle": "Aucun administrateur trouvé",
+        "emptyHint": "Aucun administrateur n'est lié à ce {{term}}."
+    },
+    "seats": {
+        "heading": "Limite de places",
+        "used": "places utilisées",
+        "left_one": "{{count}} place restante",
+        "left_other": "{{count}} places restantes",
+        "full": "Limite atteinte",
+        "noLimit": "Aucune limite",
+        "increase": "Augmenter la limite",
+        "newLimitLabel": "Nouvelle limite de places",
+        "save": "Enregistrer",
+        "saving": "Enregistrement…",
+        "cancel": "Annuler",
+        "appliesToEachBatch": "S'applique à chaque lot de : {{term}}.",
+        "toast": {
+            "invalid": "Saisissez un nombre entier supérieur à 0",
+            "mustIncrease": "La nouvelle limite doit dépasser la limite actuelle ({{current}})",
+            "updated": "Limite de places fixée à {{count}}",
+            "failed": "Impossible de mettre à jour la limite de places"
+        }
+    }
+}

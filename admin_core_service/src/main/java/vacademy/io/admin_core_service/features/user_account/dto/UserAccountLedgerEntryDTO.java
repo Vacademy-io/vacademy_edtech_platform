@@ -31,4 +31,11 @@ public class UserAccountLedgerEntryDTO {
      */
     private BigDecimal grossAmount;
     private BigDecimal discountAmount;
+    /**
+     * CREDIT_PAYMENT rows only: the payment behind the credit (from {@code referenceId}), so the
+     * panel can offer "Void" on a manually recorded payment and label one already voided. Null
+     * on every other row, and whenever the payment log cannot be found.
+     */
+    private String paymentStatus;
+    private String paymentVendor;
 }

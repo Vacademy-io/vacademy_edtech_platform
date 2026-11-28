@@ -1,0 +1,32 @@
+{
+    "quizTitle": "Quiz {{number}}",
+    "quizQuestionVariantTitle": "Question de quiz",
+    "sections": {
+        "quickAccess": "Accès rapide",
+        "writingSkills": "Compétences rédactionnelles",
+        "readingSkills": "Compétences de lecture"
+    },
+    "questionTypes": {
+        "mcqSingle": "QCM (une bonne réponse)",
+        "mcqMultiple": "QCM (plusieurs bonnes réponses)",
+        "numerical": "Numérique",
+        "trueFalse": "Vrai / Faux",
+        "longAnswer": "Réponse longue",
+        "singleWord": "Un seul mot",
+        "comprehensionMcqSingle": "QCM de compréhension (une bonne réponse)",
+        "comprehensionMcqMultiple": "QCM de compréhension (plusieurs bonnes réponses)",
+        "comprehensionNumeric": "Numérique de compréhension"
+    },
+    "errors": {
+        "noQuestions": "Aucune question fournie pour la création du quiz.",
+        "addFailed": "Échec de l'ajout du quiz",
+        "addAtLeastOneQuestion": "Veuillez ajouter au moins une question avant de créer le quiz.",
+        "questionNameRequired": "Toutes les questions doivent avoir un intitulé.",
+        "slideCreationFailed": "Échec de la création de la diapositive du quiz."
+    },
+    "toasts": {
+        "quizAdded": "Quiz ajouté avec succès !",
+        "quizCreated": "Quiz créé avec succès !",
+        "previewUpdateIssue": "Quiz créé, mais un problème est survenu lors de la mise à jour de l'aperçu. Veuillez rafraîchir la page."
+    }
+}

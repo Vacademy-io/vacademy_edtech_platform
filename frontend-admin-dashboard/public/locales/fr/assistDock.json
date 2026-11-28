@@ -1,0 +1,23 @@
+{
+    "expandGuidesAndSupport": "Développer les guides et l'assistance",
+    "minimize": "Réduire",
+    "guides": "Guides",
+    "training": "Formation",
+    "webinars": "Webinaires",
+    "webinarLive": "En direct",
+    "webinarLiveAria": "Un webinaire est en direct. Ouvrir pour rejoindre",
+    "assist": "Assistance",
+    "issues": "Problèmes",
+    "whatsNew": "Nouveautés",
+    "explore": "Explorer",
+    "adminApp": "Appli Admin",
+    "tutorials": "Tutoriels",
+    "closeTutorials": "Fermer les tutoriels",
+    "noTutorialsForThisPage": "Aucun tutoriel pour cette page pour le moment.",
+    "assistantFab": {
+        "label": "Ouvrir le {{chatbotName}}",
+        "tooltip": "Demander au {{chatbotName}}",
+        "hint": "Demander à l’assistant",
+        "dismissHint": "Masquer l’astuce"
+    }
+}

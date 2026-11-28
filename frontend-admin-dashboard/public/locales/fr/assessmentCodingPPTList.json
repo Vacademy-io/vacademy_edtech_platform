@@ -1,0 +1,13 @@
+{
+    "noProblemStatement": "(Aucun énoncé du problème)",
+    "languagesLabel": "Langages : {{languages}}",
+    "maxPointsLabel": "Points maximum : {{points}}",
+    "testsLabel": "Tests : {{count}}",
+    "sampleTestCasesHeading": "Exemples de cas de test",
+    "sampleLabel": "Exemple {{number}}",
+    "inputLabel": "Entrée",
+    "expectedLabel": "Résultat attendu",
+    "moreAccepted_one": "+{{count}} autre accepté",
+    "moreAccepted_many": "+{{count}} autres acceptés",
+    "moreAccepted_other": "+{{count}} autres acceptés"
+}

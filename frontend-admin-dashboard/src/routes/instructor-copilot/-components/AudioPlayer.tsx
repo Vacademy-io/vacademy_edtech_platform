@@ -1,4 +1,5 @@
 import { useRef, useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Play, Pause, SpeakerHigh, SpeakerLow, SpeakerSlash } from '@phosphor-icons/react';
@@ -8,7 +9,9 @@ interface AudioPlayerProps {
     title?: string;
 }
 
-export function AudioPlayer({ audioUrl, title = 'Audio Recording' }: AudioPlayerProps) {
+export function AudioPlayer({ audioUrl, title }: AudioPlayerProps) {
+    const { t } = useTranslation('instructorCopilotAudioPlayer');
+    const displayTitle = title ?? t('defaultTitle');
     const audioRef = useRef<HTMLAudioElement>(null);
     const [isPlaying, setIsPlaying] = useState(false);
     const [currentTime, setCurrentTime] = useState(0);
@@ -111,8 +114,10 @@ export function AudioPlayer({ audioUrl, title = 'Audio Recording' }: AudioPlayer
 
             <div className="space-y-4">
                 <div>
-                    <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
-                    <p className="text-sm text-gray-500">Duration: {formatTime(duration)}</p>
+                    <h3 className="text-lg font-semibold text-gray-900">{displayTitle}</h3>
+                    <p className="text-sm text-gray-500">
+                        {t('duration', { time: formatTime(duration) })}
+                    </p>
                 </div>
 
                 {/* Seek Bar */}

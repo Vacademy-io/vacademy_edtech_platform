@@ -1,0 +1,250 @@
+---
+title: "Going live"
+description: "The checklist to work through before your integration grades its first real exam."
+icon: "rocket"
+---
+
+Work through this page before your first real exam. Each section ends with what to check.
+
+<Note>
+There is no sandbox or test mode. Every key is live, every graded copy spends real credits, and exams you create appear in the institute's dashboard. Test with short exams and a handful of copies, and delete test exams you no longer need.
+</Note>
+
+## 1. Keys per environment
+
+API keys belong to an institute. An admin of that institute creates them in the Vacademy admin dashboard under **Settings → Integrations → API keys** (the card for Evaluation API keys), once Evalezy has enabled the Evaluation API for the institute ([hello@evalezy.com](mailto:hello@evalezy.com)).
+
+- **One key per environment and per system.** Separate keys for staging and production, and for each system that calls the API (for example the ERP backend and a nightly sync job). You can then revoke one without stopping the others, and tell their traffic apart.
+- **Give each key only the scopes it needs.** New keys get `evaluation:read` and `evaluation:write`.
+
+| Scope | Allows |
+| --- | --- |
+| `evaluation:read` | Reading exams, submissions, results, checked copies, credits and quotes |
+| `evaluation:write` | Creating and editing exams, candidates, uploads and submissions; re-evaluate, cancel, delete |
+| `evaluation:review` | Changing a question's marks and approving copies |
+| `evaluation:finalize` | Finalizing and unfinalizing results |
+
+Keep `evaluation:finalize` on the one system that publishes results.
+
+- **Set an expiry** for keys used in pilots or by contractors.
+- **Check each key with `GET /me`.** It needs no scope and returns who the key is and what it can do:
+
+```bash
+curl https://api.evalezy.com/v1/me -H "X-API-Key: $EVALEZY_API_KEY"
+```
+
+```json Response
+{
+  "key_id": "5c1e8a47-2f3b-4d9e-a6c0-71b8e2d4f915",
+  "name": "ERP production",
+  "institute_id": "9a7d3c21-64e8-4b0f-8c52-3e1f0a9b6d47",
+  "institute_name": "Green Valley Public School",
+  "scopes": ["evaluation:read", "evaluation:write"],
+  "rate_tier": "standard",
+  "daily_copy_quota": 2000,
+  "daily_copy_cap": null,
+  "quota_used_today": 0,
+  "quota_resets_at": "2026-10-03T00:00:00Z"
+}
+```
+
+<Check>
+Production and staging use different keys, each with the fewest scopes it needs, and `GET /me` returns the institute you expect.
+</Check>
+
+## 2. Store keys as secrets
+
+A key is `vak_eval_` followed by 48 hexadecimal characters, and it is shown once, when it is created.
+
+- **Server-to-server only.** Never put a key in a web page, a mobile app or any code that runs on a user's device. Your app calls your backend; your backend calls Evalezy.
+- **Keep it in a secret manager** or an environment variable injected at deploy time, never in source control.
+- **Never log the full key.** Log the first 16 characters if you need to tell keys apart.
+- **Rotate without downtime.** Create the new key, deploy it, confirm traffic with `GET /me`, then revoke the old key. Revocation takes effect within about a minute.
+- **Revoke at once** if a key may have leaked, then create a new one.
+
+<Check>
+The key lives only in your server-side secret store, appears in no logs or client code, and you have rotated it once in staging.
+</Check>
+
+## 3. Retries with Idempotency-Key
+
+Networks fail. Every `POST` accepts an optional `Idempotency-Key` header, so a retried request never creates a second exam, submission or charge.
+
+- **Derive the key from your own IDs**, for example `sub-{exam_id}-{student_id}-{upload_id}`, so a retry after a crash reuses it. Any printable ASCII string up to 255 characters works.
+- **Same key, same request:** you get the stored response again, with the header `Idempotent-Replayed: true`.
+- **Same key, different request:** `422 idempotency_key_reused`. This is a bug in how you build keys.
+- **Same key while the first request is still running:** `409 request_in_progress`. Wait a moment and retry with the same key.
+- Keys are kept for 48 hours, per institute, so a retry from a second key of the same institute replays too.
+
+<Warning>
+Successful responses and most `4xx` errors are stored and replayed. After fixing the cause of one of those `4xx` errors, retry with a **new** key. `402`, `409`, `429` and `5xx` responses are not stored, so retry those with the same key: after topping up credits, the same `Idempotency-Key` runs the request again.
+</Warning>
+
+The API also guards against duplicates on its own:
+
+| Natural key | Duplicate returns |
+| --- | --- |
+| Exam `external_ref` (unique per institute) | `409 exam_exists`, with the existing `details.exam_id` |
+| Candidate `external_id` (unique per institute) | The existing candidate is updated, not duplicated |
+| One live submission per exam and candidate | `409 submission_exists`, with `details.submission_id`. Send `"replace": true` to replace it. |
+| An upload is used once | `409 upload_already_used` |
+
+<Check>
+Every `POST` your integration makes sends an `Idempotency-Key` built from your own IDs, and every exam has an `external_ref`.
+</Check>
+
+## 4. Error handling
+
+Every error has the same shape, and every response carries an `X-Request-Id` header:
+
+```json
+{
+  "error": {
+    "code": "validation_failed",
+    "message": "max_marks must be a multiple of 0.5.",
+    "request_id": "req_4f9c2a7e1b3d4c8a9e6f0b2d5a7c1e3f",
+    "details": {
+      "errors": [
+        { "field": "questions[3].max_marks", "code": "invalid_step", "message": "max_marks must be a multiple of 0.5." }
+      ]
+    }
+  }
+}
+```
+
+Branch on `error.code`, never on `message`. Codes never change once published; messages may. Log `request_id` with every failure.
+
+| Status | Codes | Retry? |
+| --- | --- | --- |
+| `400` | `malformed_json`, `invalid_cursor` | No. Fix the request. |
+| `401` | `missing_api_key`, `invalid_api_key` (unknown, revoked or expired) | No. Alert a person. |
+| `402` | `insufficient_credits` | After buying credits, with the same `Idempotency-Key`. A `402` is never stored. |
+| `403` | `product_not_enabled`, `insufficient_scope` | No. Enable the product or add the scope. |
+| `404` | `exam_not_found`, `submission_not_found`, `candidate_not_found`, `upload_not_found`, `question_not_found`, `checked_copy_not_found`, ... | No. IDs of other institutes also return `404`. |
+| `409` | `request_in_progress` | Yes, after a short wait, with the same key. |
+| `409` | `exam_exists`, `submission_exists`, `submission_finalized`, `exam_not_open`, `evaluation_in_progress`, `upload_already_used`, ... | No. Read `details` and act on it. |
+| `422` | `validation_failed` (see `details.errors[]`), `too_many_pages`, `language_not_supported`, `upload_rejected`, `rubric_marks_mismatch`, `feature_not_available`, ... | No. Fix the request. |
+| `429` | `rate_limited`, `daily_quota_exceeded` | Yes, after `Retry-After` seconds. |
+| `500` | `internal_error` | Yes, with backoff. |
+| `502`, `504`, other `5xx` | Gateway errors, sometimes without the JSON envelope | Yes, with backoff. |
+| `503` | `engine_unavailable`, `auth_unavailable` | Yes, after `Retry-After` seconds. |
+
+A grading failure is not an HTTP error. The submission was accepted, and later its `status` became `failed` with an `error.code` such as `copy_unreadable`, `language_not_supported` or `timed_out`. Handle these in your sync worker.
+
+Successful responses can also carry `warnings[]`, for example `auto_rubric`, `negative_marks_ignored` or `pages_beyond_vision_limit`. Log them and show the important ones to the person who set up the exam.
+
+### Text you send
+
+- All text is plain text, never rendered as HTML. Send text, not markup, and render what you read back as text.
+- Titles, question and option labels, section names, criterion names and candidate names, roll numbers and classes cannot contain `<` or `>`. Such a value returns `422 validation_failed` with the field code `invalid_characters`.
+- A NUL character (`\u0000`) anywhere in a request body returns `422 validation_failed` with the field code `invalid_characters`. Strip it from text copied out of other systems.
+- `metadata` is a JSON object of up to 2 KB.
+
+<Check>
+Your client branches on `error.code`, logs `request_id`, retries only `409 request_in_progress`, `429` and any `5xx` (parsing error bodies defensively), and surfaces failed submissions to a person.
+</Check>
+
+## 5. Credits
+
+Grading is paid with credits from the institute's balance. Prices are fixed and known before grading:
+
+| What | Price |
+| --- | --- |
+| Handwritten copy | 1 credit per page of the uploaded PDF, blank pages included |
+| Typed submission | 1 credit per non-blank long answer |
+| Typed submission with objective answers only | Free |
+| Failed, cancelled or unreadable copy | Free |
+| Re-evaluation | Charged again, at the same price |
+
+Institutes on a contract price see `"rate_source": "contract"` in quotes. Credits are bought in the Vacademy admin dashboard; current packs are on [evalezy.com/pricing](https://evalezy.com/pricing).
+
+Monitor the balance from your side:
+
+<CodeGroup>
+
+```bash Balance
+curl https://api.evalezy.com/v1/credits -H "X-API-Key: $EVALEZY_API_KEY"
+```
+
+```bash Quote before a batch
+curl https://api.evalezy.com/v1/credits/quote \
+  -H "X-API-Key: $EVALEZY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "pages": 3600 }'
+```
+
+</CodeGroup>
+
+- `GET /credits` returns `balance`, `committed` (quoted for copies still in the queue), `available` (what new submissions can use), the institute's `rate_card` and `spent_30d`.
+- `POST /credits/quote` prices a batch before you submit it. Send exactly one of `pages`, `upload_ids` (exact page counts of uploads, up to 100) or `typed_answers`. The answer has `total`, `available` and `sufficient`.
+- A submission that can't be paid for returns `402 insufficient_credits` with `required` and `available` in `details`. Nothing is queued.
+
+<Tip>
+Alert the institute's admin when `available` drops below a few days of typical use, and quote large batches (a whole term's copies) before you start uploading.
+</Tip>
+
+<Check>
+Your integration checks `GET /credits` on a schedule, alerts below a threshold, and quotes big batches first.
+</Check>
+
+## 6. Quotas and rate limits
+
+**Daily copy quota.** Each institute can submit a fixed number of copies per UTC day, 2,000 by default; re-evaluations count too. A key can also have its own lower daily cap (`daily_copy_cap` in `GET /me`). Past the limit, submissions return `429 daily_quota_exceeded` with `details.quota`, `details.limit`, `details.resets_at` and a `Retry-After` header. Quotas reset at 00:00 UTC. For exam seasons or large programmes, ask [hello@evalezy.com](mailto:hello@evalezy.com) for a higher quota well before the date.
+
+**Rate limits.** Requests are limited per key and per institute:
+
+| Tier | Per key | Per institute |
+| --- | --- | --- |
+| standard: reads | 20 per second, 600 per minute | 40 per second |
+| standard: writes | 5 per second, 120 per minute | 10 per second |
+| standard: upload files | 3,000 per minute | 6,000 per minute |
+| high | 2.5× standard reads, 4× standard writes and uploads | same factors |
+
+`GET` requests, `POST /exams/search`, `POST /candidates/search` and `POST /credits/quote` count as reads; other requests count as writes. `POST /uploads` also counts each file presigned. Every response carries `RateLimit-Limit`, `RateLimit-Remaining` and `RateLimit-Reset`. A refused request returns `429 rate_limited` with `Retry-After`.
+
+**Size limits** to design around:
+
+| Limit | Value |
+| --- | --- |
+| Questions per exam | 200 |
+| Candidates per call | 2,000 |
+| Files per `POST /uploads` | 100 |
+| PDF size | 50 MB |
+| Pages per handwritten copy | 40 graded normally; 41 to 80 flagged for review; over 80 refused |
+| Typed long answer | 20,000 characters |
+| Submissions per `POST /exams/{id}/finalize` | 500 |
+| List page size | 1 to 200, default 50 (`GET /exams/{id}/results`: 1 to 50, default 20) |
+
+<Check>
+Your uploads and submissions are paced under the write limits, your client honours `Retry-After`, and your quota covers your busiest day.
+</Check>
+
+## 7. The teacher review step
+
+The AI never publishes results. Every mark is a draft until you finalize it, and nothing is sent to students or parents when you do; publishing is up to you.
+
+- **Decide who reviews.** Teachers can review on the institute's Vacademy dashboard, where API exams are tagged **Source: API**, or in your own UI through `PATCH /submissions/{id}/questions/{question_id}` and `POST /submissions/{id}/approve`.
+- **Review flagged copies first.** `needs_review` is `true` when a question failed, the AI's confidence was low, or a copy had more than 40 pages. Filter with `needs_review=true`.
+- **Finalize deliberately.** `POST /exams/{id}/finalize` locks results: overrides and re-evaluation then return `409 submission_finalized`. Partially graded and failed copies are skipped unless you send `allow_partial`.
+- **Plan for rechecks.** `POST /submissions/{id}/unfinalize` with a `reason` puts one result back on hold; correct it, then finalize again.
+
+<Check>
+Your product makes clear which marks are AI drafts, gives teachers a place to review them, and only publishes finalized results.
+</Check>
+
+## 8. Know what is not available yet
+
+Check that your launch doesn't depend on something on the [Roadmap](/platform/roadmap): webhooks (poll instead, see [Syncing results](/guides/syncing-results)), phone photos (send one PDF), bulk batches matched by name, creating an exam from a question-paper PDF, rubric generation on request and rubric locking, hosted review links, CSV results, Hindi and regional languages, and SDKs. Choice groups ("attempt any N of M") are in beta and enabled on request.
+
+## Support
+
+Email [hello@evalezy.com](mailto:hello@evalezy.com). For a problem with a specific request, include the `request_id` from the error (or the `X-Request-Id` header), the endpoint, and the time in UTC. Never send your API key.
+
+<CardGroup cols={2}>
+  <Card title="Handwritten term exams" icon="pen-nib" href="/guides/handwritten-exams">
+    The full school flow, end to end.
+  </Card>
+  <Card title="Syncing results" icon="arrows-rotate" href="/guides/syncing-results">
+    The polling worker your launch needs.
+  </Card>
+</CardGroup>

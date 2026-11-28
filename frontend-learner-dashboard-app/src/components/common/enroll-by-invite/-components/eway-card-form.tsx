@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback, ChangeEvent } from "react";
+import { useTranslation } from "react-i18next";
 import { useEway } from "../-hooks/use-eway";
 import {
   validateCardNumber,
@@ -11,6 +12,7 @@ import {
 import {
   encryptCardData,
   isCryptoSupported,
+  loadEwayCrypt,
   sanitizeCardData,
   EwayCardData,
   formatEncryptionError,
@@ -46,6 +48,7 @@ export const EwayCardForm = ({
   onError,
   isProcessing = false,
 }: EwayCardFormProps) => {
+  const { t } = useTranslation("enrollmentA");
   const { encryptionKey, isConfigured } = useEway();
 
   // Form state
@@ -82,8 +85,22 @@ export const EwayCardForm = ({
   const lastEncryptedRef = useRef<string>("");
   const encryptTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Check if crypto is supported
-  const cryptoSupported = isCryptoSupported();
+  // eCrypt loads on demand (see loadEwayCrypt). The unsupported warning
+  // shows only after a load actually failed, not while it is in flight.
+  const [cryptoSupported, setCryptoSupported] = useState(isCryptoSupported);
+  const [cryptoLoadFailed, setCryptoLoadFailed] = useState(false);
+  useEffect(() => {
+    if (cryptoSupported) return;
+    let active = true;
+    loadEwayCrypt().then((ok) => {
+      if (!active) return;
+      setCryptoSupported(ok);
+      setCryptoLoadFailed(!ok);
+    });
+    return () => {
+      active = false;
+    };
+  }, [cryptoSupported]);
 
   /**
    * Validate individual field (returns error string or undefined)
@@ -101,17 +118,17 @@ export const EwayCardForm = ({
             const v = validateExpiryDate(data.expiryMonth, data.expiryYear);
             return v.isValid ? undefined : v.error;
           }
-          return "Expiry date is required";
+          return t("ewayCardForm.errors.expiryRequired");
         }
         case "cvn": {
           const v = validateCVV(data.cvn, type);
           return v.isValid ? undefined : v.error;
         }
         case "name":
-          return data.name.trim().length < 2 ? "Name is required" : undefined;
+          return data.name.trim().length < 2 ? t("ewayCardForm.errors.nameRequired") : undefined;
       }
     },
-    []
+    [t]
   );
 
   /**
@@ -175,6 +192,13 @@ export const EwayCardForm = ({
     },
     [cryptoSupported, isConfigured, encryptionKey, isFormComplete]
   );
+
+  // A learner who finishes the form before eCrypt arrives would otherwise
+  // never get encrypted data: tryAutoEncrypt only runs on field edits.
+  useEffect(() => {
+    if (cryptoSupported) tryAutoEncrypt(cardData, cardType);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cryptoSupported]);
 
   // Cleanup timeout on unmount
   useEffect(() => {
@@ -281,7 +305,7 @@ export const EwayCardForm = ({
     if (touched.name) {
       setErrors((prev) => ({
         ...prev,
-        name: value.trim().length < 2 ? "Name is required" : undefined,
+        name: value.trim().length < 2 ? t("ewayCardForm.errors.nameRequired") : undefined,
       }));
     }
 
@@ -310,7 +334,7 @@ export const EwayCardForm = ({
           htmlFor="cardNumber"
           className="block text-sm font-medium text-gray-700 mb-1"
         >
-          Card Number
+          {t("ewayCardForm.cardNumber")}
         </label>
         <div className="relative">
           <Input
@@ -318,7 +342,7 @@ export const EwayCardForm = ({
             type="text"
             inputMode="numeric"
             autoComplete="cc-number"
-            placeholder="1234 5678 9012 3456"
+            placeholder={t("ewayCardForm.cardNumberPlaceholder")}
             value={formatCardNumber(cardData.number)}
             onChange={handleCardNumberChange}
             onBlur={() => handleBlur("number")}
@@ -342,13 +366,13 @@ export const EwayCardForm = ({
           htmlFor="cardName"
           className="block text-sm font-medium text-gray-700 mb-1"
         >
-          Cardholder Name
+          {t("ewayCardForm.cardholderName")}
         </label>
         <Input
           id="cardName"
           type="text"
           autoComplete="cc-name"
-          placeholder="John Smith"
+          placeholder={t("ewayCardForm.cardholderNamePlaceholder")}
           value={cardData.name}
           onChange={handleNameChange}
           onBlur={() => handleBlur("name")}
@@ -368,14 +392,14 @@ export const EwayCardForm = ({
             htmlFor="cardExpiry"
             className="block text-sm font-medium text-gray-700 mb-1"
           >
-            Expiry Date
+            {t("ewayCardForm.expiryDate")}
           </label>
           <Input
             id="cardExpiry"
             type="text"
             inputMode="numeric"
             autoComplete="cc-exp"
-            placeholder="MM/YY"
+            placeholder={t("ewayCardForm.expiryPlaceholder")}
             value={(() => {
               const month = cardData.expiryMonth;
               const year = cardData.expiryYear;
@@ -412,14 +436,14 @@ export const EwayCardForm = ({
             htmlFor="cardCVV"
             className="block text-sm font-medium text-gray-700 mb-1"
           >
-            CVV
+            {t("ewayCardForm.cvv")}
           </label>
           <Input
             id="cardCVV"
             type="text"
             inputMode="numeric"
             autoComplete="cc-csc"
-            placeholder={cardType === "amex" ? "1234" : "123"}
+            placeholder={cardType === "amex" ? t("ewayCardForm.cvvPlaceholderAmex") : t("ewayCardForm.cvvPlaceholder")}
             value={cardData.cvn}
             onChange={handleCVVChange}
             onBlur={() => handleBlur("cvn")}
@@ -436,17 +460,15 @@ export const EwayCardForm = ({
       {/* Security Notice */}
       <div className="bg-blue-50 p-3 rounded-md">
         <p className="text-xs text-blue-800">
-          🔒 Your card details are encrypted before being sent. We never store
-          your card information.
+          🔒 {t("ewayCardForm.securityNotice")}
         </p>
       </div>
 
       {/* Browser Support Warning */}
-      {!cryptoSupported && (
+      {cryptoLoadFailed && (
         <div className="bg-red-50 p-3 rounded-md">
           <p className="text-sm text-red-800">
-            ⚠️ Your browser does not support secure payment encryption. Please
-            use a modern browser like Chrome, Firefox, Safari, or Edge.
+            ⚠️ {t("ewayCardForm.browserUnsupported")}
           </p>
         </div>
       )}

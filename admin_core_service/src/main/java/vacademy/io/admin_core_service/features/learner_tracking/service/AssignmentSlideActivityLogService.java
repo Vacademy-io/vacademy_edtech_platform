@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import vacademy.io.admin_core_service.features.learner_quiz.answerkey.AnswerKeyAccess;
 import vacademy.io.admin_core_service.features.learner_tracking.dto.ActivityLogDTO;
 import vacademy.io.admin_core_service.features.learner_tracking.dto.AssignmentSlideActivityLogDTO;
 import vacademy.io.admin_core_service.features.learner_tracking.dto.GradeAssignmentDTO;
@@ -31,6 +32,8 @@ import java.util.List;
 @RequiredArgsConstructor
 @Service
 public class AssignmentSlideActivityLogService {
+
+    private final AnswerKeyAccess answerKeyAccess;
 
     private static final org.slf4j.Logger log =
             org.slf4j.LoggerFactory.getLogger(AssignmentSlideActivityLogService.class);
@@ -163,6 +166,6 @@ public class AssignmentSlideActivityLogService {
             CustomUserDetails userDetails) {
         Page<ActivityLog> activityLogs = activityLogRepository.findActivityLogsWithAssignmentSlide(userId, slideId,
                 pageable);
-        return activityLogs.map(activityLog -> activityLog.toActivityLogDTO());
+        return activityLogs.map(activityLog -> answerKeyAccess.withoutQuizSidesWhenStripping(activityLog.toActivityLogDTO()));
     }
 }

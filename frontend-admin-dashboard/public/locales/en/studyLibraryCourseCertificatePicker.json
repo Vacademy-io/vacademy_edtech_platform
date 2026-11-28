@@ -1,0 +1,10 @@
+{
+    "theInstituteTemplate": "the institute template",
+    "whateverTheInstituteDefaultIs": "Whatever the institute default is",
+    "instituteDefault": "Institute default",
+    "inUse": "In use",
+    "savedTemplate": "Saved template",
+    "noSavedDesignsYet": "This institute has no saved certificate designs yet. Add them in Settings → Certificates and they will appear here for every course.",
+    "usingOwnUploadHint": "This course uses HTML uploaded below. Pick a saved design above to follow the institute template instead.",
+    "savedDesignFollowsHint": "Picking a saved design means this course follows it — edit that template in Settings and this course’s certificate changes with it."
+}

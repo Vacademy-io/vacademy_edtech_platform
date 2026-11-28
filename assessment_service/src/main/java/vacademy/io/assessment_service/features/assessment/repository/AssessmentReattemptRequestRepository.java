@@ -2,12 +2,15 @@ package vacademy.io.assessment_service.features.assessment.repository;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import vacademy.io.assessment_service.features.assessment.entity.AssessmentReattemptRequest;
 
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
@@ -21,21 +24,41 @@ public interface AssessmentReattemptRequestRepository extends JpaRepository<Asse
             String assessmentId, String userId);
 
     /**
-     * The admin inbox. {@code statuses} and {@code assessmentId} are both optional so one query
-     * serves "everything pending across the institute" and "this assessment's history"; passing
-     * null for either drops that predicate rather than matching nothing.
+     * The admin inbox. {@code statuses}, {@code types} and {@code assessmentId} are all optional
+     * so one query serves "everything pending across the institute" and "this assessment's
+     * history"; passing null for any of them drops that predicate rather than matching nothing.
      */
     @Query("""
             SELECT r FROM AssessmentReattemptRequest r
             WHERE r.instituteId = :instituteId
               AND (:assessmentId IS NULL OR r.assessmentId = :assessmentId)
               AND (:statuses IS NULL OR r.status IN :statuses)
+              AND (:types IS NULL OR r.requestType IN :types)
             ORDER BY r.createdAt DESC
             """)
     Page<AssessmentReattemptRequest> findForAdmin(@Param("instituteId") String instituteId,
                                                   @Param("assessmentId") String assessmentId,
                                                   @Param("statuses") List<String> statuses,
+                                                  @Param("types") List<String> types,
                                                   Pageable pageable);
 
     long countByInstituteIdAndStatus(String instituteId, String status);
+
+    /**
+     * The request, locked for the reviewing transaction. Two admins approving the same request
+     * at once would otherwise both see PENDING and both grant (attempts or minutes).
+     */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT r FROM AssessmentReattemptRequest r WHERE r.id = :id")
+    Optional<AssessmentReattemptRequest> findByIdForUpdate(@Param("id") String id);
+
+    /**
+     * The earliest open report on one question since a moment, any learner. Staff are told about
+     * that one only, so a whole class reporting the same broken question raises one alert.
+     */
+    Optional<AssessmentReattemptRequest>
+    findFirstByAssessmentIdAndQuestionIdAndRequestTypeAndStatusAndCreatedAtAfterOrderByCreatedAtAscIdAsc(
+            String assessmentId, String questionId, String requestType, String status, Date after);
+
+    long countByInstituteIdAndAssessmentIdAndStatus(String instituteId, String assessmentId, String status);
 }

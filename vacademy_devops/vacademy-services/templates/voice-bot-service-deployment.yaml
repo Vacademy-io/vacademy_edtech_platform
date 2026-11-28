@@ -8,14 +8,14 @@ metadata:
     app: voice-bot-service
 spec:
   replicas: {{ .Values.replicaCount }}
-  # Real-time audio: a rollout must not kill live calls faster than needed, but
-  # single-replica surge would double Silero/torch memory on the node — mirror
-  # ai-service's kill-old-first trade-off.
+  # Real-time audio: bring the new pod up BEFORE an old one drains, so capacity
+  # never drops below the replica count during a rollout (the old pod's preStop
+  # waits for its live calls). Mirrors the live Deployment since 2026-11-23.
   strategy:
     type: RollingUpdate
     rollingUpdate:
-      maxSurge: 0
-      maxUnavailable: 1
+      maxSurge: 1
+      maxUnavailable: 0
   selector:
     matchLabels:
       app: voice-bot-service
@@ -24,6 +24,8 @@ spec:
       labels:
         app: voice-bot-service
     spec:
+      # A pod is deleted only after its live calls end (preStop below, ≤1750 s).
+      terminationGracePeriodSeconds: 1800
       containers:
         - name: voice-bot-service
           image: "{{ .Values.services.voice_bot_service.image.repository }}:{{ .Values.services.voice_bot_service.image.tag }}"
@@ -33,17 +35,47 @@ spec:
                 name: myconfigmapv1.0
             - secretRef:
                 name: vacademy-secrets
+            - secretRef:
+                name: voice-bot-call-env
+          env:
+            # Bot processes per pod behind the in-pod HAProxy (app/supervisor.py).
+            # One process uses one core (GIL): keep this <= the CPU limit in cores.
+            - name: VB_PROCS
+              value: {{ .Values.services.voice_bot_service.processes | default 3 | quote }}
+            # Per PROCESS. Real calls cost ~0.23 core: 3 CPU / 3 processes is clean
+            # to ~10 calls a pod, edge at 12 (load test 2026-11-23).
+            - name: MAX_CONCURRENT_CALLS
+              value: {{ .Values.services.voice_bot_service.maxCallsPerProcess | default 5 | quote }}
           resources:
             {{- if .Values.services.voice_bot_service.resources }}
             {{- toYaml .Values.services.voice_bot_service.resources | nindent 12 }}
             {{- else }}
             requests:
-              cpu: "250m"
-              memory: "768Mi"
+              cpu: "2"
+              memory: "1536Mi"
             limits:
-              cpu: "1000m"
-              memory: "2Gi"
+              cpu: "3"
+              memory: "3Gi"
             {{- end }}
+          lifecycle:
+            preStop:
+              exec:
+                # Wait (≤1750 s) until the pod has no live call. /health counts
+                # every process in the pod, so this drains all of them.
+                command:
+                  - python3
+                  - -c
+                  - |
+                    import json,time,urllib.request
+                    t=time.time()
+                    while time.time()-t<1750:
+                        try:
+                            n=json.load(urllib.request.urlopen('http://127.0.0.1:{{ .Values.services.voice_bot_service.port }}/voice-bot-service/health',timeout=5)).get('activeCalls',0)
+                        except Exception:
+                            n=0
+                        if not n:
+                            break
+                        time.sleep(10)
           startupProbe:
             httpGet:
               path: /voice-bot-service/health

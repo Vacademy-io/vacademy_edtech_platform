@@ -1,0 +1,21 @@
+{
+    "meta": {
+        "title": "Planifier des tests",
+        "description": "Cette page affiche la liste de tous les tests planifiés et permet également de planifier une évaluation."
+    },
+    "navHeading": "Liste de création des devoirs",
+    "tabs": {
+        "liveEmpty": "Aucun test n'est actuellement en direct.",
+        "upcomingEmpty": "Aucun test à venir n'est planifié.",
+        "previousEmpty": "Aucun test précédent disponible.",
+        "draftEmpty": "Aucun brouillon de test disponible."
+    },
+    "filters": {
+        "mode": "Mode",
+        "type": "Type",
+        "evaluation": "Évaluation"
+    },
+    "noCourseDialog": {
+        "type": "création d'une évaluation"
+    }
+}

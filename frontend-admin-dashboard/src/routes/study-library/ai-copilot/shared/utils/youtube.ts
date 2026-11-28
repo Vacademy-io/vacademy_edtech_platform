@@ -1,11 +1,6 @@
-/**
- * Extract YouTube video ID from a URL
- */
-export const extractYouTubeVideoId = (url: string): string | null => {
-    const regExp = /^.*(?:youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
-    const match = url.match(regExp);
-    return match && match[1] && match[1].length === 11 ? match[1] : null;
-};
+import { extractYouTubeVideoId } from '@/utils/youtube';
+
+export { extractYouTubeVideoId };
 
 /**
  * Convert YouTube URL to embed URL

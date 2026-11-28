@@ -1,0 +1,10 @@
+{
+    "title": "Membership Expiry",
+    "subtitle": "Monitor and manage student membership expirations.",
+    "exportCsv": "Export CSV",
+    "exporting": "Exporting...",
+    "exportSuccess_one": "Exported {{count}} membership",
+    "exportSuccess_other": "Exported {{count}} memberships",
+    "exportEmpty": "No memberships match the selected filters",
+    "exportFailed": "Failed to export memberships"
+}

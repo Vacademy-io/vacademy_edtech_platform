@@ -1,24 +1,25 @@
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
     Plus,
-    Edit,
-    Trash2,
-    TrendingUp,
+    PencilSimple,
+    Trash,
+    TrendUp,
     Users,
     Gift,
     Copy,
     Eye,
-    Settings,
+    Gear,
     Star,
-    Award,
+    Medal,
     Percent,
-    DollarSign,
+    CurrencyDollar,
     Calendar,
-} from 'lucide-react';
+} from '@phosphor-icons/react';
 import { UnifiedReferralSettings as UnifiedReferralSettingsType } from './UnifiedReferralSettings';
 import { MyButton } from '@/components/design-system/button';
 
@@ -37,6 +38,7 @@ export const ReferralManager: React.FC<ReferralManagerProps> = ({
     onDeleteProgram,
     onDuplicateProgram,
 }) => {
+    const { t } = useTranslation('settingsReferralManager');
     const [selectedProgram, setSelectedProgram] = useState<UnifiedReferralSettingsType | null>(
         null
     );
@@ -47,7 +49,7 @@ export const ReferralManager: React.FC<ReferralManagerProps> = ({
             case 'discount_percentage':
                 return <Percent className="size-4 text-green-600" />;
             case 'discount_fixed':
-                return <DollarSign className="size-4 text-green-600" />;
+                return <CurrencyDollar className="size-4 text-green-600" />;
             case 'bonus_content':
                 return <Gift className="size-4 text-purple-600" />;
             case 'free_days':
@@ -69,10 +71,8 @@ export const ReferralManager: React.FC<ReferralManagerProps> = ({
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h2 className="text-2xl font-bold text-gray-900">Referral Programs</h2>
-                    <p className="text-gray-600">
-                        Manage multiple referral programs with different reward structures
-                    </p>
+                    <h2 className="text-2xl font-bold text-gray-900">{t('header.title')}</h2>
+                    <p className="text-gray-600">{t('header.subtitle')}</p>
                 </div>
                 <MyButton
                     buttonType="primary"
@@ -80,7 +80,7 @@ export const ReferralManager: React.FC<ReferralManagerProps> = ({
                     className="flex items-center gap-2"
                 >
                     <Plus className="size-4" />
-                    Create New Program
+                    {t('header.createNewProgram')}
                 </MyButton>
             </div>
 
@@ -88,10 +88,8 @@ export const ReferralManager: React.FC<ReferralManagerProps> = ({
             {programs.length === 0 ? (
                 <Card className="py-12 text-center">
                     <CardContent>
-                        <h3 className="mb-2 text-lg font-medium">No referral programs created</h3>
-                        <p className="mb-4 text-gray-600">
-                            Create your first referral program to start incentivizing referrals
-                        </p>
+                        <h3 className="mb-2 text-lg font-medium">{t('emptyState.title')}</h3>
+                        <p className="mb-4 text-gray-600">{t('emptyState.description')}</p>
                     </CardContent>
                 </Card>
             ) : (
@@ -111,7 +109,7 @@ export const ReferralManager: React.FC<ReferralManagerProps> = ({
                                         <div
                                             className={`rounded-lg p-2 ${program.isDefault ? 'bg-primary-100' : 'bg-gray-100'}`}
                                         >
-                                            <TrendingUp
+                                            <TrendUp
                                                 className={`size-5 ${program.isDefault ? 'text-primary-500' : 'text-gray-500'}`}
                                             />
                                         </div>
@@ -123,8 +121,8 @@ export const ReferralManager: React.FC<ReferralManagerProps> = ({
                                                 variant="default"
                                                 className="flex items-center gap-1 bg-primary-500 text-xs text-white"
                                             >
-                                                <Award className="size-3" />
-                                                Default
+                                                <Medal className="size-3" />
+                                                {t('programCard.defaultBadge')}
                                             </Badge>
                                         )}
                                     </div>
@@ -139,7 +137,7 @@ export const ReferralManager: React.FC<ReferralManagerProps> = ({
                                             <Gift className="size-4 text-green-600" />
                                         </div>
                                         <span className="text-sm font-medium text-gray-800">
-                                            Referee Benefit
+                                            {t('programCard.refereeBenefit.title')}
                                         </span>
                                     </div>
                                     {program.refereeReward ? (
@@ -149,26 +147,42 @@ export const ReferralManager: React.FC<ReferralManagerProps> = ({
                                             </span>
                                             <div className="text-sm">
                                                 {program.refereeReward.type === 'discount_percentage' &&
-                                                    `${program.refereeReward.value}% off`}
+                                                    t('programCard.refereeBenefit.percentOff', {
+                                                        value: program.refereeReward.value,
+                                                    })}
                                                 {program.refereeReward.type === 'discount_fixed' &&
-                                                    `₹${program.refereeReward.value} off`}
+                                                    t('programCard.refereeBenefit.amountOff', {
+                                                        value: program.refereeReward.value,
+                                                    })}
                                                 {program.refereeReward.type === 'free_days' &&
-                                                    `${program.refereeReward.value} free days`}
+                                                    t('programCard.refereeBenefit.freeDays', {
+                                                        value: program.refereeReward.value,
+                                                    })}
                                                 {program.refereeReward.type === 'points_system' &&
-                                                    `${program.refereeReward.value} points`}
+                                                    t('programCard.refereeBenefit.points', {
+                                                        value: program.refereeReward.value,
+                                                    })}
                                                 {program.refereeReward.type === 'bonus_content' && (
                                                     <div className="flex flex-col gap-1">
                                                         <span>
                                                             {program.refereeReward.content?.content
-                                                                ?.title || 'Bonus content'}
+                                                                ?.title ||
+                                                                t(
+                                                                    'programCard.refereeBenefit.bonusContentFallback'
+                                                                )}
                                                         </span>
                                                         {program.refereeReward.content?.content
                                                             ?.template && (
                                                             <span className="text-xs text-gray-500">
-                                                                Template:{' '}
-                                                                {program.refereeReward.content.content.template.replace(
-                                                                    'template_',
-                                                                    'Template '
+                                                                {t(
+                                                                    'programCard.refereeBenefit.templateLabel',
+                                                                    {
+                                                                        template:
+                                                                            program.refereeReward.content.content.template.replace(
+                                                                                'template_',
+                                                                                ''
+                                                                            ),
+                                                                    }
                                                                 )}
                                                             </span>
                                                         )}
@@ -178,7 +192,7 @@ export const ReferralManager: React.FC<ReferralManagerProps> = ({
                                         </div>
                                     ) : (
                                         <div className="text-sm italic text-gray-500">
-                                            No referee benefit configured
+                                            {t('programCard.refereeBenefit.empty')}
                                         </div>
                                     )}
                                 </div>
@@ -190,7 +204,7 @@ export const ReferralManager: React.FC<ReferralManagerProps> = ({
                                             <Users className="size-4 text-blue-600" />
                                         </div>
                                         <span className="text-sm font-medium text-gray-800">
-                                            Referrer Tiers
+                                            {t('programCard.referrerTiers.title')}
                                         </span>
                                     </div>
                                     {program.referrerRewards && program.referrerRewards.length > 0 ? (
@@ -201,8 +215,10 @@ export const ReferralManager: React.FC<ReferralManagerProps> = ({
                                                     className="flex items-center justify-between text-xs"
                                                 >
                                                     <span>
-                                                        {tier.referralCount} referral
-                                                        {tier.referralCount !== 1 ? 's' : ''}
+                                                        {t(
+                                                            'programCard.referrerTiers.referralCount',
+                                                            { count: tier.referralCount }
+                                                        )}
                                                     </span>
                                                     <div className="flex items-center gap-1">
                                                         <span>
@@ -211,7 +227,13 @@ export const ReferralManager: React.FC<ReferralManagerProps> = ({
                                                         {tier.reward.type === 'points_system' &&
                                                             tier.reward.pointsPerReferral && (
                                                                 <span className="font-medium text-blue-600 text-xs">
-                                                                    +{tier.reward.pointsPerReferral}pts
+                                                                    {t(
+                                                                        'programCard.referrerTiers.pointsValue',
+                                                                        {
+                                                                            value: tier.reward
+                                                                                .pointsPerReferral,
+                                                                        }
+                                                                    )}
                                                                 </span>
                                                             )}
                                                         {tier.reward.type === 'bonus_content' &&
@@ -228,11 +250,17 @@ export const ReferralManager: React.FC<ReferralManagerProps> = ({
                                                                     {tier.reward.value}
                                                                     {tier.reward.type ===
                                                                     'discount_percentage'
-                                                                        ? '%'
+                                                                        ? t(
+                                                                              'programCard.referrerTiers.percentUnit'
+                                                                          )
                                                                         : tier.reward.type ===
                                                                           'free_days'
-                                                                          ? 'd'
-                                                                          : '₹'}
+                                                                          ? t(
+                                                                                'programCard.referrerTiers.daysUnit'
+                                                                            )
+                                                                          : t(
+                                                                                'programCard.referrerTiers.currencyUnit'
+                                                                            )}
                                                                 </span>
                                                             )}
                                                     </div>
@@ -240,13 +268,15 @@ export const ReferralManager: React.FC<ReferralManagerProps> = ({
                                             ))}
                                             {program.referrerRewards.length > 2 && (
                                                 <div className="text-xs text-gray-500">
-                                                    +{program.referrerRewards.length - 2} more tiers
+                                                    {t('programCard.referrerTiers.moreTiers', {
+                                                        count: program.referrerRewards.length - 2,
+                                                    })}
                                                 </div>
                                             )}
                                         </div>
                                     ) : (
                                         <div className="text-sm italic text-gray-500">
-                                            No referrer tiers configured
+                                            {t('programCard.referrerTiers.empty')}
                                         </div>
                                     )}
                                 </div>
@@ -255,27 +285,31 @@ export const ReferralManager: React.FC<ReferralManagerProps> = ({
                                 <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
                                     <div className="mb-3 flex items-center gap-2">
                                         <div className="rounded-md bg-gray-100 p-1.5">
-                                            <Settings className="size-4 text-gray-600" />
+                                            <Gear className="size-4 text-gray-600" />
                                         </div>
                                         <span className="text-sm font-medium text-gray-800">
-                                            Program Settings
+                                            {t('programCard.settings.title')}
                                         </span>
                                     </div>
                                     <div className="grid grid-cols-2 gap-3 text-xs">
                                         <div className="rounded bg-gray-50 p-2">
                                             <span className="mb-1 block text-gray-500">
-                                                Vesting Period
+                                                {t('programCard.settings.vestingPeriod')}
                                             </span>
                                             <div className="font-medium text-gray-800">
-                                                {program.payoutVestingDays} days
+                                                {t('programCard.settings.days', {
+                                                    count: program.payoutVestingDays,
+                                                })}
                                             </div>
                                         </div>
                                         <div className="rounded bg-gray-50 p-2">
                                             <span className="mb-1 block text-gray-500">
-                                                Combine Offers
+                                                {t('programCard.settings.combineOffers')}
                                             </span>
                                             <div className="font-medium text-gray-800">
-                                                {program.allowCombineOffers === true ? 'Yes' : 'No'}
+                                                {program.allowCombineOffers === true
+                                                    ? t('programCard.settings.yes')
+                                                    : t('programCard.settings.no')}
                                             </div>
                                         </div>
                                     </div>
@@ -290,7 +324,7 @@ export const ReferralManager: React.FC<ReferralManagerProps> = ({
                                         className="flex-1 transition-colors hover:border-blue-300 hover:bg-blue-50"
                                     >
                                         <Eye className="mr-1 size-4" />
-                                        View
+                                        {t('programCard.actions.view')}
                                     </Button>
                                     <Button
                                         variant="outline"
@@ -298,7 +332,7 @@ export const ReferralManager: React.FC<ReferralManagerProps> = ({
                                         onClick={() => onEditProgram(program)}
                                         className="transition-colors hover:border-green-300 hover:bg-green-50"
                                     >
-                                        <Edit className="size-4" />
+                                        <PencilSimple className="size-4" />
                                     </Button>
 
                                     <Button
@@ -315,7 +349,7 @@ export const ReferralManager: React.FC<ReferralManagerProps> = ({
                                         className="text-red-600 transition-colors hover:border-red-300 hover:bg-red-50 hover:text-red-700"
                                         onClick={() => onDeleteProgram(program.id)}
                                     >
-                                        <Trash2 className="size-4" />
+                                        <Trash className="size-4" />
                                     </Button>
                                 </div>
                             </CardContent>
@@ -358,47 +392,49 @@ const ProgramDetailsModal: React.FC<ProgramDetailsModalProps> = ({
     onClose,
     onEdit,
 }) => {
+    const { t } = useTranslation('settingsReferralManager');
+
     if (!isOpen) return null;
 
     const getRewardTypeLabel = (type: string) => {
         switch (type) {
             case 'discount_percentage':
-                return 'Percentage Discount';
+                return t('rewardTypeLabels.percentageDiscount');
             case 'discount_fixed':
-                return 'Fixed Discount';
+                return t('rewardTypeLabels.fixedDiscount');
             case 'bonus_content':
-                return 'Bonus Content';
+                return t('rewardTypeLabels.bonusContent');
             case 'free_days':
-                return 'Free Days';
+                return t('rewardTypeLabels.freeDays');
             case 'points_system':
-                return 'Points System';
+                return t('rewardTypeLabels.pointsSystem');
             default:
                 return type;
         }
     };
 
     const modalContent = (
-        <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black/50 p-4">
-            <div className="max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-lg bg-white">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+            <div className="max-h-dialog-tall w-full max-w-4xl overflow-y-auto rounded-lg bg-white">
                 <div className="border-b p-6">
                     <div className="flex items-center justify-between">
                         <div>
                             <h2 className="text-2xl font-bold">{program.label}</h2>
-                            <p className="text-gray-600">Program Details & Configuration</p>
+                            <p className="text-gray-600">{t('modal.subtitle')}</p>
                         </div>
                         <div className="flex items-center gap-2">
                             {program.isDefault && (
                                 <Badge variant="default" className="bg-primary-500 text-white">
-                                    <Award className="mr-1 size-3" />
-                                    Default
+                                    <Medal className="me-1 size-3" />
+                                    {t('modal.defaultBadge')}
                                 </Badge>
                             )}
                             <Button onClick={onEdit} className="flex items-center gap-2">
-                                <Edit className="size-4" />
-                                Edit Program
+                                <PencilSimple className="size-4" />
+                                {t('modal.editProgram')}
                             </Button>
                             <Button variant="outline" onClick={onClose}>
-                                Close
+                                {t('modal.close')}
                             </Button>
                         </div>
                     </div>
@@ -411,7 +447,7 @@ const ProgramDetailsModal: React.FC<ProgramDetailsModalProps> = ({
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2">
                                 <Gift className="size-5 text-green-600" />
-                                Referee Benefits (One-time)
+                                {t('modal.refereeBenefits.title')}
                             </CardTitle>
                         </CardHeader>
                         <CardContent>
@@ -426,11 +462,11 @@ const ProgramDetailsModal: React.FC<ProgramDetailsModalProps> = ({
                                             <Badge variant="secondary">
                                                 {program.refereeReward.value}
                                                 {program.refereeReward.type === 'discount_percentage'
-                                                    ? '%'
+                                                    ? t('modal.refereeBenefits.percentUnit')
                                                     : program.refereeReward.type === 'free_days'
-                                                      ? ' days'
+                                                      ? t('modal.refereeBenefits.daysUnit')
                                                       : program.refereeReward.type === 'points_system'
-                                                        ? ' points'
+                                                        ? t('modal.refereeBenefits.pointsUnit')
                                                         : ''}
                                             </Badge>
                                         )}
@@ -440,15 +476,17 @@ const ProgramDetailsModal: React.FC<ProgramDetailsModalProps> = ({
                                     </p>
                                     {program.refereeReward.delivery && (
                                         <div className="mt-2 flex items-center gap-2">
-                                            <span className="text-xs text-gray-500">Delivery:</span>
+                                            <span className="text-xs text-gray-500">
+                                                {t('modal.refereeBenefits.deliveryLabel')}
+                                            </span>
                                             {program.refereeReward.delivery.email && (
                                                 <Badge variant="outline" className="text-xs">
-                                                    📧 Email
+                                                    {t('modal.refereeBenefits.emailBadge')}
                                                 </Badge>
                                             )}
                                             {program.refereeReward.delivery.whatsapp && (
                                                 <Badge variant="outline" className="text-xs">
-                                                    💬 WhatsApp
+                                                    {t('modal.refereeBenefits.whatsappBadge')}
                                                 </Badge>
                                             )}
                                         </div>
@@ -459,12 +497,14 @@ const ProgramDetailsModal: React.FC<ProgramDetailsModalProps> = ({
                                         program.refereeReward.content && (
                                             <div className="mt-3 rounded border bg-white p-3">
                                                 <h6 className="mb-2 text-xs font-medium text-gray-700">
-                                                    Content Details
+                                                    {t('modal.refereeBenefits.contentDetails.title')}
                                                 </h6>
                                                 <div className="space-y-1 text-xs">
                                                     <div className="flex justify-between">
                                                         <span className="text-gray-500">
-                                                            Content Type:
+                                                            {t(
+                                                                'modal.refereeBenefits.contentDetails.contentType'
+                                                            )}
                                                         </span>
                                                         <span className="font-medium capitalize">
                                                             {program.refereeReward.content.contentType}
@@ -473,7 +513,9 @@ const ProgramDetailsModal: React.FC<ProgramDetailsModalProps> = ({
                                                     {program.refereeReward.content.content?.title && (
                                                         <div className="flex justify-between">
                                                             <span className="text-gray-500">
-                                                                Title:
+                                                                {t(
+                                                                    'modal.refereeBenefits.contentDetails.titleLabel'
+                                                                )}
                                                             </span>
                                                             <span className="font-medium">
                                                                 {
@@ -487,21 +529,35 @@ const ProgramDetailsModal: React.FC<ProgramDetailsModalProps> = ({
                                                         ?.template && (
                                                         <div className="flex justify-between">
                                                             <span className="text-gray-500">
-                                                                Template:
+                                                                {t(
+                                                                    'modal.refereeBenefits.contentDetails.template'
+                                                                )}
                                                             </span>
                                                             <span className="font-medium">
-                                                                {program.refereeReward.content.content.template.replace(
-                                                                    'template_',
-                                                                    'Template '
+                                                                {t(
+                                                                    'modal.refereeBenefits.contentDetails.templateValue',
+                                                                    {
+                                                                        number:
+                                                                            program.refereeReward.content.content.template.replace(
+                                                                                'template_',
+                                                                                ''
+                                                                            ),
+                                                                    }
                                                                 )}
                                                             </span>
                                                         </div>
                                                     )}
                                                     {program.refereeReward.content.content?.fileId && (
                                                         <div className="flex justify-between">
-                                                            <span className="text-gray-500">File:</span>
+                                                            <span className="text-gray-500">
+                                                                {t(
+                                                                    'modal.refereeBenefits.contentDetails.file'
+                                                                )}
+                                                            </span>
                                                             <span className="font-medium text-green-600">
-                                                                ✓ Uploaded
+                                                                {t(
+                                                                    'modal.refereeBenefits.contentDetails.uploadedBadge'
+                                                                )}
                                                             </span>
                                                         </div>
                                                     )}
@@ -512,7 +568,7 @@ const ProgramDetailsModal: React.FC<ProgramDetailsModalProps> = ({
                             ) : (
                                 /* Fallback if no Referee Benefit exists */
                                 <div className="text-sm italic text-gray-500">
-                                    No referee benefit configured for this program.
+                                    {t('modal.refereeBenefits.empty')}
                                 </div>
                             )}
                         </CardContent>
@@ -523,7 +579,7 @@ const ProgramDetailsModal: React.FC<ProgramDetailsModalProps> = ({
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2">
                                 <Users className="size-5 text-blue-600" />
-                                Referrer Rewards (Tiered)
+                                {t('modal.referrerRewards.title')}
                             </CardTitle>
                         </CardHeader>
                         <CardContent>
@@ -535,8 +591,9 @@ const ProgramDetailsModal: React.FC<ProgramDetailsModalProps> = ({
                                             <div className="mb-2 flex items-center justify-between">
                                                 <div className="flex items-center gap-2">
                                                     <Badge variant="secondary">
-                                                        {tier.referralCount} referral
-                                                        {tier.referralCount !== 1 ? 's' : ''}
+                                                        {t('modal.referrerRewards.referralCount', {
+                                                            count: tier.referralCount,
+                                                        })}
                                                     </Badge>
                                                     <span className="font-medium">
                                                         {tier.tierName}
@@ -554,31 +611,51 @@ const ProgramDetailsModal: React.FC<ProgramDetailsModalProps> = ({
                                             {tier.reward.type === 'points_system' && (
                                                 <div className="mt-3 rounded border bg-white p-3">
                                                     <h6 className="mb-2 text-xs font-medium text-gray-700">
-                                                        Points System Details
+                                                        {t(
+                                                            'modal.referrerRewards.pointsSystemDetails.title'
+                                                        )}
                                                     </h6>
                                                     <div className="grid grid-cols-2 gap-2 text-xs">
                                                         <div>
                                                             <span className="text-gray-500">
-                                                                Per Referral:
+                                                                {t(
+                                                                    'modal.referrerRewards.pointsSystemDetails.perReferral'
+                                                                )}
                                                             </span>
                                                             <div className="font-medium text-blue-600">
-                                                                +
-                                                                {tier.reward.pointsPerReferral || 0}{' '}
-                                                                points
+                                                                {t(
+                                                                    'modal.referrerRewards.pointsSystemDetails.pointsEarnedValue',
+                                                                    {
+                                                                        value:
+                                                                            tier.reward
+                                                                                .pointsPerReferral ||
+                                                                            0,
+                                                                    }
+                                                                )}
                                                             </div>
                                                         </div>
                                                         <div>
                                                             <span className="text-gray-500">
-                                                                Reward at:
+                                                                {t(
+                                                                    'modal.referrerRewards.pointsSystemDetails.rewardAt'
+                                                                )}
                                                             </span>
                                                             <div className="font-medium">
-                                                                {tier.reward.pointsToReward || 0}{' '}
-                                                                points
+                                                                {t(
+                                                                    'modal.referrerRewards.pointsSystemDetails.pointsValue',
+                                                                    {
+                                                                        value:
+                                                                            tier.reward
+                                                                                .pointsToReward || 0,
+                                                                    }
+                                                                )}
                                                             </div>
                                                         </div>
                                                         <div>
                                                             <span className="text-gray-500">
-                                                                Referrals needed:
+                                                                {t(
+                                                                    'modal.referrerRewards.pointsSystemDetails.referralsNeeded'
+                                                                )}
                                                             </span>
                                                             <div className="font-medium">
                                                                 {Math.ceil(
@@ -591,18 +668,43 @@ const ProgramDetailsModal: React.FC<ProgramDetailsModalProps> = ({
                                                         </div>
                                                         <div>
                                                             <span className="text-gray-500">
-                                                                Reward:
+                                                                {t(
+                                                                    'modal.referrerRewards.pointsSystemDetails.reward'
+                                                                )}
                                                             </span>
                                                             <div className="font-medium">
-                                                                {tier.reward.pointsRewardValue || 0}
                                                                 {tier.reward.pointsRewardType ===
                                                                 'discount_percentage'
-                                                                    ? '% off'
+                                                                    ? t(
+                                                                          'modal.referrerRewards.pointsSystemDetails.percentOff',
+                                                                          {
+                                                                              value:
+                                                                                  tier.reward
+                                                                                      .pointsRewardValue ||
+                                                                                  0,
+                                                                          }
+                                                                      )
                                                                     : tier.reward
                                                                             .pointsRewardType ===
                                                                         'membership_days'
-                                                                      ? ' days'
-                                                                      : '₹ off'}
+                                                                      ? t(
+                                                                            'modal.referrerRewards.pointsSystemDetails.daysOff',
+                                                                            {
+                                                                                value:
+                                                                                    tier.reward
+                                                                                        .pointsRewardValue ||
+                                                                                    0,
+                                                                            }
+                                                                        )
+                                                                      : t(
+                                                                            'modal.referrerRewards.pointsSystemDetails.amountOff',
+                                                                            {
+                                                                                value:
+                                                                                    tier.reward
+                                                                                        .pointsRewardValue ||
+                                                                                    0,
+                                                                            }
+                                                                        )}
                                                             </div>
                                                         </div>
                                                     </div>
@@ -612,14 +714,14 @@ const ProgramDetailsModal: React.FC<ProgramDetailsModalProps> = ({
                                             {tier.reward.delivery && (
                                                 <div className="mt-2 flex items-center gap-2">
                                                     <span className="text-xs text-gray-500">
-                                                        Delivery:
+                                                        {t('modal.referrerRewards.deliveryLabel')}
                                                     </span>
                                                     {tier.reward.delivery.email && (
                                                         <Badge
                                                             variant="outline"
                                                             className="text-xs"
                                                         >
-                                                            📧 Email
+                                                            {t('modal.referrerRewards.emailBadge')}
                                                         </Badge>
                                                     )}
                                                     {tier.reward.delivery.whatsapp && (
@@ -627,7 +729,7 @@ const ProgramDetailsModal: React.FC<ProgramDetailsModalProps> = ({
                                                             variant="outline"
                                                             className="text-xs"
                                                         >
-                                                            💬 WhatsApp
+                                                            {t('modal.referrerRewards.whatsappBadge')}
                                                         </Badge>
                                                     )}
                                                 </div>
@@ -638,12 +740,16 @@ const ProgramDetailsModal: React.FC<ProgramDetailsModalProps> = ({
                                                 tier.reward.content && (
                                                     <div className="mt-3 rounded border bg-white p-3">
                                                         <h6 className="mb-2 text-xs font-medium text-gray-700">
-                                                            Content Details
+                                                            {t(
+                                                                'modal.referrerRewards.contentDetails.title'
+                                                            )}
                                                         </h6>
                                                         <div className="space-y-1 text-xs">
                                                             <div className="flex justify-between">
                                                                 <span className="text-gray-500">
-                                                                    Content Type:
+                                                                    {t(
+                                                                        'modal.referrerRewards.contentDetails.contentType'
+                                                                    )}
                                                                 </span>
                                                                 <span className="font-medium capitalize">
                                                                     {
@@ -655,7 +761,9 @@ const ProgramDetailsModal: React.FC<ProgramDetailsModalProps> = ({
                                                             {tier.reward.content.content?.title && (
                                                                 <div className="flex justify-between">
                                                                     <span className="text-gray-500">
-                                                                        Title:
+                                                                        {t(
+                                                                            'modal.referrerRewards.contentDetails.titleLabel'
+                                                                        )}
                                                                     </span>
                                                                     <span className="font-medium">
                                                                         {
@@ -669,12 +777,20 @@ const ProgramDetailsModal: React.FC<ProgramDetailsModalProps> = ({
                                                                 ?.template && (
                                                                 <div className="flex justify-between">
                                                                     <span className="text-gray-500">
-                                                                        Template:
+                                                                        {t(
+                                                                            'modal.referrerRewards.contentDetails.template'
+                                                                        )}
                                                                     </span>
                                                                     <span className="font-medium">
-                                                                        {tier.reward.content.content.template.replace(
-                                                                            'template_',
-                                                                            'Template '
+                                                                        {t(
+                                                                            'modal.referrerRewards.contentDetails.templateValue',
+                                                                            {
+                                                                                number:
+                                                                                    tier.reward.content.content.template.replace(
+                                                                                        'template_',
+                                                                                        ''
+                                                                                    ),
+                                                                            }
                                                                         )}
                                                                     </span>
                                                                 </div>
@@ -683,10 +799,14 @@ const ProgramDetailsModal: React.FC<ProgramDetailsModalProps> = ({
                                                                 ?.fileId && (
                                                                 <div className="flex justify-between">
                                                                     <span className="text-gray-500">
-                                                                        File:
+                                                                        {t(
+                                                                            'modal.referrerRewards.contentDetails.file'
+                                                                        )}
                                                                     </span>
                                                                     <span className="font-medium text-green-600">
-                                                                        ✓ Uploaded
+                                                                        {t(
+                                                                            'modal.referrerRewards.contentDetails.uploadedBadge'
+                                                                        )}
                                                                     </span>
                                                                 </div>
                                                             )}
@@ -703,30 +823,40 @@ const ProgramDetailsModal: React.FC<ProgramDetailsModalProps> = ({
                     <Card>
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2">
-                                <Settings className="size-5" />
-                                Program Settings
+                                <Gear className="size-5" />
+                                {t('modal.settings.title')}
                             </CardTitle>
                         </CardHeader>
                         <CardContent>
                             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                                 <div className="rounded bg-gray-50 p-3">
-                                    <span className="text-sm text-gray-500">Vesting Period</span>
+                                    <span className="text-sm text-gray-500">
+                                        {t('modal.settings.vestingPeriod')}
+                                    </span>
                                     <div className="font-medium">
-                                        {program.payoutVestingDays} days
+                                        {t('modal.settings.days', {
+                                            count: program.payoutVestingDays,
+                                        })}
                                     </div>
                                 </div>
                                 <div className="rounded bg-gray-50 p-3">
                                     <span className="text-sm text-gray-500">
-                                        Combine with Other Offers
+                                        {t('modal.settings.combineWithOtherOffers')}
                                     </span>
                                     <div className="font-medium">
-                                        {program.allowCombineOffers===true ? 'Yes' : 'No'}
+                                        {program.allowCombineOffers === true
+                                            ? t('modal.settings.yes')
+                                            : t('modal.settings.no')}
                                     </div>
                                 </div>
                                 <div className="rounded bg-gray-50 p-3">
-                                    <span className="text-sm text-gray-500">Program Status</span>
+                                    <span className="text-sm text-gray-500">
+                                        {t('modal.settings.programStatus')}
+                                    </span>
                                     <div className="font-medium">
-                                        {program.isDefault ? 'Default' : 'Available'}
+                                        {program.isDefault
+                                            ? t('modal.settings.default')
+                                            : t('modal.settings.available')}
                                     </div>
                                 </div>
                             </div>

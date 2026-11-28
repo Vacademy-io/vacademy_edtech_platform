@@ -1,0 +1,43 @@
+{
+    "header": {
+        "title": "Contrôle d'accès",
+        "description": "Contrôlez qui peut gérer, consulter les résultats et évaluer cette évaluation.",
+        "update": "Mettre à jour",
+        "save": "Enregistrer",
+        "publish": "Publier"
+    },
+    "sections": {
+        "creationAccess": "Accès à la création de l'évaluation",
+        "creationAccessSurvey": "Accès à la création du sondage",
+        "liveNotification": "Notification d'évaluation en direct",
+        "liveNotificationSurvey": "Notification de sondage en direct",
+        "submissionReportAccess": "Accès à la soumission et aux rapports de l'évaluation",
+        "submissionReportAccessSurvey": "Accès à la soumission et aux rapports du sondage",
+        "evaluationProcess": "Processus d'évaluation"
+    },
+    "toasts": {
+        "updateSuccess": "Votre évaluation a été mise à jour avec succès !",
+        "saveSuccess": "Votre évaluation a été enregistrée avec succès !",
+        "updatePublishSuccess": "Votre évaluation a été mise à jour et publiée avec succès !",
+        "publishSuccess": "Votre évaluation a été publiée avec succès !",
+        "cancelInviteSuccess": "L'invitation de cet utilisateur a été annulée avec succès !"
+    },
+    "errors": {
+        "saveFailed": "Échec de l'enregistrement du contrôle d'accès.",
+        "publishFailed": "Échec de la publication de l'évaluation."
+    },
+    "card": {
+        "addButton": "Ajouter",
+        "addUserTitle": "Ajouter un utilisateur",
+        "roleTypeLabel": "Type de rôle",
+        "selectAll": "Tout sélectionner",
+        "cancelInvitation": "Annuler l'invitation",
+        "attention": "Attention",
+        "confirmCancel": {
+            "prefix": "Êtes-vous sûr de vouloir annuler l'invitation pour",
+            "suffix": " ?"
+        },
+        "yes": "Oui",
+        "done": "Terminé"
+    }
+}

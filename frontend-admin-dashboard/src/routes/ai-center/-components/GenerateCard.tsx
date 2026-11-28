@@ -1,8 +1,9 @@
 import { MyButton } from '@/components/design-system/button';
 import { Input } from '@/components/ui/input';
 import { StarFour, UploadSimple } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
 import { useAICenter } from '../-contexts/useAICenterContext';
-import { AIToolPageData } from '../-constants/AIToolPageData';
+import { buildAIToolPageData } from '../-constants/AIToolPageData';
 import { GetImagesForAITools } from '../-helpers/GetImagesForAITools';
 import { Separator } from '@/components/ui/separator';
 import AITasksList from './AITasksList';
@@ -10,12 +11,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useState } from 'react';
-import { PromptDummyData } from './Prompt-dummy-data';
+import { buildPromptDummyData } from './Prompt-dummy-data';
 import { QuestionsFromTextData } from '../ai-tools/vsmart-prompt/-components/GenerateQuestionsFromText';
 import { UseFormReturn } from 'react-hook-form';
 import { SectionFormType } from '@/types/assessments/assessment-steps';
 
-type PromptType = keyof typeof PromptDummyData;
+type PromptType = keyof ReturnType<typeof buildPromptDummyData>;
 
 interface GenerateCardProps {
     handleUploadClick: () => void;
@@ -56,14 +57,17 @@ export const GenerateCard = ({
 }: GenerateCardProps) => {
     const [selectedValue, setSelectedValue] = useState<PromptType>('topic');
     const { key: keyContext, loader } = useAICenter();
-    const toolData = keyProp ? AIToolPageData[keyProp] : null;
+    const { t } = useTranslation(['aiCenterAIToolPageData', 'aiCenterPromptDummyData']);
+    const aiToolPageData = buildAIToolPageData(t);
+    const promptDummyData = buildPromptDummyData(t);
+    const toolData = keyProp ? aiToolPageData[keyProp] : null;
     return (
         <>
             {toolData && (
                 <div className="flex w-full flex-col gap-4 px-4 text-neutral-600 sm:gap-6 sm:px-8">
                     <div className="flex w-fit items-center justify-start gap-2">
                         <div className="flex items-center gap-2 text-xl font-semibold sm:text-h2">
-                            <StarFour weight="fill" className="text-primary-500 size-6 sm:size-[30px]" />{' '}
+                            <StarFour weight="fill" className="text-primary-500 size-6 sm:size-8" />{' '}
                             {toolData.heading}
                         </div>
                         <AITasksList
@@ -86,12 +90,12 @@ export const GenerateCard = ({
                             {keyProp === 'sortSplitPdf' && (
                                 <div className="flex flex-col gap-2">
                                     <h1>
-                                        {PromptDummyData[selectedValue].heading}
+                                        {promptDummyData[selectedValue].heading}
                                         <span className="text-red-500">*</span>
                                     </h1>
                                     <Textarea
-                                        placeholder={PromptDummyData[selectedValue].description}
-                                        className="h-[100px] w-full"
+                                        placeholder={promptDummyData[selectedValue].description}
+                                        className="h-24 w-full"
                                         value={prompt}
                                         onChange={(e) => setPrompt?.(e.target.value)}
                                     />

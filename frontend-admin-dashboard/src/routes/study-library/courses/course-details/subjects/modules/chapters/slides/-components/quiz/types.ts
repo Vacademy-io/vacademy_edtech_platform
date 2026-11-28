@@ -1,3 +1,6 @@
+import type { CbeConfig } from '@/components/cbe/types';
+import type { CbeSecretStatus } from '@/routes/assessment/question-papers/-utils/cbe-question';
+
 export interface QuizPreviewProps {
     activeItem: Slide;
     routeParams?: {
@@ -50,6 +53,8 @@ export interface TransformedQuestion {
     reattemptCount?: string;
     decimals?: number;
     numericType?: string;
+    /** Optional ± tolerance of a numeric answer; empty/0 = exact match. */
+    numericTolerance?: number | null;
     parentRichTextContent?: string | null;
     singleChoiceOptions?: Array<{ id: string; name: string; isSelected: boolean }>;
     multipleChoiceOptions?: Array<{ id: string; name: string; isSelected: boolean }>;
@@ -59,6 +64,10 @@ export interface TransformedQuestion {
     subjectiveAnswerText?: string;
     marks?: number | null;
     negativeMarking?: number | null;
+    /** Spreadsheet & Written Response: the question config (see cbe-question.ts). */
+    cbeConfig?: CbeConfig | null;
+    /** Spreadsheet & Written Response: whether the form holds the solution half. */
+    cbeSecretStatus?: CbeSecretStatus;
 }
 
 export interface QuestionTypeProps {
@@ -89,6 +98,8 @@ export interface Slide {
         time_limit_in_minutes?: number | null;
         marks_per_question?: number;
         negative_marking?: number;
+        partial_marking?: boolean | null;
+        show_answer_after_each_question?: boolean | null;
         questions?: BackendQuestion[];
     } | null;
     is_loaded: boolean;

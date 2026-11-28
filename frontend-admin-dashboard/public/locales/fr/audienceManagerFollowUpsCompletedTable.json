@@ -1,0 +1,20 @@
+{
+    "headers": {
+        "lead": "Prospect",
+        "contact": "Contact",
+        "createdAt": "Créé le",
+        "wasDue": "Échéance",
+        "completedAt": "Terminé le",
+        "completedBy": "Terminé par",
+        "outcome": "Résultat",
+        "interestLevel": "Niveau d’intérêt",
+        "studentResponse": "Réponse de l’étudiant",
+        "followUpMode": "Mode",
+        "nextAction": "Action suivante"
+    },
+    "empty": {
+        "title": "Aucun suivi terminé",
+        "description": "Les suivis apparaîtront ici une fois marqués comme terminés."
+    },
+    "unnamedLead": "Prospect sans nom"
+}

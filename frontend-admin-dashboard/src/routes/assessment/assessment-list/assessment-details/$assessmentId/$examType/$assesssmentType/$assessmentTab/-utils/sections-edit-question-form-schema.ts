@@ -1,5 +1,7 @@
 import { isQuillContentEmpty } from '@/routes/assessment/question-papers/-utils/helper';
 import { z } from 'zod';
+import { cbeConfigFormSchema, cbeSecretStatusFormSchema } from '@/routes/assessment/question-papers/-utils/cbe-question';
+import { validateCbeQuestion } from '@/routes/assessment/question-papers/-utils/upload-question-paper-form-schema';
 
 export const sectionsEditQuestionFormSchema = z.object({
     sections: z.array(
@@ -70,7 +72,16 @@ export const sectionsEditQuestionFormSchema = z.object({
                         parentRichTextContent: z.union([z.string(), z.null()]).optional(),
                         decimals: z.number().optional(),
                         numericType: z.string().optional(),
-                        validAnswers: z.union([z.array(z.number()), z.null()]).optional(),
+                        // An answer box left empty is null in the form; drop it before validating.
+                        validAnswers: z
+                            .preprocess(
+                                (value) =>
+                                    Array.isArray(value)
+                                        ? value.filter((answer) => answer !== null)
+                                        : value,
+                                z.union([z.array(z.number()), z.null()])
+                            )
+                            .optional(),
                         questionResponseType: z.union([z.string(), z.null()]).optional(),
                         subjectiveAnswerText: z.string().optional(),
                         codingConfig: z
@@ -101,8 +112,15 @@ export const sectionsEditQuestionFormSchema = z.object({
                                 evaluationMode: z.enum(['AUTO', 'MANUAL']).default('AUTO'),
                             })
                             .optional(),
+                        // CBE_RESPONSE (Spreadsheet & Written Response): kept whole.
+                        cbeConfig: cbeConfigFormSchema,
+                        cbeSecretStatus: cbeSecretStatusFormSchema,
                     })
                     .superRefine((question, ctx) => {
+                        if (question.questionType === 'CBE_RESPONSE') {
+                            validateCbeQuestion(question, ctx, 'EXAM');
+                            return;
+                        }
                         // Validate based on question type
                         if (question.questionType === 'MCQS') {
                             // Validate singleChoiceOptions when type is MCQS
@@ -118,10 +136,10 @@ export const sectionsEditQuestionFormSchema = z.object({
                                 return;
                             }
 
-                            if (question.singleChoiceOptions.length !== 4) {
+                            if (question.singleChoiceOptions.length < 2) {
                                 ctx.addIssue({
                                     code: z.ZodIssueCode.custom,
-                                    message: 'MCQS must have exactly 4 options',
+                                    message: 'MCQS must have at least 2 options',
                                     path: ['singleChoiceOptions'],
                                 });
                             }
@@ -160,10 +178,10 @@ export const sectionsEditQuestionFormSchema = z.object({
                                 return;
                             }
 
-                            if (question.multipleChoiceOptions.length !== 4) {
+                            if (question.multipleChoiceOptions.length < 2) {
                                 ctx.addIssue({
                                     code: z.ZodIssueCode.custom,
-                                    message: 'MCQM must have exactly 4 options',
+                                    message: 'MCQM must have at least 2 options',
                                     path: ['multipleChoiceOptions'],
                                 });
                             }
@@ -202,10 +220,10 @@ export const sectionsEditQuestionFormSchema = z.object({
                                 return;
                             }
 
-                            if (question.csingleChoiceOptions.length !== 4) {
+                            if (question.csingleChoiceOptions.length < 2) {
                                 ctx.addIssue({
                                     code: z.ZodIssueCode.custom,
-                                    message: 'CMCQS must have exactly 4 options',
+                                    message: 'CMCQS must have at least 2 options',
                                     path: ['csingleChoiceOptions'],
                                 });
                             }
@@ -244,10 +262,10 @@ export const sectionsEditQuestionFormSchema = z.object({
                                 return;
                             }
 
-                            if (question.cmultipleChoiceOptions.length !== 4) {
+                            if (question.cmultipleChoiceOptions.length < 2) {
                                 ctx.addIssue({
                                     code: z.ZodIssueCode.custom,
-                                    message: 'CMCQM must have exactly 4 options',
+                                    message: 'CMCQM must have at least 2 options',
                                     path: ['cmultipleChoiceOptions'],
                                 });
                             }

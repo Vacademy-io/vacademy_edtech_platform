@@ -1,0 +1,13 @@
+{
+    "viewDetails": "Voir les détails",
+    "heading": "Rapport détaillé du module",
+    "exporting": "Exportation…",
+    "exportPdf": "Exporter en PDF",
+    "date": "Date",
+    "noActivity": "Aucune activité trouvée pour ce {{term}}.",
+    "toast": {
+        "noDataToExport": "Aucune donnée à exporter pour le moment",
+        "exportSuccess": "Rapport exporté",
+        "exportFailed": "Échec de l'exportation du PDF"
+    }
+}

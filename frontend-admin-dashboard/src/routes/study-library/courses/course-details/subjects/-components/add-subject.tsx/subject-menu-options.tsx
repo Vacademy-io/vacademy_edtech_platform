@@ -1,6 +1,7 @@
 import { MyButton } from '@/components/design-system/button';
 import { MyDropdown } from '@/components/design-system/dropdown';
 import { DotsThree } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
 import { getTerminology } from '@/components/common/layout-container/sidebar/utils';
 import { ContentTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
 
@@ -11,9 +12,10 @@ interface MenuOptionsProps {
 }
 
 export const MenuOptions = ({ onDelete, onEdit, onOfflineAvailability }: MenuOptionsProps) => {
-    const editLabel = `Edit ${getTerminology(ContentTerms.Subject, SystemTerms.Subject)}`;
-    const deleteLabel = `Delete ${getTerminology(ContentTerms.Subject, SystemTerms.Subject)}`;
-    const offlineLabel = 'Offline Availability';
+    const { t } = useTranslation('studyLibrarySubjectMenuOptions');
+    const editLabel = t('editLabel', { term: getTerminology(ContentTerms.Subject, SystemTerms.Subject) });
+    const deleteLabel = t('deleteLabel', { term: getTerminology(ContentTerms.Subject, SystemTerms.Subject) });
+    const offlineLabel = t('offlineAvailability');
     const DropdownList = onOfflineAvailability
         ? [editLabel, offlineLabel, deleteLabel]
         : [editLabel, deleteLabel];

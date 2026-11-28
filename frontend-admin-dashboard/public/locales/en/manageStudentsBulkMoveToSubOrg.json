@@ -1,0 +1,34 @@
+{
+    "heading": "Move to {{term}}",
+    "intro_one": "Pick the {{term}} to move the selected learner into.",
+    "intro_other": "Pick the {{term}} to move the {{count}} selected learners into.",
+    "fields": {
+        "subOrg": "{{term}}",
+        "subOrgPlaceholder": "Select a {{term}}",
+        "search": "Search…",
+        "noMatch": "No match"
+    },
+    "empty": "This institute has no {{term}} yet.",
+    "errors": {
+        "loadSubOrgs": "Couldn't load the {{term}} list. Close this and try again.",
+        "requestFailed": "The request failed. Please try again."
+    },
+    "notes": {
+        "alreadyThere_one": "1 selected learner is already in {{name}}; nothing changes for them.",
+        "alreadyThere_other": "{{count}} selected learners are already in {{name}}; nothing changes for them.",
+        "fromOther_one": "1 selected learner is in another {{term}}. They move only if they did not join through it; otherwise the result shows why.",
+        "fromOther_other": "{{count}} selected learners are in another {{term}}. Those who joined through it are not moved; the result shows why.",
+        "keeps": "Each learner keeps the same batch, progress, access dates and payments. They count against this {{term}}'s seats and appear for its admin. {{term}} admins are never moved."
+    },
+    "running": "Moving… {{done}} of {{total}}",
+    "buttons": {
+        "cancel": "Cancel",
+        "move_one": "Move 1 learner",
+        "move_other": "Move {{count}} learners",
+        "done": "Done"
+    },
+    "toasts": {
+        "done_one": "1 learner is now in {{name}}",
+        "done_other": "{{count}} learners are now in {{name}}"
+    }
+}

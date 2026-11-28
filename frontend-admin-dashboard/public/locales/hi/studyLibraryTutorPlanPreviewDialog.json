@@ -1,0 +1,16 @@
+{
+    "playTitle": "इस बोर्ड को वैसे ही चलाएं जैसे शिक्षार्थी देखता है",
+    "play": "चलाएं",
+    "couldNotLoadPlan": "योजना लोड नहीं की जा सकी",
+    "teachingPlan": "शिक्षण योजना",
+    "loadingPlan": "योजना लोड हो रही है…",
+    "objectives": "उद्देश्य",
+    "boardTitle": "बोर्ड {{order}}: {{title}}",
+    "estimatedMinutes_one": "~{{count}} मिनट",
+    "estimatedMinutes_other": "~{{count}} मिनट",
+    "boardAfterConcept": "अवधारणा {{order}} के बाद बोर्ड: {{title}}",
+    "teacherSays": "शिक्षक कहते हैं:",
+    "checkLabel": "जांच · {{type}}",
+    "expectedLabel": "अपेक्षित: {{expected}}",
+    "notesLabel": "टिप्पणियां:"
+}

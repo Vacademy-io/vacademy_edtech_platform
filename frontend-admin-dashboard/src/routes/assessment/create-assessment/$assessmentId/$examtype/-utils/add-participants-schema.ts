@@ -58,41 +58,41 @@ const testAccessSchema = z.object({
             custom_fields: customFieldsSchema, // Dynamic custom fields
         })
         .superRefine((data, ctx) => {
-            if (data.checked) {
-                const startDate = new Date(data.start_date);
-                const endDate = new Date(data.end_date);
-                if (endDate <= startDate) {
-                    ctx.addIssue({
-                        code: z.ZodIssueCode.custom,
-                        message: 'End date must be greater than start date.',
-                        path: ['end_date'], // Associate the error with `end_date`
-                    });
-                }
+            if (!data.checked) return;
+
+            /**
+             * Blank bounds are legitimate: the backend reads a missing registration
+             * date as "no limit on that side", and `convertDateFormat` deliberately
+             * returns '' for the 9999-12-31 sentinel that mock and practice tests are
+             * stored with. Requiring them here would silently block every Update of a
+             * mock or practice test — and for PRACTICE/SURVEY/MANUAL_UPLOAD_EXAM the
+             * date inputs are not rendered at all (their step_keys omit
+             * registration_open_date), so the error would point at an invisible field.
+             *
+             * The ordering rule is guarded instead: `new Date('')` is an Invalid Date
+             * and every comparison against NaN is false, so the old bare
+             * `endDate <= startDate` silently passed for blanks and read as "checked".
+             */
+            const startDate = new Date(data.start_date);
+            const endDate = new Date(data.end_date);
+            const hasStart = data.start_date !== '' && !Number.isNaN(startDate.getTime());
+            const hasEnd = data.end_date !== '' && !Number.isNaN(endDate.getTime());
+
+            if (hasStart && hasEnd && endDate <= startDate) {
+                ctx.addIssue({
+                    code: z.ZodIssueCode.custom,
+                    message: 'End date must be greater than start date.',
+                    path: ['end_date'], // Associate the error with `end_date`
+                });
             }
         }),
     select_batch: z.object({
         checked: z.boolean(),
         batch_details: z.record(z.array(z.string())),
-    }).superRefine((data, ctx) => {
-        if (data.checked && Object.keys(data.batch_details).length === 0) {
-            ctx.addIssue({
-                code: z.ZodIssueCode.custom,
-                message: 'Please select at least one batch when choosing batch selection.',
-                path: ['batch_details'],
-            });
-        }
     }),
     select_individually: z.object({
         checked: z.boolean(),
         student_details: z.array(studentSchema),
-    }).superRefine((data, ctx) => {
-        if (data.checked && data.student_details.length === 0) {
-            ctx.addIssue({
-                code: z.ZodIssueCode.custom,
-                message: 'Please select at least one student when choosing individual selection.',
-                path: ['student_details'],
-            });
-        }
     }),
     join_link: z.string(),
     show_leaderboard: z.boolean(),
@@ -110,6 +110,31 @@ const testAccessSchema = z.object({
         when_student_finishes_test: z.boolean(),
         when_assessment_report_generated: z.boolean(),
     }),
+}).superRefine((data, ctx) => {
+    /**
+     * A closed test reaches learners only through the batches or learners picked here, so it
+     * needs at least one. An open test is joined through its link: picking learners up front
+     * is optional. One of the two tabs is always "checked" (it is just the tab on screen), so
+     * this used to demand a batch or a learner for every open test too.
+     */
+    if (data.open_test.checked) return;
+    if (data.select_batch.checked && Object.keys(data.select_batch.batch_details).length === 0) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: 'Please select at least one batch when choosing batch selection.',
+            path: ['select_batch', 'batch_details'],
+        });
+    }
+    if (
+        data.select_individually.checked &&
+        data.select_individually.student_details.length === 0
+    ) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: 'Please select at least one student when choosing individual selection.',
+            path: ['select_individually', 'student_details'],
+        });
+    }
 });
 
 export default testAccessSchema;

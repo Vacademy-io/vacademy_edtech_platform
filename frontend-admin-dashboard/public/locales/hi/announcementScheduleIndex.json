@@ -1,0 +1,94 @@
+{
+    "navHeading": "घोषणा शेड्यूल करें",
+    "pageHeading": "शेड्यूल की गई घोषणाएं",
+    "nav": {
+        "prev": "पिछला",
+        "today": "आज",
+        "next": "अगला"
+    },
+    "tabs": {
+        "day": "दिन",
+        "threeDay": "3-दिन",
+        "week": "सप्ताह",
+        "month": "महीना"
+    },
+    "modeFilter": {
+        "placeholder": "मोड फ़िल्टर",
+        "all": "सभी मोड"
+    },
+    "scheduleNew": "नई घोषणा शेड्यूल करें",
+    "scheduleHere": "यहां शेड्यूल करें",
+    "weekdays": {
+        "sun": "रवि",
+        "mon": "सोम",
+        "tue": "मंगल",
+        "wed": "बुध",
+        "thu": "गुरु",
+        "fri": "शुक्र",
+        "sat": "शनि"
+    },
+    "loading": "लोड हो रहा है…",
+    "emptyState": {
+        "title": "इस अवधि में कोई शेड्यूल की गई घोषणा नहीं है",
+        "description": "कोई अलग अवधि चुनें, या एक नया अभियान शेड्यूल करें।"
+    },
+    "showingRange": "{{range}} दिखाया जा रहा है",
+    "moreCount_one": "+{{count}} और",
+    "moreCount_other": "+{{count}} और",
+    "actions": {
+        "edit": "संपादित करें",
+        "delete": "हटाएं",
+        "approve": "स्वीकृत करें",
+        "reject": "अस्वीकार करें"
+    },
+    "toast": {
+        "deleted": "शेड्यूल की गई घोषणा हटा दी गई",
+        "deleteFailedTitle": "हटाना विफल रहा",
+        "deleteFailedFallback": "पुनः प्रयास करें",
+        "approved": "स्वीकृत किया गया",
+        "approveFailed": "स्वीकृति विफल रही",
+        "rejected": "अस्वीकार किया गया",
+        "rejectFailed": "अस्वीकृति विफल रही"
+    },
+    "rejectDialog": {
+        "title": "घोषणा अस्वीकार करें",
+        "reasonPlaceholder": "कारण",
+        "cancel": "रद्द करें",
+        "reject": "अस्वीकार करें"
+    },
+    "deleteDialog": {
+        "title": "शेड्यूल की गई घोषणा हटाएं?",
+        "bodyPrefix": "इससे स्थायी रूप से रद्द और हटाया जाएगा",
+        "bodySuffix": "। यह डिलीवर नहीं होगी और इसे पुनर्स्थापित नहीं किया जा सकेगा।",
+        "defaultTitle": "यह घोषणा",
+        "cancel": "रद्द करें",
+        "deleting": "हटाया जा रहा है…",
+        "delete": "हटाएं"
+    },
+    "schedule": {
+        "immediate": "तत्काल",
+        "recurring": "आवर्ती",
+        "recurringWithCron": "आवर्ती · {{cron}}",
+        "cronWithLabel": "CRON {{cron}}"
+    },
+    "subheading": "हर नियोजित घोषणा और ईमेल अभियान का कैलेंडर। कुछ नया शेड्यूल करने के लिए कोई दिन चुनें।",
+    "viewLabel": "कैलेंडर दृश्य",
+    "legend": {
+        "recurring": "दोहराई जाने वाली"
+    },
+    "countInView_one": "{{count}} घोषणा",
+    "countInView_other": "{{count}} घोषणाएँ",
+    "nothingScheduled": "कुछ भी शेड्यूल नहीं है",
+    "lists": {
+        "upNext": {
+            "title": "इस दृश्य में आगे",
+            "empty": "इस अवधि में कुछ भी नियोजित नहीं है।"
+        },
+        "pending": {
+            "title": "स्वीकृति की प्रतीक्षा में",
+            "empty": "इस अवधि में कुछ भी स्वीकृति की प्रतीक्षा में नहीं है।",
+            "openQueue": "कतार खोलें",
+            "notSentYet": "स्वीकृति तक नहीं भेजी जाएगी"
+        }
+    }
+}

@@ -1,6 +1,7 @@
 import type { IntervalType } from "../-types/types";
 import { Calendar, CalendarDots, CalendarDot, ListChecks } from "@phosphor-icons/react";
 import { MyButton } from "@/components/design-system/button";
+import { useTranslation } from "react-i18next";
 
 export type PlanningPeriod = IntervalType | "all";
 
@@ -13,12 +14,13 @@ export default function IntervalTypeSelector({
   selectedType,
   onSelect,
 }: IntervalTypeSelectorProps) {
+  const { t } = useTranslation("planning");
   const options: { id: PlanningPeriod; label: string; icon: any }[] = [
-    { id: "weekly", label: "Today", icon: Calendar },
-    { id: "monthly", label: "This Week", icon: CalendarDots },
-    { id: "yearly_month", label: "This Month", icon: CalendarDot },
-    { id: "yearly_quarter", label: "This Quarter", icon: CalendarDot },
-    { id: "all", label: "All Plannings", icon: ListChecks },
+    { id: "weekly", label: t("intervalTypeSelector.today"), icon: Calendar },
+    { id: "monthly", label: t("intervalTypeSelector.thisWeek"), icon: CalendarDots },
+    { id: "yearly_month", label: t("intervalTypeSelector.thisMonth"), icon: CalendarDot },
+    { id: "yearly_quarter", label: t("intervalTypeSelector.thisQuarter"), icon: CalendarDot },
+    { id: "all", label: t("intervalTypeSelector.allPlannings"), icon: ListChecks },
   ];
 
   return (

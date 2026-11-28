@@ -208,13 +208,28 @@ export const useProvisionBookingPage = () => {
     });
 };
 
-export const useAssignMentees = () => {
+/**
+ * Assignment changes a mentor's roster, so the mentee lists have to go too — not
+ * just the counts on the mentor rows. The mentor detail screen shows that roster
+ * on the same page as the assign action, where a stale table reads as "the
+ * assignment didn't work".
+ */
+const useInvalidateAfterAssignment = () => {
+    const queryClient = useQueryClient();
     const invalidate = useInvalidateMentorship();
+    return () => {
+        invalidate();
+        queryClient.invalidateQueries({ queryKey: [MENTORSHIP_KEYS.myMentees] });
+    };
+};
+
+export const useAssignMentees = () => {
+    const invalidate = useInvalidateAfterAssignment();
     return useMutation({ mutationFn: (data: AssignMentorRequest) => assignMentees(data), onSuccess: invalidate });
 };
 
 export const useBulkRoundRobin = () => {
-    const invalidate = useInvalidateMentorship();
+    const invalidate = useInvalidateAfterAssignment();
     return useMutation({ mutationFn: (data: BulkRoundRobinRequest) => bulkRoundRobin(data), onSuccess: invalidate });
 };
 

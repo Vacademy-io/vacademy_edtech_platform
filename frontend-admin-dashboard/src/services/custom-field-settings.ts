@@ -6,6 +6,7 @@ import {
     UPDATE_CUSTOM_FIELD_SETTINGS,
 } from '@/constants/urls';
 import { resolveSystemFieldAccessor } from '@/components/design-system/utils/constants/system-field-columns';
+import { parseFieldOptions } from '@/routes/audience-manager/list/-utils/parseFieldOptions';
 
 const CUSTOM_FIELD_SETTINGS_KEY = 'CUSTOM_FIELD_SETTING';
 const LOCALSTORAGE_KEY = 'custom-field-settings-cache';
@@ -169,6 +170,8 @@ export interface ApiCustomFieldUsageItem {
         instituteId: string;
         status: string;
         config?: string;
+        /** The field's own mandatory flag (custom_fields.is_mandatory). */
+        isMandatory?: boolean | null;
     };
     enroll_invite_count: number;
     audience_count: number;
@@ -214,6 +217,8 @@ export interface CustomFieldUsage {
     sessionCount: number;
     assessmentCount: number;
     isDefault: boolean;
+    /** The field's own mandatory flag in the DB (custom_fields.is_mandatory). */
+    isMandatory?: boolean;
 }
 
 // Field Visibility Interface
@@ -372,9 +377,10 @@ export const optionsToConfigJson = (options?: string[]): string | undefined => {
 
 /**
  * Convert config JSON string (API format) to options array (UI format)
- * Handles two legacy formats:
+ * Handles every stored shape (see parseFieldOptions):
  *   1. Bare array: [{id, value, label}] — the original dropdown-options-only format
  *   2. Object with `options`: {options: [...], defaultValue, ...} — new richer format
+ *   3. Legacy {coommaSepartedOptions: "A,B"} and bare "A,B" strings
  * @param configJson - JSON string from API
  * @returns Array of option strings for the UI, or undefined
  */
@@ -383,19 +389,10 @@ export const configJsonToOptions = (configJson?: string): string[] | undefined =
         return undefined;
     }
 
-    try {
-        const parsed = JSON.parse(configJson);
-        if (Array.isArray(parsed)) {
-            return (parsed as DropdownOptionConfig[]).map((item) => item.value);
-        }
-        if (parsed && typeof parsed === 'object' && Array.isArray(parsed.options)) {
-            return (parsed.options as DropdownOptionConfig[]).map((item) => item.value);
-        }
-        return undefined;
-    } catch (error) {
-        console.error('❌ [DEBUG] Error parsing config JSON:', error);
-        return undefined;
-    }
+    // parseFieldOptions also reads the legacy {"coommaSepartedOptions":"A,B"} and bare
+    // "A,B" shapes, which used to come back undefined and render the field as plain text.
+    const options = parseFieldOptions(configJson);
+    return options.length > 0 ? options : undefined;
 };
 
 /**
@@ -1513,6 +1510,31 @@ export const getCustomFieldSettingsFromCache = (): CustomFieldSettingsData | nul
 };
 
 /**
+ * Custom fields the admin's manual "enroll learner" forms must show: every field
+ * that is really mandatory (a learner can't be created without it, whatever its
+ * toggles say) plus the optional ones switched on for "Learner's Enrollment",
+ * in the settings order. Reads `customFields` only: it already holds every live
+ * field, grouped ones included, whereas `fieldGroups` can also carry stale
+ * group entries kept in the settings blob.
+ *
+ * `required` on the returned fields is true only when Settings marks the field
+ * Required AND the field itself is mandatory in the DB. Settings' Required list
+ * alone is not enough: it still carries legacy "Name"/"Phone" fields from old
+ * institute defaults that duplicate Full Name/Phone and that no form requires.
+ */
+export const getEnrollmentFormCustomFields = (
+    settings: CustomFieldSettingsData | null
+): CustomField[] => {
+    if (!settings?.customFields) return [];
+    return settings.customFields
+        .map((field) => ({
+            ...field,
+            required: field.required && field.usage?.isMandatory === true,
+        }))
+        .filter((field) => field.required || field.visibility?.learnerEnrollment === true);
+};
+
+/**
  * Fetch custom field settings from API and update cache
  */
 const fetchCustomFieldSettingsFromAPI = async (): Promise<CustomFieldSettingsData> => {
@@ -1636,6 +1658,7 @@ const fetchCustomFieldSettingsFromAPI = async (): Promise<CustomFieldSettingsDat
                             sessionCount: item.session_count ?? 0,
                             assessmentCount: item.assessment_count ?? 0,
                             isDefault: item.default ?? false,
+                            isMandatory: item.custom_field.isMandatory === true,
                         });
                     }
                 });

@@ -1,0 +1,21 @@
+{
+    "answerOptions": {
+        "addOption": "Ajouter une option",
+        "hint": {
+            "survey": "Les répondants choisissent une option — les questions de sondage n'ont pas de bonne réponse.",
+            "single": "Marquez une seule option comme correcte.",
+            "multiple": "Marquez chaque option qui compte comme correcte."
+        },
+        "ariaLabel": "Options de réponse",
+        "markCorrect": {
+            "ariaLabel": "Marquer l'option {{letter}} comme correcte",
+            "titleCorrect": "Réponse correcte",
+            "titleMark": "Marquer comme correcte"
+        },
+        "optionPlaceholder": "Option {{letter}}",
+        "removeOption": {
+            "ariaLabel": "Supprimer l'option {{letter}}",
+            "title": "Supprimer l'option"
+        }
+    }
+}

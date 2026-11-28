@@ -1,0 +1,243 @@
+{
+    "assignmentModes": {
+        "roundRobin": "Round robin",
+        "timeBased": "On-shift only",
+        "manual": "Manual"
+    },
+    "provider": {
+        "fallbackLabel": "Provider",
+        "aavtaar": {
+            "label": "Aavtaar",
+            "companyCodeLabel": "Company Code",
+            "companyCodePlaceholder": "Your provider company code",
+            "tokenLabel": "Bearer Token",
+            "tokenPlaceholder": "Paste the API token",
+            "campaignPlaceholder": "Campaign ID from your provider",
+            "campaignHelp": "The campaign that defines the AI script/persona for outbound calls. Provided by your AI-calling provider."
+        },
+        "vacademyAi": {
+            "label": "Vacademy AI Agent",
+            "companyCodeLabel": "Account Code",
+            "companyCodePlaceholder": "Not needed — calls run on your Vacademy Voice number",
+            "tokenLabel": "API Token",
+            "tokenPlaceholder": "Not needed for Vacademy AI",
+            "campaignPlaceholder": "Pick an agent from the AI Agents section below",
+            "campaignHelp": "Vacademy AI agents are authored in the \"AI Agents\" section below — saving one registers it here automatically (its id is the campaign id)."
+        },
+        "fallback": {
+            "companyCodeLabel": "Account / Company Code",
+            "companyCodePlaceholder": "Your provider account code",
+            "tokenLabel": "API Token",
+            "tokenPlaceholder": "Paste the API token",
+            "campaignPlaceholder": "Campaign / agent ID",
+            "campaignHelp": "The campaign or agent that defines the AI script for outbound calls."
+        }
+    },
+    "toast": {
+        "settingsSaved": "AI calling settings saved",
+        "settingsSaveFailed": "Failed to save AI calling settings",
+        "credentialsSaved": "Credentials saved",
+        "credentialsSaveFailed": "Failed to save credentials",
+        "fieldRequired": "{{field}} is required.",
+        "campaignIdRequired": "A default Campaign ID is required to enable AI calling."
+    },
+    "enableCard": {
+        "title": "AI Calling",
+        "description": "When enabled, leads are first called by the AI voice agent. The recording and AI summary appear on the lead profile, and a counsellor is assigned only when the outcome rules below say so.",
+        "enabled": "Enabled",
+        "disabled": "Disabled",
+        "showInLeadList": "Show the AI-call button on lead rows",
+        "showInLeadListHint": "Controls only the manual robot button in lead lists. Automated AI workflows run regardless of this toggle.",
+        "inboundLeadCapture": "Capture inbound callers as leads",
+        "inboundLeadCaptureHint": "For an inbound AI helpline: when someone calls and isn't already a lead, a lead is created (matched by phone, so repeat callers aren't duplicated) and the call attaches to it — so it shows in Recent Leads and the Call Log, and you can follow up. Off means unknown callers' calls are recorded but no lead is made.",
+        "providerLabel": "AI voice provider",
+        "providerPlaceholder": "Select a provider",
+        "providerHint": "The AI calling agent used for this institute. The credentials and campaign below are for the selected provider.",
+        "defaultCampaignIdLabel": "Default Campaign ID"
+    },
+    "campaigns": {
+        "title": "Campaigns / Agents",
+        "description": {
+            "part1": "Register each AI campaign id and give it an agent",
+            "nameWord": "name",
+            "part2": "(e.g. “Class Feedback”). Workflows reference the",
+            "part3": ", not the raw id — pick the same name once per provider and switching provider resolves to the right id automatically. Tag each Outbound (you dial) or Inbound (they dial your AI line); Inbound ids classify incoming webhooks (matched to the lead by phone)."
+        },
+        "agentNamePlaceholder": "Agent name (e.g. Class Feedback)",
+        "campaignIdPlaceholder": "Campaign ID",
+        "providerPlaceholder": "Provider",
+        "outbound": "Outbound",
+        "inbound": "Inbound",
+        "empty": "No campaigns registered yet. Add one and tag it Inbound to enable inbound-call detection.",
+        "addCampaign": "Add campaign"
+    },
+    "credentials": {
+        "title": "Credentials",
+        "description": "API credentials for this institute's AI calling provider. The token and webhook secret are stored encrypted and never shown again.",
+        "webhookSecretLabel": "Webhook Secret",
+        "savedPlaceholder": "•••••••• (saved — leave blank to keep)",
+        "webhookSecretPlaceholder": "Secret for the webhook URL ?token=",
+        "webhookHelp": "Authenticates the provider's end-of-call webhook. Hand your AI provider the URL {{webhookPath}}?instituteId=…&token=<this secret>.",
+        "save": "Save credentials",
+        "saving": "Saving…"
+    },
+    "retryCard": {
+        "title": "Retries & Calling Shifts",
+        "description": "If a lead doesn't answer, the AI retries within these limits before giving up. Retries are only placed inside the shifts below.",
+        "maxRetries": "Max retries",
+        "maxPerDay": "Max calls per day (per lead)",
+        "retryGap": "Minutes between retries",
+        "retryGapHint": "How long the bot waits before re-dialing a no-answer lead.",
+        "callingShifts": "Calling shifts",
+        "callingShiftsHint": "Time windows the bot may (re)dial in. Add multiple shifts (e.g. morning + evening). Applies to the timed retry re-dialer; immediate new-lead, manual and bulk calls fire right away.",
+        "shiftTo": "to",
+        "addShift": "Add shift",
+        "timezone": "Timezone",
+        "connectThreshold": "Min connect seconds",
+        "connectThresholdHint": "Shorter calls count as “not connected” and are retried."
+    },
+    "outcomeAction": {
+        "title": "Outcome → Action",
+        "description": "For each AI-call outcome, choose what happens. Outcomes left off both lists are retried until max retries, then assigned to a human. Add custom outcomes below for the dispositions your own AI agent returns.",
+        "dispositionHeader": "Disposition",
+        "assignHeader": "Assign counsellor",
+        "stopHeader": "Stop (no retry)",
+        "removeAria": "Remove {{disposition}}",
+        "addOutcomePlaceholder": "Add a custom outcome (e.g. Wrong Number)",
+        "addOutcome": "Add outcome",
+        "otherwiseHeader": "Otherwise",
+        "otherwiseRetry": "Retry, then assign after max retries",
+        "otherwiseRetryOnly": "Retry until max retries",
+        "customBadge": "custom"
+    },
+    "assignmentCard": {
+        "title": "Counsellor Assignment",
+        "description": "How a counsellor is picked when a lead qualifies (or when retries are exhausted).",
+        "modeLabel": "Assignment mode",
+        "assignExhausted": "Assign no-answer leads to a human after retries are exhausted",
+        "reassignQualified": "Give qualified leads to this list's pool, even if they already have a counsellor",
+        "reassignQualifiedHint": "Use for lists of previously-worked leads: when the AI books or qualifies one, it goes to the pool instead of staying with whoever last held it. Leads that simply never answered are never moved."
+    },
+    "save": {
+        "saving": "Saving…",
+        "save": "Save AI calling settings"
+    },
+    "carrierStrip": {
+        "readyLine": "AI calls go out on {{line}}{{callerIdSuffix}}.",
+        "dedicatedLine": "a dedicated Vacademy Voice line",
+        "providerLine": "your {{provider}} account",
+        "defaultProviderWord": "calling",
+        "notReadyFallback": "AI calls can't be placed yet.",
+        "manageLink": "Manage the AI calling line"
+    },
+    "apiCard": {
+        "title": "API & webhooks",
+        "description": "Let your CRM, website or automation tool start AI calls and receive each call's result. Your server sends a key with every request; we post the outcome to your webhook when the call ends.",
+        "docs": "API documentation",
+        "copy": "Copy",
+        "copied": "Copied",
+        "copiedShort": "Copied",
+        "copyFailed": "Could not copy. Select the text and copy it.",
+        "loading": "Loading…",
+        "retry": "Retry",
+        "cancel": "Cancel",
+        "done": "Done",
+        "keys": {
+            "title": "API keys",
+            "description": "Keep keys on your server. Never put one in a web page or a mobile app.",
+            "create": "Create key",
+            "empty": "No keys yet.",
+            "loadError": "Could not load your keys.",
+            "name": "Name",
+            "prefix": "Key",
+            "lastUsed": "Last used",
+            "status": "Status",
+            "neverUsed": "Never",
+            "expires": "Expires {{date}}",
+            "statusActive": "Active",
+            "statusExpired": "Expired",
+            "statusRevoked": "Revoked",
+            "revoke": "Revoke",
+            "revoked": "Key revoked",
+            "revokeFailed": "Could not revoke the key.",
+            "revokeTitle": "Revoke this key?",
+            "revokeDescription": "Requests that use \"{{name}}\" stop working straight away. Calls already queued still go ahead.",
+            "formHeading": "Create AI calling API key",
+            "nameLabel": "Name",
+            "namePlaceholder": "e.g. Our CRM",
+            "expiryLabel": "Expires on (optional)",
+            "formHint": "Leave the expiry empty for a key that does not expire.",
+            "submit": "Create key",
+            "issueFailed": "Could not create the key.",
+            "issuedHeading": "Copy your key now",
+            "issuedWarning": "This is the only time the key is shown. Copy it and store it on your server.",
+            "issuedUsage": "Start a call from your server:",
+            "errors": {
+                "nameRequired": "Enter a name.",
+                "nameTooLong": "Keep the name under 120 characters.",
+                "expiryInvalid": "Pick a valid date.",
+                "expiryInPast": "Pick a date after today.",
+                "generic": "Check the form and try again."
+            },
+            "notCopiedWarning": "You have not copied the key. Close again to discard it; it cannot be shown again.",
+            "humanCallsLabel": "Can ring counsellors (human calls)",
+            "humanCallsHint": "Lets this key list your counsellors' names and emails and connect them to contacts by phone (human_calls:read, human_calls:write). Keys cannot be changed later.",
+            "humanCallsBadge": "Human calls",
+            "manageCounsellorsLabel": "Can manage counsellors",
+            "manageCounsellorsHint": "Lets this key add counsellors (each gets a dashboard login and a welcome email), change their name, mobile number and Airtel extension, and deactivate them (counsellors:manage). It never touches admins or other staff. Keys cannot be changed later.",
+            "manageCounsellorsBadge": "Manages counsellors",
+            "manageAgentsLabel": "Can manage AI agents",
+            "manageAgentsHint": "Lets this key create, edit, turn on or off and delete AI agents, choose the default agent and which agent answers an inbound number (agents:manage). Keys cannot be changed later.",
+            "manageAgentsBadge": "Manages AI agents"
+        },
+        "agents": {
+            "title": "Agent ids",
+            "description": "Send one of these as agent_id to choose which AI agent makes the call.",
+            "empty": "No outbound agents yet. Create one above.",
+            "disabled": "(off)"
+        },
+        "webhook": {
+            "title": "Webhook",
+            "description": "When a call ends we send call.completed or call.not_connected to this HTTPS address, signed with your webhook secret. Failed deliveries are retried for about 9 hours.",
+            "urlLabel": "Endpoint URL",
+            "save": "Save",
+            "urlRequired": "Enter the address of your endpoint.",
+            "urlHttps": "Use a full https:// address.",
+            "saved": "Webhook saved",
+            "saveFailed": "Could not save the webhook.",
+            "loadError": "Could not load the webhook.",
+            "secretHint": "Signing secret:",
+            "events": "Events: {{events}}",
+            "test": "Send test event",
+            "testOk": "Your endpoint answered {{code}}.",
+            "testFailed": "The test event was not accepted: {{reason}}",
+            "testError": "Could not send the test event.",
+            "rotate": "New secret",
+            "rotateFailed": "Could not create a new secret.",
+            "remove": "Remove",
+            "removed": "Webhook removed",
+            "removeFailed": "Could not remove the webhook.",
+            "removeTitle": "Remove the webhook?",
+            "removeDescription": "Call results are no longer sent to your endpoint. Your server can still fetch them with GET /v1/calls/{id}.",
+            "secretHeading": "Copy your webhook secret",
+            "secretWarning": "This is the only time the secret is shown. Your server uses it to check the Telleo-Signature header on every delivery.",
+            "secretLabel": "Webhook secret",
+            "rotateTitle": "Create a new signing secret?",
+            "rotateDescription": "Every delivery from now on is signed with the new secret. Until your server uses it, its signature checks will fail and events will be retried. Update your server right after copying the new secret."
+        }
+    },
+    "header": {
+        "title": "AI Calling Settings",
+        "description": "AI-first calling: who the AI calls, from which line, how often it retries, and what happens after each outcome.",
+        "unsaved": "Unsaved changes",
+        "aiAgents": "AI Agents",
+        "disabledBanner": "AI calling is off. Switch it on in the AI calling tab to set up retries, outcomes and assignment."
+    },
+    "tabs": {
+        "general": "AI calling",
+        "agents": "Agents & campaigns",
+        "retries": "Retries & shifts",
+        "outcomes": "Outcome → action",
+        "assignment": "Assignment"
+    }
+}

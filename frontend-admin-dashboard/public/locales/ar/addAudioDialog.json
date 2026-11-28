@@ -1,0 +1,29 @@
+{
+    "dropzone": {
+        "title": "استيراد ملف الصوت الخاص بك",
+        "hint": "اسحب أو انقر للتحميل",
+        "formats": "يدعم MP3 وWAV وOGG وAAC وM4A",
+        "selected": "المحدد: {{fileName}}",
+        "duration": "المدة: {{minutes}}:{{seconds}}"
+    },
+    "fields": {
+        "title": "العنوان",
+        "titlePlaceholder": "أدخل عنوان الصوت",
+        "description": "الوصف (اختياري)",
+        "descriptionPlaceholder": "أدخل وصفاً لهذا الملف الصوتي...",
+        "coverImage": "صورة الغلاف (اختياري)",
+        "changeImage": "تغيير الصورة",
+        "uploadImage": "رفع صورة",
+        "transcript": "النص المكتوب (اختياري)",
+        "transcriptPlaceholder": "الصق أو اكتب نص الصوت هنا..."
+    },
+    "toasts": {
+        "reorderFailed": "تم إنشاء الشريحة لكن فشلت إعادة الترتيب",
+        "createSuccess": "تم إنشاء شريحة الصوت بنجاح!",
+        "createFailed": "فشل إنشاء شريحة الصوت"
+    },
+    "actions": {
+        "uploading": "جارٍ الرفع...",
+        "submit": "إنشاء شريحة صوتية"
+    }
+}

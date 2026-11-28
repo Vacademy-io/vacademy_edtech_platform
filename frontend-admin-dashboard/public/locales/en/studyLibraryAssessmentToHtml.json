@@ -1,0 +1,12 @@
+{
+    "noQuestionsAvailable": "No questions available.",
+    "questionFallback": "Question {{number}}",
+    "correctAnswer_one": "Correct Answer: {{answers}}",
+    "correctAnswer_other": "Correct Answers: {{answers}}",
+    "explanation": "Explanation: {{text}}",
+    "defaultTitle": "Assessment",
+    "invalidQuestion": "Invalid question",
+    "optionA": "Option A",
+    "questionParsingFailed": "Question parsing failed",
+    "questionCouldNotBeParsed": "Question could not be parsed"
+}

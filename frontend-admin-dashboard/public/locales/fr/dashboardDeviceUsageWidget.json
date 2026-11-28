@@ -1,0 +1,27 @@
+{
+    "header": {
+        "title": "Utilisation des appareils",
+        "subtitle": "Répartition des plateformes entre les utilisateurs"
+    },
+    "error": {
+        "message": "Échec du chargement des données des appareils"
+    },
+    "empty": {
+        "message": "Aucune donnée d'appareil disponible"
+    },
+    "device": {
+        "desktop": "Ordinateur",
+        "mobile": "Mobile",
+        "tablet": "Tablette"
+    },
+    "tooltip": {
+        "usage": "Utilisation : {{value}}",
+        "users": "Utilisateurs : {{value}}",
+        "percentOfTotal": "{{percentage}} % du total"
+    },
+    "stats": {
+        "users_one": "{{count}} utilisateur",
+        "users_many": "{{count}} utilisateurs",
+        "users_other": "{{count}} utilisateurs"
+    }
+}

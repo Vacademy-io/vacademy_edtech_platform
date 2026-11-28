@@ -1,0 +1,79 @@
+{
+    "featureDisabled": {
+        "title": "صفحة المستشارين غير مفعّلة",
+        "settingsLabel": "مساحة عمل المستشارين"
+    },
+    "toast": {
+        "markedActive": "تم التعيين كنشط",
+        "statusChangeError": "تعذّر تغيير الحالة",
+        "loadLeadsError": "تعذّر تحميل الاستفسارات المفتوحة",
+        "markedInactive": "تم التعيين كغير نشط",
+        "markInactiveError": "تعذّر التعيين كغير نشط"
+    },
+    "header": {
+        "breadcrumbFallback": "فريق الاستشارة",
+        "titleFallback": "المستشارون",
+        "subtitle": "انقر على أي بطاقة لعرض استفسارات هذا الشخص ونشاطه الأخير."
+    },
+    "stats": {
+        "counsellors": "المستشارون",
+        "active": "نشط",
+        "assignedLeads": "الاستفسارات المسندة"
+    },
+    "search": {
+        "placeholder": "ابحث بالاسم أو البريد الإلكتروني…"
+    },
+    "statusFilter": {
+        "all": "الكل",
+        "active": "نشط",
+        "inactive": "غير نشط"
+    },
+    "targets": {
+        "setTargets": "تحديد الأهداف"
+    },
+    "viewMode": {
+        "ariaLabel": "وضع العرض",
+        "cardTitle": "عرض البطاقات",
+        "cards": "بطاقات",
+        "listTitle": "عرض القائمة",
+        "list": "قائمة"
+    },
+    "list": {
+        "loading": "جارٍ تحميل المستشارين…",
+        "emptyTeam": "لا يوجد مستشارون في هذا الفريق بعد. أضفهم ضمن إدارة المؤسسة ← الفرق ← الهيكل التنظيمي.",
+        "emptyFiltered": "لا يوجد ما يطابق عوامل التصفية الخاصة بك."
+    },
+    "pagination": {
+        "showing": "عرض {{from}}–{{to}} من أصل {{total}}",
+        "loadingSuffix": " · جارٍ التحميل…"
+    },
+    "card": {
+        "unnamed": "بدون اسم",
+        "assignedLeads": "الاستفسارات المسندة",
+        "team": "الفريق",
+        "targets": "الأهداف",
+        "active": "نشط",
+        "inactive": "غير نشط",
+        "reassignLeads": "إعادة إسناد الاستفسارات",
+        "markInactive": "التعيين كغير نشط",
+        "markActive": "التعيين كنشط",
+        "confirmMarkActive": "هل تريد تعيين {{name}} كنشط مجددًا؟"
+    },
+    "table": {
+        "colCounsellor": "المستشار",
+        "colTeam": "الفريق",
+        "colRating": "التقييم",
+        "colAssignedLeads": "الاستفسارات المسندة",
+        "colTargets": "الأهداف",
+        "colStatus": "الحالة",
+        "colActions": "الإجراءات"
+    },
+    "drawer": {
+        "tabLeads": "الاستفسارات ({{count}})",
+        "tabActivity": "النشاط",
+        "tabCalls": "المكالمات",
+        "tabCoaching": "التدريب",
+        "tabPerformance": "الأداء",
+        "tabTargets": "الأهداف"
+    }
+}

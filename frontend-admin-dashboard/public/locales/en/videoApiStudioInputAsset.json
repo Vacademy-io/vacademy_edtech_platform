@@ -1,0 +1,6 @@
+{
+    "errors": {
+        "createFailed": "Create failed ({{status}}): {{detail}}",
+        "deleteFailed": "Delete failed ({{status}})"
+    }
+}

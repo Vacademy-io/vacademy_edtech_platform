@@ -1,0 +1,11 @@
+{
+    "dialog": {
+        "heading": "Release Result",
+        "confirmTextPrefix": "Are you sure you want to release result for selected",
+        "confirmSuffix": "?"
+    },
+    "doneButton": "Done",
+    "toasts": {
+        "releaseSuccess": "Your result for this assessment has been released for the selected students. Please check your email!"
+    }
+}

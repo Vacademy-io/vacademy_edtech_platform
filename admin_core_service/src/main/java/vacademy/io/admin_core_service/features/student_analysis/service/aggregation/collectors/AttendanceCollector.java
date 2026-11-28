@@ -29,6 +29,24 @@ public class AttendanceCollector {
     private static final DateTimeFormatter MONTH_DAY_FMT = DateTimeFormatter.ofPattern("MMM dd");
 
     public AttendanceSection collect(String userId, String batchId, LocalDate startDate, LocalDate endDate) {
+        return collect(userId, batchId, startDate, endDate, false);
+    }
+
+    /**
+     * @param strictBatch the admin picked {@code batchId} on purpose (Reports tab filter): report
+     *                    that batch only and never widen to the other batches.
+     */
+    public AttendanceSection collect(String userId, String batchId, LocalDate startDate, LocalDate endDate,
+                                     boolean strictBatch) {
+        return collect(userId, batchId, startDate, endDate, strictBatch, null);
+    }
+
+    /**
+     * @param sessionIds when not null, only classes of these live sessions count (the Reports tab
+     *                   live session filter).
+     */
+    public AttendanceSection collect(String userId, String batchId, LocalDate startDate, LocalDate endDate,
+                                     boolean strictBatch, Collection<String> sessionIds) {
         try {
             List<ScheduleAttendanceProjection> records =
                     participantRepository.findAttendanceForUserAcrossBatches(userId, batchId, startDate, endDate);
@@ -38,12 +56,17 @@ public class AttendanceCollector {
             // enrolled in, in which case scoping to that one batch finds nothing and we would report
             // a flat 0% for a learner who actually attended. Widen to all of the learner's active
             // batches rather than publish a wrong number.
-            if ((records == null || records.isEmpty()) && batchId != null) {
+            if ((records == null || records.isEmpty()) && batchId != null && !strictBatch) {
                 records = participantRepository.findAttendanceForUserAcrossBatches(userId, null, startDate, endDate);
                 if (records != null && !records.isEmpty()) {
                     log.warn("[AttendanceCollector] userId={} had no sessions under batchId={} but {} across all "
                             + "active batches — reporting across all batches.", userId, batchId, records.size());
                 }
+            }
+
+            if (records != null && sessionIds != null) {
+                Set<String> wanted = new HashSet<>(sessionIds);
+                records = records.stream().filter(r -> wanted.contains(r.getSessionId())).toList();
             }
 
             // No sessions found ≠ the learner attended none of them. Reporting 0% here would be a
@@ -74,6 +97,7 @@ public class AttendanceCollector {
                 else unmarked++;
 
                 sessions.add(AttendanceSection.SessionAttendanceItem.builder()
+                        .sessionId(r.getSessionId())
                         .date(r.getMeetingDate() != null ? r.getMeetingDate().toString() : null)
                         .title(r.getSessionTitle())
                         .subject(r.getSubject())

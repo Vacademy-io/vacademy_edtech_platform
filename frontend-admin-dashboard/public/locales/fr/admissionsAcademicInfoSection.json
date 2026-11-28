@@ -1,0 +1,70 @@
+{
+    "sections": {
+        "previousSchoolDetails": "Détails de l'école actuelle / précédente",
+        "transferCertificateDetails": "Détails du certificat de transfert (TC)",
+        "applyingFor": "Candidature pour"
+    },
+    "fields": {
+        "previousSchoolName": {
+            "label": "Nom de l'école précédente",
+            "placeholder": "Entrez le nom de l'école précédente"
+        },
+        "previousSchoolBoard": {
+            "label": "Conseil de l'école précédente",
+            "placeholder": "Sélectionner le conseil",
+            "hint": "CBSE / ICSE"
+        },
+        "lastClassAttended": {
+            "label": "Dernière classe suivie",
+            "placeholder": "Sélectionner la classe"
+        },
+        "academicYear": {
+            "label": "Année académique",
+            "placeholder": "La session sera renseignée automatiquement",
+            "hint": "Basé sur la session sélectionnée"
+        },
+        "lastExamResult": {
+            "label": "Résultat du dernier examen / Pourcentage",
+            "placeholder": "Ex. : 85 % ou mention A1 ou 9 CGPA"
+        },
+        "subjectsStudied": {
+            "label": "Matières étudiées (classe précédente)",
+            "placeholder": "Ex. : Anglais, Hindi, Maths, Sciences, Sciences sociales"
+        },
+        "tcNumber": {
+            "label": "Numéro du certificat de transfert",
+            "placeholder": "Entrez le numéro du certificat de transfert"
+        },
+        "tcIssueDate": {
+            "label": "Date d'émission du certificat de transfert"
+        },
+        "tcPending": {
+            "label": "Certificat de transfert en attente / sera soumis ultérieurement",
+            "hint": "(L'admission ne peut pas être confirmée sans le certificat de transfert)"
+        },
+        "applyingForClass": {
+            "label": "Classe / niveau pour lequel vous postulez",
+            "placeholder": "Sélectionner la classe",
+            "hint": "Sélectionnez la classe ou le niveau pour l'admission"
+        },
+        "preferredBoard": {
+            "label": "Conseil préféré",
+            "placeholder": "Sélectionner le conseil"
+        }
+    },
+    "boardOptions": {
+        "cbse": "CBSE",
+        "icse": "ICSE",
+        "stateBoard": "Conseil d'État",
+        "ib": "IB",
+        "igcse": "IGCSE",
+        "other": "Autre"
+    },
+    "classLevelOptions": {
+        "kindergarten": "Maternelle",
+        "nursery": "Préscolaire",
+        "lkg": "LKG",
+        "ukg": "UKG"
+    },
+    "classNumber": "Classe {{number}}"
+}

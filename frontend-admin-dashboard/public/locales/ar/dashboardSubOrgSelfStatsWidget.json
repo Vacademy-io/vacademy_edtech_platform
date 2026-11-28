@@ -1,0 +1,29 @@
+{
+    "welcomeBack": "مرحبًا بعودتك",
+    "defaultOrgName": "مؤسستي",
+    "manage": "إدارة",
+    "stats": {
+        "learners": {
+            "label": "المتعلمون",
+            "subtitle": "الأعضاء المسجَّلون"
+        },
+        "seats": {
+            "label": "المقاعد",
+            "seatsLeft_zero": "لا مقاعد متبقية ({{count}})",
+            "seatsLeft_one": "مقعد واحد متبقٍ ({{count}})",
+            "seatsLeft_two": "مقعدان متبقيان ({{count}})",
+            "seatsLeft_few": "{{count}} مقاعد متبقية",
+            "seatsLeft_many": "{{count}} مقعدًا متبقيًا",
+            "seatsLeft_other": "{{count}} مقعد متبقٍ",
+            "noCap": "لا حد أقصى للمقاعد"
+        },
+        "collected": {
+            "label": "المُحصَّل",
+            "subtitle": "الرسوم المستلمة"
+        },
+        "outstanding": {
+            "label": "المستحق",
+            "subtitle": "الرسوم المستحقة"
+        }
+    }
+}

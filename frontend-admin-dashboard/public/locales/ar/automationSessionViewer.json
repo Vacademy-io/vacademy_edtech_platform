@@ -1,0 +1,26 @@
+{
+    "sessionsAndAnalytics": "الجلسات والتحليلات",
+    "statusFilter": {
+        "all": "كل الحالات",
+        "active": "نشطة",
+        "completed": "مكتملة",
+        "error": "خطأ",
+        "timedOut": "منتهية المهلة"
+    },
+    "refresh": "تحديث",
+    "stats": {
+        "total": "الإجمالي",
+        "active": "نشطة",
+        "completed": "مكتملة",
+        "errors": "أخطاء",
+        "timedOut": "منتهية المهلة"
+    },
+    "loadingSessions": "جارٍ تحميل الجلسات...",
+    "noSessionsFound": "لم يتم العثور على جلسات",
+    "userId": "المعرّف: {{id}}",
+    "nodeLabel": "العقدة:",
+    "noMessages": "لا توجد رسائل مسجّلة لهذه الجلسة",
+    "selectSessionPrompt": "اختر جلسة لعرض المحادثة",
+    "bot": "الروبوت",
+    "user": "المستخدم"
+}

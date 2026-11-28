@@ -1,0 +1,21 @@
+{
+    "emptyState": {
+        "selectInstitute": "Sélectionnez un établissement pour gérer les coupons."
+    },
+    "header": {
+        "title": "Paramètres des coupons",
+        "subtitle": "Créez des coupons de réduction que vos {{learner}} peuvent appliquer au moment du paiement. Limitez-les à l'ensemble de l'établissement ou à des {{batch}} et liens d'invitation spécifiques."
+    },
+    "toggle": {
+        "label": "Activer l'utilisation des coupons pour les {{learner}}",
+        "hint": "Lorsque c'est désactivé, les champs de coupon sont masqués sur tous les parcours de paiement des {{learner}}. Les coupons existants restent enregistrés et refonctionnent dès que vous réactivez ce paramètre."
+    },
+    "banner": {
+        "disabled": "Les coupons sont actuellement désactivés. {{learnerPlural}} ne verront pas le champ de coupon au moment du paiement tant que vous n'aurez pas activé l'option ci-dessus. Vous pouvez toujours créer et modifier des coupons à l'avance."
+    },
+    "toasts": {
+        "enabled": "Coupons activés pour les apprenants",
+        "disabled": "Coupons masqués pour les apprenants",
+        "updateError": "Impossible de mettre à jour le paramètre du coupon"
+    }
+}

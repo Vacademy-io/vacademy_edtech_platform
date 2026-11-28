@@ -68,6 +68,18 @@ def ensure_ai_task_schema(db: Session) -> None:
         logger.warning("ensure_ai_task_schema failed (will rely on external migration): %s", exc)
 
 
+# Task types that are an implementation detail of one editor (not an "AI tool"
+# run the user browses in history). Kept out of the unfiltered listings — their
+# result_json is a whole HTML page, and the history UI has no card for them.
+# Engagement plan drafts run as jobs too; like HTML docs they are not user-visible
+# AI tasks, so they stay out of the task list.
+_INTERNAL_TASK_TYPES = (AiTaskType.HTML_DOC_GENERATE.value, "ENGAGEMENT_PLAN_DRAFT")
+
+
+def _not_internal():
+    return or_(AiTask.task_type.is_(None), AiTask.task_type.notin_(_INTERNAL_TASK_TYPES))
+
+
 class AiTaskRepository:
     def __init__(self, db: Session):
         self.db = db
@@ -81,12 +93,28 @@ class AiTaskRepository:
     def get(self, task_id: str) -> Optional[AiTask]:
         return self.db.get(AiTask, task_id)
 
+    def query_for_institute(self, institute_id: str, task_type: Optional[str] = None):
+        """Newest first; callers add their own filters before `.first()`/`.all()`."""
+        q = self.db.query(AiTask).filter(AiTask.institute_id == institute_id)
+        if task_type:
+            q = q.filter(AiTask.task_type == task_type)
+        return q.order_by(AiTask.created_at.desc())
+
+    @staticmethod
+    def dynamic_values_contains(fragment: str):
+        """Filter on the JSON text of dynamic_values_map (a TEXT column, so a
+        substring match — pass a `"key": "value"` fragment exactly as json.dumps
+        writes it)."""
+        return AiTask.dynamic_values_map.like(f"%{fragment}%")
+
     def list_by_institute(
         self, institute_id: str, task_type: Optional[str] = None
     ) -> List[AiTask]:
         q = self.db.query(AiTask).filter(AiTask.institute_id == institute_id)
         if task_type:
             q = q.filter(AiTask.task_type == task_type)
+        else:
+            q = q.filter(_not_internal())
         return q.order_by(AiTask.created_at.desc()).all()
 
     # --- Chat-with-PDF reads (migrated from media_service TaskStatusService) ---
@@ -145,6 +173,7 @@ class AiTaskRepository:
         return (
             self.db.query(AiTask)
             .filter(AiTask.institute_id == institute_id, AiTask.parent_id.is_(None))
+            .filter(_not_internal())
             .order_by(AiTask.created_at.desc())
             .all()
         )

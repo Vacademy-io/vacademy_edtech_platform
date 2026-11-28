@@ -1,4 +1,5 @@
 import { useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
@@ -48,6 +49,7 @@ interface ResponseState {
  * becomes the mockup's screen; a figure appears word-for-word in narration).
  */
 export function AssetRequestDecision({ decision, isSubmitting, onSubmit }: AssetRequestDecisionProps) {
+    const { t } = useTranslation('videoApiStudioAssetRequestDecision');
     const requests = useMemo<AssetRequestItem[]>(() => {
         const raw = (decision.payload?.requests as AssetRequestItem[]) ?? [];
         return Array.isArray(raw) ? raw.filter((r) => r && r.ask) : [];
@@ -85,7 +87,7 @@ export function AssetRequestDecision({ decision, isSubmitting, onSubmit }: Asset
             if (!url) throw new Error('Upload failed');
             patch(idx, { url, skipped: false });
         } catch {
-            toast.error('Upload failed. Try a smaller image.');
+            toast.error(t('upload.failed'));
         } finally {
             setUploadingIdx(null);
         }
@@ -127,7 +129,7 @@ export function AssetRequestDecision({ decision, isSubmitting, onSubmit }: Asset
                 <span className="flex size-7 items-center justify-center rounded-md bg-violet-100 dark:bg-violet-900/30">
                     <UploadSimple className="size-4 text-violet-600" />
                 </span>
-                A few things would make this more real
+                {t('header.title')}
             </div>
 
             <div className="divide-y">
@@ -146,7 +148,7 @@ export function AssetRequestDecision({ decision, isSubmitting, onSubmit }: Asset
                                         {r.ask}
                                         {typeof r.shot_index === 'number' && (
                                             <span className="ml-1 text-xs text-muted-foreground">
-                                                · shot {r.shot_index + 1}
+                                                {t('item.shotLabel', { number: r.shot_index + 1 })}
                                             </span>
                                         )}
                                     </p>
@@ -162,7 +164,7 @@ export function AssetRequestDecision({ decision, isSubmitting, onSubmit }: Asset
                                     className="h-6 gap-1 px-1.5 text-xs text-muted-foreground"
                                 >
                                     <X className="size-3" />
-                                    {resp.skipped ? 'Undo' : 'Skip'}
+                                    {resp.skipped ? t('item.undo') : t('item.skip')}
                                 </Button>
                             </div>
 
@@ -171,7 +173,7 @@ export function AssetRequestDecision({ decision, isSubmitting, onSubmit }: Asset
                                     {resp.url ? (
                                         <img
                                             src={resp.url}
-                                            alt="uploaded"
+                                            alt={t('upload.altText')}
                                             className="h-14 rounded-md border object-cover"
                                         />
                                     ) : null}
@@ -184,10 +186,10 @@ export function AssetRequestDecision({ decision, isSubmitting, onSubmit }: Asset
                                     >
                                         <UploadSimple className="size-3.5" />
                                         {uploadingIdx === r.index
-                                            ? 'Uploading…'
+                                            ? t('upload.uploading')
                                             : resp.url
-                                              ? 'Replace'
-                                              : 'Upload'}
+                                              ? t('upload.replace')
+                                              : t('upload.upload')}
                                     </Button>
                                 </div>
                             )}
@@ -198,7 +200,7 @@ export function AssetRequestDecision({ decision, isSubmitting, onSubmit }: Asset
                                         value={resp.text ?? ''}
                                         disabled={isSubmitting}
                                         onChange={(e) => patch(r.index, { text: e.target.value })}
-                                        placeholder="Your real figure — e.g. “38% more enrollments in 2025”"
+                                        placeholder={t('data.placeholder')}
                                         className="h-8 text-sm"
                                     />
                                 </div>
@@ -231,7 +233,7 @@ export function AssetRequestDecision({ decision, isSubmitting, onSubmit }: Asset
 
                             {answered ? (
                                 <p className="flex items-center gap-1 pl-8 text-xs text-emerald-600">
-                                    <Check className="size-3" /> Will be used
+                                    <Check className="size-3" /> {t('item.willBeUsed')}
                                 </p>
                             ) : null}
                         </div>
@@ -242,8 +244,8 @@ export function AssetRequestDecision({ decision, isSubmitting, onSubmit }: Asset
             <div className="flex items-center justify-between gap-2 border-t px-4 py-3">
                 <span className="text-xs text-muted-foreground">
                     {answeredCount > 0
-                        ? `${answeredCount} of ${requests.length} provided — the rest will be AI-generated.`
-                        : 'Everything is optional — skip and the AI creates it all.'}
+                        ? t('footer.providedCount', { count: answeredCount, total: requests.length })
+                        : t('footer.allOptional')}
                 </span>
                 <Button
                     size="sm"
@@ -252,7 +254,7 @@ export function AssetRequestDecision({ decision, isSubmitting, onSubmit }: Asset
                     className="gap-1.5 bg-gradient-to-r from-violet-600 to-indigo-600 text-white hover:from-violet-700 hover:to-indigo-700"
                 >
                     <Check className="size-4" />
-                    Continue
+                    {t('actions.continue')}
                 </Button>
             </div>
         </div>

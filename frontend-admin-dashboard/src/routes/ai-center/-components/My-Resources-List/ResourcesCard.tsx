@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'; // Adjust path based on your project structure
 import {
     Table,
@@ -10,7 +11,7 @@ import {
 } from '@/components/ui/table'; // Adjust path
 import { Badge } from '@/components/ui/badge'; // Adjust path
 import { Button } from '@/components/ui/button'; // Adjust path
-import { Download } from 'lucide-react'; // Added MoreVertical and Eye icons
+import { DownloadSimple } from '@phosphor-icons/react'; // Added MoreVertical and Eye icons
 import { AIFormatDate, getAIIconByMimeType } from '../../-utils/helper';
 import ExtractQuestionsComponent from './ExtractQuestionsComponent';
 import TopicWiseQuestionsComponent from './TopicWiseQuestionsComponent';
@@ -53,6 +54,8 @@ interface ResourceFilesPageProps {
 
 // --- React Component ---
 export function ResourcesCard({ apiResponse }: ResourceFilesPageProps) {
+    const { t } = useTranslation('aiCenterResourcesCard');
+    const { t: tHelper } = useTranslation('aiCenterHelper');
     const processedFiles = useMemo(() => {
         const uniqueFilesMap = new Map<string, TaskStatus>();
         apiResponse.forEach((task) => {
@@ -90,8 +93,8 @@ export function ResourcesCard({ apiResponse }: ResourceFilesPageProps) {
         return (
             <Card className="mx-auto my-8 w-full max-w-4xl shadow-lg">
                 <CardHeader>
-                    <CardTitle>Resources</CardTitle>
-                    <CardDescription>Manage and view your uploaded files.</CardDescription>
+                    <CardTitle>{t('emptyState.title')}</CardTitle>
+                    <CardDescription>{t('emptyState.description')}</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <div className="py-10 text-center">
@@ -110,11 +113,10 @@ export function ResourcesCard({ apiResponse }: ResourceFilesPageProps) {
                                 d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"
                             />
                         </svg>
-                        <h3 className="mt-2 text-lg font-medium text-gray-900">No files found.</h3>
-                        <p className="mt-1 text-sm text-gray-500">
-                            There are currently no resources available or associated files are
-                            missing details.
-                        </p>
+                        <h3 className="mt-2 text-lg font-medium text-gray-900">
+                            {t('emptyState.heading')}
+                        </h3>
+                        <p className="mt-1 text-sm text-gray-500">{t('emptyState.body')}</p>
                     </div>
                 </CardContent>
             </Card>
@@ -124,19 +126,21 @@ export function ResourcesCard({ apiResponse }: ResourceFilesPageProps) {
     return (
         <Card className="mx-auto my-8 w-full shadow-lg">
             <CardHeader>
-                <CardTitle>Resources</CardTitle>
-                <CardDescription>
-                    A list of unique files, ordered by the most recently created.
-                </CardDescription>
+                <CardTitle>{t('title')}</CardTitle>
+                <CardDescription>{t('description')}</CardDescription>
             </CardHeader>
             <CardContent>
                 <Table>
                     <TableHeader>
                         <TableRow>
-                            <TableHead className="w-[35%]">File Name</TableHead>
-                            <TableHead className="w-1/5">Type</TableHead>
-                            <TableHead className="w-1/4 text-center">Created On</TableHead>
-                            <TableHead className="w-1/5 text-center">Actions</TableHead>
+                            <TableHead className="w-1/3">{t('table.fileName')}</TableHead>
+                            <TableHead className="w-1/5">{t('table.type')}</TableHead>
+                            <TableHead className="w-1/4 text-center">
+                                {t('table.createdOn')}
+                            </TableHead>
+                            <TableHead className="w-1/5 text-center">
+                                {t('table.actions')}
+                            </TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -195,7 +199,7 @@ export function ResourcesCard({ apiResponse }: ResourceFilesPageProps) {
                                     </Badge>
                                 </TableCell>
                                 <TableCell className="text-right text-sm text-gray-600">
-                                    {AIFormatDate(file.file_detail?.created_on || '')}
+                                    {AIFormatDate(file.file_detail?.created_on || '', tHelper)}
                                 </TableCell>
                                 <TableCell className="text-center">
                                     <div className="flex items-center justify-center space-x-1">
@@ -205,20 +209,26 @@ export function ResourcesCard({ apiResponse }: ResourceFilesPageProps) {
                                                     variant="ghost"
                                                     size="icon"
                                                     asChild
-                                                    title={`Download ${file.file_detail.file_name}`}
+                                                    title={t('actions.download', {
+                                                        fileName: file.file_detail.file_name,
+                                                    })}
                                                 >
                                                     <a
                                                         href={file.file_detail.url}
                                                         download={file.file_detail.file_name} // Suggests browser to download with this name
                                                         rel="noopener noreferrer"
-                                                        aria-label={`Download ${file.file_detail.file_name}`}
+                                                        aria-label={t('actions.download', {
+                                                            fileName: file.file_detail.file_name,
+                                                        })}
                                                     >
-                                                        <Download className="size-4 text-gray-700 hover:text-gray-900" />
+                                                        <DownloadSimple className="size-4 text-gray-700 hover:text-gray-900" />
                                                     </a>
                                                 </Button>
                                             </>
                                         ) : (
-                                            <span className="text-xs text-gray-400">-</span>
+                                            <span className="text-xs text-gray-400">
+                                                {t('actions.noFile')}
+                                            </span>
                                         )}
                                     </div>
                                 </TableCell>

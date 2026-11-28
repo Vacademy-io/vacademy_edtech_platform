@@ -1,0 +1,37 @@
+{
+    "searchPlaceholder": "Rechercher par nom d'élève ou téléphone…",
+    "clear": "Effacer",
+    "filters": {
+        "allTypes": "Tous les types",
+        "from": "Du :",
+        "to": "Au :"
+    },
+    "adjustmentType": {
+        "concession": "Concession",
+        "penalty": "Pénalité"
+    },
+    "errors": {
+        "unableToLoad": "Impossible de charger l'historique",
+        "tryAgain": "Veuillez réessayer."
+    },
+    "empty": {
+        "noActivity": "Aucune activité",
+        "tryClearingFilters": "Essayez d'effacer les filtres.",
+        "noActivityYet": "Aucune activité d'ajustement ne correspond à cette vue pour l'instant."
+    },
+    "table": {
+        "date": "Date",
+        "student": "Élève",
+        "feeType": "Type de frais",
+        "type": "Type",
+        "amount": "Montant",
+        "event": "Événement",
+        "by": "Par",
+        "reason": "Motif"
+    },
+    "pagination": {
+        "pageOf": "Page {{page}} sur {{totalPages}}",
+        "total": "au total",
+        "updating": "mise à jour…"
+    }
+}

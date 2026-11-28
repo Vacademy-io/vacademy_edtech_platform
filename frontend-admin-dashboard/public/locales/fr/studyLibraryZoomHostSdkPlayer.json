@@ -1,0 +1,14 @@
+{
+    "stillProvisioning": "Cette réunion Zoom est encore en cours de préparation. Réessayez dans un instant, ou utilisez « Provisionner maintenant » sur la page de la session.",
+    "loadFailed": "Impossible de charger la réunion Zoom. Vérifiez votre connexion et réessayez.",
+    "notReadyToHost": "Cette réunion Zoom n'est pas encore prête à être organisée — elle est peut-être encore en cours de configuration sur Zoom. Actualisez dans un instant, ou revérifiez le compte Zoom si le problème persiste.",
+    "missingZak": "Impossible de démarrer cette réunion en tant qu'hôte : Zoom n'a pas délivré de jeton de démarrage hôte (ZAK). Reconnectez Zoom dans Paramètres → Session en direct — supprimez d'abord l'application de votre compte Zoom pour que l'écran de consentement réapparaisse, puis approuvez la portée ZAK (user_zak:read / user:read:zak).",
+    "joinFailed": "Impossible de démarrer la réunion Zoom ({{code}}).",
+    "joinErrorFallback": "erreur de connexion",
+    "initFailed": "Impossible d'initialiser la réunion Zoom ({{code}}).",
+    "initErrorFallback": "erreur d'initialisation",
+    "startFailed": "Échec du démarrage de la réunion Zoom.",
+    "refreshOrRetry": "Veuillez actualiser la page ou réessayer.",
+    "preparingMeeting": "Préparation de la réunion…",
+    "startingAsHost": "Démarrage de la réunion en tant qu'hôte…"
+}

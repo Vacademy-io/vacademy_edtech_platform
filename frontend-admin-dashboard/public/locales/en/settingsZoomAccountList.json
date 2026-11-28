@@ -1,0 +1,38 @@
+{
+    "emptyState": "No Zoom accounts registered yet. Add one to enable Zoom meetings for this institute.",
+    "badges": {
+        "default": "Default",
+        "webhookNotSet": "Webhook not set"
+    },
+    "row": {
+        "accountLabel": "Account",
+        "s2sLabel": "S2S",
+        "sdkLabel": "SDK",
+        "sdkPlatform": "Platform",
+        "lastVerified": "last verified"
+    },
+    "menu": {
+        "ariaLabel": "Account actions",
+        "testConnection": "Test connection",
+        "setAsDefault": "Set as default",
+        "edit": "Edit",
+        "delete": "Delete"
+    },
+    "toasts": {
+        "defaultSet": "\"{{label}}\" is now the default Zoom account",
+        "defaultSetFailed": "Could not set default",
+        "connected": "Connected as {{email}}",
+        "connectedWithPlan": "Connected as {{email}} ({{planType}})",
+        "unknownEmail": "unknown",
+        "connectionFailed": "Connection failed",
+        "connectionTestFailed": "Connection test failed",
+        "removed": "Removed \"{{label}}\"",
+        "deleteFailed": "Failed to delete account"
+    },
+    "dialog": {
+        "title": "Delete this Zoom account?",
+        "description": "\"{{label}}\" will be removed. Existing live sessions that were created with this account remain unaffected, but you will not be able to create new meetings against it until you re-add the credentials.",
+        "cancel": "Cancel",
+        "confirmDelete": "Delete"
+    }
+}

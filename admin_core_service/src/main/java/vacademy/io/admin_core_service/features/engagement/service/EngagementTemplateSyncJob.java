@@ -30,6 +30,14 @@ public class EngagementTemplateSyncJob {
     @Scheduled(fixedDelayString = "${engagement.template-sync.delay-ms:300000}")
     @SchedulerLock(name = "EngagementTemplateSync", lockAtMostFor = "PT10M", lockAtLeastFor = "PT10S")
     public void sweep() {
+        // W10: submit templates that waited for Meta's hourly limit, before polling the pending ones.
+        for (String instituteId : proposalRepository.institutesWithQueuedProposals()) {
+            try {
+                proposalService.drainQueued(instituteId);
+            } catch (Exception e) {
+                log.warn("Queued-template submit failed for institute {}: {}", instituteId, e.getMessage());
+            }
+        }
         List<String> institutes = proposalRepository.institutesWithPendingProposals();
         if (institutes.isEmpty()) return;
 
@@ -44,6 +52,23 @@ public class EngagementTemplateSyncJob {
         }
         if (totalChanged > 0) {
             log.info("Template sync: {} proposal(s) advanced across {} institute(s)", totalChanged, institutes.size());
+        }
+    }
+
+    /**
+     * W12 — re-check APPROVED templates for a later Meta disable/pause. Hourly, not every 5 minutes:
+     * it refreshes from Meta for every institute that has approved templates.
+     */
+    @Scheduled(fixedDelayString = "${engagement.template-sync.approved-delay-ms:3600000}",
+            initialDelayString = "${engagement.template-sync.approved-initial-delay-ms:600000}")
+    @SchedulerLock(name = "EngagementTemplateApprovedSync", lockAtMostFor = "PT30M", lockAtLeastFor = "PT1M")
+    public void sweepApproved() {
+        for (String instituteId : proposalRepository.institutesWithApprovedProposals()) {
+            try {
+                proposalService.syncApproved(instituteId);
+            } catch (Exception e) {
+                log.warn("Approved-template sync failed for institute {}: {}", instituteId, e.getMessage());
+            }
         }
     }
 }

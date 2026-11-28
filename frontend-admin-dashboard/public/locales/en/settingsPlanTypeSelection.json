@@ -1,0 +1,57 @@
+{
+    "planName": {
+        "label": "Plan Name *",
+        "placeholder": "Enter plan name",
+        "hint": "A unique name to identify this payment plan"
+    },
+    "sections": {
+        "freeOptions": "Free Options",
+        "paidOptions": "Paid Options"
+    },
+    "free": {
+        "title": "Free Plan",
+        "description": "Free plan with no payment required",
+        "features": {
+            "access": "Free access",
+            "noPayment": "No payment required",
+            "promotional": "Ideal for promotional purposes"
+        },
+        "restriction": "Restriction:"
+    },
+    "donation": {
+        "title": "Optional Donation",
+        "description": "Allow students to make voluntary donations with suggested amounts",
+        "features": {
+            "access": "Free course access",
+            "suggestedAmounts": "Suggested donation amounts",
+            "support": "Support your institute"
+        }
+    },
+    "subscription": {
+        "title": "Subscription",
+        "description": "Recurring payments with flexible intervals",
+        "features": {
+            "autoRenewal": "Auto-renewal options",
+            "billingPeriods": "Multiple billing periods",
+            "revenue": "Recurring revenue"
+        }
+    },
+    "upfront": {
+        "title": "One-Time Payment",
+        "description": "Single upfront payment with optional installment plans",
+        "features": {
+            "lifetime": "Lifetime access",
+            "installments": "Installment options",
+            "noRecurring": "No recurring charges"
+        }
+    },
+    "cpo": {
+        "title": "Custom Payment Option",
+        "description": "Installment-based fee plans with multiple fee types linked to specific batches",
+        "features": {
+            "feeTypes": "Multiple fee types (tuition, exam, hostel…)",
+            "schedules": "Custom installment schedules",
+            "batches": "Linked to specific batches"
+        }
+    }
+}

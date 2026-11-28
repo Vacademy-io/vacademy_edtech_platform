@@ -1,0 +1,9 @@
+{
+    "menu": {
+        "shareCredentials": "مشاركة بيانات الدخول",
+        "sendWhatsappMessage": "إرسال رسالة واتساب",
+        "sendEmail": "إرسال بريد إلكتروني",
+        "acceptRequest": "قبول الطلب",
+        "declineRequest": "رفض الطلب"
+    }
+}

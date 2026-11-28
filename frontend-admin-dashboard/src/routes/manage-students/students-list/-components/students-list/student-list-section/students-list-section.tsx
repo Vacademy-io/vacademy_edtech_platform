@@ -1,9 +1,11 @@
 // StudentListSection.tsx
 import { useEffect, useState, useRef, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavHeadingStore } from '@/stores/layout-container/useNavHeadingStore';
 import { useInstituteQuery } from '@/services/student-list-section/getInstituteDetails';
 import { GetFilterData } from '@/routes/manage-students/students-list/-constants/all-filters';
 import { MyTable } from '@/components/design-system/table';
+import { counsellorDisplayName } from '@/components/shared/leads/counsellor-display';
 import { MyPagination } from '@/components/design-system/pagination';
 import { StudentListHeader } from './student-list-header';
 import { StudentFilters } from './student-filters';
@@ -19,6 +21,14 @@ import { STUDENT_LIST_COLUMN_WIDTHS } from '@/components/design-system/utils/con
 import { useLeadSettings } from '@/hooks/use-lead-settings';
 import { useLeadProfiles } from '@/hooks/use-lead-profiles';
 import { LeadScoreBadge } from '@/components/shared/lead-score-badge';
+import { MembershipBadge } from '@/components/shared/membership-badge';
+import { JourneyStatusBadge } from '@/components/shared/journey-status-badge';
+import {
+    pickListStatus,
+    useJourneyStatusCounts,
+    useJourneyStatusSettings,
+    useJourneyStatusesForUsers,
+} from '@/services/journey-status';
 import { AssignCounselorToLeadDialog } from '@/components/shared/assign-counselor-to-lead-dialog';
 import { UserCircle } from '@phosphor-icons/react';
 import { BulkActions } from './bulk-actions/bulk-actions';
@@ -51,9 +61,19 @@ import { InviteFormProvider } from '@/routes/manage-students/invite/-context/use
 import { Users, FileMagnifyingGlass } from '@phosphor-icons/react';
 import { getTerminology, getTerminologyPlural } from '@/components/common/layout-container/sidebar/utils';
 import { useListCustomFieldControls } from '@/components/shared/leads/use-list-custom-field-controls';
+import {
+    useLearnerLocationFilters,
+    withLocationFiltersAfterGender,
+} from '@/routes/manage-students/students-list/-hooks/useLearnerLocationFilters';
 import { RoleTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
 
+// Row statuses that mean the user actually holds (or held) an enrolment, as opposed to
+// INVITED / PENDING_FOR_APPROVAL rows and audience-only respondents.
+const ENROLLED_STATUSES: string[] = ['ACTIVE', 'INACTIVE', 'TERMINATED'];
+
 export const StudentsListSection = () => {
+    const { t } = useTranslation('manageStudentsListSection');
+    const { t: tAllFilters } = useTranslation('manageStudentsAllFilters');
     const { setNavHeading } = useNavHeadingStore();
     const { isError, isLoading } = useQuery(useInstituteQuery());
     const [isOpen, setIsOpen] = useState(false);
@@ -227,6 +247,8 @@ export const StudentsListSection = () => {
         session_expiry_days: ['expiry_date'],
         payment_statuses: ['plan_type', 'amount_paid'],
         enroll_invite_ids: ['enroll_invite_name'],
+        cities: ['city'],
+        regions: ['region'],
     };
 
     const customFieldIdByKey = useMemo(() => {
@@ -247,15 +269,54 @@ export const StudentsListSection = () => {
         [studentCfFilterGate, rangeCustomFields]
     );
 
-    const allFilters = GetFilterData(
+    // Whether this institute runs trials at all, reported by the list endpoint rather than
+    // configured. Held in state because the filter bar is built before the table hook has
+    // run: it starts false and flips once the first page arrives, which re-renders the bar.
+    const [membershipTypesAvailable, setMembershipTypesAvailable] = useState(false);
+
+    // City / Region chips (Manage filters → Built-in filters → Students), shared with the
+    // course learners tab.
+    const locationFilters = useLearnerLocationFilters({
+        instituteId: audienceInstituteId || undefined,
+        appliedFilters,
+        setColumnFilters,
+        setAppliedFilters,
+    });
+
+    const baseFilters = GetFilterData(
+        tAllFilters,
         instituteDetails,
         currentSession.id,
         campaignsData?.content,
         subOrgsData,
         textCustomFields,
         studentCfFilterGate,
-        gatedRangeCustomFields
+        gatedRangeCustomFields,
+        membershipTypesAvailable
     );
+    // Journey status (Settings → Journey status): a filter chip with per-status counts, only
+    // while the setting is on. Nothing changes for institutes without it.
+    const journey = useJourneyStatusSettings();
+    const { data: journeyCounts } = useJourneyStatusCounts(journey.enabled);
+    const journeyFilters = journey.enabled
+        ? [
+              {
+                  id: 'journey_statuses',
+                  title: t('journeyStatus.filterTitle', { defaultValue: 'Journey status' }),
+                  filterList: journey.settings.statuses.map((s) => ({
+                      id: s.key,
+                      label:
+                          journeyCounts && journeyCounts[s.key] !== undefined
+                              ? `${s.label} (${journeyCounts[s.key]})`
+                              : s.label,
+                  })),
+              },
+          ]
+        : [];
+    const allFilters = [
+        ...withLocationFiltersAfterGender(baseFilters, locationFilters),
+        ...journeyFilters,
+    ];
     const filters = allFilters.filter((f) => {
         const fixed = FILTER_TO_COLUMNS[f.id];
         if (fixed) return fixed.some((accessor) => !roleHiddenColumns.has(accessor));
@@ -283,13 +344,23 @@ export const StudentsListSection = () => {
         search.package_session_id ? [search.package_session_id] : null
     );
 
+    // Flip the gate once the first page lands. Only on a real change, so this never loops.
+    useEffect(() => {
+        const available = Boolean(studentTableData?.membership_types_available);
+        setMembershipTypesAvailable((current) => (current === available ? current : available));
+    }, [studentTableData]);
+
     // Header badge counts (Total / Active / Inactive) — independent of the status
     // filter so the breakdown is always visible. Pass the same pinned
     // package_session_id the table uses so counts match in the Course Details tab.
+    // The Invited badge shows on the learner list only, not when this section is
+    // pinned to one batch inside Course Details.
+    const learnersEnhanced = !search.package_session_id;
     const studentCounts = useStudentCounts(
         appliedFilters,
         !isLoading && showCountBadges,
-        search.package_session_id ? [search.package_session_id] : null
+        search.package_session_id ? [search.package_session_id] : null,
+        learnersEnhanced
     );
 
     const leadSettings = useLeadSettings();
@@ -302,6 +373,8 @@ export const StudentsListSection = () => {
         () => (studentTableData?.content ?? []).map((s) => s.user_id).filter(Boolean) as string[],
         [studentTableData]
     );
+    // Journey status per learner on this page: one small query by the page's user ids.
+    const { data: journeyByUser } = useJourneyStatusesForUsers(studentUserIds, journey.enabled);
     // Fetch lead profiles when lead system is enabled (needed for both score badge and counsellor column)
     const { profiles: leadProfiles } = useLeadProfiles(studentUserIds, leadReady);
 
@@ -328,13 +401,56 @@ export const StudentsListSection = () => {
         onError: (error) =>
             reportApiError(error, {
                 feature: 'students-select-all',
-                fallbackMessage: 'Could not select everyone — try again.',
+                fallbackMessage: t('bulkActionsBar.selectAllError'),
             }),
     });
 
     const getSelectedStudents = (): StudentTable[] => selectedStudents;
 
     const getSelectedStudentIds = (): string[] => selectedStudents.map((student) => student.id);
+
+    // Journey status column, after the name, only while Settings → Journey status is on. The list
+    // is one row per learner, so the badge shows the batch the list is filtered to (or pinned to),
+    // else the most severe status across the learner's batches; the tooltip lists every batch.
+    const journeyScope = search.package_session_id
+        ? [search.package_session_id]
+        : (appliedFilters.package_session_ids ?? []);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const withJourneyColumn = <C extends { id?: string }>(cols: C[]): any[] => {
+        if (!journey.enabled) return cols;
+        const column = {
+            id: 'journey_status',
+            header: t('journeyStatus.columnHeader', { defaultValue: 'Journey status' }),
+            size: 160,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            cell: (props: any) => {
+                const entries = journeyByUser?.[props.row.original.user_id as string];
+                const picked = pickListStatus(entries, journey.settings, journeyScope);
+                if (!picked) return <span className="text-caption text-neutral-400">—</span>;
+                const more = picked.all.length > 1 ? `+${picked.all.length - 1}` : undefined;
+                const title = picked.all
+                    .map(
+                        (e) =>
+                            journey.settings.statuses.find((s) => s.key === e.status_key)?.label ??
+                            e.status_key
+                    )
+                    .join(', ');
+                return (
+                    <span title={title}>
+                        <JourneyStatusBadge
+                            def={picked.def}
+                            fallbackLabel={picked.entry.status_key}
+                            suffix={more}
+                        />
+                    </span>
+                );
+            },
+        };
+        const at = cols.findIndex((c) => c.id === 'full_name');
+        const out: unknown[] = [...cols];
+        out.splice(at >= 0 ? at + 1 : out.length, 0, column);
+        return out;
+    };
 
     // Approval actions (row-level Accept/Decline and the bulk Accept action) are shown
     // whenever the Approval Status filter (Pending for Approval / Invited) is active.
@@ -352,19 +468,25 @@ export const StudentsListSection = () => {
                 <EmptyStudentListImage className="size-12 opacity-50" />
             </div>
             <h3 className="mb-2 text-base font-semibold text-neutral-700">
-                No {getTerminology(RoleTerms.Learner, SystemTerms.Learner)} Found
+                {t('emptyState.title', {
+                    term: getTerminology(RoleTerms.Learner, SystemTerms.Learner),
+                })}
             </h3>
             <p className="mb-4 max-w-md text-xs leading-relaxed text-neutral-500">
-                No {getTerminology(RoleTerms.Learner, SystemTerms.Learner).toLocaleLowerCase()} data
-                matches your current filters. Try adjusting your search criteria or add new{' '}
-                {getTerminology(RoleTerms.Learner, SystemTerms.Learner).toLocaleLowerCase()} to get
-                started.
+                {t('emptyState.description', {
+                    termLower: getTerminology(
+                        RoleTerms.Learner,
+                        SystemTerms.Learner
+                    ).toLocaleLowerCase(),
+                })}
             </p>
             <div className="flex flex-col items-center gap-2 sm:flex-row">
                 <InviteFormProvider>
                     <button className="group flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-primary-500 to-primary-600 px-3 py-1.5 text-sm text-white shadow-md transition-all duration-200 hover:scale-105 hover:from-primary-600 hover:to-primary-700">
                         <Users className="size-3.5 transition-transform duration-200 group-hover:scale-110" />
-                        Invite {getTerminology(RoleTerms.Learner, SystemTerms.Learner)}
+                        {t('emptyState.inviteButton', {
+                            term: getTerminology(RoleTerms.Learner, SystemTerms.Learner),
+                        })}
                     </button>
                 </InviteFormProvider>
                 <button
@@ -372,7 +494,7 @@ export const StudentsListSection = () => {
                     className="group flex items-center gap-1.5 rounded-lg bg-neutral-100 px-3 py-1.5 text-sm text-neutral-700 transition-all duration-200 hover:scale-105 hover:bg-neutral-200"
                 >
                     <FileMagnifyingGlass className="size-3.5 transition-transform duration-200 group-hover:scale-110" />
-                    Clear Filters
+                    {t('emptyState.clearFiltersButton')}
                 </button>
             </div>
         </div>
@@ -393,6 +515,7 @@ export const StudentsListSection = () => {
                             total={studentCounts.total}
                             active={studentCounts.active}
                             inactive={studentCounts.inactive}
+                            invited={studentCounts.invited}
                             countsLoading={studentCounts.isLoading}
                         />
                     </InviteFormProvider>
@@ -423,12 +546,12 @@ export const StudentsListSection = () => {
                         <div className="flex w-full flex-col items-center gap-2 py-6">
                             <DashboardLoader />
                             <p className="animate-pulse text-xs text-neutral-500">
-                                Loading{' '}
-                                {getTerminology(
-                                    RoleTerms.Learner,
-                                    SystemTerms.Learner
-                                ).toLocaleLowerCase()}{' '}
-                                data...
+                                {t('loadingData', {
+                                    termLower: getTerminology(
+                                        RoleTerms.Learner,
+                                        SystemTerms.Learner
+                                    ).toLocaleLowerCase(),
+                                })}
                             </p>
                         </div>
                     ) : !studentTableData || studentTableData.content.length == 0 ? (
@@ -455,17 +578,19 @@ export const StudentsListSection = () => {
                                                     onClick={selectAllMatching}
                                                 >
                                                     {isSelectingAll
-                                                        ? 'Selecting…'
-                                                        : `Select all ${totalElements}`}
+                                                        ? t('bulkActionsBar.selecting')
+                                                        : t('bulkActionsBar.selectAllCount', {
+                                                              count: totalElements,
+                                                          })}
                                                 </MyButton>
                                             ) : (
                                                 <span className="text-caption text-neutral-500">
-                                                    all{' '}
-                                                    {getTerminologyPlural(
-                                                        RoleTerms.Learner,
-                                                        SystemTerms.Learner
-                                                    ).toLocaleLowerCase()}{' '}
-                                                    matching your filters
+                                                    {t('bulkActionsBar.allMatchingFilters', {
+                                                        term: getTerminologyPlural(
+                                                            RoleTerms.Learner,
+                                                            SystemTerms.Learner
+                                                        ).toLocaleLowerCase(),
+                                                    })}
                                                 </span>
                                             )
                                         }
@@ -496,8 +621,35 @@ export const StudentsListSection = () => {
                                                 total_elements: studentTableData.total_elements,
                                                 last: studentTableData.last,
                                             }}
-                                            columns={(() => {
-                                                const cols = getCustomColumns(showApprovalActions);
+                                            columns={withJourneyColumn((() => {
+                                                const baseCols = getCustomColumns(showApprovalActions);
+                                                // Trial/Paid chip under the name. Applied before the
+                                                // lead-system early return, so it shows for institutes
+                                                // that run trials whether or not leads are enabled.
+                                                const cols = membershipTypesAvailable
+                                                    ? baseCols.map((col) => {
+                                                          if (col.id !== 'full_name') return col;
+                                                          const inner = col.cell;
+                                                          return {
+                                                              ...col,
+                                                              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                                                              cell: (props: any) => (
+                                                                  <div className="flex flex-col gap-0.5">
+                                                                      {typeof inner === 'function'
+                                                                          ? inner(props)
+                                                                          : null}
+                                                                      <MembershipBadge
+                                                                          membershipType={
+                                                                              props.row.original
+                                                                                  .membership_type
+                                                                          }
+                                                                          available
+                                                                      />
+                                                                  </div>
+                                                              ),
+                                                          };
+                                                      })
+                                                    : baseCols;
                                                 // If lead system is entirely off, return cols unchanged
                                                 if (!leadReady) return cols;
 
@@ -513,6 +665,17 @@ export const StudentsListSection = () => {
                                                             const userId = props.row.original
                                                                 .user_id as string;
                                                             const profile = leadProfiles[userId];
+                                                            // An enrolled learner is past the lead stage,
+                                                            // whatever their lead profile still says (e.g.
+                                                            // enrolled outside the normal flow, so it was
+                                                            // never marked CONVERTED). Only people who
+                                                            // haven't joined yet keep the badge.
+                                                            const isEnrolled =
+                                                                !props.row.original
+                                                                    .is_audience_only &&
+                                                                ENROLLED_STATUSES.includes(
+                                                                    props.row.original.status
+                                                                );
                                                             return (
                                                                 <div className="flex flex-col gap-0.5">
                                                                     {typeof originalCell ===
@@ -520,6 +683,7 @@ export const StudentsListSection = () => {
                                                                         ? originalCell(props)
                                                                         : null}
                                                                     {profile &&
+                                                                        !isEnrolled &&
                                                                         profile.conversion_status !==
                                                                             'CONVERTED' && (
                                                                             <LeadScoreBadge
@@ -541,7 +705,7 @@ export const StudentsListSection = () => {
                                                 // Counsellor column: always shown when lead system is enabled
                                                 augmented.push({
                                                     id: 'counsellor',
-                                                    header: 'Counsellor',
+                                                    header: t('table.counsellorHeader'),
                                                     size: 160,
                                                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
                                                     cell: (props: any) => {
@@ -551,7 +715,7 @@ export const StudentsListSection = () => {
                                                             .full_name as string;
                                                         const profile = leadProfiles[userId];
                                                         const counselorName =
-                                                            profile?.assigned_counselor_name;
+                                                            counsellorDisplayName(profile);
                                                         if (counselorName) {
                                                             return (
                                                                 <button
@@ -563,7 +727,9 @@ export const StudentsListSection = () => {
                                                                             userName: name,
                                                                         });
                                                                     }}
-                                                                    title="Click to reassign"
+                                                                    title={t(
+                                                                        'table.reassignTooltip'
+                                                                    )}
                                                                 >
                                                                     <UserCircle className="size-4 shrink-0 text-neutral-400" />
                                                                     <span className="truncate">
@@ -583,13 +749,13 @@ export const StudentsListSection = () => {
                                                                     });
                                                                 }}
                                                             >
-                                                                Assign
+                                                                {t('table.assignButton')}
                                                             </button>
                                                         );
                                                     },
                                                 });
                                                 return augmented;
-                                            })()}
+                                            })())}
                                             tableState={{
                                                 columnVisibility: (() => {
                                                     // Layers, highest precedence first:
@@ -656,6 +822,7 @@ export const StudentsListSection = () => {
                                                 selectedTab={'ENDED,PENDING,LIVE'}
                                                 examType={'EXAM'}
                                                 isStudentList={true}
+                                                syncTabsWithHistory
                                             />
                                         </div>
                                     </SidebarProvider>
@@ -681,8 +848,8 @@ export const StudentsListSection = () => {
                 <NoCourseDialog
                     isOpen={isOpen}
                     setIsOpen={setIsOpen}
-                    type="Enroll Students"
-                    content="You need to create a course and add a subject in it before"
+                    type={t('noCourseDialog.enrollStudentsLabel')}
+                    content={t('noCourseDialog.defaultContent')}
                 />
                 <ShareCredentialsDialog />
                 <IndividualShareCredentialsDialog />

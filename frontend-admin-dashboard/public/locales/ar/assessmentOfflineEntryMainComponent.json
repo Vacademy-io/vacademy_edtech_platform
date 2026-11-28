@@ -1,0 +1,37 @@
+{
+    "navHeading": "إدخال البيانات دون اتصال",
+    "defaults": {
+        "assessmentName": "التقييم"
+    },
+    "selectStudent": {
+        "subtitle": "إدخال البيانات دون اتصال — اختر طالبًا للبدء",
+        "bulkImport": "استيراد جماعي"
+    },
+    "completed": {
+        "title": "اكتمل الإرسال",
+        "summaryPrefix": "تم إرسال الإجابات دون اتصال الخاصة بـ ",
+        "summarySuffix": " وتصحيحها.",
+        "enterAnotherStudent": "إدخال طالب آخر",
+        "backToAssessments": "العودة إلى التقييمات"
+    },
+    "responses": {
+        "back": "رجوع",
+        "viewMode": {
+            "table": "جدول",
+            "preview": "معاينة"
+        },
+        "scoringMode": {
+            "auto": "تلقائي",
+            "directMarks": "درجات مباشرة"
+        },
+        "submitAll": "إرسال جميع الإجابات",
+        "noQuestionsInSection": "لا توجد أسئلة في هذا القسم."
+    },
+    "toasts": {
+        "submitSuccess": "تم إرسال الإجابات دون اتصال بنجاح"
+    },
+    "errors": {
+        "uploadFailed": "تعذّر رفع \"{{fileName}}\"",
+        "submitFailed": "فشل إرسال الإجابات دون اتصال"
+    }
+}

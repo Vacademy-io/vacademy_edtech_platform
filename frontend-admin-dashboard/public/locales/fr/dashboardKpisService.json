@@ -1,0 +1,32 @@
+{
+    "kpis": {
+        "activeLearners": {
+            "label": "{{learners}} actifs",
+            "subtitle": "sur {{total}} au total"
+        },
+        "totalCourses": {
+            "label": "Total {{courses}}",
+            "subtitle": "{{courses}} actifs"
+        },
+        "teamMembers": {
+            "label": "Membres de l'équipe",
+            "subtitle": "{{admins}}, {{teachers}} et personnel"
+        },
+        "outstandingFees": {
+            "label": "Frais impayés",
+            "subtitle": "Reste à encaisser, échéances à venir incluses"
+        },
+        "overdueFees": {
+            "label": "Frais en retard",
+            "subtitle": "Échéance dépassée, non payés"
+        },
+        "classesToday": {
+            "label": "{{sessions}} aujourd'hui",
+            "subtitle": "{{sessions}} programmées"
+        }
+    },
+    "breakdown": {
+        "inactive": "Inactif",
+        "terminated": "Résilié"
+    }
+}

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
@@ -53,6 +54,7 @@ const saveTncSettings = async (data: TncSettingsData): Promise<void> => {
 };
 
 export default function TncSettings() {
+    const { t } = useTranslation('settingsTnc');
     const queryClient = useQueryClient();
     const { currentUser } = useCurrentUser();
     const { uploadFile, getPublicUrl } = useFileUpload();
@@ -83,12 +85,12 @@ export default function TncSettings() {
     const { mutate: save, isPending: saving } = useMutation({
         mutationFn: saveTncSettings,
         onSuccess: () => {
-            toast.success('Terms & Conditions settings saved');
+            toast.success(t('toasts.saveSuccess'));
             setHasChanges(false);
             queryClient.invalidateQueries({ queryKey: ['tnc-settings'] });
         },
         onError: () => {
-            toast.error('Failed to save T&C settings');
+            toast.error(t('toasts.saveError'));
         },
     });
 
@@ -99,11 +101,11 @@ export default function TncSettings() {
 
     const handleSave = () => {
         if (settings.settingEnabled && !settings.fileMediaId) {
-            toast.error('Please upload a PDF file to enable Terms & Conditions');
+            toast.error(t('toasts.missingFile'));
             return;
         }
         if (settings.notifyOnSign && !settings.notifyEmails.trim()) {
-            toast.error('Please enter at least one recipient email for notifications');
+            toast.error(t('toasts.missingEmails'));
             return;
         }
         save(settings);
@@ -111,10 +113,10 @@ export default function TncSettings() {
 
     const handleFileSelected = async (file: File) => {
         if (file.type !== 'application/pdf') {
-            toast.error('Only PDF files are supported');
+            toast.error(t('toasts.invalidFileType'));
             return;
         }
-        
+
         try {
             await uploadFile({
                 file,
@@ -128,26 +130,25 @@ export default function TncSettings() {
                      const urlStr = typeof res === 'string' ? res : res?.data;
                      if (urlStr) setFileUrl(urlStr);
                  });
-                 toast.success('PDF uploaded successfully');
+                 toast.success(t('toasts.uploadSuccess'));
             });
         } catch (error) {
-            toast.error('Failed to upload PDF file');
+            toast.error(t('toasts.uploadError'));
             console.error(error);
         }
     };
 
     if (isLoading) {
-        return <div className="p-6 text-sm text-muted-foreground">Loading T&C settings...</div>;
+        return <div className="p-6 text-sm text-muted-foreground">{t('loading')}</div>;
     }
 
     return (
         <div className="space-y-6 p-6">
             <Card>
                 <CardHeader>
-                    <CardTitle>Student Terms & Conditions</CardTitle>
+                    <CardTitle>{t('documentCard.title')}</CardTitle>
                     <CardDescription>
-                        Enable Terms & Conditions to require learners to digitally sign the agreement
-                        before they can access their dashboard content.
+                        {t('documentCard.description')}
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-8">
@@ -158,46 +159,46 @@ export default function TncSettings() {
                             onCheckedChange={(v) => update({ settingEnabled: v })}
                         />
                         <Label htmlFor="tnc-enabled" className="cursor-pointer">
-                            {settings.settingEnabled ? 'Enabled' : 'Disabled'}
+                            {settings.settingEnabled ? t('toggle.enabled') : t('toggle.disabled')}
                         </Label>
                     </div>
 
                     <div className="space-y-4">
-                        <Label>Terms and Conditions PDF</Label>
+                        <Label>{t('documentCard.pdfLabel')}</Label>
                         <p className="text-sm text-muted-foreground">
-                            Upload the base PDF document. When a learner accepts it, their name and date will be appended as a new page.
+                            {t('documentCard.pdfDescription')}
                         </p>
-                        
+
                         {settings.fileMediaId && fileUrl ? (
                             <div className="flex flex-col gap-2 rounded-md border p-4 bg-muted/20">
-                                <span className="text-sm font-medium">Currently Uploaded PDF</span>
+                                <span className="text-sm font-medium">{t('documentCard.currentlyUploaded')}</span>
                                 <div className="flex items-center gap-4">
                                      <a href={fileUrl} target="_blank" rel="noreferrer" className="text-primary hover:underline text-sm truncate flex-1">
-                                        View T&C Document
+                                        {t('documentCard.viewDocument')}
                                      </a>
                                      <MyButton buttonType="secondary" scale="small" onClick={() => {
                                          update({ fileMediaId: null });
                                          setFileUrl(null);
                                      }}>
-                                         Remove
+                                         {t('documentCard.remove')}
                                      </MyButton>
                                 </div>
                             </div>
                         ) : (
-                            <FileUploader 
-                                onFileSelected={handleFileSelected} 
-                                maxSize={10} 
+                            <FileUploader
+                                onFileSelected={handleFileSelected}
+                                maxSize={10}
                                 acceptFormats={{ 'application/pdf': ['.pdf'] }}
-                                acceptMsg="Supported format: PDF"
+                                acceptMsg={t('documentCard.acceptFormatMsg')}
                             />
                         )}
-                        {isUploadingMedia && <p className="text-xs text-primary">Uploading PDF...</p>}
+                        {isUploadingMedia && <p className="text-xs text-primary">{t('documentCard.uploading')}</p>}
                     </div>
 
                     <div className="space-y-3 pt-2">
-                        <Label>Learner Name on Signature</Label>
+                        <Label>{t('documentCard.nameLabel')}</Label>
                         <p className="text-sm text-muted-foreground">
-                            Choose how the learner's name is captured when they sign the Terms & Conditions.
+                            {t('documentCard.nameDescription')}
                         </p>
                         <div className="flex items-start gap-3 rounded-md border p-4">
                             <Switch
@@ -208,12 +209,12 @@ export default function TncSettings() {
                             />
                             <div className="space-y-1">
                                 <Label htmlFor="tnc-prefill-name" className="cursor-pointer">
-                                    Prefill learner's name (non-editable)
+                                    {t('documentCard.prefillLabel')}
                                 </Label>
                                 <p className="text-xs text-muted-foreground">
                                     {settings.prefillLearnerName
-                                        ? "The learner's registered name will be auto-filled and locked on the signature field."
-                                        : 'The learner will be required to type their full name manually when signing.'}
+                                        ? t('documentCard.prefillHintOn')
+                                        : t('documentCard.prefillHintOff')}
                                 </p>
                             </div>
                         </div>
@@ -223,9 +224,9 @@ export default function TncSettings() {
 
             <Card>
                 <CardHeader>
-                    <CardTitle>Notify on Sign</CardTitle>
+                    <CardTitle>{t('notifyCard.title')}</CardTitle>
                     <CardDescription>
-                        Send an email notification with the signed PDF link whenever a student accepts the Terms &amp; Conditions.
+                        {t('notifyCard.description')}
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
@@ -236,21 +237,21 @@ export default function TncSettings() {
                             onCheckedChange={(v) => update({ notifyOnSign: v })}
                         />
                         <Label htmlFor="notify-on-sign" className="cursor-pointer">
-                            {settings.notifyOnSign ? 'Enabled' : 'Disabled'}
+                            {settings.notifyOnSign ? t('toggle.enabled') : t('toggle.disabled')}
                         </Label>
                     </div>
 
                     {settings.notifyOnSign && (
                         <div className="space-y-2">
-                            <Label htmlFor="notify-emails">Recipient Emails</Label>
+                            <Label htmlFor="notify-emails">{t('notifyCard.recipientEmailsLabel')}</Label>
                             <Input
                                 id="notify-emails"
-                                placeholder="admin@example.com, hr@example.com"
+                                placeholder={t('notifyCard.recipientEmailsPlaceholder')}
                                 value={settings.notifyEmails}
                                 onChange={(e) => update({ notifyEmails: e.target.value })}
                             />
                             <p className="text-xs text-muted-foreground">
-                                Separate multiple email addresses with commas. Each address will receive the signed PDF link.
+                                {t('notifyCard.recipientEmailsHint')}
                             </p>
                         </div>
                     )}
@@ -264,7 +265,7 @@ export default function TncSettings() {
                     onClick={handleSave}
                     disable={saving || !hasChanges || isUploadingMedia}
                 >
-                    {saving ? 'Saving...' : 'Save Settings'}
+                    {saving ? t('actions.saving') : t('actions.save')}
                 </MyButton>
             </div>
         </div>

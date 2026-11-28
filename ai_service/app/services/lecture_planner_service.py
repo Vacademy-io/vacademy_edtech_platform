@@ -25,6 +25,7 @@ from ..models.ai_token_usage import RequestType
 # Re-exported so existing callers/tests can use lecture_planner_service.extract_and_sanitize_json.
 from ..utils.json_extract import extract_and_sanitize_json  # noqa: F401
 from . import ai_billing, llm_json
+from .ai_billing import metering_user
 from .model_selection import resolve_models
 
 logger = logging.getLogger(__name__)
@@ -166,4 +167,8 @@ def record_lecture_billing(
         user_role="ADMIN" if user_id else None,
         request_id=task_id,
         idempotency_key=f"lecture:{task_id}",
+        # Usage-event attribution only (the ledger role above is unchanged).
+        use_case="lecture",
+        metering=metering_user(user_id, surface="ADMIN_APP"),
+        usage_context={"task_id": task_id},
     )

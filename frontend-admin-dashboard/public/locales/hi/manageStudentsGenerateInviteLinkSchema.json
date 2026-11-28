@@ -1,0 +1,48 @@
+{
+    "relatedCourses": {
+        "course1": {
+            "name": "एडवांस्ड मैथमेटिक्स",
+            "description": "कैलकुलस और बीजगणित की गहराई से जानकारी।",
+            "tags": {
+                "math": "गणित",
+                "advanced": "एडवांस्ड",
+                "stem": "STEM"
+            }
+        },
+        "course2": {
+            "name": "इंजीनियर्स के लिए फिजिक्स",
+            "description": "यांत्रिकी, ऊष्मागतिकी और बहुत कुछ।",
+            "tags": {
+                "physics": "भौतिकी",
+                "engineering": "इंजीनियरिंग"
+            }
+        },
+        "course3": {
+            "name": "क्रिएटिव राइटिंग",
+            "description": "अपनी कहानी कहने की क्षमता को उजागर करें।",
+            "tags": {
+                "writing": "लेखन",
+                "creativity": "रचनात्मकता",
+                "arts": "कला"
+            }
+        }
+    },
+    "billingContactFields": {
+        "nameLabel": "बिलिंग संपर्क का पूरा नाम",
+        "emailLabel": "बिलिंग संपर्क ईमेल",
+        "roleLabel": "भूमिका"
+    },
+    "validation": {
+        "planNameRequired": "प्लान का नाम आवश्यक है",
+        "descriptionRequired": "विवरण आवश्यक है",
+        "titleRequired": "शीर्षक आवश्यक है",
+        "codeRequired": "कोड आवश्यक है",
+        "valueRequired": "मान आवश्यक है",
+        "expiryDateRequired": "समाप्ति तिथि आवश्यक है",
+        "programNameRequired": "प्रोग्राम का नाम आवश्यक है",
+        "refereeBenefitRequired": "रेफ़री लाभ आवश्यक है",
+        "tierRequired": "टियर आवश्यक है",
+        "rewardRequired": "इनाम आवश्यक है",
+        "atLeastOneTierRequired": "कम से कम एक टियर आवश्यक है"
+    }
+}

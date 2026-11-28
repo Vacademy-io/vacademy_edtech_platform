@@ -1,0 +1,34 @@
+{
+    "title": "Votre certificat",
+    "titleReady": "Certificat débloqué",
+    "readyBody": "Vous avez rempli les conditions — votre certificat est en préparation.",
+    "rule": {
+        "all": "Réussissez les {{total}} tests pour obtenir votre certificat. {{passed}} réussis jusqu'ici.",
+        "atLeast": "Réussissez {{required}} des {{total}} tests pour obtenir votre certificat. {{passed}} réussis jusqu'ici.",
+        "average": "Atteignez une moyenne de {{bar}} % sur {{total}} tests pour obtenir votre certificat. Vous êtes à {{avg}} %."
+    },
+    "progressAlso": "Vous devez aussi terminer {{threshold}} % du cours (vous êtes à {{pct}} %).",
+    "awaiting_one": "{{count}} test attend ses notes.",
+    "awaiting_many": "{{count}} tests attendent leurs notes.",
+    "awaiting_other": "{{count}} tests attendent leurs notes.",
+    "blocker": {
+        "NO_TESTS_FOUND": "Les tests de ce certificat ne sont pas encore disponibles.",
+        "ASSESSMENT_SCORES_UNAVAILABLE": "Certains résultats n'ont pas pu être chargés. Revenez un peu plus tard.",
+        "fallback": "Certains résultats n'ont pas pu être chargés."
+    },
+    "untitled": "Test sans titre",
+    "score": "Meilleur {{pct}} %",
+    "scoreOfPass": "Meilleur {{pct}} % · réussite {{pass}} %",
+    "status": {
+        "PASSED": "Réussi",
+        "FAILED": "Pas encore réussi",
+        "COMPLETED": "Terminé",
+        "NOT_ATTEMPTED": "Non tenté",
+        "AWAITING_RESULT": "Notes en attente"
+    },
+    "note": "Votre meilleure tentative compte. Les notes comptent une fois publiées pour vous.",
+    "sidebarNote": {
+        "SCORE": "Le certificat est délivré après réussite des tests du cours",
+        "PROGRESS_AND_SCORE": "Le certificat est délivré en terminant le cours et en réussissant ses tests"
+    }
+}

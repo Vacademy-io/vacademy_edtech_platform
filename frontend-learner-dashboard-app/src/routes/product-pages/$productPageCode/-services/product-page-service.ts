@@ -5,14 +5,18 @@ import {
     PRODUCT_PAGE_FORM_SUBMIT,
     PRODUCT_PAGE_ENROLL,
     PRODUCT_PAGE_CPO_ENROLL,
+    PRODUCT_PAGE_LOGIN_CODE_EXCHANGE,
 } from '@/constants/urls';
 import type {
     ProductPageData,
     ProductPageFormSubmitResponse,
     ProductPageEnrollResponse,
+    ProductPageLoginCodeExchangeResponse,
     CouponValidateResponse,
     FieldValue,
 } from '../-types/product-page-types';
+import { resolveLearnerIdentity } from '../-utils/learner-identity';
+import { withOrderedMappings } from '../-utils/mapping-order';
 
 export const getProductPageByCode = async (
     code: string,
@@ -25,6 +29,9 @@ export const getProductPageByCode = async (
 export const handleGetProductPage = (code: string, instituteId: string) => ({
     queryKey: ['PRODUCT_PAGE_BY_CODE', code, instituteId],
     queryFn: () => getProductPageByCode(code, instituteId),
+    // Every consumer gets the mappings in the admin's display order (see
+    // mapping-order). A module-level function, so the result stays memoised.
+    select: withOrderedMappings,
     staleTime: 5 * 60 * 1000,
     enabled: !!code && !!instituteId,
 });
@@ -32,13 +39,26 @@ export const handleGetProductPage = (code: string, instituteId: string) => ({
 export const validateCoupon = async (
     coursePageCode: string,
     couponCode: string,
-    totalAmount: number
+    totalAmount: number,
+    /** Basket size, for coupons carrying a minimum ("₹99 off on 2 or more"). */
+    itemCount?: number,
+    /**
+     * The same cart at base prices, sent only when it is regionally priced: the server
+     * checks the coupon on this and scales the discount to the regional total.
+     */
+    baseTotalAmount?: number
 ): Promise<CouponValidateResponse> => {
     const response = await axios.post<CouponValidateResponse>(
         VALIDATE_PRODUCT_PAGE_COUPON,
         null,
         {
-            params: { coursePageCode, couponCode, totalAmount },
+            params: {
+                coursePageCode,
+                couponCode,
+                totalAmount,
+                ...(typeof itemCount === 'number' ? { itemCount } : {}),
+                ...(typeof baseTotalAmount === 'number' ? { baseTotalAmount } : {}),
+            },
         }
     );
     return response.data;
@@ -52,32 +72,13 @@ interface FormSubmitPayload {
     utmParams?: Record<string, string>;
 }
 
-function matchesEmail(v: FieldValue) {
-    const t = v.type?.toLowerCase() ?? '';
-    const n = v.name?.toLowerCase() ?? '';
-    return t.includes('email') || n.includes('email');
-}
-
-function matchesPhone(v: FieldValue) {
-    const t = v.type?.toLowerCase() ?? '';
-    const n = v.name?.toLowerCase() ?? '';
-    return t.includes('phone') || n.includes('phone') || n.includes('mobile');
-}
-
-function matchesName(v: FieldValue) {
-    const n = v.name?.toLowerCase() ?? '';
-    return n.includes('name') && !matchesEmail(v) && !matchesPhone(v);
-}
-
 export const submitProductPageForm = async (
     payload: FormSubmitPayload
 ): Promise<ProductPageFormSubmitResponse> => {
     const { coursePageCode, instituteId, selectedPsInvitePaymentOptionIds, registrationData } = payload;
 
     const values = Object.values(registrationData);
-    const email = values.find(matchesEmail)?.value ?? '';
-    const phone = values.find(matchesPhone)?.value ?? '';
-    const name = values.find(matchesName)?.value ?? '';
+    const { email, phone, name } = resolveLearnerIdentity(values);
 
     const customFieldValues = values.map((f) => ({
         custom_field_id: f.id,
@@ -136,9 +137,7 @@ export const enrollCpoForProductPage = async (
 ): Promise<{ user_id: string; user_plan_id: string }> => {
     const { registrationData } = payload;
     const values = Object.values(registrationData);
-    const email = values.find(matchesEmail)?.value ?? '';
-    const phone = values.find(matchesPhone)?.value ?? '';
-    const name = values.find(matchesName)?.value ?? '';
+    const { email, phone, name } = resolveLearnerIdentity(values);
 
     const customFieldValues = values.map((f) => ({
         custom_field_id: f.id,
@@ -174,9 +173,7 @@ export const enrollForProductPage = async (
 ): Promise<ProductPageEnrollResponse> => {
     const { registrationData } = payload;
     const values = Object.values(registrationData);
-    const email = values.find(matchesEmail)?.value ?? '';
-    const phone = values.find(matchesPhone)?.value ?? '';
-    const name = values.find(matchesName)?.value ?? '';
+    const { email, phone, name } = resolveLearnerIdentity(values);
 
     const customFieldValues = values.map((f) => ({
         custom_field_id: f.id,
@@ -206,5 +203,17 @@ export const enrollForProductPage = async (
         payment_initiation_request: payload.paymentInitiationRequest,
         utm_params: payload.utmParams ?? {},
     });
+    return response.data;
+};
+
+/** Swaps the one-time login_code from a paid enroll for the buyer's tokens. */
+export const exchangeProductPageLoginCode = async (
+    loginCode: string,
+    instituteId: string
+): Promise<ProductPageLoginCodeExchangeResponse> => {
+    const response = await axios.post<ProductPageLoginCodeExchangeResponse>(
+        PRODUCT_PAGE_LOGIN_CODE_EXCHANGE,
+        { login_code: loginCode, institute_id: instituteId }
+    );
     return response.data;
 };

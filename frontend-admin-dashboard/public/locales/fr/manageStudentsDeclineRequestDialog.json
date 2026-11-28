@@ -1,0 +1,15 @@
+{
+    "dialog": {
+        "title": "Refuser la demande",
+        "confirmText": "Êtes-vous sûr de vouloir refuser la demande pour {{name}} ?",
+        "emailNotice": "Cela refusera la demande pour les étudiants sélectionnés par e-mail."
+    },
+    "buttons": {
+        "cancel": "Annuler",
+        "decline": "Refuser la demande"
+    },
+    "toasts": {
+        "declineSuccess": "Demande refusée avec succès",
+        "declineFailed": "Échec du refus de la demande"
+    }
+}

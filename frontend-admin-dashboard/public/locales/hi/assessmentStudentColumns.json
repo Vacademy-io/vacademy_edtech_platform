@@ -1,0 +1,29 @@
+{
+    "columns": {
+        "details": "विवरण",
+        "name": "नाम",
+        "attemptDate": "प्रयास तिथि",
+        "startTime": "प्रारंभ समय",
+        "endTime": "समाप्ति समय",
+        "duration": "अवधि",
+        "score": "स्कोर",
+        "evaluationStatus": "मूल्यांकन स्थिति",
+        "resultStatus": "परिणाम स्थिति",
+        "enrollmentNumber": "नामांकन संख्या",
+        "gender": "लिंग",
+        "responseTime": "प्रतिक्रिया समय",
+        "phoneNumber": "फ़ोन नंबर",
+        "emailId": "ईमेल आईडी",
+        "city": "शहर",
+        "state": "राज्य",
+        "submission": "सबमिशन"
+    },
+    "status": {
+        "released": "जारी किया गया",
+        "pending": "लंबित",
+        "notAvailable": "लागू नहीं"
+    },
+    "tooltip": {
+        "instantSubmit": "तुरंत सबमिट — मापने योग्य समय व्यतीत नहीं हुआ। संभावित गैर-प्रयास या ऑटो-सबमिट।"
+    }
+}

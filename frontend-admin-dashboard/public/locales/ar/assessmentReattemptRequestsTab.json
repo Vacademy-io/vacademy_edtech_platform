@@ -1,0 +1,99 @@
+{
+    "typeFilters": {
+        "all": "كل الطلبات",
+        "problemReport": "بلاغات المشكلات",
+        "timeIncrease": "وقت إضافي",
+        "reattempt": "إعادة المحاولة",
+        "ariaLabel": "تصفية حسب نوع الطلب"
+    },
+    "question": {
+        "label": "السؤال {{number}}",
+        "labelInSection": "{{section}} · السؤال {{number}}",
+        "noText": "لا يحتوي هذا السؤال على نص (قد يكون صورة). افتح تبويب الأسئلة لعرضه.",
+        "notLinked": "لم يحدد المتعلم سؤالًا بعينه.",
+        "notInPaper": "لم يعد هذا السؤال ضمن الورقة."
+    },
+    "filters": {
+        "resolved": "تم الحل",
+        "ariaLabel": "تصفية حسب الحالة",
+        "pending": "قيد الانتظار",
+        "approved": "تمت الموافقة",
+        "rejected": "مرفوض",
+        "all": "الكل"
+    },
+    "status": {
+        "resolved": "تم الحل",
+        "approved": "تمت الموافقة",
+        "rejected": "مرفوض",
+        "pending": "قيد الانتظار"
+    },
+    "requestType": {
+        "problemReport": "بلاغ مشكلة",
+        "timeIncrease": "زيادة الوقت",
+        "reattempt": "إعادة المحاولة"
+    },
+    "summary": {
+        "approvedNoTime": "تمت الموافقة، ولم يُضف وقت إضافي",
+        "grantedMinutes_zero": "لم تُمنح دقائق إضافية",
+        "grantedMinutes_one": "تم منح دقيقة إضافية واحدة",
+        "grantedMinutes_two": "تم منح دقيقتين إضافيتين",
+        "grantedMinutes_few": "تم منح {{count}} دقائق إضافية",
+        "grantedMinutes_many": "تم منح {{count}} دقيقة إضافية",
+        "grantedMinutes_other": "تم منح {{count}} دقيقة إضافية",
+        "resolved": "تم الحل",
+        "replyNote": "الرد: {{note}}",
+        "currentlyAllowed": "المسموح به حاليًا: {{value}}",
+        "used": "المستخدم: {{value}}",
+        "requested": "تم الطلب في {{date}}",
+        "reviewedOn": "في {{date}}",
+        "grantedCount_zero": "لم يتم منح أي محاولات ({{count}})",
+        "grantedCount_one": "تم منح محاولة واحدة ({{count}})",
+        "grantedCount_two": "تم منح محاولتين ({{count}})",
+        "grantedCount_few": "تم منح {{count}} محاولات",
+        "grantedCount_many": "تم منح {{count}} محاولة",
+        "grantedCount_other": "تم منح {{count}} محاولة"
+    },
+    "form": {
+        "extraMinutesLabel": "دقائق إضافية",
+        "minutesRangeError": "من 1 إلى 300",
+        "timeHint": "إذا كان المتعلم لا يزال في الاختبار، فسيزداد مؤقته خلال دقيقة.",
+        "replyLabel": "رد على المتعلم (اختياري)",
+        "replyPlaceholder": "مثال: تم الإصلاح، يرجى إعادة فتح السؤال",
+        "replyHint": "يرى المتعلم ردك في قائمة المساعدة داخل الاختبار.",
+        "attemptsToGrantLabel": "عدد المحاولات الممنوحة",
+        "attemptsRangeError": "من 1 إلى 20"
+    },
+    "actions": {
+        "markResolved": "وضع علامة تم الحل",
+        "approve": "الموافقة",
+        "reject": "الرفض"
+    },
+    "toasts": {
+        "timeNotAdded": "تمت الموافقة، لكن اختبار {{name}} كان قد انتهى بالفعل (أو ليس له حد زمني)، لذلك لم يُضف أي وقت. امنح محاولة جديدة من تبويب المشاركين إذا احتاج إلى ذلك.",
+        "timeGranted_zero": "لم تُمنح دقائق إضافية لـ {{name}}.",
+        "timeGranted_one": "تم منح دقيقة إضافية واحدة لـ {{name}}.",
+        "timeGranted_two": "تم منح دقيقتين إضافيتين لـ {{name}}.",
+        "timeGranted_few": "تم منح {{count}} دقائق إضافية لـ {{name}}.",
+        "timeGranted_many": "تم منح {{count}} دقيقة إضافية لـ {{name}}.",
+        "timeGranted_other": "تم منح {{count}} دقيقة إضافية لـ {{name}}.",
+        "resolved": "تم وضع علامة تم الحل.",
+        "granted_zero": "لم يتم منح أي محاولات ({{count}}) إلى {{name}}.",
+        "granted_one": "تم منح محاولة واحدة ({{count}}) إلى {{name}}.",
+        "granted_two": "تم منح محاولتين ({{count}}) إلى {{name}}.",
+        "granted_few": "تم منح {{count}} محاولات إلى {{name}}.",
+        "granted_many": "تم منح {{count}} محاولة إلى {{name}}.",
+        "granted_other": "تم منح {{count}} محاولة إلى {{name}}.",
+        "theLearner": "المتعلم",
+        "rejected": "تم رفض الطلب.",
+        "updateFailed": "تعذر تحديث هذا الطلب. يرجى المحاولة مرة أخرى."
+    },
+    "error": {
+        "title": "تعذر تحميل الطلبات",
+        "tryAgain": "أعد المحاولة"
+    },
+    "empty": {
+        "titleAll": "لا توجد طلبات",
+        "titleFiltered": "لا توجد طلبات {{status}}",
+        "description": "يمكن للمتعلمين الإبلاغ عن مشكلة في سؤال، أو طلب وقت إضافي أو محاولة أخرى، من داخل الاختبار. تصل طلباتهم إلى هنا."
+    }
+}

@@ -1,77 +1,189 @@
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
-import { Bell, CaretRight, Clock } from "@phosphor-icons/react";
+import { Bell, CaretRight, Clock, Megaphone, X } from "@phosphor-icons/react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 
-interface NotifcationCardProps {
+interface NotificationCardProps {
   title?: string;
   description?: string;
   date?: string;
   isNew?: boolean;
+  /** How many identical notifications collapsed into this row (1 = no chip). */
+  count?: number;
+  variant?: "general" | "announcement";
+  onClick?: () => void;
+  /** Dismiss this row. Omit to hide the clear affordance entirely. */
+  onClear?: () => void;
+  clearing?: boolean;
 }
 
-export function NotifcationCard({
+/**
+ * One notification row. It is a real <button>: the whole card opens the detail
+ * dialog, so it must be reachable by keyboard and announce itself as an action.
+ *
+ * The clear (×) control is a SIBLING of that button, positioned over its corner,
+ * not a child — a <button> inside a <button> is invalid HTML and the inner one
+ * does not reliably receive clicks.
+ *
+ * Contrast rules (the reason the ink colors below are explicit rather than
+ * inherited): on the Play skin an unread card sits on the `--play-c-info-soft`
+ * tint, where the shared `text-muted-foreground` slate lands at
+ * 4.33:1 — under AA — and reads as washed-out blue-on-blue. Every text layer
+ * therefore names its own Play ink, and the "View details" affordance sits on
+ * an opaque `bg-background` chip so it never depends on the card's tint.
+ */
+export function NotificationCard({
   title,
   description,
   date,
   isNew = true,
-}: NotifcationCardProps) {
+  count = 1,
+  variant = "general",
+  onClick,
+  onClear,
+  clearing = false,
+}: NotificationCardProps) {
   const { t } = useTranslation("dashboard");
+  const Icon = variant === "announcement" ? Megaphone : Bell;
+
   return (
-    <Card
-      className={cn(
-        "relative overflow-hidden transition-all duration-300 hover:shadow-md cursor-pointer group",
-        isNew ? "border-primary/20 bg-primary/5" : "border-border shadow-sm",
-        // Vibrant Styles
-        "[.ui-vibrant_&]:hover:shadow-lg [.ui-vibrant_&]:hover:border-primary/30",
-        isNew && "[.ui-vibrant_&]:bg-gradient-to-br [.ui-vibrant_&]:from-primary/5 [.ui-vibrant_&]:to-primary/10",
-        // Play Styles — bg/shadow/border handled by .ui-play .card rule (and notification-card-new for new state)
-        "[.ui-play_&]:font-bold",
-        // info-soft unread surface (play-theme.css) carries ink text now
-        isNew && "notification-card-new [.ui-play_&]:text-play-info-soft-ink"
+    <div className={cn("group relative", clearing && "pointer-events-none opacity-50")}>
+      {onClear && (
+        <button
+          type="button"
+          onClick={onClear}
+          disabled={clearing}
+          aria-label={t("notifications.clearOne", { title: title ?? "" })}
+          title={t("notifications.clear")}
+          className={cn(
+            "absolute end-2 top-2 z-10 flex size-7 items-center justify-center rounded-full",
+            "text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive",
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1",
+            "[.ui-play_&]:text-play-ink/75"
+          )}
+        >
+          <X size={14} weight="bold" />
+        </button>
       )}
-    >
-      <CardContent className="p-4 sm:p-5">
-        <div className="flex items-start gap-3 md:gap-4">
-          <div className={`p-2 rounded-md flex-shrink-0 ${isNew ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'
-            }`}>
-            <Bell size={18} />
-          </div>
 
-          <div className="flex-1 min-w-0">
-            <div className="flex items-start justify-between gap-2 mb-1">
-              <h3 className="text-sm sm:text-base font-semibold text-foreground leading-tight line-clamp-1">
-                {title}
-              </h3>
-              {isNew && (
-                <Badge variant="secondary" className="bg-primary/10 text-primary text-caption px-1.5 h-5 flex-shrink-0">
-                  {t("notifications.newBadge")}
-                </Badge>
+      <button
+        type="button"
+        onClick={onClick}
+        className={cn(
+          "relative block w-full overflow-hidden rounded-xl border text-start",
+          "transition-all duration-200 hover:shadow-md hover:-translate-y-0.5",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+          isNew
+            ? "border-primary-200 bg-primary-50/50 shadow-sm"
+            : "border-border bg-card shadow-sm",
+          // Vibrant: a touch more lift, no new tint (tints are what hurt the ink).
+          "[.ui-vibrant_&]:hover:shadow-lg [.ui-vibrant_&]:hover:border-primary-300",
+          // Play: `notification-card-new` owns the pastel surface + radius via
+          // play-theme.css (!important), so only the ink is set here.
+          isNew && "notification-card-new"
+        )}
+      >
+      {/* Unread accent rail — the primary unread signal, so the surface tint
+          can stay light enough for body text to stay legible. */}
+      {isNew && (
+        <span
+          aria-hidden="true"
+          className="absolute inset-y-0 start-0 w-1 bg-primary-500 [.ui-play_&]:bg-play-info"
+        />
+      )}
+
+      <span className="flex items-start gap-3 p-card sm:gap-4 sm:p-5">
+        <span
+          className={cn(
+            "flex size-9 flex-shrink-0 items-center justify-center rounded-lg",
+            isNew
+              ? "bg-primary-100 text-primary-500"
+              : "bg-muted text-muted-foreground",
+            isNew && "[.ui-play_&]:bg-white [.ui-play_&]:text-play-info-soft-ink"
+          )}
+        >
+          <Icon size={18} weight={isNew ? "fill" : "regular"} />
+        </span>
+
+        <span className="min-w-0 flex-1">
+          {/* `pe-7` only on the title row: it keeps the badges clear of the
+              absolutely-positioned × without insetting the footer too. */}
+          <span
+            className={cn(
+              "mb-1 flex items-start justify-between gap-2",
+              onClear && "pe-7"
+            )}
+          >
+            <span
+              className={cn(
+                "line-clamp-2 break-words text-sm font-semibold leading-snug text-foreground sm:text-base",
+                "[.ui-play_&]:font-bold [.ui-play_&]:text-play-ink"
               )}
-            </div>
+            >
+              {title}
+            </span>
 
-            <p className="text-sm text-muted-foreground leading-relaxed line-clamp-2 mb-3">
-              {description}
-            </p>
-
-            <div className="flex items-center justify-between text-xs text-muted-foreground border-t pt-3 mt-1">
-              <div className="flex items-center gap-1.5">
-                <Clock size={12} />
-                <span>{date}</span>
-              </div>
-
-              <div className="flex items-center gap-1 group-hover:text-primary transition-colors">
-                <span className="opacity-0 group-hover:opacity-100 transition-opacity">
-                  {t("notifications.viewDetails")}
+            <span className="flex flex-shrink-0 items-center gap-1.5">
+              {count > 1 && (
+                <span className="rounded-full bg-muted px-1.5 py-0.5 text-caption font-semibold tabular-nums text-foreground/70 [.ui-play_&]:bg-white [.ui-play_&]:text-play-ink">
+                  {t("notifications.occurrenceCount", { count })}
                 </span>
-                <CaretRight size={14} weight="bold" className="transform group-hover:translate-x-1 transition-transform" />
-              </div>
-            </div>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+              )}
+              {isNew && (
+                /* Dark ink on a white pill with a brand dot, NOT white-on-
+                   brand-fill: primary-500 is tuned as a fill, and white text
+                   on it measures 2.8:1 on the stock brand — the badge would
+                   be the least readable thing on the card. */
+                <span className="flex items-center gap-1 rounded-full bg-background px-2 py-0.5 text-caption font-semibold text-foreground ring-1 ring-primary-200">
+                  <span aria-hidden="true" className="size-1.5 rounded-full bg-primary-500" />
+                  {t("notifications.newBadge")}
+                </span>
+              )}
+            </span>
+          </span>
+
+          {description && (
+            <span
+              className={cn(
+                "line-clamp-2 block break-words text-sm leading-relaxed text-muted-foreground",
+                "[.ui-play_&]:font-medium [.ui-play_&]:text-play-ink/80"
+              )}
+            >
+              {description}
+            </span>
+          )}
+
+          <span className="mt-3 flex items-center justify-between gap-2 border-t border-border/70 pt-3 text-xs">
+            <span
+              className={cn(
+                "flex min-w-0 items-center gap-1.5 text-muted-foreground",
+                "[.ui-play_&]:text-play-ink/75"
+              )}
+            >
+              <Clock size={13} />
+              <span>{date}</span>
+            </span>
+
+            {/* Always visible — this used to be `opacity-0 group-hover:opacity-100`,
+                which meant the only affordance was invisible at rest and
+                unreachable entirely on touch devices. */}
+            <span
+              className={cn(
+                "flex flex-shrink-0 items-center gap-1 rounded-full border border-border bg-background px-2.5 py-1",
+                "font-semibold text-foreground transition-colors",
+                "group-hover:border-primary-300 group-hover:bg-primary-50"
+              )}
+            >
+              {t("notifications.viewDetails")}
+              <CaretRight
+                size={12}
+                weight="bold"
+                className="transition-transform group-hover:translate-x-0.5 rtl:group-hover:-translate-x-0.5"
+              />
+            </span>
+          </span>
+        </span>
+      </span>
+      </button>
+    </div>
   );
 }
-

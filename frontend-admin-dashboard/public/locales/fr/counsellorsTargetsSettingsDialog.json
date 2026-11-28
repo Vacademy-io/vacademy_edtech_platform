@@ -1,0 +1,42 @@
+{
+    "periods": {
+        "week": "Hebdomadaire (récurrent)",
+        "month": "Mensuel (récurrent)",
+        "custom": "Plage de dates personnalisée"
+    },
+    "title": "Définir les objectifs des conseillers",
+    "metric": "Indicateur",
+    "timeline": "Période",
+    "from": "Du",
+    "to": "Au",
+    "applyToAll": {
+        "label": "Appliquer à tous ({{count}}) :",
+        "button": "Appliquer à tous",
+        "placeholder": "ex. 50"
+    },
+    "toast": {
+        "invalidBulkValue": "Saisissez un nombre valide à appliquer à tous",
+        "pickDateRange": "Choisissez d'abord une plage de dates personnalisée",
+        "appliedSuccess_one": "Appliqué à {{count}} conseiller",
+        "appliedSuccess_many": "Appliqué à {{count}} conseillers",
+        "appliedSuccess_other": "Appliqué à {{count}} conseillers",
+        "applyError": "Impossible d'appliquer les objectifs",
+        "noChanges": "Aucune modification à enregistrer",
+        "savedSuccess_one": "{{count}} objectif enregistré",
+        "savedSuccess_many": "{{count}} objectifs enregistrés",
+        "savedSuccess_other": "{{count}} objectifs enregistrés",
+        "saveError": "Impossible d'enregistrer les objectifs"
+    },
+    "list": {
+        "customIncomplete": "Choisissez une plage de dates personnalisée pour modifier les objectifs.",
+        "loading": "Chargement des objectifs actuels…",
+        "empty": "Aucun conseiller pour lequel définir des objectifs.",
+        "unnamed": "Sans nom",
+        "noValuePlaceholder": "—"
+    },
+    "footer": {
+        "close": "Fermer",
+        "save": "Enregistrer les modifications",
+        "saving": "Enregistrement…"
+    }
+}

@@ -1,6 +1,7 @@
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { MyButton } from '@/components/design-system/button';
 import { DashboardLoader } from '@/components/core/dashboard-loader';
+import { useTranslation } from 'react-i18next';
 
 interface GenerateDialogProps {
     open: boolean;
@@ -19,11 +20,12 @@ export const GenerateAssessmentDialog = ({
     allPagesGenerateQuestionsStatus,
     pageWiseGenerateQuestionsStatus,
 }: GenerateDialogProps) => {
+    const { t } = useTranslation('aiCenterGenerateAssessmentDialog');
     return (
         <Dialog open={open} onOpenChange={handleOpen}>
             <DialogContent className="p-0">
                 <h1 className="rounded-t-lg bg-primary-50 p-4 font-semibold text-primary-500">
-                    Generate Assessment
+                    {t('title')}
                 </h1>
                 <div className="my-4 flex flex-col items-center justify-center gap-4">
                     <MyButton
@@ -37,7 +39,7 @@ export const GenerateAssessmentDialog = ({
                         {allPagesGenerateQuestionsStatus ? (
                             <DashboardLoader />
                         ) : (
-                            'Select Questions From All Pages'
+                            t('selectFromAllPages')
                         )}
                     </MyButton>
                     <MyButton
@@ -51,7 +53,7 @@ export const GenerateAssessmentDialog = ({
                         {pageWiseGenerateQuestionsStatus ? (
                             <DashboardLoader />
                         ) : (
-                            'Select Question From Specific Pages'
+                            t('selectFromSpecificPages')
                         )}
                     </MyButton>
                 </div>

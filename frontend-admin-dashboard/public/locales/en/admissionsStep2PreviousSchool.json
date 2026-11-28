@@ -1,0 +1,71 @@
+{
+    "previousSchool": {
+        "heading": "Previous School Details",
+        "schoolName": {
+            "label": "School Name",
+            "placeholder": "Enter Previous School Name"
+        },
+        "previousClass": {
+            "label": "Previous Class",
+            "placeholder": "Select Class"
+        },
+        "board": {
+            "label": "Board",
+            "placeholder": "Select Board"
+        },
+        "yearOfPassing": {
+            "label": "Year of Passing",
+            "placeholder": "YYYY"
+        },
+        "percentage": {
+            "label": "Percentage",
+            "placeholder": "%"
+        },
+        "percentageScience": {
+            "label": "Percentage in Science",
+            "placeholder": "%"
+        },
+        "percentageMaths": {
+            "label": "Percentage in Maths",
+            "placeholder": "%"
+        },
+        "previousAdmissionNo": {
+            "label": "Previous Admission No",
+            "placeholder": "Enter Number"
+        }
+    },
+    "otherDetails": {
+        "heading": "Other Details",
+        "religion": {
+            "label": "Religion",
+            "placeholder": "Enter Religion"
+        },
+        "caste": {
+            "label": "Caste",
+            "placeholder": "Enter Caste"
+        },
+        "motherTongue": {
+            "label": "Mother Tongue",
+            "placeholder": "Enter Mother Tongue"
+        },
+        "bloodGroup": {
+            "label": "Blood Group",
+            "placeholder": "Select Group"
+        },
+        "nationality": {
+            "label": "Nationality",
+            "placeholder": "e.g. Indian"
+        },
+        "howDidYouKnow": {
+            "label": "How did you come to know about us",
+            "placeholder": "Select Option",
+            "options": {
+                "socialMedia": "Social Media",
+                "friendsFamily": "Friends/Family",
+                "advertisement": "Advertisement",
+                "website": "Website",
+                "other": "Other"
+            }
+        }
+    }
+}

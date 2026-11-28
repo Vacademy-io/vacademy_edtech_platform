@@ -10,6 +10,8 @@ import vacademy.io.common.auth.entity.UserRole;
 import vacademy.io.common.auth.model.CustomUserDetails;
 import vacademy.io.common.auth.repository.UserRepository;
 import vacademy.io.common.auth.repository.UserRoleRepository;
+import vacademy.io.common.auth.service.UserRoleService;
+import vacademy.io.common.exceptions.AccessRevokedException;
 
 import java.util.List;
 import java.util.Optional;
@@ -34,6 +36,13 @@ public class UserDetailsCacheService {
         }
 
         List<UserRole> userRoles = userRoleRepository.findByUser(user.get());
+        // Every other service resolves the caller through here on each request, so this is
+        // where a disabled or removed team member is stopped — including sessions that are
+        // still holding a token issued before access was taken away. Nothing is cached on
+        // the throw, so re-enabling takes effect on the next request.
+        if (UserRoleService.isStaffAccessRevoked(userRoles, instituteId)) {
+            throw new AccessRevokedException("access to this institute has been disabled for this user");
+        }
         CustomUserDetails customUserDetails = new CustomUserDetails(user.get(), instituteId, userRoles);
         // Do not expose user password in payload
         customUserDetails.setPassword(null);

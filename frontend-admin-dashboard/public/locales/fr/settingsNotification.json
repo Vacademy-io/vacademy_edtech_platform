@@ -1,0 +1,319 @@
+{
+    "subTabs": {
+        "ariaLabel": "Sections des paramètres de notification",
+        "general": "Général",
+        "chat": "Discussion et communauté",
+        "push": "Notifications push",
+        "email": "E-mail"
+    },
+    "header": {
+        "title": "Paramètres de notification",
+        "subtitle": "Configurer les autorisations d'annonces à l'échelle de l'établissement",
+        "saveSettings": "Enregistrer les paramètres"
+    },
+    "loading": "Chargement...",
+    "errors": {
+        "loadSettings": "Échec du chargement des paramètres",
+        "loadEmailConfigurations": "Échec du chargement des configurations d'e-mail",
+        "saveSettings": "Échec de l'enregistrement des paramètres de notification"
+    },
+    "toasts": {
+        "settingsSaved": "Paramètres de notification enregistrés"
+    },
+    "footer": {
+        "save": "Enregistrer"
+    },
+    "general": {
+        "title": "Général",
+        "approvalRequired": {
+            "label": "Approbation requise",
+            "hint": "Exiger l'approbation d'un administrateur avant que les annonces soient visibles"
+        },
+        "maxAnnouncementsPerDay": {
+            "label": "Annonces max/jour",
+            "hint": "Limite par utilisateur"
+        },
+        "retentionDays": {
+            "label": "Conservation (jours)",
+            "hint": "Période de nettoyage automatique"
+        },
+        "defaultTimezone": {
+            "label": "Fuseau horaire par défaut",
+            "hint": "Utilisé pour la planification et les rappels"
+        }
+    },
+    "community": {
+        "title": "Communauté",
+        "studentsCanSend": "Les élèves peuvent envoyer",
+        "adminsCanModerate": "Les administrateurs peuvent modérer",
+        "allowReplies": "Autoriser les réponses",
+        "allowedTags": "Balises autorisées"
+    },
+    "systemAlerts": {
+        "title": "Alertes système",
+        "teachersCanSend": "Les enseignants peuvent envoyer",
+        "adminsCanSend": "Les administrateurs peuvent envoyer",
+        "autoDismissHours": {
+            "label": "Fermeture automatique (heures)",
+            "hint": "Effacement automatique après"
+        }
+    },
+    "appOverlays": {
+        "title": "Superpositions d'application",
+        "description": "Annonces plein écran que {{role}} voient à l'ouverture de l'application",
+        "canSend": "{{role}} peuvent envoyer"
+    },
+    "dashboardPins": {
+        "title": "Épingles du tableau de bord",
+        "studentsCanCreate": "Les élèves peuvent créer",
+        "teachersCanCreate": "Les enseignants peuvent créer",
+        "adminsCanCreate": "Les administrateurs peuvent créer",
+        "maxDurationHours": {
+            "label": "Durée max (heures)",
+            "hint": "Durée de vie de l'épingle"
+        },
+        "maxPinsPerUser": {
+            "label": "Épingles max par utilisateur",
+            "hint": "Limite de création"
+        },
+        "requireApproval": "Approbation requise"
+    },
+    "directMessages": {
+        "title": "Messages directs",
+        "studentsCanSend": "Les élèves peuvent envoyer",
+        "allowReplies": "Autoriser les réponses",
+        "moderationEnabled": "Modération activée"
+    },
+    "push": {
+        "title": "Notifications push (Firebase)",
+        "enable": {
+            "label": "Activer les notifications push",
+            "hint": "Nécessite un fichier JSON de compte de service Firebase valide"
+        },
+        "base64Label": "Ou collez du JSON encodé en Base64",
+        "base64Placeholder": "Chaîne Base64",
+        "validateAndSave": "Valider et enregistrer",
+        "keyConfigured": "Une clé de compte de service est enregistrée pour cet établissement. Elle n'est jamais réaffichée ; collez une nouvelle clé uniquement pour la remplacer."
+    },
+    "streams": {
+        "title": "Flux",
+        "teachersCanSend": "Les enseignants peuvent envoyer",
+        "allowDuringClass": "Autoriser pendant le cours",
+        "autoArchiveHours": {
+            "label": "Archivage automatique (heures)",
+            "hint": "Déplacement automatique vers l'archive"
+        }
+    },
+    "resources": {
+        "title": "Ressources",
+        "studentsCanUpload": "Les élèves peuvent envoyer des fichiers",
+        "maxFileSizeMb": {
+            "label": "Taille de fichier max (Mo)",
+            "hint": "Limite de téléversement"
+        }
+    },
+    "chat": {
+        "title": "Messages dans l'application",
+        "enabled": "Messages dans l'application activés",
+        "ownMessagesTitle": "{{role}} — leurs propres messages",
+        "ownMessagesDescription": "S'applique partout où {{studentRoleLower}} peuvent discuter. Les {{teacherRole}} et les administrateurs conservent toujours les deux actions.",
+        "canEditOwn": "{{role}} peuvent modifier leurs propres messages",
+        "canDeleteOwn": "{{role}} peuvent supprimer leurs propres messages",
+        "batchGroupsTitle": "Groupes de {{batch}}",
+        "canPost": "{{role}} peuvent publier",
+        "communityTitle": "Communauté",
+        "communityChannelEnabled": "Canal communautaire activé",
+        "communityRulesTitle": "Règles de la communauté",
+        "guidelinesTitle": "Titre des directives",
+        "guidelinesTitlePlaceholder": "ex. : Règles de la communauté",
+        "guidelineItems": "Éléments des directives",
+        "guidelineItemPlaceholder": "Ajouter une directive et appuyer sur Entrée",
+        "acknowledgementRequired": "Confirmation requise",
+        "slowModeSeconds": {
+            "label": "Mode lent (secondes)",
+            "hint": "Délai entre les publications"
+        },
+        "newMemberReadonlyMinutes": {
+            "label": "Nouveau membre en lecture seule (minutes)",
+            "hint": "Mettre en sourdine les nouveaux membres au départ"
+        },
+        "allowLinks": "Autoriser les liens",
+        "allowAttachments": "Autoriser les pièces jointes",
+        "bannedKeywords": "Mots-clés interdits",
+        "bannedKeywordPlaceholder": "Ajouter un mot-clé et appuyer sur Entrée",
+        "autoModerationAction": "Action de modération automatique",
+        "selectActionPlaceholder": "Sélectionner une action",
+        "actionBlock": "Bloquer",
+        "actionFlag": "Signaler",
+        "directMessagesTitle": "Messages directs",
+        "directMessagesEnabled": "Messages directs activés",
+        "senderCanMessage": "Expéditeur \\ Peut envoyer un message à",
+        "attachmentsTitle": "Pièces jointes",
+        "imagesEnabled": "Images activées",
+        "filesEnabled": "Fichiers activés",
+        "maxFileSizeMb": {
+            "label": "Taille de fichier max (Mo)",
+            "hint": "Limite de téléversement"
+        }
+    },
+    "email": {
+        "addressesTitle": "Adresses e-mail",
+        "addressesDescription": "Ce sont les adresses e-mail que votre établissement utilise pour envoyer des messages aux apprenants et au personnel. Chaque adresse a un objectif — par exemple, une pour les campagnes marketing, une autre pour les réponses du support.",
+        "toastAddFailed": "Impossible d'ajouter cette adresse e-mail. Veuillez réessayer.",
+        "toastUpdateSuccess": "Enregistré. Les nouveaux e-mails envoyés depuis cette adresse utiliseront les détails mis à jour.",
+        "toastUpdateFailed": "Impossible d'enregistrer vos modifications. Veuillez réessayer.",
+        "toastDeleteSuccess": "Adresse e-mail supprimée.",
+        "toastDeleteFailed": "Impossible de supprimer cette adresse e-mail. Veuillez réessayer."
+    },
+    "emailCc": {
+        "title": "Copies d'e-mail (CC / CCI)",
+        "description": "Envoyez une copie des e-mails transactionnels à votre propre équipe — par exemple, chaque facture vers la boîte de réception comptable. Les copies sont désactivées sauf si vous activez à la fois ce paramètre et les e-mails individuels ci-dessous.",
+        "sendCopies": "Envoyer des copies des e-mails transactionnels",
+        "noneSelected": "Aucun e-mail n'est sélectionné ci-dessous, aucune copie ne sera donc envoyée.",
+        "noAddresses": "Aucune adresse n'a été ajoutée, aucune copie ne sera donc envoyée. Saisissez une adresse et appuyez sur Entrée pour l'ajouter.",
+        "copyType": "Type de copie",
+        "copyTypeHint": "CCI garde les adresses de votre équipe cachées. CC les montre à l'apprenant sur l'e-mail — utilisez CC uniquement si l'apprenant doit voir qui d'autre l'a reçu.",
+        "alwaysCopy": "Toujours copier ces adresses",
+        "alwaysCopyHint": "Ajoutées à chaque e-mail que vous activez ci-dessous. Laissez vide pour définir les adresses par e-mail à la place.",
+        "emailPlaceholder": "nom@exemple.com — appuyez sur Entrée pour ajouter",
+        "whichEmails": "Quels e-mails copier",
+        "alsoCopyTo": "Copier aussi à — en plus des adresses ci-dessus",
+        "notRecorded": "Les copies ne sont pas enregistrées vis-à-vis du destinataire dans les rapports d'e-mail, et les réponses d'une adresse copiée ne sont pas suivies.",
+        "invalidEmail": "« {{value}} » n'est pas une adresse e-mail valide."
+    },
+    "stringListEditor": {
+        "defaultPlaceholder": "Ajouter et appuyer sur Entrée"
+    },
+    "tagEditor": {
+        "placeholder": "Ajouter une balise et appuyer sur Entrée"
+    },
+    "emailPurposes": {
+        "utility": {
+            "label": "Notifications et mises à jour système",
+            "hint": "Alertes de compte, réinitialisations de mot de passe, rappels"
+        },
+        "info": {
+            "label": "Annonces et informations générales",
+            "hint": "Actualités, newsletters, mises à jour de diffusion"
+        },
+        "transactional": {
+            "label": "Reçus et confirmations",
+            "hint": "Reçus de paiement, confirmations d'inscription"
+        },
+        "marketing": {
+            "label": "Marketing et promotions",
+            "hint": "Campagnes, offres, contenu promotionnel"
+        },
+        "support": {
+            "label": "Support et aide",
+            "hint": "Réponses aux apprenants ou au personnel ayant besoin d'aide"
+        },
+        "other": "Autre (objectif personnalisé)…",
+        "customHint": "Un objectif personnalisé pour les e-mails qui ne correspondent pas aux catégories ci-dessus."
+    },
+    "emailList": {
+        "verifiedNotice": {
+            "part1": "Chaque adresse doit être",
+            "verifiedWithService": "vérifiée avec le service d'e-mail",
+            "part2": "avant de pouvoir envoyer. L'ajout d'une adresse envoie un lien de confirmation par e-mail — cliquez sur ce lien, puis appuyez sur",
+            "refreshStatus": "Actualiser le statut",
+            "part3": ". Tant qu'une adresse n'est pas vérifiée, ses messages sont envoyés depuis l'adresse par défaut de la plateforme."
+        },
+        "unverifiedNotice": {
+            "part1": "Avant qu'une adresse ici puisse envoyer des e-mails,",
+            "needsVerification": "notre équipe doit la vérifier auprès du service d'e-mail",
+            "part2": ". Tant que ce n'est pas fait, les messages d'une nouvelle adresse n'atteindront pas les destinataires. Si vous venez d'ajouter ou de modifier une adresse, veuillez",
+            "contactSupport": "contacter le support",
+            "part3": "afin que nous puissions la vérifier pour vous."
+        },
+        "loadingAddresses": "Chargement de vos adresses e-mail…",
+        "addNewTitle": "Ajouter une nouvelle adresse e-mail",
+        "fields": {
+            "email": "Adresse e-mail",
+            "emailPlaceholder": "ex. : support@votreecole.com",
+            "displayName": "Nom d'affichage",
+            "displayNamePlaceholder": "ex. : « Support Académie Acme »",
+            "displayNameHint": "Affiché aux destinataires à côté de l'adresse e-mail.",
+            "purpose": "À quoi sert cet e-mail ?",
+            "purposePlaceholder": "Choisir un objectif",
+            "customPurposePlaceholder": "ex. : « Newsletter » ou « Anciens élèves »",
+            "customPurposeHint": "Utilisez un nom court. Nous l'enregistrerons en interne sous {{code}}.",
+            "customPurposeDefaultCode": "VOTRE_OBJECTIF",
+            "notes": "Notes (facultatif)",
+            "notesPlaceholder": "Pour la référence de votre équipe"
+        },
+        "addButton": "Ajouter une adresse e-mail",
+        "yourAddresses": "Vos adresses e-mail ({{count}})",
+        "emptyState": "Vous n'avez encore ajouté aucune adresse e-mail. Utilisez le formulaire ci-dessus pour en ajouter une.",
+        "toasts": {
+            "emailExists": "Cette adresse e-mail est déjà ajoutée.",
+            "purposeExists": "Vous avez déjà une adresse pour cet objectif. Modifiez celle existante ou choisissez un objectif différent.",
+            "addedVerificationStarted": "Adresse e-mail ajoutée — vérification lancée.",
+            "addedVerificationStartedDescription": "AWS a envoyé un e-mail de confirmation à {{email}}. Ouvrez-le et cliquez sur le lien, puis actualisez l'adresse ci-dessous.",
+            "added": "Adresse e-mail ajoutée.",
+            "addedVerificationFailedDescription": "Impossible de démarrer la vérification automatiquement. Utilisez le bouton « Vérifier l'expéditeur » sur l'adresse ci-dessous.",
+            "addedNoVerificationDescription": "Avant que cette adresse puisse envoyer des e-mails, notre équipe doit la vérifier. Veuillez contacter le support pour la faire vérifier — les e-mails envoyés avant vérification n'atteindront pas les destinataires."
+        }
+    },
+    "verificationBadge": {
+        "verified": "Vérifiée",
+        "pending": "Vérification en attente",
+        "failed": "Échec de la vérification",
+        "notVerified": "Non vérifiée"
+    },
+    "dnsTable": {
+        "toastCopied": "Copié",
+        "toastCopyFailed": "Impossible de copier",
+        "instructions": "Ajoutez ces enregistrements DNS à votre domaine, puis appuyez sur Actualiser le statut :",
+        "columnType": "Type",
+        "columnName": "Nom / Hôte",
+        "columnValue": "Valeur",
+        "copyButton": "Copier"
+    },
+    "emailRow": {
+        "purposeLockedTitle": "L'objectif ne peut pas être modifié une fois l'adresse ajoutée. Pour utiliser un objectif différent, supprimez cette adresse et ajoutez-en une nouvelle.",
+        "purposeLocked": "L'objectif ne peut pas être modifié",
+        "sendingStatus": "Statut d'envoi :",
+        "working": "En cours…",
+        "verifySender": "Vérifier l'expéditeur",
+        "checking": "Vérification…",
+        "refreshStatus": "Actualiser le statut",
+        "verifyDomainInstead": "Vérifier plutôt tout le domaine (meilleure délivrabilité)",
+        "cancel": "Annuler",
+        "saving": "Enregistrement…",
+        "saveChanges": "Enregistrer les modifications",
+        "removing": "Suppression…",
+        "remove": "Supprimer",
+        "genericError": "Veuillez réessayer.",
+        "confirmDelete": "Supprimer « {{email}} » ?\n\nElle ne sera plus utilisée pour {{purpose}}.\nVous pourrez la rajouter plus tard si besoin.",
+        "toasts": {
+            "domainVerificationStarted": "Vérification du domaine lancée",
+            "verificationEmailSent": "E-mail de vérification envoyé",
+            "verificationStartFailed": "Impossible de démarrer la vérification",
+            "refreshFailed": "Impossible d'actualiser le statut"
+        },
+        "controls": {
+            "controlsTitle": "Sending controls",
+            "controlsHint": "Optional. Cap how many emails this sender may send per day (overflow is queued for the next day) and add the unsubscribe footer required for commercial email.",
+            "maxPerDay": "Max emails per day",
+            "maxPerDayPlaceholder": "0 = unlimited",
+            "timezone": "Day boundary time zone",
+            "timezonePlaceholder": "e.g. America/New_York",
+            "sendAfterHour": "Next day's window opens at (hour, 0–23)",
+            "postalAddress": "Postal address for the footer",
+            "postalAddressPlaceholder": "Required by CAN-SPAM for commercial email",
+            "listUnsubscribe": "Add unsubscribe link and headers to every email from this sender",
+            "listUnsubscribeHint": "Promotional emails always get them; turn this on to add them to other purposes too.",
+            "rampEnabled": "Warm up gradually (recommended for a new domain)",
+            "rampEnabledHint": "Start small and raise the daily limit on a schedule. Mailbox providers judge a new sending domain on how its volume grows; anything over the day's limit is queued for the next window, not dropped.",
+            "rampStartPerDay": "Start at (emails/day)",
+            "rampStep": "Increase by",
+            "rampEveryDays": "Every (days)",
+            "rampCeiling": "Stop increasing at",
+            "rampStartedOn": "Warm-up started {{date}}. The schedule follows the calendar, so pausing does not bank extra volume.",
+            "skipWeekends": "Don't send on Saturday or Sunday",
+            "maxPerDayManaged": "Max emails per day (set by the warm-up schedule)"
+        },
+        "verifyDomainUpgrade": "Verify the whole domain for better deliverability (DKIM) — sending keeps working while DNS propagates"
+    }
+}

@@ -54,7 +54,8 @@ export interface WorkflowBuilderState {
     onNodesChange: (changes: NodeChange[]) => void;
     onEdgesChange: (changes: EdgeChange[]) => void;
     onConnect: (connection: Connection) => void;
-    addNode: (type: string, name: string, position?: { x: number; y: number }) => void;
+    /** Returns the new node's id. */
+    addNode: (type: string, name: string, position?: { x: number; y: number }) => string;
     removeNode: (nodeId: string) => void;
     selectNode: (nodeId: string | null) => void;
     updateNodeConfig: (nodeId: string, config: Record<string, unknown>) => void;
@@ -156,6 +157,7 @@ export const useWorkflowBuilderStore = create<WorkflowBuilderState>((set, get) =
             nodes: [...state.nodes, newNode],
             isDirty: true,
         }));
+        return id;
     },
 
     removeNode: (nodeId) =>

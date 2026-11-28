@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { MyInput } from "@/components/design-system/input";
 import {
   Select,
@@ -13,10 +14,17 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { SpinnerGap } from "@phosphor-icons/react";
 import PhoneInput from "react-phone-input-2";
-import "react-phone-input-2/lib/style.css";
+// bootstrap.css is the ONE variant this app loads. Importing a second
+// variant anywhere puts two incompatible geometries in the same bundle and
+// the country flag lands on top of the country name — see the
+// "react-phone-input-2 — design-system geometry" block in src/index.css.
+import "react-phone-input-2/lib/bootstrap.css";
 import { useFileUpload } from "@/hooks/use-file-upload";
 import { getTokenFromCookie, getTokenDecodedData } from "@/lib/auth/sessionUtility";
-import { getPreferredPhoneCountries } from "@/services/domain-routing";
+import {
+  phoneFieldHasInput,
+  usePreferredPhoneCountries,
+} from "@/hooks/use-preferred-phone-countries";
 import { TokenKey } from "@/constants/auth/tokens";
 import {
   FieldRenderType,
@@ -58,12 +66,26 @@ export const CustomFieldRenderer = ({
   disabled = false,
   placeholder,
 }: CustomFieldRendererProps) => {
+  const { t } = useTranslation("layoutCommonB");
   const [isUploading, setIsUploading] = useState(false);
   const [uploadedFileName, setUploadedFileName] = useState<string>("");
   const { uploadFile, uploadFilePublic, getPublicUrl, getPublicUrlWithoutLogin } = useFileUpload();
 
   // Normalise the render type
   const normalizedType = String(type).toUpperCase() as FieldRenderType;
+
+  // Hooks cannot live inside the render switch below, so the phone country is
+  // resolved here for every field type and only read by the PHONE case. It picks
+  // up the institute's answer if domain routing replies after this form rendered,
+  // and never moves once the visitor has touched the field (see the hook's rules).
+  //
+  // The freeze check is gated on the render type so a date, URL or file field
+  // never pays for it, and — more importantly — so a non-phone value that merely
+  // contains digits cannot trip the hook's permanent freeze latch.
+  const { defaultCountry, preferredCountries } = usePreferredPhoneCountries({
+    freeze:
+      normalizedType === FieldRenderType.PHONE && phoneFieldHasInput(value),
+  });
 
   // Resolve options: prefer explicit options prop, else parse from config.
   // Only parse for types that actually use options to avoid spurious
@@ -87,6 +109,14 @@ export const CustomFieldRenderer = ({
   const allowedFileTypes = parsedConfig?.allowedFileTypes;
   const maxSizeMB = parsedConfig?.maxSizeMB;
 
+  // Placeholder precedence: an explicit prop from the caller, then a per-field
+  // override authored in the field's config JSON, then the auto-generated
+  // "Enter <field name>". The config hook is what lets a single institute
+  // reword one field's prompt without renaming the field or forking this file.
+  const configPlaceholder = parsedConfig?.placeholder;
+  const enterPlaceholder =
+    placeholder || configPlaceholder || t("customFields.enterField", { name });
+
   const handleChange = (newValue: string) => {
     onChange?.(newValue);
   };
@@ -97,15 +127,20 @@ export const CustomFieldRenderer = ({
 
     if (!isUnrestrictedFileTypes(allowedFileTypes)) {
       const ext = file.name.split(".").pop()?.toLowerCase() || "";
-      if (!allowedFileTypes!.some((t) => t.toLowerCase() === ext)) {
-        alert(`File type .${ext} is not allowed. Allowed: ${allowedFileTypes!.join(", ")}`);
+      if (!allowedFileTypes!.some((ft) => ft.toLowerCase() === ext)) {
+        alert(
+          t("customFields.file.typeNotAllowed", {
+            ext,
+            allowed: allowedFileTypes!.join(", "),
+          })
+        );
         e.target.value = "";
         return;
       }
     }
 
     if (maxSizeMB && file.size > maxSizeMB * 1024 * 1024) {
-      alert(`File size must be less than ${maxSizeMB}MB`);
+      alert(t("customFields.file.tooLarge", { maxSizeMB }));
       e.target.value = "";
       return;
     }
@@ -156,7 +191,7 @@ export const CustomFieldRenderer = ({
       }
     } catch (err) {
       console.error("File upload failed:", err);
-      alert("File upload failed. Please try again.");
+      alert(t("customFields.file.uploadFailed"));
     } finally {
       setIsUploading(false);
     }
@@ -170,7 +205,7 @@ export const CustomFieldRenderer = ({
         return (
           <MyInput
             inputType="text"
-            inputPlaceholder={placeholder || `Enter ${name}`}
+            inputPlaceholder={enterPlaceholder}
             input={value || ""}
             onChangeFunction={(e) => handleChange(e.target.value)}
             size="large"
@@ -184,7 +219,7 @@ export const CustomFieldRenderer = ({
         return (
           <MyInput
             inputType="number"
-            inputPlaceholder={placeholder || `Enter ${name}`}
+            inputPlaceholder={enterPlaceholder}
             input={value || ""}
             onChangeFunction={(e) => handleChange(e.target.value)}
             size="large"
@@ -198,7 +233,7 @@ export const CustomFieldRenderer = ({
         return (
           <MyInput
             inputType="email"
-            inputPlaceholder={placeholder || `Enter ${name}`}
+            inputPlaceholder={enterPlaceholder}
             input={value || ""}
             onChangeFunction={(e) => handleChange(e.target.value)}
             size="large"
@@ -212,7 +247,7 @@ export const CustomFieldRenderer = ({
         return (
           <MyInput
             inputType="url"
-            inputPlaceholder={placeholder || `Enter ${name}`}
+            inputPlaceholder={enterPlaceholder}
             input={value || ""}
             onChangeFunction={(e) => handleChange(e.target.value)}
             size="large"
@@ -223,7 +258,6 @@ export const CustomFieldRenderer = ({
         );
 
       case FieldRenderType.PHONE: {
-        const { defaultCountry, preferredCountries } = getPreferredPhoneCountries();
         return (
           <PhoneInput
             country={defaultCountry}
@@ -235,9 +269,12 @@ export const CustomFieldRenderer = ({
             }}
             enableSearch={true}
             disabled={disabled}
-            placeholder={placeholder || `Enter ${name}`}
-            inputStyle={{ width: "100%" }}
-            containerStyle={{ width: "100%" }}
+            placeholder={enterPlaceholder}
+            // !h-10 matches the `size="large"` inputs this renderer uses for
+            // every other field type; without it the library's padding-derived
+            // height makes the phone field visibly taller than its neighbours.
+            inputClass="!w-full !h-10"
+            containerClass="!w-full"
           />
         );
       }
@@ -254,7 +291,7 @@ export const CustomFieldRenderer = ({
             onChange={(e) => handleChange(e.target.value)}
             disabled={disabled}
             required={required}
-            placeholder={placeholder || "Pick a date"}
+            placeholder={placeholder || configPlaceholder || t("customFields.pickDate")}
             className="flex w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
           />
         );
@@ -262,7 +299,7 @@ export const CustomFieldRenderer = ({
       case FieldRenderType.TEXTAREA:
         return (
           <Textarea
-            placeholder={placeholder || `Enter ${name}`}
+            placeholder={enterPlaceholder}
             value={value || ""}
             onChange={(e) => handleChange(e.target.value)}
             disabled={disabled}
@@ -313,7 +350,7 @@ export const CustomFieldRenderer = ({
             disabled={disabled}
           >
             <SelectTrigger className="w-full">
-              <SelectValue placeholder={placeholder || `Select ${name}`} />
+              <SelectValue placeholder={placeholder || configPlaceholder || t("customFields.selectField", { name })} />
             </SelectTrigger>
             <SelectContent>
               {(resolvedOptions || []).map((opt, idx) => (
@@ -396,11 +433,11 @@ export const CustomFieldRenderer = ({
             {isUploading && (
               <div className="flex items-center gap-2 text-sm text-neutral-600">
                 <SpinnerGap className="size-4 animate-spin" />
-                Uploading...
+                {t("customFields.file.uploading")}
               </div>
             )}
             {!isUploading && uploadedFileName && (
-              <div className="text-xs text-success-600">Uploaded: {uploadedFileName}</div>
+              <div className="text-xs text-success-600">{t("customFields.file.uploaded", { fileName: uploadedFileName })}</div>
             )}
             {!isUploading && !uploadedFileName && isValidUrl && (
               <a
@@ -409,13 +446,13 @@ export const CustomFieldRenderer = ({
                 rel="noopener noreferrer"
                 className="text-xs text-primary-500 underline"
               >
-                View current file
+                {t("customFields.file.viewCurrentFile")}
               </a>
             )}
             {!isUnrestrictedFileTypes(allowedFileTypes) && (
               <p className="text-xs text-neutral-500">
-                Allowed: {allowedFileTypes!.join(", ")}
-                {maxSizeMB && ` · Max ${maxSizeMB}MB`}
+                {t("customFields.file.allowedTypes", { allowed: allowedFileTypes!.join(", ") })}
+                {maxSizeMB && t("customFields.file.maxSize", { maxSizeMB })}
               </p>
             )}
           </div>
@@ -426,7 +463,7 @@ export const CustomFieldRenderer = ({
         return (
           <MyInput
             inputType="text"
-            inputPlaceholder={placeholder || `Enter ${name}`}
+            inputPlaceholder={enterPlaceholder}
             input={value || ""}
             onChangeFunction={(e) => handleChange(e.target.value)}
             size="large"

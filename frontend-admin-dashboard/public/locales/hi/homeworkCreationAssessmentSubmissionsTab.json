@@ -1,0 +1,25 @@
+{
+    "tabs": {
+        "attempted": "प्रयास किया गया",
+        "ongoing": "जारी",
+        "pending": "लंबित"
+    },
+    "participantsTabs": {
+        "internal": "आंतरिक प्रतिभागी",
+        "external": "बाहरी प्रतिभागी"
+    },
+    "batchSelectionTabs": {
+        "batch": "बैच चयन",
+        "individual": "व्यक्तिगत चयन"
+    },
+    "actions": {
+        "revaluate": "पुनर्मूल्यांकन करें"
+    },
+    "dialogs": {
+        "revaluateResultTitle": "परिणाम का पुनर्मूल्यांकन करें"
+    },
+    "toasts": {
+        "exportPdfSuccess": "छात्र सबमिशन सूची डेटा PDF के रूप में सफलतापूर्वक निर्यात किया गया",
+        "exportCsvSuccess": "छात्र सबमिशन सूची डेटा CSV के रूप में सफलतापूर्वक निर्यात किया गया"
+    }
+}

@@ -1,0 +1,77 @@
+{
+    "navHeading": {
+        "fallback": "ऑनबोर्डिंग फ़्लो"
+    },
+    "actions": {
+        "backToFlows": "ऑनबोर्डिंग फ़्लो पर वापस जाएँ",
+        "retry": "पुनः प्रयास करें",
+        "activating": "सक्रिय किया जा रहा है…",
+        "activateFlow": "फ़्लो सक्रिय करें",
+        "addStep": "चरण जोड़ें",
+        "edit": "संपादित करें",
+        "cancel": "रद्द करें",
+        "removing": "हटाया जा रहा है…",
+        "remove": "हटाएँ"
+    },
+    "states": {
+        "loadingFlow": "फ़्लो लोड हो रहा है…",
+        "loadFlowError": "यह ऑनबोर्डिंग फ़्लो लोड नहीं हो सका।",
+        "addStepBeforeActivating": "इस फ़्लो को सक्रिय करने से पहले कम से कम एक चरण जोड़ें।",
+        "loadingSteps": "चरण लोड हो रहे हैं…",
+        "noStepsTitle": "अभी तक कोई चरण नहीं",
+        "noStepsDescription": "इस फ़्लो को बनाना शुरू करने के लिए पहला चरण (जैसे एक नामांकन फ़ॉर्म) जोड़ें।"
+    },
+    "tags": {
+        "optional": "वैकल्पिक",
+        "grantsStudentRole": "स्टूडेंट भूमिका देता है",
+        "sendsCredentials": "लॉगिन विवरण भेजता है"
+    },
+    "statusLabels": {
+        "draft": "ड्राफ़्ट",
+        "active": "सक्रिय",
+        "archived": "संग्रहीत"
+    },
+    "stepTypeLabels": {
+        "FORM": "फ़ॉर्म"
+    },
+    "deleteDialog": {
+        "title": "क्या इस चरण को हटाएँ?",
+        "description": "\"{{stepName}}\" संग्रहीत कर दिया जाएगा। जो शिक्षार्थी पहले से इस चरण पर हैं वे अपनी प्रगति बनाए रखेंगे, लेकिन इसके बाद फ़्लो शुरू करने वाले किसी भी व्यक्ति को यह चरण नहीं दिखेगा।"
+    },
+    "toasts": {
+        "reorderError": "नया क्रम सहेजा नहीं जा सका। पुनर्स्थापित किया जा रहा है।",
+        "stepRemoved": "चरण हटा दिया गया",
+        "removeError": "चरण हटाया नहीं जा सका।",
+        "flowActivated": "फ़्लो सक्रिय कर दिया गया",
+        "activateError": "फ़्लो सक्रिय नहीं किया जा सका।"
+    },
+    "sections": {
+        "steps": "चरण",
+        "stepsDragHint": "क्रम बदलने के लिए हैंडल खींचें",
+        "howItRuns": "यह कैसे चलता है",
+        "people": "इस फ़्लो पर लोग"
+    },
+    "meta": {
+        "fields_one": "{{count}} फ़ील्ड",
+        "fields_other": "{{count}} फ़ील्ड",
+        "roleEdit": "{{role}} संपादन",
+        "roleView": "{{role}} देखना"
+    },
+    "flow": {
+        "startTitle": "प्रोफ़ाइल से शुरू",
+        "startText": "कोई इस फ़्लो को लीड या {{learner}} की प्रोफ़ाइल पर चुनता है",
+        "optional": "वैकल्पिक — छोड़ा जा सकता है",
+        "required": "अनिवार्य",
+        "doneTitle": "ऑनबोर्डिंग पूरी",
+        "doneText": "इंस्टेंस को पूरा चिह्नित किया जाता है"
+    },
+    "people": {
+        "unavailable": "गिनती अभी उपलब्ध नहीं है।",
+        "status": {
+            "IN_PROGRESS": "जारी",
+            "COMPLETED": "पूरा",
+            "ABANDONED": "छोड़ा गया",
+            "CANCELLED": "रद्द"
+        }
+    }
+}

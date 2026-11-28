@@ -229,7 +229,7 @@ public class SuperAdminFileService {
             if (file.getSource() != null && PUBLIC_BUCKET_SOURCES.contains(file.getSource())) {
                 return cdnUrlService.publicUrl(file.getKey());
             }
-            if (cloudFrontSignerService.isEnabled()) {
+            if (cloudFrontSignerService.canSign(file.getKey())) {
                 try {
                     return cloudFrontSignerService.signedUrl(file.getKey(), addDays(expiryDays));
                 } catch (Exception e) {
@@ -239,7 +239,7 @@ public class SuperAdminFileService {
             }
             GeneratePresignedUrlRequest request = new GeneratePresignedUrlRequest(bucketName, file.getKey().trim())
                     .withMethod(HttpMethod.GET)
-                    .withExpiration(addDays(expiryDays));
+                    .withExpiration(addDays(Math.min(expiryDays, 7))); // SigV4 presign maximum
             return s3Client.generatePresignedUrl(request).toString();
         } catch (Exception e) {
             log.warn("Could not presign URL for file {}: {}", file.getId(), e.getMessage());

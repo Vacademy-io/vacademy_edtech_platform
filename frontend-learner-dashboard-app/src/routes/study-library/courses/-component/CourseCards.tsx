@@ -3,7 +3,7 @@ import { CaretRight, BookOpen, CheckCircle, Clock, Play } from "@phosphor-icons/
 import { IconRocket, IconMoodSmile, IconAdjustments } from "@tabler/icons-react";
 import BoringAvatar from "boring-avatars";
 import { useTranslation } from "react-i18next";
-import { useRouter } from "@tanstack/react-router";
+import { Link, useRouter } from "@tanstack/react-router";
 import { getPublicUrlWithoutLogin } from "@/services/upload_file";
 import LocalStorageUtils from "@/utils/localstorage";
 import { Star } from "@phosphor-icons/react";
@@ -11,6 +11,7 @@ import {
     getResumeForCourse,
     resumeSearchParams,
     RESUME_ROUTE,
+    useResumeScope,
 } from "@/services/resume-thread";
 import { ProgressBar } from "@/components/ui/custom-progress-bar";
 import { ProgressRing } from "@/routes/dashboard/-components/play/ProgressRing";
@@ -21,6 +22,7 @@ import { Card, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatMinutesHuman } from "@/utils/courseTime";
+import { authorRole, sharedAuthorRole } from "@/lib/course-author-role";
 
 // Avatar gradient ramp passed to boring-avatars (illustration palette, not theme tokens).
 const INSTRUCTOR_AVATAR_RAMP = ["#FFE5CC", "#FFCDA8", "#FFA85C", "#E8751A", "#C45A00"]; // design-lint-ignore: illustration ramp
@@ -29,6 +31,10 @@ interface Instructor {
     id: string;
     full_name: string;
     image_url?: string;
+    author_subtitle?: string;
+    author_description?: string;
+    /** Display role in this course (Author / Instructor / Acharya …). */
+    role_label?: string | null;
 }
 
 interface CourseCardProps {
@@ -93,7 +99,11 @@ const CourseCard: React.FC<CourseCardProps> = ({
         selectedTab === "COMPLETED" ||
         cappedPercentageCompleted > 0;
     // Resume thread: where the learner left off in this course (per-device).
-    const resume = useMemo(() => getResumeForCourse(courseId), [courseId]);
+    const resumeScope = useResumeScope();
+    const resume = useMemo(
+        () => getResumeForCourse(resumeScope, courseId),
+        [resumeScope, courseId]
+    );
 
     const LevelIcon = useMemo(() => {
         const lvl = (level_name || "").toLowerCase();
@@ -103,25 +113,30 @@ const CourseCard: React.FC<CourseCardProps> = ({
         return IconMoodSmile;
     }, [level_name]);
 
-    const handleViewCoureseDetails = (id: string) => {
+    const courseDetailsSearch = {
+        courseId,
+        packageSessionId,
+        selectedTab,
+        percentageCompleted: cappedPercentageCompleted,
+    };
+
+    // Persist percentage locally as a fallback for details page
+    const rememberPercentage = () => {
         try {
-            // Persist percentage locally as a fallback for details page
-            const key = `COURSE_PCT_${id}`;
-            LocalStorageUtils.set(key, {
+            LocalStorageUtils.set(`COURSE_PCT_${courseId}`, {
                 value: cappedPercentageCompleted,
                 ts: Date.now(),
             });
         } catch {
             // Failed to save percentage to localStorage
         }
+    };
+
+    const handleViewCourseDetails = () => {
+        rememberPercentage();
         router.navigate({
             to: "/study-library/courses/course-details",
-            search: {
-                courseId: id,
-                packageSessionId: packageSessionId,
-                selectedTab: selectedTab,
-                percentageCompleted: cappedPercentageCompleted,
-            },
+            search: courseDetailsSearch,
         });
     };
 
@@ -143,7 +158,7 @@ const CourseCard: React.FC<CourseCardProps> = ({
             });
             return;
         }
-        handleViewCoureseDetails(courseId);
+        handleViewCourseDetails();
     };
 
     const ctaLabel = isCompleted
@@ -284,16 +299,11 @@ const CourseCard: React.FC<CourseCardProps> = ({
                 )}
             </div>
 
-            <div className="flex flex-col flex-grow p-4 lg:p-5 gap-3">
-                {/* Header */}
-                <div className="flex justify-between items-start gap-3">
-                    <h3
-                        className="text-lg font-bold leading-tight group-hover:text-primary transition-colors duration-200 line-clamp-2"
-                        title={package_name}
-                    >
-                        {package_name}
-                    </h3>
-
+            <div className="flex flex-col flex-grow p-4 lg:p-5 gap-stack">
+                {/* Header: the level badge on its own line above the title, so a
+                    long level name never squeezes the course name into a narrow
+                    column and cuts it off. */}
+                <div className="flex flex-col items-start gap-2">
                     <Badge
                         variant={getLevelBadgeVariant()}
                         className={cn(
@@ -310,6 +320,22 @@ const CourseCard: React.FC<CourseCardProps> = ({
                         <LevelIcon size={12} className="text-current hidden [.ui-vibrant_&]:block" />
                         {!isDefaultLevel && toTitleCase(level_name)}
                     </Badge>
+
+                    <h3
+                        className="text-lg font-bold leading-tight group-hover:text-primary transition-colors duration-200 line-clamp-3 break-words"
+                        title={package_name}
+                    >
+                        {/* Stretched over the card (its nearest positioned ancestor), so a tap anywhere opens the course. */}
+                        <Link
+                            to="/study-library/courses/course-details"
+                            search={courseDetailsSearch}
+                            preload={false}
+                            onClick={rememberPercentage}
+                            className="rounded-sm after:absolute after:inset-0 after:z-10 focus:outline-none focus-visible:after:rounded-lg focus-visible:after:ring-2 focus-visible:after:ring-inset focus-visible:after:ring-ring [.ui-play_&]:focus-visible:after:rounded-2xl"
+                        >
+                            {package_name}
+                        </Link>
+                    </h3>
                 </div>
 
                 {/* Description */}
@@ -345,9 +371,12 @@ const CourseCard: React.FC<CourseCardProps> = ({
                                 </div>
                             )}
                         </div>
-                        <div className="min-w-0 flex-1">
-                            <p className="text-caption text-muted-foreground font-medium mb-0.5">
-                                {toTitleCase(getTerminology(RoleTerms.Teacher, SystemTerms.Teacher))}
+                        <div className="min-w-0 flex-1 space-y-0.5">
+                            <p className="text-caption text-muted-foreground font-medium">
+                                {sharedAuthorRole(
+                                    instructors.map(authorRole),
+                                    toTitleCase(getTerminology(RoleTerms.Teacher, SystemTerms.Teacher))
+                                )}
                             </p>
                             <div className="text-sm font-medium truncate">
                                 {instructors.map((instructor, index) => (
@@ -357,6 +386,11 @@ const CourseCard: React.FC<CourseCardProps> = ({
                                     </span>
                                 ))}
                             </div>
+                            {instructor?.author_subtitle && (
+                                <p className="text-xs text-muted-foreground truncate">
+                                    {instructor.author_subtitle}
+                                </p>
+                            )}
                         </div>
                     </div>
                 )}
@@ -464,7 +498,7 @@ const CourseCard: React.FC<CourseCardProps> = ({
                 )}
             </div>
 
-            <CardFooter className="p-4 pt-0 mt-auto flex flex-col gap-2">
+            <CardFooter className="relative z-20 p-card pt-0 mt-auto flex flex-col gap-2">
                 <Button
                     className={cn(
                         "w-full font-semibold shadow-sm group/btn",
@@ -499,7 +533,7 @@ const CourseCard: React.FC<CourseCardProps> = ({
                             "[.ui-play_&]:rounded-xl [.ui-play_&]:font-bold [.ui-play_&]:border-2 [.ui-play_&]:border-play-surface [.ui-play_&]:text-play-ink",
                             "[.ui-play_&]:active:translate-y-0.5"
                         )}
-                        onClick={() => handleViewCoureseDetails(courseId)}
+                        onClick={handleViewCourseDetails}
                         aria-label={t("card.overviewAriaLabel", {
                             course: getTerminology(ContentTerms.Course, SystemTerms.Course),
                         })}

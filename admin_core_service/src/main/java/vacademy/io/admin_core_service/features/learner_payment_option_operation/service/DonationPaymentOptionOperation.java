@@ -1,5 +1,6 @@
 package vacademy.io.admin_core_service.features.learner_payment_option_operation.service;
 
+import vacademy.io.admin_core_service.features.payments.util.GatewayCustomerContact;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import vacademy.io.admin_core_service.features.auth_service.service.AuthService;
@@ -140,15 +141,19 @@ public class DonationPaymentOptionOperation implements PaymentOptionOperationStr
             PaymentResponseDTO paymentResponseDTO;
             if (extraData.containsKey("SKIP_PAYMENT_INITIATION")
                     && Boolean.TRUE.equals(extraData.get("SKIP_PAYMENT_INITIATION"))) {
+                // Only the order link: this path has never applied the other extras.
                 paymentResponseDTO = paymentService.handlePaymentWithoutGateway(
                         user,
                         learnerPackageSessionsEnrollDTO,
                         instituteId,
                         enrollInvite,
-                        userPlan);
+                        userPlan,
+                        extraData.containsKey("PARENT_PAYMENT_LOG_ID")
+                                ? Map.of("PARENT_PAYMENT_LOG_ID", extraData.get("PARENT_PAYMENT_LOG_ID"))
+                                : Map.of());
             } else {
                 paymentResponseDTO = paymentService.handlePayment(
-                        user,
+                        GatewayCustomerContact.withCheckoutPhone(user, userDTO, extraData),
                         learnerPackageSessionsEnrollDTO,
                         instituteId,
                         enrollInvite,

@@ -66,6 +66,8 @@ public class AttendanceSection {
     @NoArgsConstructor
     @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
     public static class SessionAttendanceItem {
+        /** The live session the class belongs to, for filtering by session. */
+        private String sessionId;
         private String date;
         private String title;
         private String subject;

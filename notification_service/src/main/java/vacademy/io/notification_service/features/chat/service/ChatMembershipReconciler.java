@@ -79,10 +79,16 @@ public class ChatMembershipReconciler {
             // Either no row at all, or an inactive row — resolve via a single targeted lookup.
             ChatConversationMember row = memberRepo.findByConversationIdAndUserId(conv.getId(), e.getKey())
                     .orElse(null);
+            // New/returning members of an existing batch start caught up (see ChatConversationService#ensureMember):
+            // pre-join history must not count as unread in the app-wide badge.
+            long joinSeq = conv.getLastMessageSeq() == null ? 0L : conv.getLastMessageSeq();
             if (row == null) {
-                dirty.add(buildMember(conv.getId(), e.getKey(), e.getValue()));
+                ChatConversationMember member = buildMember(conv.getId(), e.getKey(), e.getValue());
+                member.setLastReadSeq(joinSeq);
+                dirty.add(member);
             } else if (!Boolean.TRUE.equals(row.getIsActive())) {
                 row.setIsActive(true);
+                row.setLastReadSeq(Math.max(row.getLastReadSeq() == null ? 0L : row.getLastReadSeq(), joinSeq));
                 dirty.add(row);
             }
         }

@@ -29,6 +29,11 @@ public class AppliedCouponDiscountDTO {
     private Date redeemStartDate;
     private Date redeemEndDate;
     private CouponCodeDTO couponCode;
+    private String grantedByUserId;
+    private Date grantedAt;
+    private String grantReason;
+    private String instituteId;
+    private Integer applyForCycles;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

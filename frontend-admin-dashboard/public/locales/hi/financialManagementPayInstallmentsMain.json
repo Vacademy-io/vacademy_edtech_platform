@@ -1,0 +1,8 @@
+{
+    "steps": {
+        "searchStudent": "छात्र खोजें",
+        "selectInstallments": "किश्तें चुनें",
+        "paymentDetails": "भुगतान विवरण",
+        "done": "पूर्ण"
+    }
+}

@@ -88,6 +88,56 @@ export const POST_SUBMIT_CONFIG_KEY = 'postSubmitConfiguration';
 /** Institute setting key holding audience-form-wide defaults. */
 export const AUDIENCE_FORM_SETTING_KEY = 'AUDIENCE_FORM_SETTING';
 
+/** Key inside that setting for the Form Appearance feature switch. */
+export const FORM_APPEARANCE_ENABLED_KEY = 'formAppearanceEnabled';
+
+/** Key inside that setting for the short-link feature switch. */
+export const SHORT_LINKS_ENABLED_KEY = 'shortLinksEnabled';
+
+/**
+ * Everything the `AUDIENCE_FORM_SETTING` institute setting holds.
+ *
+ * Modelled as one object because the save is a single POST that REPLACES
+ * `setting_data`: writing the post-submit defaults on their own would silently
+ * wipe the appearance switch, and vice versa. Read and written together.
+ */
+export interface AudienceFormSettings {
+    /** Thank-you screen prefilled into every NEW campaign. */
+    postSubmit: AudiencePostSubmitConfiguration;
+    /**
+     * Whether campaigns may restyle their public form at all.
+     *
+     * OFF by default: Form Appearance is an advanced surface, and the campaign
+     * create/edit dialog must look the way it always did for the institutes
+     * that never asked for it. Turning this on in Settings → Lead Settings →
+     * Forms is what reveals the editor.
+     */
+    formAppearanceEnabled: boolean;
+    /**
+     * Whether campaign share surfaces offer a short URL (u.<domain>/s/<code>)
+     * next to the full form link.
+     *
+     * **ON by default** — the opposite of `formAppearanceEnabled` above, and
+     * deliberately so. A short link is a convenience on a link the admin was
+     * already going to share, not a new respondent-facing surface, so it is
+     * useful to everyone from the moment it ships. Institutes that would rather
+     * hand out only their own domain can switch it off in Settings → Lead
+     * Settings → Forms.
+     *
+     * Because the default is ON, absence must read as ON: every institute
+     * already has an `AUDIENCE_FORM_SETTING` row without this key, and treating
+     * a missing key as OFF would ship the feature switched off for all of them.
+     * See the `!== false` read in fetchAudienceFormSettings.
+     */
+    shortLinksEnabled: boolean;
+}
+
+export const DEFAULT_AUDIENCE_FORM_SETTINGS: AudienceFormSettings = {
+    postSubmit: DEFAULT_POST_SUBMIT_CONFIGURATION,
+    formAppearanceEnabled: false,
+    shortLinksEnabled: true,
+};
+
 // ─── Parse / serialize ───────────────────────────────────────────────────────
 
 const toStr = (value: unknown, fallback: string): string =>
@@ -218,15 +268,17 @@ const SAVE_URL = GET_INSITITUTE_SETTINGS.replace('/get', '/save-setting');
 
 interface AudienceFormSettingData {
     postSubmitConfiguration?: Partial<AudiencePostSubmitConfiguration>;
+    formAppearanceEnabled?: boolean;
+    shortLinksEnabled?: boolean;
 }
 
 /**
- * Institute-wide defaults for new audience forms. Resolves to the hardcoded
+ * Institute-wide settings for audience forms. Resolves to the hardcoded
  * defaults when the institute has never saved the setting.
  */
-export const fetchAudienceFormSettings = async (): Promise<AudiencePostSubmitConfiguration> => {
+export const fetchAudienceFormSettings = async (): Promise<AudienceFormSettings> => {
     const instituteId = getCurrentInstituteId();
-    if (!instituteId) return DEFAULT_POST_SUBMIT_CONFIGURATION;
+    if (!instituteId) return DEFAULT_AUDIENCE_FORM_SETTINGS;
     try {
         const response = await authenticatedAxiosInstance({
             method: 'GET',
@@ -236,24 +288,34 @@ export const fetchAudienceFormSettings = async (): Promise<AudiencePostSubmitCon
         // GET returns the SettingDto itself ({key, name, data}) — the payload we
         // saved is one level down at response.data.data (same as LeadSettings).
         const saved = response.data?.data as AudienceFormSettingData | undefined;
-        return normalizePostSubmitConfiguration(saved?.[POST_SUBMIT_CONFIG_KEY]);
+        return {
+            postSubmit: normalizePostSubmitConfiguration(saved?.[POST_SUBMIT_CONFIG_KEY]),
+            formAppearanceEnabled: saved?.[FORM_APPEARANCE_ENABLED_KEY] === true,
+            // `!== false`, not `=== true`: this switch defaults ON, and every
+            // institute that saved this setting before short links existed has
+            // no such key. Only an explicit `false` turns it off.
+            shortLinksEnabled: saved?.[SHORT_LINKS_ENABLED_KEY] !== false,
+        };
     } catch {
         // No setting row yet (or a transient failure) — defaults are the right
         // answer either way; the create form must never block on this.
-        return DEFAULT_POST_SUBMIT_CONFIGURATION;
+        return DEFAULT_AUDIENCE_FORM_SETTINGS;
     }
 };
 
-export const saveAudienceFormSettings = async (
-    config: AudiencePostSubmitConfiguration
-): Promise<void> => {
+export const saveAudienceFormSettings = async (settings: AudienceFormSettings): Promise<void> => {
     const instituteId = getCurrentInstituteId();
     await authenticatedAxiosInstance.post(
         SAVE_URL,
         {
             setting_name: 'Audience Form Settings',
             setting_data: {
-                [POST_SUBMIT_CONFIG_KEY]: normalizePostSubmitConfiguration(config),
+                [POST_SUBMIT_CONFIG_KEY]: normalizePostSubmitConfiguration(settings.postSubmit),
+                [FORM_APPEARANCE_ENABLED_KEY]: settings.formAppearanceEnabled,
+                // Must be written here too: this POST REPLACES setting_data, so
+                // omitting the key would wipe an institute's opt-out the next
+                // time anything else on this page is saved.
+                [SHORT_LINKS_ENABLED_KEY]: settings.shortLinksEnabled,
             } satisfies AudienceFormSettingData,
         },
         { params: { instituteId, settingKey: AUDIENCE_FORM_SETTING_KEY } }

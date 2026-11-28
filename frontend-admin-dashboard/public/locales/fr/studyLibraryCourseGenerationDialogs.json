@@ -1,0 +1,86 @@
+{
+    "regenerateSlideDialog": {
+        "title": "Régénérer la page",
+        "promptPlaceholder": "Décrivez comment vous souhaitez que cette page soit régénérée...",
+        "regenerate": "Régénérer"
+    },
+    "regenerateSessionDialog": {
+        "title": "Régénérer {{term}}",
+        "promptLabel": "Invite",
+        "promptPlaceholder": "Décrivez comment vous souhaitez que cette session soit régénérée...",
+        "lengthLabel": "Durée de {{term}}",
+        "lengthPlaceholder": "Sélectionner la durée de la session",
+        "length45": "45 minutes",
+        "length60": "60 minutes",
+        "length90": "90 minutes",
+        "lengthCustom": "Personnalisé",
+        "customLengthPlaceholder": "Saisissez la durée personnalisée en minutes",
+        "componentsLabel": "Composants de la session",
+        "includeDiagrams": "Inclure des diagrammes",
+        "includeCodeSnippets": "Inclure des extraits de code",
+        "includePracticeProblems": "Inclure des exercices pratiques",
+        "includeQuizzes": "Inclure des quiz",
+        "includeAssignments": "Inclure des devoirs",
+        "includeSolutions": "Inclure des solutions",
+        "numberOfLabel": "Nombre de {{term}}",
+        "topicsCountPlaceholder": "ex. : 3, 4, 5, etc.",
+        "topicsInLabel": "{{plural}} dans {{term}} (facultatif)",
+        "topicsPlaceholder": "Saisissez un sujet et appuyez sur Entrée",
+        "regenerate": "Régénérer"
+    },
+    "addSlideDialog": {
+        "generationTitle": "Invite de génération IA",
+        "selectTypeTitle": "Sélectionner le type de page",
+        "selectTypeDescription": "Choisissez le type de page que vous souhaitez ajouter à cette session.",
+        "types": {
+            "document": "Document",
+            "pdf": "PDF",
+            "video": "Vidéo",
+            "image": "Image",
+            "jupyter": "Jupyter",
+            "codeEditor": "Éditeur de code",
+            "scratch": "Scratch",
+            "videoJupyter": "Vidéo + Jupyter",
+            "videoCode": "Vidéo + Code",
+            "videoScratch": "Vidéo + Scratch",
+            "quiz": "Quiz",
+            "assignment": "Devoir"
+        },
+        "promptPlaceholder": "Décrivez la page que vous souhaitez créer...",
+        "back": "Retour",
+        "createPage": "Créer la page"
+    },
+    "addSessionDialog": {
+        "title": "Ajouter un(e) nouveau/nouvelle {{term}}",
+        "nameLabel": "Nom de {{term}}",
+        "namePlaceholder": "Saisissez le nom de {{term}}",
+        "cancel": "Annuler",
+        "add": "Ajouter {{term}}"
+    },
+    "generateCourseAssetsDialog": {
+        "title": "Confirmation finale",
+        "reviewNotice": "Veuillez examiner attentivement le contenu textuel de chaque page avant de continuer.",
+        "noComingBack": "Une fois que vous continuez, l'IA commencera à créer le contenu réel du cours et il n'y a pas de retour en arrière possible.",
+        "estimatedCost": "Coût estimé : ≈ {{credits}} crédits",
+        "usageBilled_one": "+ {{count}} diapositive vidéo/diaporama/storybook IA facturée selon l'utilisation réelle",
+        "usageBilled_many": "+ {{count}} diapositives vidéo/diaporama/storybook IA facturées selon l'utilisation réelle",
+        "usageBilled_other": "+ {{count}} diapositives vidéo/diaporama/storybook IA facturées selon l'utilisation réelle",
+        "insufficientBalance": "Le solde de crédits de votre établissement pourrait être insuffisant — veuillez recharger avant de continuer.",
+        "cancel": "Annuler",
+        "proceed": "Continuer"
+    },
+    "leaveDuringGenerationDialog": {
+        "title": "Génération toujours en cours",
+        "progressPrefix": "Seulement {{progressLabel}} pages ont été générées. ",
+        "warning": "Si vous partez maintenant, la génération s'arrête et tout ce qui a été créé jusqu'à présent est perdu. Les crédits déjà dépensés ne seront pas remboursés.",
+        "leaveAndStop": "Partir et arrêter",
+        "stayOnPage": "Rester sur la page"
+    },
+    "backToLibraryDialog": {
+        "title": "Retourner à la bibliothèque de cours ?",
+        "description": "Voulez-vous vraiment retourner à la bibliothèque de cours ? Vous pouvez soit abandonner votre cours actuel, soit l'enregistrer en tant que brouillon.",
+        "cancel": "Annuler",
+        "discardCourse": "Abandonner le cours",
+        "saveToDrafts": "Enregistrer comme brouillon"
+    }
+}

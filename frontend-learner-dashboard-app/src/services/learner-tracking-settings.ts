@@ -41,7 +41,12 @@ export interface LearnerTrackingSettings {
         };
     };
     focus: {
-        /** Whether the "are you still there?" check is shown for documents. */
+        /**
+         * Whether the "are you still there?" check and the pause screen are shown
+         * for documents. Off by default: reading without touching the screen, or
+         * writing on paper, must not get a learner interrupted. With it off,
+         * idle time still stops counting, silently.
+         */
         idlePopupEnabled: boolean;
         /** Seconds of inactivity before the check appears. */
         idlePopupDelaySeconds: number;
@@ -65,7 +70,7 @@ export const DEFAULT_LEARNER_TRACKING_SETTINGS: LearnerTrackingSettings = {
         },
     },
     focus: {
-        idlePopupEnabled: true,
+        idlePopupEnabled: false,
         idlePopupDelaySeconds: 60,
         hardPauseMinutes: 5,
     },

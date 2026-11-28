@@ -3,6 +3,8 @@ package vacademy.io.admin_core_service.features.slide.controller;
 import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import vacademy.io.admin_core_service.features.learner_quiz.answerkey.AnswerKeySurface;
+import vacademy.io.admin_core_service.features.learner_quiz.answerkey.WithoutAnswerKeys;
 import vacademy.io.admin_core_service.features.slide.dto.*;
 import vacademy.io.admin_core_service.features.slide.service.SlideService;
 import vacademy.io.common.auth.model.CustomUserDetails;
@@ -35,6 +37,7 @@ public class SlideController {
         return ResponseEntity.ok(slideService.addOrUpdateVideoSlide(addVideoSlideDTO, chapterId,moduleId,subjectId,packageSessionId, instituteId));
     }
 
+    @WithoutAnswerKeys(AnswerKeySurface.AUTHORING)
     @GetMapping("/get-slides/{chapterId}")
     public ResponseEntity<List<SlideDetailProjection>> getSlidesByChapterId(@PathVariable String chapterId, @RequestAttribute("user") CustomUserDetails user) {
         return ResponseEntity.ok(slideService.getSlidesByChapterId(chapterId, user));
@@ -101,11 +104,13 @@ public class SlideController {
         return ResponseEntity.ok(message);
     }
 
+    @WithoutAnswerKeys(AnswerKeySurface.AUTHORING)
     @GetMapping("/slides")
     public ResponseEntity<List<SlideDTO>> getSlides(String chapterId) {
         return ResponseEntity.ok(slideService.getSlides(chapterId));
     }
 
+    @WithoutAnswerKeys(AnswerKeySurface.AUTHORING)
     @GetMapping("/slide")
     public ResponseEntity<SlideDTO> getSlideById(@RequestParam String slideId) {
         return ResponseEntity.ok(slideService.getSlideDTOById(slideId));

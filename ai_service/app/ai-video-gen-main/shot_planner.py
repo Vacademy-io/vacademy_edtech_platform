@@ -113,6 +113,7 @@ SHOT_TYPE_BG_TREATMENT_DEFAULT: Dict[str, str] = {
     "IMAGE_SPLIT": "media_hero",
     "ARTICLE_FOCUS": "media_hero",
     "SOURCE_CLIP": "media_hero",
+    "IMAGE_CLIP": "media_hero",
     "AI_VIDEO_HERO": "media_hero",
     "ANNOTATION_MAP": "brand_textured",
     "DATA_STORY": "brand_textured",
@@ -223,6 +224,11 @@ SHOT_PLANNER_SYSTEM_PROMPT = (
     "with HTML overlays on top. Use for key quotes, soundbites, demo highlights — any moment where "
     "showing the real footage is more impactful than AI graphics. Specify `source_start` and "
     "`source_end` (seconds in the source video). No `image_prompt` or `video_query` needed.\n"
+    "- **IMAGE_CLIP** *(only when source images are provided)*: Show one of the user's uploaded "
+    "images full-frame with HTML annotations on top — callouts, highlight boxes, arrows, a label. "
+    "This is the shot type for a screenshot, a scanned plate, a chart, a photograph the user "
+    "supplied. Set `image_index` to choose WHICH upload. Never substitute a generated illustration "
+    "for an uploaded image. No `image_prompt` or `video_query` needed.\n"
     "- **ARTICLE_FOCUS** *(only when scrape_url captured screenshots)*: Show the actual scraped "
     "article page with a slow zoom-pan toward a highlighted quote. Tells the viewer 'this is real, "
     "here is the source.' MUST set `template_id: \"article_focus_zoom_pan\"` and `template_params` "
@@ -490,6 +496,145 @@ _VERBALIZED_SAMPLING_BLOCK = (
 # User prompt builder
 # ─────────────────────────────────────────────────────────────────────────────
 
+def _img_label_for(index: int) -> str:
+    """Spreadsheet-style label for an uploaded image: A..Z, then AA, AB, ..."""
+    label = ""
+    n = max(0, index)
+    while True:
+        label = chr(ord("A") + n % 26) + label
+        n = n // 26 - 1
+        if n < 0:
+            break
+    return label
+
+
+def build_input_image_block(images: List[Dict[str, Any]]) -> str:
+    """Describe the user's indexed images so the planner can place them.
+
+    Each entry carries the metadata the image indexer produced: a caption, tags,
+    the UI elements it recognised, and OCR blocks with NORMALISED bounding boxes.
+    The bboxes are the reason this block is worth its tokens — they are what let
+    an annotation land on the actual button being described rather than floating
+    somewhere over the screenshot.
+
+    OCR volume scales down as the image count rises so a 20-still run does not
+    blow the prompt budget; mirrors the transcript budget on the video side.
+    """
+    n = len(images)
+    # The image indexer emits meta / colors / ocr only — there is no caption
+    # block, so `short`, `long`, `tags` and `ui_elements` below are almost
+    # always absent in practice. OCR is therefore the ONLY signal saying what a
+    # given upload actually depicts, which is what the planner matches against
+    # when the prompt names a screenshot by content. `full_text` identifies a
+    # screen far better per token than a handful of positioned blocks, so it
+    # carries identity and the blocks carry placement.
+    ocr_budget = max(6, 90 // max(1, n))
+    text_budget = 280 if n > 10 else 420
+
+    # Screens from one product share chrome — a nav bar, a footer, a sidebar.
+    # Taken verbatim, the first 280 characters of every screenshot in a
+    # walkthrough is the SAME menu, so each image describes itself identically
+    # and the planner cannot tell them apart. Drop fragments that recur across
+    # most of the batch; what survives is what makes each screen itself.
+    def _fragments(ictx: Dict[str, Any]) -> List[str]:
+        raw = ((ictx.get("context", {}) or {}).get("ocr", {}) or {}).get("full_text") or ""
+        return [t.strip() for t in raw.split("\n") if t.strip()]
+
+    # Frequency across the batch, used to RANK rather than to threshold. A cutoff
+    # cannot work here: this product's nav bar appears on a quarter of the
+    # screens, so any threshold loose enough to drop it also drops real content
+    # that several screens legitimately share. Ranking needs no cutoff — the
+    # rarest text on a screen is what distinguishes it, so it simply goes first
+    # and the shared chrome falls off the end of the budget on its own.
+    doc_freq: Dict[str, int] = {}
+    for ictx in images:
+        for frag in set(_fragments(ictx)):
+            doc_freq[frag] = doc_freq.get(frag, 0) + 1
+
+    sections: List[str] = []
+
+    for idx, ictx in enumerate(images):
+        blob = ictx.get("context", {}) or {}
+        meta = blob.get("meta", {}) or {}
+        caption = blob.get("caption", {}) or {}
+        ocr_blocks = (blob.get("ocr", {}) or {}).get("blocks", []) or []
+        faces = blob.get("faces", {}) or {}
+
+        name = ictx.get("name", f"Image {_img_label_for(idx)}")
+        mode = ictx.get("mode", "photo")
+        url = ictx.get("source_public_url") or ictx.get("source_url", "")
+        width = meta.get("width", ictx.get("width", 0))
+        height = meta.get("height", ictx.get("height", 0))
+        default_dur = ictx.get("duration_seconds", 5.0)
+
+        sec = (
+            f"\n### Image {_img_label_for(idx)}: \"{name}\" ({mode}, {width}x{height})\n"
+            f"image_index: {idx}\n"
+            f"source_public_url: {url}\n"
+            f"default_duration_s: {default_dur}\n"
+        )
+        if caption.get("short"):
+            sec += f"Caption: {caption['short']}\n"
+        if caption.get("long"):
+            sec += f"Detail: {caption['long']}\n"
+        tags = ", ".join((caption.get("tags") or [])[:10])
+        if tags:
+            sec += f"Tags: {tags}\n"
+        ui_elements = caption.get("ui_elements") or []
+        if ui_elements:
+            sec += f"UI elements visible: {', '.join(ui_elements[:10])}\n"
+        frags = _fragments(ictx)
+        # Most distinctive first, ties broken by where it sits on screen, then
+        # restored to reading order once the budget is filled — the planner gets
+        # what identifies this screen, still in the order a person would read it.
+        ranked = sorted(range(len(frags)), key=lambda i: (doc_freq.get(frags[i], 1), i))
+        chosen: List[int] = []
+        used = 0
+        for i in ranked:
+            cost = len(frags[i]) + 3
+            if used + cost > text_budget and chosen:
+                break
+            chosen.append(i)
+            used += cost
+        full_text = " · ".join(frags[i] for i in sorted(chosen))
+        if full_text:
+            sec += f"Text on screen: {full_text}\n"
+        if ocr_blocks:
+            lines = [
+                f"  \"{b.get('text', '')}\" @ bbox_norm={b.get('bbox_norm', [])}"
+                for b in ocr_blocks[:ocr_budget]
+            ]
+            sec += "OCR text blocks (normalized bboxes 0-1):\n" + "\n".join(lines) + "\n"
+        if faces.get("detected"):
+            free = ", ".join(faces.get("free_regions", []) or []) or "none"
+            sec += f"Face detected (count={faces.get('face_count', 0)}). Safe overlay zones: {free}\n"
+        sections.append(sec)
+
+    rules = (
+        "**IMAGE_CLIP RULES**:\n"
+        f"- The user uploaded {n} image(s). They are the subject of this video, not "
+        "decoration — show them. Give each one a beat unless the narration truly has "
+        "no use for it.\n"
+        f"- Each IMAGE_CLIP shot MUST set `image_index`, an integer from 0 to {n - 1} "
+        f"inclusive (0 = Image A, 1 = Image B, ...). There are exactly {n} images; "
+        f"{n} and above do not exist and would render the wrong screenshot.\n"
+        "- Do NOT invent an illustration to stand in for an uploaded image. If a beat is "
+        "about something an upload shows, use the upload.\n"
+        "- For screenshots and diagrams, position callouts and arrows using the OCR "
+        "bbox_norm coordinates so an annotation lands on the element it names.\n"
+        "- For photos with faces, keep overlays inside the listed safe zones.\n"
+        "- Default durations: photo 4s, screenshot 6s, diagram 8s. Lengthen when the "
+        "narration at that image needs longer.\n"
+        "- Between image beats, use graphic shot types (TEXT_DIAGRAM, PROCESS_STEPS, "
+        "DATA_STORY, KINETIC_TITLE) to explain structure and numbers, so the video is "
+        "not the same framed screenshot N times.\n"
+    )
+    return (
+        "IMAGE_CLIP IS AVAILABLE — the user uploaded source images.\n"
+        "\n## SOURCE IMAGE CONTEXTS\n" + "".join(sections) + "\n" + rules
+    )
+
+
 def build_shot_planner_user_prompt(
     *,
     prompt: str,
@@ -512,10 +657,12 @@ def build_shot_planner_user_prompt(
     saved_cast: Optional[List[Dict[str, Any]]] = None,
     asset_asks_enabled: bool = False,
     article_screenshots: Optional[List[Dict[str, Any]]] = None,
+    input_images: Optional[List[Dict[str, Any]]] = None,
     subject_domain: Optional[str] = None,
     cultural_context: Any = None,
     template_catalog_md: Optional[str] = None,
     valid_template_ids: Optional[List[str]] = None,
+    lesson: Optional[Dict[str, Any]] = None,
 ) -> str:
     """Build the user-facing prompt for the ShotPlanner LLM call.
 
@@ -534,6 +681,17 @@ def build_shot_planner_user_prompt(
     ]
     if subject_domain:
         lines.append(f"SUBJECT DOMAIN: {subject_domain}")
+    if lesson:
+        from lesson_mode import planner_user_block
+        lines.append(planner_user_block(
+            lesson,
+            target_duration_s=target_duration_s,
+            portrait=str(image_ratio).strip() == "9:16",
+        ))
+        lines.append(
+            "Keep each shot's JSON compact (narration_brief ≤ 30 words, visual_description ≤ 45 words) "
+            "— a long lesson has many sections and the whole plan must fit in one response."
+        )
 
     # Marketing shot-mix bias — fires ONLY for promotional/product content so
     # educational lectures (where TEXT_DIAGRAM is the right default) are
@@ -708,6 +866,21 @@ def build_shot_planner_user_prompt(
         lines.append(
             "SOURCE_CLIP IS NOT AVAILABLE — no source video uploaded. Do NOT pick "
             "shot_type=SOURCE_CLIP."
+        )
+
+    # Indexed input images gating.
+    # IMAGE_CLIP was previously reachable only from the deprecated v2 Director,
+    # which built its own SOURCE IMAGE CONTEXTS block. On v3 the planner was
+    # never told the user's screenshots existed, so an image-led run indexed
+    # every still, paid for it, and then planned a video that referenced none
+    # of them.
+    if input_images:
+        lines.append("")
+        lines.append(build_input_image_block(input_images))
+    else:
+        lines.append(
+            "IMAGE_CLIP IS NOT AVAILABLE — no source images uploaded. Do NOT pick "
+            "shot_type=IMAGE_CLIP."
         )
 
     # Article screenshots gating
@@ -1036,8 +1209,15 @@ def _normalize_shot(raw: Dict[str, Any], idx: int) -> Dict[str, Any]:
         "ai_video_audio",
         "source_start",
         "source_end",
+        # Which uploaded asset this shot shows. Without these in the
+        # pass-through the planner's choice is silently dropped during
+        # normalization and every clip shot falls back to asset 0.
+        "image_index",
+        "source_video_index",
         "role",
         "pacing_role",
+        # Lesson mode: where the teacher sits for this section (lesson_mode.LAYOUTS).
+        "teacher_layout",
         # DIALOGUE_SCENE (storybook/drama mode): spoken lines + scene staging.
         "dialogue",
         "scene_description",
@@ -1508,10 +1688,12 @@ def plan_shots(
     saved_cast: Optional[List[Dict[str, Any]]] = None,
     asset_asks_enabled: bool = False,
     article_screenshots: Optional[List[Dict[str, Any]]] = None,
+    input_images: Optional[List[Dict[str, Any]]] = None,
     subject_domain: Optional[str] = None,
     cultural_context: Any = None,
     template_catalog_md: Optional[str] = None,
     valid_template_ids: Optional[List[str]] = None,
+    lesson: Optional[Dict[str, Any]] = None,
     include_music_plan: bool = False,
     music_plan_target_duration_s: Optional[float] = None,
     enforce_concept: bool = True,
@@ -1578,13 +1760,20 @@ def plan_shots(
         saved_cast=saved_cast,
         asset_asks_enabled=asset_asks_enabled,
         article_screenshots=article_screenshots,
+        input_images=input_images,
         subject_domain=subject_domain,
         cultural_context=cultural_context,
         template_catalog_md=template_catalog_md,
         valid_template_ids=valid_template_ids,
+        lesson=lesson,
     )
 
     system_content = SHOT_PLANNER_SYSTEM_PROMPT
+    if lesson:
+        # Lesson pacing replaces the reel rhythm rule (2.5-4 s body shots,
+        # 12-shot cap) — that rule cannot express a 10-minute lesson.
+        from lesson_mode import planner_system_prompt
+        system_content = planner_system_prompt(system_content)
     if verbalized_sampling:
         system_content = system_content + _VERBALIZED_SAMPLING_BLOCK
     if include_music_plan:
@@ -1648,8 +1837,16 @@ def plan_shots(
         # (and far more likely to work) than re-running the same prompt,
         # which just reproduces the same behaviour.
         print(f"   ⚠️ ShotPlanner returned non-JSON ({_fmt_err}) — retrying with a format-corrective turn")
+        # Asking again in words does not work on a model that has decided to
+        # think out loud: prod has seen the corrective turn answer "The user
+        # wants a valid JSON response. Let me carefully construct..." and burn
+        # its whole budget reasoning, so nothing parses and the run drops to v2.
+        #
+        # Prefill instead of instruct. A trailing assistant turn containing "{"
+        # leaves the model mid-object with no grammatical way back into prose,
+        # which is far more reliable than any wording of "reply with JSON only".
+        # The brace is ours, so it is prepended before parsing.
         _fix_messages = messages + [
-            {"role": "assistant", "content": (text or "")[:2000]},
             {"role": "user", "content": (
                 "That response was not valid JSON. Do NOT explain, analyze, or "
                 "add any commentary. Reply with ONE JSON object and nothing "
@@ -1657,6 +1854,7 @@ def plan_shots(
                 "the `shots` array (and the other top-level keys) exactly as "
                 "specified above."
             )},
+            {"role": "assistant", "content": "{"},
         ]
         _t2, _u2 = llm_chat(
             _fix_messages,
@@ -1665,7 +1863,16 @@ def plan_shots(
             max_tokens=max_tokens,
             response_format={"type": "json_object"},
         )
-        parsed = _parse_shot_plan(_t2 or "")
+        _t2 = _t2 or ""
+        # Some providers echo the prefill, others continue from it. Only add the
+        # brace back when the continuation did not bring its own.
+        _joined = _t2 if _t2.lstrip().startswith("{") else "{" + _t2
+        try:
+            parsed = _parse_shot_plan(_joined)
+        except ShotPlanError:
+            # Fall back to the raw continuation in case the prefill was echoed
+            # in a shape the join mangled.
+            parsed = _parse_shot_plan(_t2)
         text = _t2 or text
         for _k in ("prompt_tokens", "completion_tokens", "total_tokens"):
             try:
@@ -1690,6 +1897,12 @@ def plan_shots(
     # exists because a prod video shipped broken without it. On a concrete
     # structural miss, fire ONE corrective re-plan. Bounded, guarded,
     # ship-original-on-regression.
+    # A lesson is structured hook → concepts → worked example → recap; the
+    # concept contract's "energy RISES toward the climax" rule would push it
+    # back toward reel structure, so lessons skip it.
+    if lesson:
+        enforce_concept = False
+
     def _conformance_issues(_p: Dict[str, Any]) -> List[str]:
         out: List[str] = []
         if enforce_concept:
@@ -1719,6 +1932,12 @@ def plan_shots(
                     _messages2, model=model, temperature=temperature,
                     max_tokens=max_tokens, response_format={"type": "json_object"},
                 )
+                # The re-plan's tokens were spent whether or not it is kept (or
+                # even parses) — merge them BEFORE the accept decision. They
+                # used to be merged only on accept, so a rejected re-plan was
+                # never billed.
+                for _k in ("prompt_tokens", "completion_tokens"):
+                    usage[_k] = int(usage.get(_k, 0) or 0) + int((_usage2 or {}).get(_k, 0) or 0)
                 _parsed2 = _parse_shot_plan(_text2 or "")
                 if valid_template_ids is not None:
                     _scrub_invalid_template_ids(_parsed2["shots"], set(valid_template_ids))
@@ -1729,10 +1948,13 @@ def plan_shots(
                     and len(_conformance_issues(_parsed2)) < len(_issues)
                 ):
                     parsed = _parsed2
-                    for _k in ("prompt_tokens", "completion_tokens", "total_tokens"):
-                        usage[_k] = int(usage.get(_k, 0) or 0) + int((_usage2 or {}).get(_k, 0) or 0)
             except Exception:
                 pass  # non-fatal — keep the original plan
+
+    if lesson:
+        from lesson_mode import apply_layouts
+        _layout_counts = apply_layouts(parsed["shots"], lesson)
+        print(f"   🧑‍🏫 Lesson plan: {len(parsed['shots'])} sections, teacher layouts {_layout_counts}")
 
     return {
         "shots": parsed["shots"],
@@ -1748,10 +1970,22 @@ def plan_shots(
         # the asset-request gate. Keep them flowing.
         "characters": parsed.get("characters") or [],
         "asset_requests": parsed.get("asset_requests") or [],
-        "usage": usage or {},
+        "usage": _with_total_tokens(usage),
         "raw": text or "",
         "wpm": DEFAULT_WPM,
     }
+
+
+def _with_total_tokens(usage: Optional[Dict[str, Any]]) -> Dict[str, Any]:
+    """`usage` with total_tokens = prompt + completion (the billing contract:
+    a provider that omits the total, or a merge that skipped it, must not hide
+    the tokens from the stage's `total_tokens > 0` billing gate)."""
+    out = dict(usage or {})
+    try:
+        out["total_tokens"] = int(out.get("prompt_tokens", 0) or 0) + int(out.get("completion_tokens", 0) or 0)
+    except (TypeError, ValueError):
+        pass
+    return out
 
 
 def _scrub_invalid_template_ids(

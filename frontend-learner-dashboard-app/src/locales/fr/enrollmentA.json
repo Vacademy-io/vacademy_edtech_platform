@@ -1,0 +1,273 @@
+{
+    "common": {
+        "error": "Erreur",
+        "unexpectedError": "Une erreur inattendue s'est produite. Veuillez réessayer.",
+        "amountToPay": "Montant à payer :"
+    },
+    "inviteUnavailable": {
+        "notStarted": "L'inscription pour ce {{course}} n'est pas encore ouverte. Veuillez revenir plus tard.",
+        "closed": "L'inscription pour ce {{course}} est actuellement fermée."
+    },
+    "applyReferral": {
+        "title": "Code de parrainage",
+        "placeholder": "Entrez le code de parrainage",
+        "apply": "Appliquer",
+        "applying": "Application en cours...",
+        "applied": "Appliqué",
+        "errors": {
+            "empty": "Veuillez entrer un code de parrainage",
+            "invalid": "Code de parrainage invalide",
+            "applyFailed": "Échec de l'application du code de parrainage. Veuillez réessayer."
+        }
+    },
+    "cashfreeCheckout": {
+        "title": "Paiement Cashfree",
+        "description": "Cliquez ci-dessous pour ouvrir la page de paiement sécurisée de Cashfree. Vous y saisirez les informations de votre carte.",
+        "notReady": "Le paiement n'est pas prêt. Veuillez patienter.",
+        "gatewayUnavailable": "Passerelle de paiement indisponible.",
+        "initFailed": "Échec de l'initialisation du paiement.",
+        "processFailed": "Le paiement n'a pas pu être traité.",
+        "redirecting": "Redirection...",
+        "proceed": "Procéder au paiement",
+        "preparing": "Préparation du paiement...",
+        "loading": "Chargement du formulaire de paiement...",
+        "securedBy": "Votre paiement est sécurisé par Cashfree",
+        "methods": "Cartes, UPI, virement bancaire, portefeuilles électroniques et plus"
+    },
+    "razorpayCheckout": {
+        "title": "Paiement Razorpay",
+        "description": "Cliquez sur « Terminer l'inscription » pour procéder au paiement",
+        "defaultCourseName": "Inscription au {{course}}",
+        "defaultCourseDescription": "Paiement pour l'inscription au {{course}}",
+        "scriptLoadFailed": "Échec du chargement de la passerelle de paiement Razorpay",
+        "gatewayLoadFailed": "Échec du chargement de la passerelle de paiement",
+        "gatewayNotReady": "La passerelle de paiement n'est pas prête",
+        "gatewayNotInitialized": "La passerelle de paiement n'est pas initialisée",
+        "paymentCancelled": "Paiement annulé. L'inscription est créée mais le paiement est en attente.",
+        "gatewayOpenFailed": "Échec de l'ouverture de la passerelle de paiement",
+        "securedBy": "Votre paiement est sécurisé par Razorpay",
+        "methods": "Razorpay prend en charge les cartes de crédit/débit, le virement bancaire, l'UPI et les portefeuilles électroniques"
+    },
+    "stripeCheckout": {
+        "title": "Paiement sécurisé",
+        "description": "Saisissez les informations de votre carte ci-dessous.",
+        "notLoaded": "Stripe n'est pas encore chargé. Veuillez réessayer.",
+        "cardElementNotFound": "Élément de carte introuvable. Veuillez actualiser la page.",
+        "processingError": "Une erreur s'est produite lors du traitement du paiement.",
+        "createMethodFailed": "Échec de la création du moyen de paiement."
+    },
+    "ewayCardForm": {
+        "cardNumber": "Numéro de carte",
+        "cardNumberPlaceholder": "1234 5678 9012 3456",
+        "cardholderName": "Nom du titulaire de la carte",
+        "cardholderNamePlaceholder": "Jean Dupont",
+        "expiryDate": "Date d'expiration",
+        "expiryPlaceholder": "MM/AA",
+        "cvv": "CVV",
+        "cvvPlaceholder": "123",
+        "cvvPlaceholderAmex": "1234",
+        "securityNotice": "Les informations de votre carte sont chiffrées avant l'envoi. Nous ne stockons jamais vos informations de carte.",
+        "browserUnsupported": "Votre navigateur ne prend pas en charge le chiffrement sécurisé des paiements. Veuillez utiliser un navigateur moderne comme Chrome, Firefox, Safari ou Edge.",
+        "errors": {
+            "expiryRequired": "La date d'expiration est requise",
+            "nameRequired": "Le nom est requis"
+        }
+    },
+    "courseInfoCard": {
+        "learnersWillGain": "Ce que les {{learners}} vont apprendre",
+        "aboutCourse": "À propos du {{course}}"
+    },
+    "cpoInstallment": {
+        "title": "Sélectionner les échéances",
+        "subtitle": "Choisissez les échéances que vous souhaitez payer maintenant",
+        "selectAll": "Tout sélectionner",
+        "selectOverdue": "Sélectionner en retard ({{count}})",
+        "clear": "Effacer",
+        "installmentFallback": "Échéance",
+        "paid": "Payé",
+        "due": "Échéance : {{date}}",
+        "daysOverdue": "{{days}} j de retard",
+        "overdue": "En retard",
+        "settled": "Réglé",
+        "paidSoFar": "Payé jusqu'à présent : {{amount}}",
+        "customAmountLabel": "Saisir un montant personnalisé à la place",
+        "amountPlaceholder": "0,00",
+        "allocationHint": "Le paiement sera réparti entre les échéances sélectionnées par ordre de date d'échéance.",
+        "customAmount": "Montant personnalisé",
+        "installmentsSelected_one": "{{count}} échéance sélectionnée",
+        "installmentsSelected_other": "{{count}} échéances sélectionnées",
+        "totalOutstanding": "Total dû : {{amount}}",
+        "noDuesFound": "Aucune échéance trouvée",
+        "allSettled": "Toutes les échéances semblent réglées.",
+        "installmentsSelected_many": "{{count}} échéances sélectionnées"
+    },
+    "enrollmentPolicy": {
+        "thisCourse": "ce {{course}}",
+        "successTitle": "Inscription réussie",
+        "completeStepsPrefix": "Terminez les étapes suivantes pour activer votre accès à",
+        "whatsappVerification": "Vérification WhatsApp",
+        "alreadyEnrolledTitle": "Déjà inscrit",
+        "alreadyEnrolledMessage": "Vous êtes déjà inscrit à ce {{course}}. Veuillez d'abord terminer votre inscription en cours.",
+        "wantToUpgrade": "Vous voulez passer à une offre supérieure ?",
+        "upgradePremiumFallback": "Passez à une offre supérieure pour accéder aux fonctionnalités premium.",
+        "upgradeNow": "Passer à une offre supérieure",
+        "close": "Fermer",
+        "goToDashboard": "Aller au tableau de bord",
+        "loginNow": "Se connecter",
+        "readyToContinue": "Prêt à continuer ?",
+        "reenrollmentBlockedFallback": "La réinscription n'est pas encore disponible. Veuillez réessayer plus tard.",
+        "upgradeToContinueLearning": "Passez à une offre supérieure pour continuer à apprendre",
+        "clickBelowToJoin": "Cliquez ci-dessous pour rejoindre l'abonnement.",
+        "activeMembershipTitle": "Vous avez un abonnement actif",
+        "activeMembershipMessage": "Vous bénéficiez de notre offre d'abonnement actif. Veuillez consulter le message WhatsApp et utiliser le lien reçu par SMS ou e-mail pour rejoindre la {{session}} chaque jour. "
+    },
+    "navigationButtons": {
+        "previous": "Précédent",
+        "processing": "Traitement en cours...",
+        "completeEnrollment": "Terminer l'inscription",
+        "payNow": "Payer maintenant",
+        "confirmAndPay": "Confirmer et payer",
+        "next": "Suivant"
+    },
+    "onetimePlan": {
+        "percentOff": "{{amount}} % de réduction",
+        "fixedOff": "{{amount}} {{currency}} de réduction"
+    },
+    "paymentGatewayWrapper": {
+        "unsupportedTitle": "Passerelle de paiement non prise en charge",
+        "unsupportedMessage": "La passerelle de paiement « {{vendor}} » n'est pas prise en charge."
+    },
+    "paymentInfoStep": {
+        "securePayment": "Paiement sécurisé",
+        "enterCardDetails": "Saisissez les informations de votre carte ci-dessous.",
+        "loadingStripeConfig": "Chargement de la configuration Stripe...",
+        "stripeConfigErrorTitle": "Erreur de configuration Stripe",
+        "stripeLoadFailed": "Échec du chargement de la configuration Stripe. Veuillez réessayer.",
+        "stripeUnavailable": "Impossible de charger la passerelle de paiement Stripe. Veuillez contacter le support.",
+        "instituteId": "ID de l'établissement : {{instituteId}}",
+        "errorDetail": "Erreur : {{error}}",
+        "stripeKeyMissingTitle": "Clé Stripe manquante",
+        "stripeKeyMissingMessage": "Clé publiable Stripe introuvable dans la configuration.",
+        "availableKeys": "Clés disponibles : {{keys}}",
+        "loadingPaymentForm": "Chargement du formulaire de paiement...",
+        "gatewayNotConfiguredTitle": "Passerelle de paiement non configurée",
+        "gatewayNotConfiguredMessage": "La passerelle de paiement « {{vendor}} » n'est pas encore prise en charge. Veuillez contacter le support.",
+        "phonepe": {
+            "title": "Payer avec PhonePe",
+            "description": "Vous serez redirigé en toute sécurité vers PhonePe pour finaliser votre paiement. Une fois le paiement effectué, vous reviendrez ici automatiquement.",
+            "descriptionWithAmount": "Vous serez redirigé en toute sécurité vers PhonePe pour finaliser votre paiement de {{amount}} {{currency}}. Une fois le paiement effectué, vous reviendrez ici automatiquement.",
+            "clickPrefix": "Cliquez sur",
+            "clickSuffix": "ci-dessous pour continuer."
+        }
+    },
+    "paymentPending": {
+        "title": "Paiement en attente",
+        "subtitle": "Terminez votre paiement pour continuer",
+        "amount": "Montant :",
+        "status": "Statut :",
+        "completePayment": "Terminer le paiement",
+        "viewInvoice": "Voir la facture",
+        "redirectNotice": "Vous allez être redirigé vers une page de paiement sécurisée",
+        "securityNotice": "Les paiements sont traités en toute sécurité"
+    },
+    "paymentSelection": {
+        "donation": {
+            "title": "Faire un don",
+            "subtitle": "Soutenez notre cause avec votre généreuse contribution",
+            "suggestedAmounts": "Montants suggérés",
+            "customAmount": "Montant personnalisé",
+            "minimumPlaceholder": "Minimum {{amount}}",
+            "minimumAmount": "Montant minimum du don : {{amount}}",
+            "yourDonation": "Votre don :"
+        },
+        "regular": {
+            "title": "Sélectionner un plan de paiement",
+            "subtitle": "Choisissez l'option de paiement qui vous convient le mieux"
+        }
+    },
+    "registrationStep": {
+        "title": "Détails d'inscription",
+        "subtitle": "Renseignez vos coordonnées pour vous inscrire au {{course}}",
+        "phonePlaceholder": "123 456 7890",
+        "reset": "Réinitialiser",
+        "next": "Suivant",
+        "sending": "Envoi en cours...",
+        "billingContact": {
+            "fullNameLabel": "Nom complet du contact de facturation",
+            "emailLabel": "E-mail du contact de facturation",
+            "roleLabel": "Rôle",
+            "addSeparate": "Ajouter un contact de facturation distinct",
+            "addSeparateHint": "Choisissez cette option si la personne qui recevra les factures et les avis de renouvellement pour cette inscription est différente de vous (par exemple un parent / tuteur, votre employeur ou votre service financier).",
+            "namePlaceholder": "Prénom et nom",
+            "selectPlaceholder": "Sélectionner…"
+        },
+        "errors": {
+            "fillRequiredFields": "Veuillez remplir tous les champs obligatoires",
+            "enterEmail": "Veuillez saisir votre adresse e-mail",
+            "enterValidEmail": "Veuillez saisir une adresse e-mail valide",
+            "pleaseEnterField": "Veuillez saisir {{field}}",
+            "pleaseEnterValidField": "Veuillez saisir un(e) {{field}} valide"
+        },
+        "otp": {
+            "title": "Vérifiez votre e-mail",
+            "sentTo": "Nous avons envoyé un code de vérification à",
+            "cantFindEmail": "Vous ne trouvez pas l'e-mail ?",
+            "checkSpamPrefix": "Vérifiez votre dossier",
+            "spam": "Spam",
+            "orWord": "ou",
+            "junk": "Courrier indésirable",
+            "folderSuffix": "",
+            "checkEmailCorrect": "Assurez-vous que l'adresse e-mail est correcte",
+            "waitAndRefresh": "Attendez quelques secondes et actualisez votre boîte de réception",
+            "enterCodeLabel": "Saisissez le code de vérification",
+            "enterCodePlaceholder": "Saisissez le code à 6 chiffres",
+            "verifying": "Vérification en cours...",
+            "verifiedProceeding": "Vérifié ! Poursuite en cours...",
+            "verifyAndContinue": "Vérifier et continuer",
+            "editDetails": "Modifier les détails",
+            "resendCode": "Renvoyer le code",
+            "codeSent": "Code de vérification envoyé à votre e-mail",
+            "sendFailed": "Échec de l'envoi du code de vérification. Veuillez réessayer",
+            "codeResent": "Code de vérification renvoyé",
+            "resendFailed": "Échec du renvoi. Veuillez réessayer",
+            "enterValidCode": "Veuillez saisir un code de vérification valide",
+            "verifiedSuccess": "E-mail vérifié avec succès !",
+            "invalidCode": "Code invalide. Veuillez vérifier et réessayer"
+        }
+    },
+    "reviewStep": {
+        "orderSummary": "Récapitulatif de la commande",
+        "reviewOrder": "Vérifiez votre commande avant de procéder au paiement",
+        "courseBannerAlt": "Bannière du {{course}}",
+        "planDetails": "Détails du plan",
+        "plan": "Plan :",
+        "validity": "Validité :",
+        "referralBenefits": "Avantages de parrainage",
+        "pricing": {
+            "title": "Tarification",
+            "price": "Prix :",
+            "discount": "Réduction :",
+            "referralDiscount": "Réduction de parrainage :",
+            "percentageSuffix": " ({{percentage}} %)",
+            "couponLabel": "Coupon ({{code}}) :",
+            "totalPrice": "Prix total :",
+            "allPricesIn": "Tous les prix sont en {{currency}}",
+            "free": "Gratuit",
+            "months_one": "{{count}} mois",
+            "months_other": "{{count}} mois",
+            "days_one": "{{count}} jour",
+            "days_other": "{{count}} jours",
+            "months_many": "{{count}} mois",
+            "days_many": "{{count}} jours"
+        },
+        "benefits": {
+            "freeMembershipDays": "{{days}} jours d'adhésion gratuite 🎉",
+            "bonusContent": "Vous recevrez du contenu bonus {{deliveryText}} après votre inscription au {{course}}. 🎉",
+            "rewardPoints": "Gagnez {{points}} points de récompense ⭐️ après votre inscription au {{course}}. 🎉",
+            "mediumEmail": "E-mail",
+            "mediumWhatsapp": "WhatsApp",
+            "onOneMedium": " sur {{medium}}",
+            "onTwoMediums": " sur {{medium1}} et {{medium2}}"
+        }
+    }
+}

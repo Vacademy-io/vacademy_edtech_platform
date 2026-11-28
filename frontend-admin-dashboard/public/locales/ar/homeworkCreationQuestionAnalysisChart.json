@@ -1,0 +1,21 @@
+{
+    "title": "تحليل الأسئلة",
+    "legend": {
+        "correct": "صحيح",
+        "partiallyCorrect": "صحيح جزئيًا",
+        "wrongResponses": "إجابات خاطئة",
+        "skip": "تم التخطي"
+    },
+    "chart": {
+        "xAxisLabel": "السؤال",
+        "yAxisLabel": "عدد المشاركين"
+    },
+    "actions": {
+        "checkQuestionInsights": "عرض إحصاءات الأسئلة",
+        "selectSectionPlaceholder": "اختر القسم",
+        "export": "تصدير"
+    },
+    "dialog": {
+        "questionInsightsTitle": "إحصاءات الأسئلة"
+    }
+}

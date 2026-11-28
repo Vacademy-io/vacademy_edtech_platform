@@ -1,0 +1,111 @@
+{
+    "common": {
+        "cancel": "Annuler",
+        "save": "Enregistrer",
+        "saving": "Enregistrement…",
+        "loading": "Chargement…",
+        "memberFallback": "Membre",
+        "typeCommunity": "Communauté",
+        "typeDirectMessage": "Message direct",
+        "typeGroupMessages": "Messages de groupe",
+        "noPermissionToPost": "Vous n'êtes pas autorisé à publier ici."
+    },
+    "conversationList": {
+        "typeFallback": {
+            "batchGroup": "Groupe {{batch}}"
+        },
+        "empty": {
+            "title": "Aucune conversation pour le moment",
+            "description": "Démarrez une nouvelle conversation ou ouvrez le canal de la communauté."
+        },
+        "noMessagesYet": "Aucun message pour le moment",
+        "unreadOverflow": "99+"
+    },
+    "thread": {
+        "loadEarlier": "Charger les messages précédents",
+        "empty": "Aucun message pour le moment. Dites bonjour pour démarrer la conversation.",
+        "deletedMessage": "Ce message a été supprimé",
+        "editMessage": "Modifier le message",
+        "deleteMessage": "Supprimer le message",
+        "attachmentAltFallback": "pièce jointe",
+        "attachmentNameFallback": "Pièce jointe",
+        "failedAria": "Échec de l'envoi du message",
+        "retry": "Réessayer",
+        "dismissFailedAria": "Ignorer le message en échec",
+        "sendingAria": "Envoi du message en cours",
+        "sending": "Envoi…",
+        "timestampEdited": "{{time}} · modifié",
+        "dayToday": "Aujourd'hui",
+        "dayYesterday": "Hier",
+        "editDialog": {
+            "inputAria": "Texte du message",
+            "notice": "Tout le monde dans la conversation verra le changement, marqué comme modifié."
+        },
+        "deleteDialog": {
+            "body": "Cela supprime le message pour tout le monde dans la conversation. Cette action est irréversible.",
+            "confirm": "Supprimer"
+        }
+    },
+    "composer": {
+        "placeholder": "Écrivez un message…",
+        "attachAria": "Joindre une image",
+        "sendAria": "Envoyer le message",
+        "removeAttachmentAria": "Supprimer la pièce jointe",
+        "disabledDefault": "Vous ne pouvez pas publier dans cette conversation.",
+        "imageOnlyError": "Seules les images sont prises en charge comme pièces jointes.",
+        "uploadFailedError": "Échec du téléchargement de l'image. Veuillez réessayer."
+    },
+    "communityRules": {
+        "defaultTitle": "Règles de la communauté",
+        "acceptNotice": "Veuillez accepter les règles pour commencer à publier dans ce canal.",
+        "accept": "Accepter et continuer",
+        "accepting": "Acceptation…"
+    },
+    "newChatModal": {
+        "title": "Nouveau message",
+        "searchPlaceholder": "Rechercher des personnes par nom…",
+        "everyone": "Tout le monde",
+        "empty": "Aucune personne trouvée.",
+        "opening": "Ouverture…",
+        "startError": "Impossible de démarrer la discussion. Veuillez réessayer."
+    },
+    "ruleRejection": {
+        "slowMode": "Le mode ralenti est activé — veuillez patienter avant d'envoyer un nouveau message",
+        "blockedByModeration": "Message bloqué : il contient un mot interdit",
+        "rulesNotAcknowledged": "Veuillez d'abord accepter les règles de la communauté",
+        "linksNotAllowed": "Les liens ne sont pas autorisés ici",
+        "attachmentsNotAllowed": "Les pièces jointes ne sont pas autorisées ici",
+        "newMemberReadonly": "Les nouveaux membres ne peuvent pas encore publier",
+        "chatDisabled": "La messagerie est désactivée pour cet établissement"
+    },
+    "screen": {
+        "loadThreadError": "Impossible de charger cette conversation.",
+        "sendGenericError": "Échec de l'envoi du message.",
+        "deleteError": "Impossible de supprimer le message. Veuillez réessayer.",
+        "editError": "Impossible d'enregistrer la modification. Veuillez réessayer.",
+        "acknowledgeError": "Impossible d'accepter les règles. Veuillez réessayer.",
+        "ackGateReason": "Acceptez les règles de la communauté ci-dessus pour commencer à publier.",
+        "headerGroupFallback": "Groupe",
+        "newMessage": "Nouveau message",
+        "chatDisabledTitle": "Les messages intégrés sont désactivés pour votre établissement",
+        "chatDisabledDescription": "La messagerie n'est pas disponible pour le moment. Revenez plus tard ou contactez l'administrateur de votre établissement.",
+        "header": {
+            "messages": "Messages",
+            "refreshAria": "Actualiser",
+            "backAria": "Retour",
+            "communitySubtitle": "Communauté de l'établissement"
+        },
+        "emptySelection": {
+            "title": "Sélectionnez une conversation",
+            "description": "Choisissez une conversation dans la liste, ouvrez le canal de la communauté, ou démarrez un nouveau message direct."
+        }
+    },
+    "batchPanel": {
+        "disabledFallback": "La messagerie est désactivée pour cet établissement",
+        "genericErrorTitle": "Impossible de charger la discussion",
+        "genericErrorDescription": "Une erreur s'est produite lors de l'ouverture de ces messages. Veuillez réessayer plus tard."
+    },
+    "route": {
+        "openChatError": "Impossible d'ouvrir la discussion. Veuillez réessayer."
+    }
+}

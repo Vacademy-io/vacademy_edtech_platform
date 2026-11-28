@@ -1,0 +1,20 @@
+{
+    "header": {
+        "title": "Plan de paiement",
+        "showInInvite": "Afficher les plans de paiement dans l'invitation",
+        "changePlans": "Modifier les plans de paiement"
+    },
+    "badge": {
+        "default": "Par défaut"
+    },
+    "donation": {
+        "suggestedAmounts": "Montants suggérés : {{amount}}",
+        "minimumAmount": "Montant minimum : {{amount}}",
+        "currency": "Devise : {{currency}}"
+    },
+    "freePlan": {
+        "days_one": "Gratuit pendant {{count}} jour",
+        "days_other": "Gratuit pendant {{count}} jours",
+        "days_many": "Gratuit pendant {{count}} jours"
+    }
+}

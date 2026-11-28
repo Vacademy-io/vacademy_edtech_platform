@@ -1,0 +1,79 @@
+---
+title: "Roadmap"
+description: "What is planned for the Evaluation API but not available yet, and what to do in the meantime."
+icon: "map"
+---
+
+<Warning>
+Everything on this page is **planned, not available**. There are no dates, and plans can change. Build only on what the API reference and the [Changelog](/platform/changelog) list as live today. If one of these matters for your launch, tell us at [hello@evalezy.com](mailto:hello@evalezy.com): partner demand sets the order.
+</Warning>
+
+## Planned
+
+<CardGroup cols={2}>
+  <Card title="Webhooks" icon="bell">
+    Signed event notifications when a submission is graded, fails or is finalized, so you can stop polling.
+
+    **Today:** poll `GET /submissions?updated_since=` as shown in [Keeping in sync](/platform/pagination#keeping-in-sync).
+  </Card>
+  <Card title="Bulk batches with name matching" icon="layer-group">
+    Upload one scan of a whole bundle of answer sheets and let Evalezy split it and match each copy to a candidate by name or roll number.
+
+    **Today:** upload one PDF per answer sheet and create one submission per candidate.
+  </Card>
+  <Card title="Phone photos" icon="camera">
+    Submit answer sheets as photos (`images[]`) instead of a scanned PDF.
+
+    **Today:** convert photos into one PDF per answer sheet. Sending images answers `422 feature_not_available`.
+  </Card>
+  <Card title="Exam from a question-paper PDF" icon="file-import">
+    Create a draft exam by uploading the question paper and letting Evalezy read the questions and marks.
+
+    **Today:** send questions as JSON in `POST /exams`.
+  </Card>
+  <Card title="Rubric generation on request and locking" icon="list-check">
+    Generate a draft rubric for each question from the model answer, then lock rubrics before grading starts.
+
+    **Today:** send your own rubric per question, or let the AI grade against the model answer. If a long answer has neither, a rubric is generated from the question text on the first copy and reused (`source: "generated"`); review it with `GET /exams/{id}/rubrics`.
+  </Card>
+  <Card title="Hosted review links" icon="link">
+    A secure link your teachers can open to review and adjust AI marks.
+
+    **Today:** build review into your product with the review endpoints, or have teachers review in the Vacademy dashboard, where API exams appear tagged Source: API.
+  </Card>
+  <Card title="CSV results" icon="file-csv">
+    `GET /exams/{id}/results?format=csv` for a spreadsheet of an exam's marks.
+
+    **Today:** page through the JSON results (50 per call) and build the CSV on your side. `format=csv` answers `422 feature_not_available`.
+  </Card>
+  <Card title="Hindi and regional languages" icon="language">
+    Grading answers written in Hindi and other Indian languages, typed or handwritten.
+
+    **Today:** English only. A typed answer (long answer or one-word) in which more than 20% of the letters are Devanagari is refused with `422 language_not_supported`; handwritten Hindi copies fail with `error.code: "language_not_supported"` and are not charged.
+  </Card>
+  <Card title="SDKs" icon="code">
+    Official client libraries.
+
+    **Today:** call the REST API with any HTTP client. The OpenAPI document at `https://api.evalezy.com/v1/openapi.json` can generate a client in most languages.
+  </Card>
+</CardGroup>
+
+## In beta
+
+<Card title='Choice groups ("attempt any N of M")' icon="flask">
+  Papers with internal choice, where a candidate answers any N of the M questions in a group and only N count towards the total. The endpoint exists but is switched off by default and answers `422 feature_not_available`. It is enabled on request for pilot partners: write to [hello@evalezy.com](mailto:hello@evalezy.com).
+
+  **Today:** send papers without internal choice.
+</Card>
+
+## Also not available yet
+
+These parts of the request shape are reserved and answer `422 feature_not_available`:
+
+| Request | Today |
+|---|---|
+| `files[]` on `POST /exams/{id}/submissions` (answer booklet plus supplementary sheets) | Merge the booklet and supplements into one PDF and send one `upload_id`. |
+| `question_ids` on `POST /submissions/{id}/re-evaluate` (re-grade single questions) | Re-evaluate the whole copy, or override the questions by hand with `PATCH /submissions/{id}/questions/{question_id}`. |
+| `purge=true` on `DELETE /exams/{id}` | Delete without `purge`. |
+
+See [Errors](/platform/errors#422-unprocessable-entity) for how `feature_not_available` is returned, and the [Changelog](/platform/changelog) for what has shipped.

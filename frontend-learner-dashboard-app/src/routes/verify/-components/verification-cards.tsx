@@ -1,4 +1,5 @@
 import { SealWarning, WifiSlash } from "@phosphor-icons/react";
+import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 
 /**
@@ -36,15 +37,16 @@ export function Shell({
 }
 
 export function VerifyingCard() {
+  const { t } = useTranslation("miscRoutesA");
   return (
     <Shell tone="neutral">
-      <div className="flex flex-col items-center gap-3 py-6">
+      <div className="flex flex-col items-center gap-stack py-6">
         <div
           className="size-8 animate-spin rounded-full border-2 border-neutral-200 border-t-primary-500 motion-reduce:animate-none"
           role="status"
-          aria-label="Checking certificate"
+          aria-label={t("verify.cards.checkingAriaLabel")}
         />
-        <p className="text-body text-neutral-500">Checking this certificate…</p>
+        <p className="text-body text-neutral-500">{t("verify.cards.checking")}</p>
       </div>
     </Shell>
   );
@@ -58,45 +60,45 @@ export function InvalidCard({
   certificateId?: string;
   children?: React.ReactNode;
 }) {
+  const { t } = useTranslation("miscRoutesA");
   return (
     <Shell tone="danger">
       <div className="flex flex-col items-center gap-2 pb-4">
         <SealWarning weight="fill" className="size-10 text-danger-500" />
         <h1 className="text-h3 font-semibold text-neutral-700 dark:text-neutral-100">
-          Could not verify this certificate
+          {t("verify.cards.invalidTitle")}
         </h1>
       </div>
       {children ?? (
         <p className="text-center text-body text-neutral-500">
-          We have no record of certificate{" "}
+          {t("verify.cards.noRecordPrefix")}{" "}
           <span className="font-mono text-neutral-700 dark:text-neutral-200">
             {certificateId}
           </span>{" "}
-          with this verification link.
+          {t("verify.cards.noRecordSuffix")}
         </p>
       )}
       <p className="mt-4 text-center text-caption text-neutral-400">
-        Links must be scanned or copied in full — a partial link will not verify.
-        If you typed it by hand, scan the code on the certificate instead.
+        {t("verify.cards.linksMustBeFull")}
       </p>
     </Shell>
   );
 }
 
 export function ErrorCard() {
+  const { t } = useTranslation("miscRoutesA");
   return (
     <Shell tone="neutral">
       <div className="flex flex-col items-center gap-2 pb-4">
         <WifiSlash weight="fill" className="size-10 text-neutral-400" />
         <h1 className="text-h3 font-semibold text-neutral-700 dark:text-neutral-100">
-          Could not reach the verification service
+          {t("verify.cards.errorTitle")}
         </h1>
       </div>
       {/* Deliberately not "invalid" — a dropped connection must never make a
           genuine certificate look fake. */}
       <p className="text-center text-body text-neutral-500">
-        This does not mean the certificate is invalid. Check your connection and
-        try again.
+        {t("verify.cards.errorDescription")}
       </p>
     </Shell>
   );

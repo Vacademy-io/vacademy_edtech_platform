@@ -1,5 +1,5 @@
 import { useNavigate } from '@tanstack/react-router';
-import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
@@ -13,72 +13,38 @@ import {
     type Icon,
 } from '@phosphor-icons/react';
 import {
-    getDashboardKpisQuery,
+    buildAdminKpis,
+    buildTeacherKpis,
     type DashboardKpi,
+    type InstituteCounts,
     type KpiBreakdownTone,
 } from '../-services/dashboard-kpis-service';
+import { toSourceState } from '../-services/dashboard-sources';
+import {
+    useDashboardUpcomingSessions,
+    useInstituteDashboardCounts,
+    useInstituteFeeCollection,
+    useTeamMemberCount,
+} from '../-hooks/useDashboardSources';
+import SourceErrorNotice from './SourceErrorNotice';
 import { useInstituteDetailsStore } from '@/stores/students/students-list/useInstituteDetailsStore';
 import { formatInstituteMoney, resolveInstituteCurrency } from '@/utils/institute-currency';
+import { useEntitlement } from '@/lib/capabilities/use-entitlement';
+import { isKpiEntitled } from '../-config/dashboard-entitlements';
 
 interface KpiBandProps {
     instituteId: string;
     roles: string[];
 }
 
-// Per-KPI visual treatment — icon + accent palette. Keeps the service layer
-// data-only and the visual identity owned by the widget.
-interface KpiVisual {
-    Icon: Icon;
-    iconBg: string;
-    iconColor: string;
-    cardBg: string;
-}
-
-const VISUALS: Record<string, KpiVisual> = {
-    activeLearners: {
-        Icon: Users,
-        iconBg: 'bg-violet-100',
-        iconColor: 'text-violet-600',
-        cardBg: 'bg-gradient-to-br from-violet-50/60 to-white',
-    },
-    totalCourses: {
-        Icon: BookOpen,
-        iconBg: 'bg-blue-100',
-        iconColor: 'text-blue-600',
-        cardBg: 'bg-gradient-to-br from-blue-50/60 to-white',
-    },
-    teamMembers: {
-        Icon: UsersThree,
-        iconBg: 'bg-emerald-100',
-        iconColor: 'text-emerald-600',
-        cardBg: 'bg-gradient-to-br from-emerald-50/60 to-white',
-    },
-    outstandingFees: {
-        // Currency-neutral: the institute's dues may be in any currency (see resolveInstituteCurrency).
-        Icon: Money,
-        iconBg: 'bg-amber-100',
-        iconColor: 'text-amber-600',
-        cardBg: 'bg-gradient-to-br from-amber-50/60 to-white',
-    },
-    overdueItems: {
-        Icon: WarningCircle,
-        iconBg: 'bg-red-100',
-        iconColor: 'text-red-600',
-        cardBg: 'bg-gradient-to-br from-red-50/60 to-white',
-    },
-    classesToday: {
-        Icon: VideoCamera,
-        iconBg: 'bg-orange-100',
-        iconColor: 'text-orange-600',
-        cardBg: 'bg-gradient-to-br from-orange-50/60 to-white',
-    },
-};
-
-const DEFAULT_VISUAL: KpiVisual = {
-    Icon: Users,
-    iconBg: 'bg-neutral-100',
-    iconColor: 'text-neutral-600',
-    cardBg: 'bg-white',
+// Neutral, compact metrics keep the assistant and pending work visually primary.
+const KPI_ICONS: Record<string, Icon> = {
+    activeLearners: Users,
+    totalCourses: BookOpen,
+    teamMembers: UsersThree,
+    outstandingFees: Money,
+    overdueFees: WarningCircle,
+    classesToday: VideoCamera,
 };
 
 // Breakdown chips sit under the headline value, so they must read as secondary:
@@ -116,18 +82,70 @@ const formatValue = (k: DashboardKpi, currency: string): string => {
     return k.value.toLocaleString('en-IN');
 };
 
+const KpiSkeletonCard = () => (
+    <Card className="rounded-xl bg-white p-3 shadow-none sm:p-4">
+        <div className="flex items-start justify-between">
+            <Skeleton className="h-3 w-20" />
+            <Skeleton className="size-4 rounded" />
+        </div>
+        <Skeleton className="mt-3 h-7 w-24" />
+        <Skeleton className="mt-2 h-2.5 w-28" />
+    </Card>
+);
+
 export default function KpiBand({ instituteId, roles }: KpiBandProps) {
     const navigate = useNavigate();
-    const { data, isLoading, isError } = useQuery(getDashboardKpisQuery({ instituteId, roles }));
+    const { t } = useTranslation('dashboardKpisService');
+    const { t: dashboardT } = useTranslation('dashboardIndex');
     const instituteDetails = useInstituteDetailsStore((state) => state.instituteDetails);
     const currency = resolveInstituteCurrency(instituteDetails);
 
-    if (isError) return null;
-    if (!isLoading && (!data || data.length === 0)) return null;
+    // `roles` are the CURRENT institute's roles. Admins get the full band; teachers get
+    // today's classes only; any other role gets no band.
+    const isAdmin = roles.includes('ADMIN');
+    const isTeacher = !isAdmin && roles.includes('TEACHER');
 
-    const items: (DashboardKpi | null)[] = isLoading
-        ? Array.from({ length: 6 }, () => null)
-        : data || [];
+    // Shared hooks: the page header, Finance snapshot, Pending Actions and Live Classes read
+    // the same queries, so each request goes out once per dashboard load.
+    const countsQuery = useInstituteDashboardCounts(instituteId, isAdmin);
+    const teamQuery = useTeamMemberCount(instituteId, isAdmin);
+    // Plan (MANAGED only): a card outside it is dropped and its source not fetched.
+    // In LEGACY every card is entitled, so these flags are exactly the role checks.
+    const entitlement = useEntitlement();
+    const feesInPlan = isKpiEntitled('outstandingFees', entitlement);
+    const sessionsInPlan = isKpiEntitled('classesToday', entitlement);
+    const feeQuery = useInstituteFeeCollection(instituteId, isAdmin && feesInPlan);
+    const sessionsQuery = useDashboardUpcomingSessions(
+        instituteId,
+        (isAdmin || isTeacher) && sessionsInPlan
+    );
+
+    const refetchByKpi: Record<string, () => void> = {
+        activeLearners: () => void countsQuery.refetch(),
+        totalCourses: () => void countsQuery.refetch(),
+        teamMembers: () => void teamQuery.refetch(),
+        outstandingFees: () => void feeQuery.refetch(),
+        overdueFees: () => void feeQuery.refetch(),
+        classesToday: () => void sessionsQuery.refetch(),
+    };
+
+    const sessions = toSourceState(sessionsQuery);
+    const allItems: DashboardKpi[] = isAdmin
+        ? buildAdminKpis(
+              {
+                  counts: toSourceState<InstituteCounts>(countsQuery),
+                  teamCount: toSourceState(teamQuery),
+                  feeCollection: toSourceState(feeQuery),
+                  sessions,
+              },
+              t
+          )
+        : isTeacher
+          ? buildTeacherKpis(sessions, t)
+          : [];
+    const items = allItems.filter((k) => isKpiEntitled(k.id, entitlement));
+
+    if (items.length === 0) return null;
 
     const cols =
         items.length === 1
@@ -138,89 +156,110 @@ export default function KpiBand({ instituteId, roles }: KpiBandProps) {
                 ? 'grid-cols-2 lg:grid-cols-3'
                 : items.length === 4
                   ? 'grid-cols-2 lg:grid-cols-4'
-                  : 'grid-cols-2 sm:grid-cols-3';
+                  : items.length === 5
+                    ? 'grid-cols-2 md:grid-cols-3 2xl:grid-cols-5'
+                    : 'grid-cols-2 md:grid-cols-3 2xl:grid-cols-6';
 
     return (
-        <div className={`grid gap-3 ${cols}`}>
-            {items.map((k, i) => {
-                if (!k) {
-                    return (
-                        <Card key={i} className="bg-white p-4 shadow-sm">
-                            <div className="flex items-start justify-between">
-                                <Skeleton className="h-3 w-20" />
-                                <Skeleton className="size-9 rounded-xl" />
-                            </div>
-                            <Skeleton className="mt-3 h-7 w-24" />
-                            <Skeleton className="mt-2 h-2.5 w-28" />
-                        </Card>
-                    );
-                }
-                const v = VISUALS[k.id] || DEFAULT_VISUAL;
-                const Icon = v.Icon;
-                const clickable = !!k.deepLink;
-                return (
-                    <button
-                        key={k.id}
-                        type="button"
-                        onClick={() => k.deepLink && navigate({ to: k.deepLink })}
-                        disabled={!clickable}
-                        className="group text-left disabled:cursor-default"
-                    >
-                        <Card
-                            className={`relative h-full overflow-hidden p-4 shadow-sm transition-all ${v.cardBg} ${
-                                clickable
-                                    ? 'group-hover:-translate-y-0.5 group-hover:shadow-md'
-                                    : ''
-                            }`}
-                        >
-                            <div className="flex items-start justify-between gap-3">
-                                <div className="min-w-0 flex-1">
-                                    <div className="text-2xs font-medium uppercase tracking-wide text-neutral-500">
+        <section aria-label={dashboardT('overview.title')}>
+            <h2 className="mb-3 text-sm font-semibold text-neutral-800">
+                {dashboardT('overview.title')}
+            </h2>
+            <div className={`grid gap-2 ${cols}`}>
+                {items.map((k) => {
+                    if (k.status === 'loading') {
+                        return <KpiSkeletonCard key={k.id} />;
+                    }
+                    const Icon = KPI_ICONS[k.id] || Users;
+                    if (k.status === 'error') {
+                        // Not a link and no value: a failed source must not read as a real 0.
+                        return (
+                            <Card
+                                key={k.id}
+                                className="h-full rounded-xl bg-white p-3 shadow-none sm:p-4"
+                            >
+                                <div className="flex items-start justify-between gap-3">
+                                    <div className="min-w-0 flex-1 text-xs font-medium text-neutral-600">
                                         {k.label}
                                     </div>
+                                    <Icon
+                                        size={16}
+                                        className="mt-0.5 shrink-0 text-neutral-300"
+                                        aria-hidden="true"
+                                    />
                                 </div>
-                                <span
-                                    className={`flex size-9 shrink-0 items-center justify-center rounded-xl ${v.iconBg}`}
-                                >
-                                    <Icon size={18} weight="duotone" className={v.iconColor} />
-                                </span>
-                            </div>
-                            <div className="mt-2 flex flex-wrap items-baseline gap-x-2 gap-y-1">
-                                <span className="text-2xl font-semibold tabular-nums text-neutral-900">
-                                    {formatValue(k, currency)}
-                                </span>
-                            </div>
-                            {!!k.breakdown?.length && (
-                                <div className="mt-1.5 flex flex-wrap items-center gap-1">
-                                    {k.breakdown.map((b) => (
-                                        <span
-                                            key={b.label}
-                                            className={`rounded-sm px-1.5 py-0.5 text-2xs font-medium tabular-nums ${
-                                                BREAKDOWN_TONE[b.tone]
-                                            }`}
-                                        >
-                                            {b.value.toLocaleString('en-IN')} {b.label.toLowerCase()}
-                                        </span>
-                                    ))}
+                                <div className="mt-2 text-2xl font-semibold text-neutral-300">
+                                    —
                                 </div>
-                            )}
-                            {k.subtitle && (
-                                <div className="mt-1 flex items-center justify-between gap-2">
-                                    <span className="line-clamp-1 text-2xs text-neutral-500">
-                                        {k.subtitle}
+                                <SourceErrorNotice
+                                    className="mt-1"
+                                    onRetry={refetchByKpi[k.id] ?? (() => undefined)}
+                                />
+                            </Card>
+                        );
+                    }
+                    const clickable = !!k.deepLink;
+                    return (
+                        <button
+                            key={k.id}
+                            type="button"
+                            onClick={() => k.deepLink && navigate({ to: k.deepLink })}
+                            disabled={!clickable}
+                            className="group rounded-xl text-start focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-500 focus-visible:ring-offset-2 disabled:cursor-default"
+                        >
+                            <Card
+                                className={`h-full rounded-xl bg-white p-3 shadow-none transition-colors sm:p-4 ${clickable ? 'group-hover:border-neutral-400 group-hover:bg-neutral-50' : ''}`}
+                            >
+                                <div className="flex items-start justify-between gap-3">
+                                    <div className="min-w-0 flex-1">
+                                        <div className="text-xs font-medium text-neutral-600">
+                                            {k.label}
+                                        </div>
+                                    </div>
+                                    <Icon
+                                        size={16}
+                                        className="mt-0.5 shrink-0 text-neutral-400"
+                                        aria-hidden="true"
+                                    />
+                                </div>
+                                <div className="mt-2 flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                                    <span className="text-2xl font-semibold tabular-nums text-neutral-900">
+                                        {formatValue(k, currency)}
                                     </span>
-                                    {clickable && (
-                                        <CaretRight
-                                            size={12}
-                                            className="shrink-0 text-neutral-300 transition-all group-hover:translate-x-0.5 group-hover:text-primary-500"
-                                        />
-                                    )}
                                 </div>
-                            )}
-                        </Card>
-                    </button>
-                );
-            })}
-        </div>
+                                {!!k.breakdown?.length && (
+                                    <div className="mt-1.5 flex flex-wrap items-center gap-1">
+                                        {k.breakdown.map((b) => (
+                                            <span
+                                                key={b.label}
+                                                className={`rounded-sm px-1.5 py-0.5 text-2xs font-medium tabular-nums ${
+                                                    BREAKDOWN_TONE[b.tone]
+                                                }`}
+                                            >
+                                                {b.value.toLocaleString('en-IN')}{' '}
+                                                {b.label.toLowerCase()}
+                                            </span>
+                                        ))}
+                                    </div>
+                                )}
+                                {k.subtitle && (
+                                    <div className="mt-1 flex items-center justify-between gap-2">
+                                        <span className="text-2xs text-neutral-500">
+                                            {k.subtitle}
+                                        </span>
+                                        {clickable && (
+                                            <CaretRight
+                                                size={12}
+                                                className="shrink-0 text-neutral-300 transition-colors group-hover:text-neutral-700"
+                                            />
+                                        )}
+                                    </div>
+                                )}
+                            </Card>
+                        </button>
+                    );
+                })}
+            </div>
+        </section>
     );
 }

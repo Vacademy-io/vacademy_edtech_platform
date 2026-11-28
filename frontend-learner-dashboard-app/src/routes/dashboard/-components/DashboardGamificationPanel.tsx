@@ -1,7 +1,6 @@
 import React, { useState } from "react";
-import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
-import { Star, Fire, Trophy, Lock } from "@phosphor-icons/react";
+import { Star, Fire, Trophy, Lock, Check } from "@phosphor-icons/react";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { usePlayGamificationStore } from "@/stores/play-gamification-store";
@@ -15,6 +14,7 @@ import { ContentTerms, SystemTerms } from "@/types/naming-settings";
 import iconPoints from "@/assets/cleaner-play/icon-points.webp";
 import iconStreak from "@/assets/cleaner-play/icon-streak.webp";
 import iconBadges from "@/assets/cleaner-play/icon-badges.webp";
+import { streakCountdown, streakPrompt, useStreakState } from "./play/useDashboardHeroData";
 
 /**
  * Standard-theme gamification panel.
@@ -26,20 +26,6 @@ import iconBadges from "@/assets/cleaner-play/icon-badges.webp";
  * `09-learner-app.md`).
  */
 
-/**
- * Weekday initials, Monday-first. A function (not a module const) so the
- * labels re-resolve when the learner switches language — a module-scope array
- * would freeze the English initials at import time.
- */
-const getDayLabels = (t: TFunction<"dashboard">): string[] => [
-  t("streak.dayInitial.monday"),
-  t("streak.dayInitial.tuesday"),
-  t("streak.dayInitial.wednesday"),
-  t("streak.dayInitial.thursday"),
-  t("streak.dayInitial.friday"),
-  t("streak.dayInitial.saturday"),
-  t("streak.dayInitial.sunday"),
-];
 const XP_PER_LEVEL = 500;
 
 function XpCard({ data }: { data: PlayGamificationData | null }) {
@@ -55,7 +41,7 @@ function XpCard({ data }: { data: PlayGamificationData | null }) {
 
   if (isCleanerPlay) {
     return (
-      <div className="cp-card flex h-full flex-col gap-3 p-4">
+      <div className="cp-card flex h-full flex-col gap-stack p-4">
         <div className="flex items-center gap-3">
           <img src={iconPoints} alt="" aria-hidden="true" className="h-11 w-11 shrink-0 object-contain" />
           <div>
@@ -106,7 +92,7 @@ function XpCard({ data }: { data: PlayGamificationData | null }) {
 
   return (
     <Card className="h-full">
-      <CardContent className="flex h-full flex-col gap-3 p-4">
+      <CardContent className="flex h-full flex-col gap-stack p-card">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary-50">
             <Star weight="fill" size={20} className="text-primary-500" />
@@ -160,46 +146,66 @@ function XpCard({ data }: { data: PlayGamificationData | null }) {
   );
 }
 
-function StreakCard({ data }: { data: PlayGamificationData | null }) {
+function StreakCard() {
   const { t } = useTranslation("dashboard");
-  const dayLabels = getDayLabels(t);
+  const { t: tE } = useTranslation("dashboardEngagement");
   const isCleanerPlay = useCleanerPlayTheme();
-  const streak = data?.currentStreak ?? 0;
-  const best = data?.longestStreak ?? 0;
-  const dots = data?.weeklyDots ?? Array(7).fill(false);
-  const hasStreak = streak > 0;
+  // The one streak value (server first) every surface shares — see useStreakState.
+  const streak = useStreakState();
+  const hasStreak = streak.current > 0;
+  const prompt = streakPrompt(streak, tE);
+  const countdown = streakCountdown(streak, tE);
+  const flameWeight = streak.status === "kept" ? "fill" : "regular";
+
+  const dayDots = (activeClass: string, idleClass: string, todayRing: string) => (
+    <ol className="grid grid-cols-7 gap-1" aria-label={tE("streakStatus.lastSevenDays")}>
+      {streak.days.map((day) => (
+        <li
+          key={day.key}
+          className={cn(
+            "relative flex aspect-square w-full max-w-7 items-center justify-center justify-self-center overflow-hidden rounded-full text-3xs font-semibold leading-none sm:text-caption",
+            day.active ? activeClass : idleClass,
+            day.isToday && todayRing
+          )}
+        >
+          <span aria-hidden>
+            {day.active ? <Check weight="bold" className="size-3 sm:size-3.5" /> : day.label}
+          </span>
+          <span className="sr-only">
+            {tE(day.active ? "streakStatus.dayActive" : "streakStatus.dayInactive", {
+              day: day.fullLabel || day.label,
+            })}
+          </span>
+        </li>
+      ))}
+    </ol>
+  );
 
   if (isCleanerPlay) {
     return (
-      <div className="cp-card flex h-full flex-col gap-3 p-4">
+      <div className="cp-card flex h-full flex-col gap-stack p-4">
         <div className="flex items-center gap-3">
           <img src={iconStreak} alt="" aria-hidden="true" className="h-11 w-11 shrink-0 object-contain" />
           {hasStreak ? (
             <div>
-              <span className="cp-heading text-h2">{streak}</span>
+              <span className="cp-heading text-h2 tabular-nums">{streak.current}</span>
               <p className="cp-muted text-caption font-medium uppercase tracking-wide">
                 {t("streak.dayStreakLabel")}
               </p>
             </div>
           ) : (
-            <p className="cp-heading text-body">{t("gamification.streakEmptyPrompt")}</p>
+            <p className="cp-heading text-body">{prompt}</p>
           )}
         </div>
-        <div className="flex items-center gap-1.5">
-          {dayLabels.map((label, i) => (
-            <div
-              key={i}
-              className={cn(
-                "flex h-7 w-7 items-center justify-center rounded-full text-caption font-semibold",
-                dots[i] ? "bg-cp-gold text-white" : "bg-cp-bg-deep cp-muted"
-              )}
-            >
-              {dots[i] ? "✓" : label}
-            </div>
-          ))}
-        </div>
-        {best > 0 && (
-          <p className="cp-muted mt-auto text-caption">{t("streak.best", { count: best })}</p>
+        {hasStreak && prompt && (
+          <p className="cp-muted text-caption">
+            {prompt}
+            {countdown && <span className="cp-heading"> · {countdown}</span>}
+          </p>
+        )}
+        {dayDots("bg-cp-gold text-white", "bg-cp-bg-deep cp-muted", "ring-2 ring-cp-gold ring-offset-2 ring-offset-cp-surface")}
+        {streak.longest > 0 && (
+          <p className="cp-muted mt-auto text-caption">{t("streak.best", { count: streak.longest })}</p>
         )}
       </div>
     );
@@ -207,40 +213,36 @@ function StreakCard({ data }: { data: PlayGamificationData | null }) {
 
   return (
     <Card className="h-full">
-      <CardContent className="flex h-full flex-col gap-3 p-4">
+      <CardContent className="flex h-full flex-col gap-stack p-card">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-warning-50">
-            <Fire weight="fill" size={20} className="text-warning-500" />
+            <Fire
+              weight={flameWeight}
+              size={20}
+              className={hasStreak ? "text-warning-500" : "text-muted-foreground"}
+            />
           </div>
           {hasStreak ? (
             <div>
-              <span className="text-h2 font-bold text-foreground">{streak}</span>
+              <span className="text-h2 font-bold tabular-nums text-foreground">{streak.current}</span>
               <p className="text-caption font-medium uppercase tracking-wide text-muted-foreground">
                 {t("streak.dayStreakLabel")}
               </p>
             </div>
           ) : (
-            <p className="text-body font-semibold text-foreground">
-              {t("gamification.streakEmptyPrompt")}
-            </p>
+            <p className="text-body font-semibold text-foreground">{prompt}</p>
           )}
         </div>
-        <div className="flex items-center gap-1.5">
-          {dayLabels.map((label, i) => (
-            <div
-              key={i}
-              className={cn(
-                "flex h-7 w-7 items-center justify-center rounded-full text-caption font-semibold",
-                dots[i] ? "bg-warning-500 text-white" : "bg-muted text-muted-foreground"
-              )}
-            >
-              {dots[i] ? "✓" : label}
-            </div>
-          ))}
-        </div>
-        {best > 0 && (
+        {hasStreak && prompt && (
+          <p className="text-caption text-warning-600">
+            {prompt}
+            {countdown && <span className="font-semibold"> · {countdown}</span>}
+          </p>
+        )}
+        {dayDots("bg-warning-500 text-white", "bg-muted text-muted-foreground", "ring-2 ring-warning-500 ring-offset-2 ring-offset-card")}
+        {streak.longest > 0 && (
           <p className="mt-auto text-caption text-muted-foreground">
-            {t("streak.best", { count: best })}
+            {t("streak.best", { count: streak.longest })}
           </p>
         )}
       </CardContent>
@@ -328,7 +330,7 @@ function BadgesCard({
 
   if (isCleanerPlay) {
     return (
-      <div className="cp-card flex h-full flex-col gap-3 p-4">
+      <div className="cp-card flex h-full flex-col gap-stack p-4">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <img src={iconBadges} alt="" aria-hidden="true" className="h-11 w-11 shrink-0 object-contain" />
@@ -366,7 +368,7 @@ function BadgesCard({
 
   return (
     <Card className="h-full">
-      <CardContent className="flex h-full flex-col gap-3 p-4">
+      <CardContent className="flex h-full flex-col gap-stack p-card">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary-50">
@@ -433,7 +435,7 @@ export const DashboardGamificationPanel: React.FC = () => {
     <>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <XpCard data={data} />
-        <StreakCard data={data} />
+        <StreakCard />
         {showBadges && (
           <BadgesCard data={data} onOpenDetails={() => setDetailsOpen(true)} />
         )}

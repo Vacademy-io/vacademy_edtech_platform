@@ -1,0 +1,11 @@
+{
+  "errors": {
+    "researchCut": "Recherche annulée de la production",
+    "beatsCut": "Planification des séquences annulée de la production",
+    "talentCut": "Intervenant annulé de la production",
+    "scoreCut": "Musique annulée de la production",
+    "shotPlanningCut": "Planification des plans annulée de la production",
+    "narrationWritingCut": "Rédaction de la narration annulée de la production",
+    "productionHalted": "Production interrompue"
+  }
+}

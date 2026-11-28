@@ -1,0 +1,53 @@
+{
+    "header": {
+        "title": "Conditions de diffusion progressive",
+        "enabled": "Activé",
+        "disabled": "Désactivé"
+    },
+    "info": {
+        "description": "Diffuse le contenu du cours progressivement plutôt que d'un coup. Définissez le calendrier pour chaque cours depuis Détails du cours → Déverrouillage programmé, ou pour chaque élément depuis son menu à trois points."
+    },
+    "enforce": {
+        "label": "Appliquer les règles de progression aux apprenants",
+        "hint": "Les règles de déverrouillage par date et par jour s'appliquent toujours. Les règles qui dépendent de la progression de l'apprenant (élément précédent, prérequis, score) restent en aperçu tant que ceci est désactivé, ce qui permet de les préparer sans rien changer pour les apprenants.",
+        "warning": {
+            "prefix": "Cet établissement a déjà",
+            "ruleCount_one": "{{count}} règle de progression enregistrée",
+            "ruleCount_many": "{{count}} règle de progression enregistrée",
+            "ruleCount_other": "{{count}} règles de progression enregistrées",
+            "suffix": ". Certaines peuvent être anciennes ou inachevées — elles n'ont jamais affecté les apprenants. Activer ce réglage les applique toutes en une fois, alors examinez-les d'abord dans chaque cours."
+        }
+    },
+    "schedule": {
+        "title": "Calendrier par défaut",
+        "description": "Point de départ du planificateur de chaque cours. Chaque cours peut toujours le remplacer.",
+        "level": {
+            "label": "Diffuser un(e)",
+            "options": {
+                "subject": "Matière",
+                "module": "Module",
+                "chapter": "Chapitre",
+                "slide": "Diapositive"
+            }
+        },
+        "interval": {
+            "label": "Tous les … jours"
+        },
+        "startDay": {
+            "label": "Le premier s'ouvre le jour"
+        },
+        "anchor": {
+            "label": "Décompté à partir de",
+            "enrollment": "La date d'inscription de chaque apprenant",
+            "sessionStart": "La date de début de la promotion"
+        },
+        "time": {
+            "label": "S'ouvre à"
+        },
+        "behavior": {
+            "label": "Jusque-là",
+            "lock": "Afficher verrouillé",
+            "hide": "Masquer complètement"
+        }
+    }
+}

@@ -1,0 +1,77 @@
+---
+title: "Outcomes"
+description: "What the agent sends back after a conversation."
+---
+
+When a call connects, the agent analyses the conversation as soon as it ends and attaches an **outcome** to the call. It arrives in the `call.completed` webhook and on `GET /v1/calls/{id}`.
+
+```json
+"outcome": {
+  "call_quality": "ok",
+  "disposition": "Interested",
+  "summary": "Asha wants the NEET 2027 weekend batch and asked for the fee structure on WhatsApp.",
+  "answers": {
+    "Which course are you interested in?": "NEET 2027",
+    "Preferred batch timing?": "Weekends"
+  },
+  "lead_rating": 8,
+  "callback_requested": true,
+  "callback_time_text": "tomorrow after 6 pm",
+  "follow_up": "CALL",
+  "follow_up_note": "Send the fee structure; she wants a call back tomorrow evening.",
+  "meeting": {
+    "requested": true,
+    "at": "2026-10-14T18:00:00+05:30",
+    "time_text": "tomorrow after 6 pm",
+    "type": "call"
+  },
+  "transcript": [
+    { "speaker": "agent", "text": "Hi Asha, this is Riya from Shiksha Academy. Is this a good time?" },
+    { "speaker": "contact", "text": "Yes, tell me." }
+  ]
+}
+```
+
+<ResponseField name="call_quality" type="string">
+  `ok`, or `failed` when the call broke down on our side (for example the agent went silent). A failed call's `disposition` is `Incomplete` and its `lead_rating` is `null`: it says nothing about the contact's interest, so call them again rather than changing their stage.
+</ResponseField>
+<ResponseField name="disposition" type="string | null">
+  The agent's label for the call, chosen from the dispositions configured on the agent (for example *Interested*, *Not interested*, *Call back later*). Map these to stages in your CRM.
+</ResponseField>
+<ResponseField name="summary" type="string | null">Two or three sentences on what happened.</ResponseField>
+<ResponseField name="answers" type="object">
+  Each of the agent's questions (set on the agent as extraction questions) and the answer given. Keys are the questions as configured; a question that was not answered may be missing.
+</ResponseField>
+<ResponseField name="lead_rating" type="integer | null">The AI's 1–10 score of the contact's interest. `null` when it could not tell.</ResponseField>
+<ResponseField name="callback_requested" type="boolean">The contact asked to be called back.</ResponseField>
+<ResponseField name="callback_time_text" type="string | null">When, in the contact's own words ("tomorrow after 6 pm"). Parse it on your side if you schedule callbacks.</ResponseField>
+<ResponseField name="follow_up" type="string | null">
+  Whether a person should call: `CALL`, `CALL_LATER` or `SKIP`. `null` means not assessed, not "call".
+</ResponseField>
+<ResponseField name="follow_up_note" type="string | null">One sentence on why, for whoever decides whether to call.</ResponseField>
+<ResponseField name="meeting" type="object">
+  A meeting, demo, visit or callback the contact **agreed to at a specific day or time**. `requested` is `false` when no time was agreed, even if they showed interest.
+  <Expandable title="properties">
+    <ResponseField name="requested" type="boolean">The contact agreed to a time.</ResponseField>
+    <ResponseField name="at" type="string | null">The agreed time as ISO-8601 with offset, resolved from what was said (for example "tomorrow 6 pm" said on 13 October becomes `2026-10-14T18:00:00+05:30`).</ResponseField>
+    <ResponseField name="time_text" type="string | null">The contact's own words.</ResponseField>
+    <ResponseField name="type" type="string | null">`demo`, `visit`, `call` or `meeting`.</ResponseField>
+  </Expandable>
+</ResponseField>
+<ResponseField name="transcript" type="array">The conversation, turn by turn: `{speaker: "agent" | "contact", text}`.</ResponseField>
+
+## When there is no outcome
+
+`outcome` is `null`:
+
+- while the call is still in progress or being analysed;
+- for calls that never connected (`no_answer`, `busy`, `failed`, `canceled`, `expired`);
+- in the rare case the analysis did not arrive within 10 minutes of the call ending. The call is then `completed` and final without an outcome. Use the recording and `duration_seconds`.
+
+## Recordings
+
+`recording_url` is a temporary link to the call audio, valid for 24 hours (`recording_expires_at`). The webhook waits for the recording, so `call.completed` normally includes it. To keep a recording, download it when you receive the webhook. To play it later, read the call again for a fresh link.
+
+<Note>
+Recording and storing calls may need the contact's consent where you operate. Your agent's opening line is the right place to say the call is recorded.
+</Note>

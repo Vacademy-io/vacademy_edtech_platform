@@ -4,10 +4,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import vacademy.io.admin_core_service.features.common.enums.StatusEnum;
+import vacademy.io.admin_core_service.features.enroll_invite.repository.EnrollInviteRepository;
+import vacademy.io.admin_core_service.features.enroll_invite.repository.PackageSessionLearnerInvitationToPaymentOptionRepository;
 import vacademy.io.admin_core_service.features.institute.dto.PaymentGatewayMappingDTO;
 import vacademy.io.admin_core_service.features.institute.dto.PaymentGatewayMappingUpsertRequest;
+import vacademy.io.admin_core_service.features.institute.dto.PaymentGatewayUsageDTO;
 import vacademy.io.admin_core_service.features.institute.entity.InstitutePaymentGatewayMapping;
 import vacademy.io.admin_core_service.features.institute.repository.InstitutePaymentGatewayMappingRepository;
+import vacademy.io.admin_core_service.features.user_subscription.enums.PaymentOptionType;
 import vacademy.io.common.exceptions.VacademyException;
 import vacademy.io.common.payment.enums.PaymentGateway;
 
@@ -15,11 +19,17 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 @Service
 public class InstitutePaymentGatewayMappingService {
 
+    /**
+     * Credential keys masked in every admin read and preserved when sent back masked.
+     * Must cover each {@code secret: true} field of the vendor forms in the admin
+     * dashboard's PaymentGatewaySettings.tsx, or that value goes to the browser in clear.
+     */
     private static final Set<String> SECRET_FIELDS = Set.of(
             "apiKey",
             "keySecret",
@@ -28,6 +38,7 @@ public class InstitutePaymentGatewayMappingService {
             "password",
             "encryptionKey",
             "webhookSecret",
+            "webhookPassword",
             "saltKey"
     );
 
@@ -38,6 +49,12 @@ public class InstitutePaymentGatewayMappingService {
 
     @Autowired
     private ObjectMapper objectMapper;
+
+    @Autowired
+    private EnrollInviteRepository enrollInviteRepository;
+
+    @Autowired
+    private PackageSessionLearnerInvitationToPaymentOptionRepository invitationPaymentOptionRepository;
 
     public Map<String, Object> findInstitutePaymentGatewaySpecifData(String vendor, String instituteId) {
         InstitutePaymentGatewayMapping institutePaymentGatewayMapping = institutePaymentGatewayMappingRepository
@@ -175,13 +192,20 @@ public class InstitutePaymentGatewayMappingService {
         PaymentGateway.fromString(request.getVendor());
         String vendor = request.getVendor().trim().toUpperCase();
 
-        boolean alreadyExists = institutePaymentGatewayMappingRepository
+        Optional<InstitutePaymentGatewayMapping> existing = institutePaymentGatewayMappingRepository
                 .findByInstituteIdAndVendorAndStatusIn(instituteId, vendor,
-                        List.of(StatusEnum.ACTIVE.name(), StatusEnum.INACTIVE.name()))
-                .isPresent();
-        if (alreadyExists) {
-            throw new VacademyException("A configuration for vendor " + vendor
-                    + " already exists for this institute. Use update instead.");
+                        List.of(StatusEnum.ACTIVE.name(), StatusEnum.INACTIVE.name()));
+        if (existing.isPresent()) {
+            InstitutePaymentGatewayMapping row = existing.get();
+            if (StatusEnum.ACTIVE.name().equals(row.getStatus())) {
+                throw new VacademyException("A configuration for vendor " + vendor
+                        + " already exists for this institute. Use update instead.");
+            }
+            // A deactivated row for this vendor: bring it back with the new keys rather than
+            // refusing. Keeping the same row (same id) means invite links need no change.
+            row.setPaymentGatewaySpecificData(toJson(mergeCredentials(row, request.getPaymentGatewaySpecificData())));
+            row.setStatus(resolveStatus(request.getStatus(), StatusEnum.ACTIVE.name()));
+            return toMaskedDto(institutePaymentGatewayMappingRepository.save(row));
         }
 
         Map<String, Object> incoming = request.getPaymentGatewaySpecificData() == null
@@ -206,28 +230,10 @@ public class InstitutePaymentGatewayMappingService {
 
     public PaymentGatewayMappingDTO updateMapping(String instituteId, String mappingId,
             PaymentGatewayMappingUpsertRequest request) {
-        InstitutePaymentGatewayMapping mapping = institutePaymentGatewayMappingRepository.findById(mappingId)
-                .orElseThrow(() -> new VacademyException("Payment gateway mapping not found: " + mappingId));
+        InstitutePaymentGatewayMapping mapping = findOwnedMapping(instituteId, mappingId);
 
-        if (!instituteId.equals(mapping.getInstituteId())) {
-            throw new VacademyException("Mapping does not belong to institute " + instituteId);
-        }
-
-        Map<String, Object> existing = parseJsonOrEmpty(mapping.getPaymentGatewaySpecificData());
-        Map<String, Object> incoming = request != null && request.getPaymentGatewaySpecificData() != null
-                ? request.getPaymentGatewaySpecificData()
-                : Collections.emptyMap();
-
-        Map<String, Object> merged = new LinkedHashMap<>(existing);
-        for (Map.Entry<String, Object> entry : incoming.entrySet()) {
-            String key = entry.getKey();
-            Object value = entry.getValue();
-            if (SECRET_FIELDS.contains(key) && isMasked(value)) {
-                continue;
-            }
-            merged.put(key, value);
-        }
-        mapping.setPaymentGatewaySpecificData(toJson(merged));
+        mapping.setPaymentGatewaySpecificData(toJson(mergeCredentials(mapping,
+                request == null ? null : request.getPaymentGatewaySpecificData())));
 
         if (request != null && request.getStatus() != null && !request.getStatus().isBlank()) {
             mapping.setStatus(resolveStatus(request.getStatus(), mapping.getStatus()));
@@ -238,19 +244,114 @@ public class InstitutePaymentGatewayMappingService {
     }
 
     public void deactivateMapping(String instituteId, String mappingId) {
-        InstitutePaymentGatewayMapping mapping = institutePaymentGatewayMappingRepository.findById(mappingId)
-                .orElseThrow(() -> new VacademyException("Payment gateway mapping not found: " + mappingId));
-
-        if (!instituteId.equals(mapping.getInstituteId())) {
-            throw new VacademyException("Mapping does not belong to institute " + instituteId);
-        }
+        InstitutePaymentGatewayMapping mapping = findOwnedMapping(instituteId, mappingId);
 
         mapping.setStatus(StatusEnum.INACTIVE.name());
         // updatedAt is refreshed automatically via @UpdateTimestamp
         institutePaymentGatewayMappingRepository.save(mapping);
     }
 
+    /**
+     * Switches a deactivated gateway back on with its stored keys. Same row, same id, so
+     * every invite link stamped with this vendor checks out again at once. Calling it on
+     * an ACTIVE gateway changes nothing.
+     */
+    public PaymentGatewayMappingDTO activateMapping(String instituteId, String mappingId) {
+        InstitutePaymentGatewayMapping mapping = findOwnedMapping(instituteId, mappingId);
+        if (StatusEnum.ACTIVE.name().equals(mapping.getStatus())) {
+            return toMaskedDto(mapping);
+        }
+        if (!StatusEnum.INACTIVE.name().equals(mapping.getStatus())) {
+            throw new VacademyException("Payment gateway mapping not found: " + mappingId);
+        }
+        mapping.setStatus(StatusEnum.ACTIVE.name());
+        // updatedAt is refreshed automatically via @UpdateTimestamp
+        return toMaskedDto(institutePaymentGatewayMappingRepository.save(mapping));
+    }
+
+    /**
+     * Live invite links that check out through this gateway, for the deactivate
+     * confirmation: deactivating it stops payment on every paid link counted here.
+     */
+    public PaymentGatewayUsageDTO usageFor(String instituteId, String mappingId) {
+        InstitutePaymentGatewayMapping mapping = findOwnedMapping(instituteId, mappingId);
+        String vendor = mapping.getVendor() == null ? "" : mapping.getVendor().trim().toUpperCase();
+        List<String> live = List.of(StatusEnum.ACTIVE.name());
+        long active = enrollInviteRepository.countByInstituteIdAndVendorAndStatusIn(instituteId, vendor, live);
+        long paid = invitationPaymentOptionRepository.countPaidInvitesByInstituteIdAndVendor(
+                instituteId, vendor, live, live, PaymentOptionType.FREE.name());
+        return PaymentGatewayUsageDTO.builder()
+                .vendor(mapping.getVendor())
+                .activeInvites(active)
+                .paidActiveInvites(paid)
+                .build();
+    }
+
+    // ── Audit log support ─────────────────────────────────────────────────────
+
+    /**
+     * Masked pre-change state of one mapping, for the admin activity log's
+     * before/after diff ({@code @Auditable(captureBefore = ...)}). Secrets are masked
+     * exactly as in the admin list. Returns null instead of throwing when the row is
+     * missing or belongs to another institute: the audited call then fails on its own
+     * and no audit row is written.
+     */
+    public PaymentGatewayMappingDTO auditSnapshot(String instituteId, String mappingId) {
+        if (instituteId == null || mappingId == null) {
+            return null;
+        }
+        return institutePaymentGatewayMappingRepository.findById(mappingId)
+                .filter(mapping -> instituteId.equals(mapping.getInstituteId()))
+                .map(this::toMaskedDto)
+                .orElse(null);
+    }
+
+    /**
+     * Masked state of the institute's existing (ACTIVE or INACTIVE) mapping for a vendor,
+     * for the create endpoint's audit row: present means the create re-activated a
+     * deactivated row instead of adding a new one. Null when there is none; never throws.
+     */
+    public PaymentGatewayMappingDTO auditSnapshotByVendor(String instituteId, String vendor) {
+        if (instituteId == null || vendor == null || vendor.isBlank()) {
+            return null;
+        }
+        return institutePaymentGatewayMappingRepository
+                .findByInstituteIdAndVendorAndStatusIn(instituteId, vendor.trim().toUpperCase(),
+                        List.of(StatusEnum.ACTIVE.name(), StatusEnum.INACTIVE.name()))
+                .map(this::toMaskedDto)
+                .orElse(null);
+    }
+
     // ── Helpers ───────────────────────────────────────────────────────────────
+
+    private InstitutePaymentGatewayMapping findOwnedMapping(String instituteId, String mappingId) {
+        InstitutePaymentGatewayMapping mapping = institutePaymentGatewayMappingRepository.findById(mappingId)
+                .orElseThrow(() -> new VacademyException("Payment gateway mapping not found: " + mappingId));
+
+        if (!instituteId.equals(mapping.getInstituteId())) {
+            throw new VacademyException("Mapping does not belong to institute " + instituteId);
+        }
+        return mapping;
+    }
+
+    /**
+     * Stored credentials overlaid with the incoming ones. A secret sent back still masked
+     * (the admin did not retype it) keeps the stored value.
+     */
+    private Map<String, Object> mergeCredentials(InstitutePaymentGatewayMapping mapping,
+            Map<String, Object> incomingOrNull) {
+        Map<String, Object> incoming = incomingOrNull == null ? Collections.emptyMap() : incomingOrNull;
+        Map<String, Object> merged = new LinkedHashMap<>(parseJsonOrEmpty(mapping.getPaymentGatewaySpecificData()));
+        for (Map.Entry<String, Object> entry : incoming.entrySet()) {
+            String key = entry.getKey();
+            Object value = entry.getValue();
+            if (SECRET_FIELDS.contains(key) && isMasked(value)) {
+                continue;
+            }
+            merged.put(key, value);
+        }
+        return merged;
+    }
 
     private PaymentGatewayMappingDTO toMaskedDto(InstitutePaymentGatewayMapping mapping) {
         Map<String, Object> raw = parseJsonOrEmpty(mapping.getPaymentGatewaySpecificData());

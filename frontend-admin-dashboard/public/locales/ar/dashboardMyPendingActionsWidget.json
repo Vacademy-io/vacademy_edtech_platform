@@ -1,0 +1,23 @@
+{
+    "heading": {
+        "title": "الإجراءات المعلقة",
+        "description": "عناصر بانتظارك الآن"
+    },
+    "error": "تعذر تحميل الإجراءات المعلقة.",
+    "partialError": "تعذّر تحميل بعض العناصر.",
+    "empty": {
+        "title": "كل شيء على ما يرام",
+        "description": "لا يوجد ما يستدعي انتباهك الآن."
+    },
+    "actionType": {
+        "overduePayment": "دفعة متأخرة",
+        "pendingApproval": "موافقة معلقة",
+        "unreadAlert": "تنبيه غير مقروء"
+    },
+    "age": {
+        "now": "الآن",
+        "lessThanHour": "أقل من ساعة",
+        "hoursFormat": "{{hours}} س",
+        "daysFormat": "{{days}} ي"
+    }
+}

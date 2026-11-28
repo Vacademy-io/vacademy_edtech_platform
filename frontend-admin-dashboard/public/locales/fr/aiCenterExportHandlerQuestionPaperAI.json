@@ -1,0 +1,13 @@
+{
+    "button": {
+        "exporting": "Exportation...",
+        "export": "Exporter {{format}}",
+        "setSuffix": " (Série {{letter}})"
+    },
+    "dialog": {
+        "generatingPdf": "Génération du PDF",
+        "pleaseWait": "Cela peut prendre un moment",
+        "cancelAriaLabel": "Annuler la génération du PDF",
+        "progressComplete": "{{progress}} % terminé"
+    }
+}

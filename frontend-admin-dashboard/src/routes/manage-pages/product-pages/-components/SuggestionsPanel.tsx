@@ -1,6 +1,11 @@
 import { useState, useMemo, useEffect } from 'react';
 import { Search, Network } from 'lucide-react';
 import type { MappingRow } from '../-types/product-page-types';
+import {
+    getTerminology,
+    getTerminologyPlural,
+} from '@/components/common/layout-container/sidebar/utils';
+import { ContentTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
 
 interface SuggestionsPanelProps {
     mappingRows: MappingRow[];
@@ -16,6 +21,11 @@ export const SuggestionsPanel = ({
     getRowLabel,
 }: SuggestionsPanelProps) => {
     const [selectedId, setSelectedId] = useState<string | null>(null);
+    const courseLower = getTerminology(ContentTerms.Course, SystemTerms.Course).toLocaleLowerCase();
+    const coursesLower = getTerminologyPlural(
+        ContentTerms.Course,
+        SystemTerms.Course
+    ).toLocaleLowerCase();
     const [leftSearch, setLeftSearch] = useState('');
     const [rightSearch, setRightSearch] = useState('');
 
@@ -111,8 +121,12 @@ export const SuggestionsPanel = ({
             <div className="flex min-h-64 flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-neutral-200 bg-white p-10 text-center">
                 <Network className="size-8 text-neutral-300" />
                 <div>
-                    <p className="text-sm font-medium text-neutral-500">Add at least 2 courses to configure suggestions.</p>
-                    <p className="mt-1 text-xs text-neutral-400">Suggestions let learners discover related courses in their cart.</p>
+                    <p className="text-sm font-medium text-neutral-500">
+                        Add at least 2 {coursesLower} to configure suggestions.
+                    </p>
+                    <p className="mt-1 text-xs text-neutral-400">
+                        Suggestions let learners discover related {coursesLower} in their cart.
+                    </p>
                 </div>
             </div>
         );
@@ -126,13 +140,13 @@ export const SuggestionsPanel = ({
                 <div className="flex flex-col">
                     <div className="border-b border-neutral-100 px-4 py-3">
                         <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-neutral-400">
-                            When this course is in cart…
+                            When this {courseLower} is in cart…
                         </p>
                         <div className="flex items-center gap-2 rounded-lg border border-neutral-200 bg-neutral-50 px-2.5 py-1.5">
                             <Search className="size-3.5 shrink-0 text-neutral-400" />
                             <input
                                 type="text"
-                                placeholder="Filter courses…"
+                                placeholder={`Filter ${coursesLower}…`}
                                 value={leftSearch}
                                 onChange={(e) => setLeftSearch(e.target.value)}
                                 className="flex-1 bg-transparent text-xs outline-none placeholder:text-neutral-400"
@@ -170,12 +184,15 @@ export const SuggestionsPanel = ({
                             );
                         })}
                         {filteredLeft.length === 0 && leftSearch && (
-                            <p className="py-8 text-center text-xs text-neutral-400">No courses match "{leftSearch}"</p>
+                            <p className="py-8 text-center text-xs text-neutral-400">
+                                No {coursesLower} match "{leftSearch}"
+                            </p>
                         )}
                     </div>
 
                     <div className="border-t border-neutral-100 px-4 py-2 text-[11px] text-neutral-400">
-                        {readyRows.length} courses · {coursesWithSuggestions} with suggestions
+                        {readyRows.length} {coursesLower} · {coursesWithSuggestions} with
+                        suggestions
                     </div>
                 </div>
 
@@ -185,7 +202,7 @@ export const SuggestionsPanel = ({
                         <>
                             <div className="border-b border-neutral-100 px-4 py-3">
                                 <p className="mb-0.5 text-[11px] font-semibold uppercase tracking-wider text-neutral-400">
-                                    …suggest these courses
+                                    …suggest these {coursesLower}
                                 </p>
                                 <p className="mb-2 truncate text-sm font-semibold text-neutral-800">
                                     {getRowLabel(selectedRow)}
@@ -195,7 +212,7 @@ export const SuggestionsPanel = ({
                                         <Search className="size-3.5 shrink-0 text-neutral-400" />
                                         <input
                                             type="text"
-                                            placeholder="Search courses…"
+                                            placeholder={`Search ${coursesLower}…`}
                                             value={rightSearch}
                                             onChange={(e) => setRightSearch(e.target.value)}
                                             className="flex-1 bg-transparent text-xs outline-none placeholder:text-neutral-400"
@@ -246,19 +263,27 @@ export const SuggestionsPanel = ({
                                     );
                                 })}
                                 {otherRows.length === 0 && rightSearch && (
-                                    <p className="py-8 text-center text-xs text-neutral-400">No courses match "{rightSearch}"</p>
+                                    <p className="py-8 text-center text-xs text-neutral-400">
+                                        No {coursesLower} match "{rightSearch}"
+                                    </p>
                                 )}
                             </div>
 
                             <div className="border-t border-neutral-100 px-4 py-2 text-[11px] text-neutral-400">
-                                {currentSuggestions.length} of {readyRows.length - 1} courses selected
+                                {currentSuggestions.length} of {readyRows.length - 1} {coursesLower}{' '}
+                                selected
                             </div>
                         </>
                     ) : (
                         <div className="flex flex-1 items-center justify-center p-8 text-center">
                             <div>
-                                <p className="text-sm font-medium text-neutral-400">← Pick a course</p>
-                                <p className="mt-1 text-xs text-neutral-300">to configure which courses appear alongside it in the cart</p>
+                                <p className="text-sm font-medium text-neutral-400">
+                                    ← Pick a {courseLower}
+                                </p>
+                                <p className="mt-1 text-xs text-neutral-300">
+                                    to configure which {coursesLower} appear alongside it in the
+                                    cart
+                                </p>
                             </div>
                         </div>
                     )}

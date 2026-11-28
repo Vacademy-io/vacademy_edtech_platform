@@ -1,0 +1,42 @@
+{
+    "facets": {
+        "subject": "المادة",
+        "level": "الصف / الامتحان",
+        "board": "المجلس",
+        "language": "اللغة"
+    },
+    "describeSize": {
+        "sources_zero": "لا مصادر ({{formatted}})",
+        "sources_one": "مصدر واحد ({{formatted}})",
+        "sources_two": "مصدران ({{formatted}})",
+        "sources_few": "{{formatted}} مصادر",
+        "sources_many": "{{formatted}} مصدرًا",
+        "sources_other": "{{formatted}} مصدر",
+        "pages_zero": "لا صفحات ({{formatted}})",
+        "pages_one": "صفحة واحدة ({{formatted}})",
+        "pages_two": "صفحتان ({{formatted}})",
+        "pages_few": "{{formatted}} صفحات",
+        "pages_many": "{{formatted}} صفحة",
+        "pages_other": "{{formatted}} صفحة"
+    },
+    "card": {
+        "unlocked": "مفتوحة",
+        "credits_zero": "لا أرصدة ({{count}})",
+        "credits_one": "رصيد واحد ({{count}})",
+        "credits_two": "رصيدان ({{count}})",
+        "credits_few": "{{count}} أرصدة",
+        "credits_many": "{{count}} رصيدًا",
+        "credits_other": "{{count}} رصيد"
+    },
+    "intro": "قواعد معرفة جاهزة من Vacademy. افتح واحدة واستخدمها لإنشاء أوراق الأسئلة والتقييمات فورًا — بدون رفع، وبدون انتظار معالجة كتاب.",
+    "manageLibrary": "إدارة المكتبة",
+    "searchPlaceholder": "ابحث في المكتبات",
+    "clearFilters": "مسح عوامل التصفية",
+    "empty": {
+        "noneMatch": "لا توجد مكتبات تطابق عوامل التصفية هذه",
+        "noneYet": "لم يتم نشر أي مكتبة بعد",
+        "widenSearch": "حاول توسيع نطاق بحثك.",
+        "willAppear": "ستظهر هنا المكتبات التي تنشرها Vacademy عند إصدارها."
+    },
+    "footerNote": "فتح مكتبة هو رسوم لمرة واحدة وتدوم إلى الأبد، بما في ذلك المحتوى الذي نضيفه إليها لاحقًا."
+}

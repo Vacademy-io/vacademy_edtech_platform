@@ -1,0 +1,86 @@
+{
+    "description": "How students are using the AI tutor, and what they are asking about.",
+    "dayRange": {
+        "last7": "Last 7 days",
+        "last30": "Last 30 days",
+        "last90": "Last 90 days",
+        "last365": "Last 365 days"
+    },
+    "filters": {
+        "searchPlaceholder": "Search student name or email",
+        "status": {
+            "all": "All chats",
+            "active": "Active",
+            "closed": "Closed"
+        },
+        "mode": {
+            "all": "All modes",
+            "textChat": "Text chat",
+            "mockInterview": "Mock interview",
+            "voiceDoubt": "Voice doubt",
+            "oralTest": "Oral test"
+        }
+    },
+    "summary": {
+        "loading": "Loading summary…",
+        "error": "Could not load the chatbot summary.",
+        "retry": "Retry",
+        "chats": "Chats",
+        "allTime": "{{count}} all time",
+        "studentsReached": "Students reached",
+        "studentMessages": "Student messages",
+        "messagesPerChat_one": "{{count}} message per chat",
+        "messagesPerChat_other": "{{count}} messages per chat",
+        "doubtsAsked": "Doubts asked",
+        "practiceQuizzesTaken": "Practice quizzes taken",
+        "averageScore": "{{percent}}% average score",
+        "noQuizSubmittedYet": "No quiz submitted yet",
+        "aiReplies": "AI replies",
+        "toolLookups_one": "{{count}} tool look-up",
+        "toolLookups_other": "{{count}} tool look-ups",
+        "activeChats": "Active chats",
+        "notYetClosed": "Not yet closed by the student",
+        "quizzesGenerated": "Quizzes generated",
+        "submittedCount_one": "{{count}} submitted",
+        "submittedCount_other": "{{count}} submitted",
+        "chatModes": "Chat modes",
+        "whereStudentsChat": "Where students chat",
+        "mostAskedTopics": "Most asked topics",
+        "noTopicsYet": "No topics recorded yet. Topics appear once students ask doubts or take practice quizzes.",
+        "topicQuiz": "quiz",
+        "topicDoubt": "doubt",
+        "dailyActivity": "Daily activity",
+        "noChatsYet": "No chats in this period yet."
+    },
+    "activity": {
+        "empty": "No chat activity in this period yet.",
+        "tooltip": {
+            "studentMessages_one": "{{count}} student message",
+            "studentMessages_other": "{{count}} student messages",
+            "chats_one": "{{count}} chat",
+            "chats_other": "{{count}} chats"
+        },
+        "peak_one": "Peak {{count}} message/day",
+        "peak_other": "Peak {{count}} messages/day"
+    },
+    "table": {
+        "student": "Student",
+        "chatAbout": "Chat about",
+        "noStudentMessage": "No student message",
+        "mode": "Mode",
+        "messages": "Messages",
+        "fromStudent": "{{count}} from student",
+        "quizzes": "Quizzes",
+        "status": "Status",
+        "lastActive": "Last active",
+        "viewChat": "View chat"
+    },
+    "recentChats": {
+        "title": "Recent chats",
+        "error": "Could not load recent chats.",
+        "retry": "Retry",
+        "emptyTitle": "No chats found",
+        "emptyFiltered": "Try clearing the search or filters.",
+        "emptyUnfiltered": "Chats appear here once students start using the AI tutor."
+    }
+}

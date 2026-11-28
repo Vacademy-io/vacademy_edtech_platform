@@ -1,0 +1,47 @@
+{
+    "header": {
+        "title": "Auto-Sort by Topic",
+        "subtitle": "Drop a question paper. We'll automatically group the questions by topic for you to reuse."
+    },
+    "prompt": {
+        "label": "Any specific topics in mind?",
+        "optional": "(optional)",
+        "placeholder": "e.g. focus on Photosynthesis, Respiration, and Plant Nutrition",
+        "hint": "Leave blank and we'll figure out the topics ourselves."
+    },
+    "upload": {
+        "dropTitle": "Drop your file here, or click to choose",
+        "dropSubtitle": "PDF, Word, or PowerPoint with questions inside.",
+        "removeAriaLabel": "Remove file",
+        "statusUploading": "Uploading…",
+        "statusProcessing": "Reading…",
+        "statusReady": "Ready to sort",
+        "statusGenerating": "Sorting…",
+        "statusDone": "Done",
+        "workingUploading": "Reading your file…",
+        "workingProcessing": "Getting your document ready…",
+        "workingGenerating": "Grouping questions by topic — usually takes ~30 seconds."
+    },
+    "generate": {
+        "ctaLabel": "Sort and draft",
+        "doneHeading": "Vsmart Sorter",
+        "generatingTitle": "Grouping questions by topic",
+        "generatingSubtitle": "Reading the paper and organizing by topic. Usually ~30 seconds."
+    },
+    "recentFiles": {
+        "title": "Your recent sorts",
+        "fallbackLabel": "Sorted question set",
+        "emptyHint": "Your sorted question sets will appear here. Drop a file above to start."
+    },
+    "tasksList": {
+        "heading": "Vsmart Sorter"
+    },
+    "errors": {
+        "unsupportedFormat": "We can't read .{{ext}} files. Try PDF, Word, or PowerPoint.",
+        "uploadIncomplete": "Upload didn't complete. Want to try again?",
+        "readFailed": "We couldn't read this file. Try a different one?",
+        "genericFailure": "Something went wrong reading your file. Try again?",
+        "taskFailed": "We couldn't finish this sort. Want to try again?",
+        "sortFailed": "We couldn't sort this file. Try a different one?"
+    }
+}

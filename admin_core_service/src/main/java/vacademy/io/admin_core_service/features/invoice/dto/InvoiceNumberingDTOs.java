@@ -35,6 +35,8 @@ public final class InvoiceNumberingDTOs {
         private Boolean sanitizeTokens;
         /** Floor for the sequence: the next number is never lower than this. */
         private Long startFrom;
+        /** Null means on: a number freed by a permanent delete is not issued again. */
+        private Boolean neverReuseDeletedNumbers;
     }
 
     /**

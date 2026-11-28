@@ -1,0 +1,12 @@
+{
+    "optionLabels": {
+        "a": "(a.)",
+        "b": "(b.)",
+        "c": "(c.)",
+        "d": "(d.)"
+    },
+    "menu": {
+        "duplicateSlide": "Duplicate Slide",
+        "deleteSlide": "Delete Slide"
+    }
+}

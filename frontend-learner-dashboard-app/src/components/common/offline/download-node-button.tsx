@@ -10,6 +10,7 @@
  */
 
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   ArrowClockwise,
   CheckCircle,
@@ -66,6 +67,7 @@ export const DownloadNodeButton = ({
   className,
   compact,
 }: DownloadNodeButtonProps) => {
+  const { t } = useTranslation("layoutCommonB");
   const userId = useOfflineUserId();
   const offlineAvailable = useOfflineAvailable();
   const router = useRouter();
@@ -162,10 +164,10 @@ export const DownloadNodeButton = ({
       try {
         const net = await Network.getStatus();
         if (net.connected && net.connectionType !== "wifi") {
-          toast.info("Download over Wi-Fi only", {
-            description: "You're on mobile data.",
+          toast.info(t("offline.downloadNodeButton.toasts.wifiOnlyTitle"), {
+            description: t("offline.downloadNodeButton.toasts.wifiOnlyDescription"),
             action: {
-              label: "Change settings",
+              label: t("offline.downloadNodeButton.toasts.changeSettings"),
               onClick: () =>
                 void router.navigate({ to: "/downloads", search: { tab: "settings" } }),
             },
@@ -199,7 +201,7 @@ export const DownloadNodeButton = ({
       } catch {
         // non-fatal — Downloads screen falls back to a message
       }
-      toast.success("Download started");
+      toast.success(t("offline.downloadNodeButton.toasts.downloadStarted"));
     } catch (error) {
       if (error instanceof DeviceLimitReachedError) {
         setDeviceLimitInfo({ devices: error.devices, message: error.message });
@@ -208,8 +210,8 @@ export const DownloadNodeButton = ({
         const message = error instanceof Error ? error.message : "";
         toast.error(
           /Network Error|Failed to fetch|timeout/i.test(message)
-            ? "Couldn't reach the server — check your connection and try again"
-            : "Couldn't start the download — please try again"
+            ? t("offline.downloadNodeButton.toasts.networkError")
+            : t("offline.downloadNodeButton.toasts.startFailed")
         );
       }
     } finally {
@@ -276,7 +278,7 @@ export const DownloadNodeButton = ({
   const iconFor = () => {
     if (busy || effectiveStatus === "DOWNLOADING" || effectiveStatus === "QUEUED") {
       return (
-        <span className={cn(wrapperClass, "relative text-primary-500")} title="Downloading…">
+        <span className={cn(wrapperClass, "relative text-primary-500")} title={t("offline.downloadNodeButton.status.downloading")}>
           <CircleNotch size={iconSize} className="animate-spin" />
           {!compact && progressPercent !== null && (
             <span className="absolute -bottom-4 text-3xs text-neutral-500">{progressPercent}%</span>
@@ -290,8 +292,8 @@ export const DownloadNodeButton = ({
           className={cn(wrapperClass, "text-success-600")}
           title={
             hasOnlineOnly
-              ? "Saved for offline — some content in here still needs internet"
-              : "Downloaded — available offline"
+              ? t("offline.downloadNodeButton.status.savedWithOnlineOnly")
+              : t("offline.downloadNodeButton.status.downloaded")
           }
         >
           <CheckCircle size={iconSize} weight="fill" />
@@ -313,7 +315,7 @@ export const DownloadNodeButton = ({
             void handleDownload();
           }}
           className={cn(wrapperClass, "text-primary-600 hover:bg-primary-50")}
-          title="Partly saved — tap to download the rest"
+          title={t("offline.downloadNodeButton.status.partial")}
         >
           <DownloadSimple size={iconSize} />
         </button>
@@ -328,7 +330,7 @@ export const DownloadNodeButton = ({
             void handleUpdate();
           }}
           className={cn(wrapperClass, "text-primary-500 hover:bg-primary-50")}
-          title="Update available — tap to refresh"
+          title={t("offline.downloadNodeButton.status.updateAvailable")}
         >
           <ArrowClockwise size={iconSize} />
         </button>
@@ -343,7 +345,7 @@ export const DownloadNodeButton = ({
             void handleRetry();
           }}
           className={cn(wrapperClass, "text-danger-600 hover:bg-danger-50")}
-          title="Download failed — tap to retry"
+          title={t("offline.downloadNodeButton.status.error")}
         >
           <WarningCircle size={iconSize} />
         </button>
@@ -351,7 +353,7 @@ export const DownloadNodeButton = ({
     }
     if (effectiveStatus === "REMOVED_BY_ADMIN") {
       return (
-        <span className={cn(wrapperClass, "text-neutral-400")} title="Removed by admin">
+        <span className={cn(wrapperClass, "text-neutral-400")} title={t("offline.downloadNodeButton.status.removedByAdmin")}>
           <CloudSlash size={iconSize} />
         </span>
       );
@@ -364,7 +366,7 @@ export const DownloadNodeButton = ({
           void handleDownload();
         }}
         className={cn(wrapperClass, "text-neutral-500 hover:bg-neutral-100 hover:text-primary-600")}
-        title="Download for offline use"
+        title={t("offline.downloadNodeButton.status.notDownloaded")}
       >
         <DownloadSimple size={iconSize} />
       </button>
@@ -394,7 +396,7 @@ export const DownloadNodeButton = ({
             "inline-flex items-center justify-center rounded-full text-neutral-400 transition-colors hover:bg-danger-50 hover:text-danger-600 disabled:opacity-50",
             compact ? "size-6" : "size-7"
           )}
-          title={inFlight ? "Cancel download" : "Remove download"}
+          title={inFlight ? t("offline.downloadNodeButton.cancelDownload") : t("offline.downloadNodeButton.removeDownload")}
         >
           <Trash size={compact ? 14 : 16} />
         </button>
@@ -402,20 +404,19 @@ export const DownloadNodeButton = ({
       <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Remove downloaded content?</AlertDialogTitle>
+            <AlertDialogTitle>{t("offline.downloadNodeButton.confirmDelete.title")}</AlertDialogTitle>
             <AlertDialogDescription>
-              This content will be removed from this device. You&apos;ll need an internet
-              connection to download it again.
+              {t("offline.downloadNodeButton.confirmDelete.description")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={busy}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={busy}>{t("offline.downloadNodeButton.confirmDelete.cancel")}</AlertDialogCancel>
             <AlertDialogAction
               disabled={busy}
               onClick={() => void handleDelete()}
               className="bg-danger-600 hover:bg-danger-700"
             >
-              Remove
+              {t("offline.downloadNodeButton.confirmDelete.confirm")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

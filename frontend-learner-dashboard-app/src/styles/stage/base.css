@@ -1,0 +1,72 @@
+/* =====================================================================
+   Stage skin (dance and art academies): tokens, course colours, type.
+   Stage repaints Fun's screens: <html> carries ui-fun AND ui-stage
+   (lib/app-skin uiSkinClasses), so every Fun rule applies and this sheet
+   re-points Fun's tokens. Generated from the approved boards; contrast
+   (WCAG 2.x): white on magenta 7.6, plum on ivory 15.8, plum on marigold 7.8,
+   quiet text on white 7.2, every course colour 5.0+ with white.
+   ===================================================================== */
+
+html.ui-fun.ui-stage {
+  --stage-ivory: #FFF8EE;         /* page */
+  --stage-plum: #2B1630;          /* ink, the dark card */
+  --stage-plum-2: #4A2E50;
+  --stage-quiet: #6B4E64;
+  --stage-magenta: #A3134D;       /* action: white on it 7.6 */
+  --stage-magenta-lip: #6E0D34;
+  --stage-marigold: #F2A007;      /* highlight: plum on it 7.8 */
+  --stage-marigold-lip: #A86E00;
+  --stage-teal: #0E7C7B;          /* live */
+  --stage-sand: #F6E9DB;
+  --stage-line: #F0DCC8;
+  --stage-display: 'Fraunces', 'Noto Serif Devanagari', Georgia, serif;
+
+  --fun-ink: var(--stage-plum);
+  --fun-ink-2: var(--stage-plum-2);
+  --fun-muted: var(--stage-quiet);
+  --fun-line-control: #A07C66;
+  --fun-line-card: var(--stage-line);
+  --fun-line-nav: var(--stage-sand);
+  --fun-line-button: #E6C9B0;
+  --fun-brand: var(--stage-magenta);
+  --fun-brand-tint: #FBE3EC;
+  --fun-brand-lip: var(--stage-magenta-lip);
+  --fun-highlight: var(--stage-marigold);
+  --fun-highlight-text: var(--stage-plum);
+  --fun-live: #C2185B;
+  --fun-home-note-bg: var(--stage-sand);
+  --fun-course-locked-bg: #FBF1E4;
+  --fun-font-family: 'Outfit', 'Noto Sans Devanagari', 'Noto Naskh Arabic', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+html.ui-stage body { background-color: var(--stage-ivory); }
+html.ui-stage { --canvas: 36 100% 97% !important; }
+
+/* ── Course colours: jewel tones with white text (same slots as Fun) ── */
+html.ui-stage .fun-course-0 { --fc-solid: #A3134D; --fc-on-band: #F4E3EA; --fc-text: #A3134D; --fc-tint: #F6E7ED; --fc-deco: #B74774; --fc-lip: #6A0C32; --fc-track: #C87194; }
+html.ui-stage .fun-course-1 { --fc-solid: #0E7C7B; --fc-on-band: #E2EFEF; --fc-text: #0E7C7B; --fc-tint: #E7F2F2; --fc-deco: #439998; --fc-lip: #095150; --fc-track: #6EB0B0; }
+html.ui-stage .fun-course-2 { --fc-solid: #C2410C; --fc-on-band: #F8E8E2; --fc-text: #C2410C; --fc-tint: #F9ECE7; --fc-deco: #CF6B41; --fc-lip: #7E2A08; --fc-track: #DA8D6D; }
+html.ui-stage .fun-course-3 { --fc-solid: #6B2F7A; --fc-on-band: #EDE6EF; --fc-text: #6B2F7A; --fc-tint: #F0EAF2; --fc-deco: #8C5D97; --fc-lip: #461F4F; --fc-track: #A682AF; }
+html.ui-stage .fun-course-4 { --fc-solid: #3D3A8F; --fc-on-band: #E8E7F2; --fc-text: #3D3A8F; --fc-tint: #ECEBF4; --fc-deco: #6865A8; --fc-lip: #28265D; --fc-track: #8B89BC; }
+html.ui-stage .fun-course-5 { --fc-solid: #0B6E99; --fc-on-band: #E2EEF3; --fc-text: #0B6E99; --fc-tint: #E7F0F5; --fc-deco: #418EAF; --fc-lip: #074863; --fc-track: #6DA8C2; }
+html.ui-stage .fun-course-6 { --fc-solid: #9A5B00; --fc-on-band: #F3EBE0; --fc-text: #9A5B00; --fc-tint: #F5EFE6; --fc-deco: #B07F38; --fc-lip: #643B00; --fc-track: #C29D66; }
+html.ui-stage .fun-course-7 { --fc-solid: #4D7C0F; --fc-on-band: #EAEFE2; --fc-text: #4D7C0F; --fc-tint: #EDF2E7; --fc-deco: #749944; --fc-lip: #32510A; --fc-track: #94B06F; }
+
+/* ── Headings ── */
+html.ui-stage :is(.fun-t-display, .fun-t-title, .fun-t-section, .fun-learn-head__title, .fun-section-title, .fun-home-header__name, .fun-band__title) {
+  font-family: var(--stage-display);
+  font-style: italic;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: -0.005em;
+}
+html.ui-stage:is([lang="hi"], [lang="mr"]) :is(.fun-t-display, .fun-t-title, .fun-t-section, .fun-learn-head__title, .fun-section-title, .fun-home-header__name, .fun-band__title) {
+  font-family: 'Noto Serif Devanagari', var(--stage-display);
+  font-style: normal;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+html.ui-stage .fun-btn { font-weight: 700; }
+/* Laptop sidebar at the app's 17rem: Outfit runs wider than Nunito. */
+html.ui-stage .group\/sidebar-wrapper { --sidebar-width: 17rem !important; }

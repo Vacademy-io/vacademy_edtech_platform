@@ -1,0 +1,105 @@
+{
+    "status": {
+        "converted": "Converted",
+        "lost": "Lost",
+        "lead": "Lead"
+    },
+    "tier": {
+        "hot": "Hot",
+        "warm": "Warm",
+        "cold": "Cold"
+    },
+    "scoreFactors": {
+        "sourceQuality": "Source Quality",
+        "profileCompleteness": "Profile Completeness",
+        "recency": "Recency",
+        "engagement": "Engagement"
+    },
+    "noteActionTypes": {
+        "note": "Note",
+        "callLog": "Call Log",
+        "followUp": "Follow Up",
+        "meeting": "Meeting"
+    },
+    "scoreEditor": {
+        "manualScore": "Manual: {{score}}",
+        "setManually": "Set score manually",
+        "clearOverrideTitle": "Clear manual override — restores calculated score",
+        "scoreUpdated": "Score updated",
+        "updateFailed": "Failed to update score",
+        "enterValidNumber": "Enter a number between 0 and 100",
+        "placeholder": "0–100"
+    },
+    "scoreBreakdown": {
+        "hideBreakdown": "Hide breakdown",
+        "showBreakdown": "Score breakdown",
+        "loading": "Loading…",
+        "manualNotice": "Score was set manually — breakdown is proportional",
+        "initialBonus": "Initial Bonus",
+        "total": "Total"
+    },
+    "timeline": {
+        "viewLess": "View less",
+        "viewMore": "View more",
+        "by": "by"
+    },
+    "addNote": {
+        "addPrompt": "Add a note or log activity…",
+        "scheduleTimeLabel": "Schedule time",
+        "followUpPlaceholder": "Add a note for this follow-up (optional)…",
+        "noResponseLinked": "No campaign response linked — follow-up cannot be scheduled.",
+        "notePlaceholder": "Type your note here…",
+        "scheduleRequired": "Schedule time is required",
+        "ctrlEnterSubmit": "Ctrl+Enter to submit",
+        "cancel": "Cancel",
+        "saving": "Saving…",
+        "scheduleFollowUp": "Schedule Follow-up",
+        "addNote": "Add Note",
+        "followUpScheduled": "Follow-up scheduled",
+        "followUpFailed": "Failed to schedule follow-up",
+        "noteAdded": "Note added",
+        "noteFailed": "Failed to add note",
+        "noteRequired": "Your institute requires a note on every follow-up.",
+        "followUpPlaceholderRequired": "Add a note for this follow-up (required)…",
+        "fieldsRequired": "Answer every field marked * before scheduling this follow-up."
+    },
+    "audiences": {
+        "linkedCampaigns": "Linked Campaigns",
+        "unnamedCampaign": "Unnamed Campaign"
+    },
+    "crossStageTimeline": {
+        "activityAndNotes": "Activity & Notes",
+        "loadingActivity": "Loading activity…",
+        "pageOf": "Page {{current}} of {{total}}",
+        "previous": "Previous",
+        "next": "Next",
+        "noActivityYet": "No activity yet",
+        "noActivityHint": "Notes, status changes, and other events will appear here"
+    },
+    "profile": {
+        "noProfileYet": "No lead profile yet",
+        "noProfileHint": "A profile will appear once this user submits an enquiry or is scored.",
+        "leadInterestScore": "Lead Interest Score",
+        "lastCalculatedLabel": "Last calculated",
+        "setTier": "Set {{tier}}",
+        "campaigns": "Campaigns",
+        "timelineEvents": "Timeline Events",
+        "demoAttendance": "Demo Attendance",
+        "bestSource": "Best Source",
+        "lastActivity": "Last Activity",
+        "leadSince": "Lead Since",
+        "convertedOn": "Converted On",
+        "scoreUpdated": "Score Updated",
+        "leadStatus": "Lead Status",
+        "selectStatus": "Select status",
+        "scoreFrozenWhileConverted": "Score updates are frozen while converted.",
+        "assignedCounselor": "Assigned Counselor",
+        "reassign": "Reassign",
+        "assignCounselorPrompt": "+ Assign a Counselor",
+        "callHistory": "Call History",
+        "leadMarkedAs": "Lead marked as {{status}}",
+        "statusUpdateFailed": "Failed to update lead status",
+        "leadTierSetTo": "Lead tier set to {{tier}}",
+        "tierUpdateFailed": "Failed to update lead tier"
+    }
+}

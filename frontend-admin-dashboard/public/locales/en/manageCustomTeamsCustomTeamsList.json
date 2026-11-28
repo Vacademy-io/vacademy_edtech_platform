@@ -1,0 +1,46 @@
+{
+    "tabs": {
+        "active": "Active",
+        "invited": "Invited"
+    },
+    "addMember": "Add Member",
+    "search": {
+        "ariaLabel": "Search members",
+        "placeholder": "Search by name, email or phone",
+        "clearAriaLabel": "Clear search"
+    },
+    "filters": {
+        "roleLabel": "Role",
+        "rolePlaceholder": "Search role…",
+        "summary_one": "{{filtered}} of {{count}} member",
+        "summary_other": "{{filtered}} of {{count}} members",
+        "chipSearchLabel": "Search",
+        "chipRoleLabel": "Role",
+        "clearAll": "Clear all"
+    },
+    "table": {
+        "member": "Member",
+        "email": "Email",
+        "phone": "Phone",
+        "roles": "Roles",
+        "status": "Status",
+        "pendingDues": "Pending Dues",
+        "actions": "Actions"
+    },
+    "empty": {
+        "noMatch": "No members match your filters.",
+        "none": "No members found."
+    },
+    "dues": {
+        "pendingCount_one": "{{count}} pending",
+        "pendingCount_other": "{{count}} pending"
+    },
+    "actions": {
+        "removeFrom": "Remove from {{org}}"
+    },
+    "toast": {
+        "removeScheduled": "Member scheduled for removal — access continues until the chosen date",
+        "removed": "Member removed from {{org}}",
+        "removeFailed": "Failed to remove member"
+    }
+}

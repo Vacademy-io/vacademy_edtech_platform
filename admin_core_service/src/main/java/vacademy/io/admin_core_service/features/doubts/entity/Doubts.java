@@ -74,6 +74,15 @@ public class Doubts {
     @Column(name = "status")
     private String status;
 
+    /**
+     * Institute-configurable workflow status key (PENDING / RESOLVED built in; IN_PROGRESS etc. per
+     * DOUBT_MANAGEMENT_SETTING.statuses). NULL on legacy rows — see
+     * {@link vacademy.io.admin_core_service.features.doubts.service.DoubtStatusCatalog#effectiveKey}.
+     * Kept in step with the coarse {@link #status}: a RESOLVED-kind key ⇔ status RESOLVED.
+     */
+    @Column(name = "workflow_status")
+    private String workflowStatus;
+
     @Column(name = "parent_id")
     private String parentId;
 

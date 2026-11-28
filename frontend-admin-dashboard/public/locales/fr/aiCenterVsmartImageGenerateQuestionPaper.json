@@ -1,0 +1,46 @@
+{
+    "header": {
+        "title": "Questions à partir d'une photo",
+        "subtitle": "Prenez ou téléversez une photo d'un sujet d'examen imprimé. Nous le transformerons en un ensemble numérique modifiable."
+    },
+    "dropzone": {
+        "instruction": "Déposez une photo ici, ou cliquez pour en choisir une",
+        "hint": "JPG ou PNG — les photos nettes donnent les meilleurs résultats, même manuscrites."
+    },
+    "fileCard": {
+        "removeAriaLabel": "Supprimer le fichier",
+        "status": {
+            "uploading": "Téléversement…",
+            "processing": "Lecture…",
+            "ready": "Prêt à extraire",
+            "generating": "Extraction des questions",
+            "done": "Terminé"
+        }
+    },
+    "workingLabel": {
+        "uploading": "Lecture de votre photo…",
+        "processing": "Analyse des questions…",
+        "generating": "Extraction des questions en cours — cela prend généralement environ 30 secondes."
+    },
+    "generatingState": {
+        "title": "Extraction des questions",
+        "subtitle": "Lecture de votre photo et numérisation de chaque question. Cela prend généralement environ 30 secondes."
+    },
+    "questionConfig": {
+        "ctaLabel": "Extraire les questions"
+    },
+    "recentFiles": {
+        "title": "Vos extractions récentes",
+        "emptyHint": "Vos ensembles de questions extraits apparaîtront ici. Déposez une photo ci-dessus pour commencer.",
+        "fallbackLabel": "Extraction sans titre"
+    },
+    "productName": "Vsmart Image",
+    "errors": {
+        "unsupportedFormat": "Nous ne pouvons pas lire les fichiers .{{ext}}. Essayez JPG ou PNG.",
+        "uploadFailed": "Le téléversement ne s'est pas terminé. Voulez-vous réessayer ?",
+        "processFailed": "Nous n'avons pas pu lire cette image. Essayez une photo plus nette ?",
+        "readFailed": "Une erreur s'est produite lors de la lecture de votre photo. Réessayer ?",
+        "extractionFailed": "Nous n'avons pas pu terminer cette extraction. Voulez-vous réessayer ?",
+        "generateFailed": "Nous n'avons pas pu extraire de questions de cette image. Essayez une photo plus nette ?"
+    }
+}

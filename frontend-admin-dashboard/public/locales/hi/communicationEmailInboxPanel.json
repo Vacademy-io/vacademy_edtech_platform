@@ -1,0 +1,14 @@
+{
+    "title": "ईमेल इनबॉक्स",
+    "refresh": "रिफ्रेश करें",
+    "inboxFor": "इनबॉक्स",
+    "noSendersConfigured": "कोई प्रेषक कॉन्फ़िगर नहीं है",
+    "allSenders": "सभी प्रेषक ({{count}})",
+    "direction": {
+        "all": "सभी",
+        "sent": "भेजे गए",
+        "received": "प्राप्त"
+    },
+    "searchPlaceholder": "ईमेल या विषय से मेल खोजें",
+    "clearSearch": "खोज साफ़ करें"
+}

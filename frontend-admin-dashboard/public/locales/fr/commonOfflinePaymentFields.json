@@ -1,0 +1,35 @@
+{
+    "loading": "Chargement des modes de paiement…",
+    "modeLabel": "Comment a-t-il été payé ?",
+    "subModeLabel": "Via",
+    "referenceLabel": "Référence",
+    "referencePlaceholder": "ex. réf. UPI, UTR, n° de chèque",
+    "dateLabel": "Date du paiement",
+    "notesLabel": "Notes",
+    "extra": {
+        "cheque_date": "Date du chèque",
+        "bank_name": "Banque",
+        "payer_name": "Payé par"
+    },
+    "proof": {
+        "attach": "Joindre un justificatif",
+        "replace": "Remplacer le justificatif",
+        "uploading": "Envoi…",
+        "attached": "Justificatif joint",
+        "remove": "Retirer"
+    },
+    "errors": {
+        "modeRequired": "Indiquez comment le paiement a été fait.",
+        "referenceRequired": "Saisissez la référence pour ce mode de paiement.",
+        "proofRequired": "Joignez un justificatif pour ce mode.",
+        "subModeRequired": "Choisissez une option pour ce mode de paiement.",
+        "fieldRequired": "Remplissez tous les champs marqués *.",
+        "numberingRequired": "Choisissez {{label}}."
+    },
+    "modePlaceholder": "Choisir le mode de paiement",
+    "subModePlaceholder": "Choisir",
+    "selectPlaceholder": "Choisir",
+    "notSpecified": "Non précisé",
+    "numberingLabel": "Série de reçus",
+    "numberingHint": "Choisit la série de numéros de reçu. Demandé une fois par cours ; les échéances suivantes gardent la même."
+}

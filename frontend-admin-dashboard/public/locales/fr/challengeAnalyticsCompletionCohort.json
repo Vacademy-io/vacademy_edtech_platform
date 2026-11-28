@@ -1,0 +1,49 @@
+{
+    "title": "Cohortes de complétion et d'anciens",
+    "subtitle": "Utilisateurs ayant terminé le programme de défi",
+    "emptyState": {
+        "message": "Aucune donnée de complétion disponible",
+        "hint": "Sélectionnez des modèles de complétion pour afficher les données de cohorte"
+    },
+    "createCampaign": "Créer une campagne",
+    "export": "Exporter",
+    "summary": {
+        "totalCompleted": "Total complété",
+        "templatesTracked": "Modèles suivis",
+        "currentPage": "Page actuelle",
+        "dateRange": "Plage de dates"
+    },
+    "timeline": {
+        "title": "Chronologie des complétions",
+        "completionsCount_one": "{{count}} complétion",
+        "completionsCount_many": "{{count}} de complétions",
+        "completionsCount_other": "{{count}} complétions"
+    },
+    "completionTemplates": "Modèles de complétion",
+    "table": {
+        "user": "Utilisateur",
+        "contact": "Contact",
+        "center": "Centre",
+        "completed": "Terminé",
+        "actions": "Actions"
+    },
+    "anonymous": "Anonyme",
+    "parentLabel": "Parent : {{name}}",
+    "unknown": "Inconnu",
+    "notAvailable": "N/D",
+    "send": "Envoyer",
+    "pagination": {
+        "showing_one": "Affichage de {{shown}} sur {{count}} utilisateur",
+        "showing_many": "Affichage de {{shown}} sur {{count}} d'utilisateurs",
+        "showing_other": "Affichage de {{shown}} sur {{count}} utilisateurs",
+        "previous": "Précédent",
+        "next": "Suivant"
+    },
+    "csv": {
+        "name": "Nom",
+        "email": "E-mail",
+        "phone": "Téléphone",
+        "completionDate": "Date de complétion",
+        "center": "Centre"
+    }
+}

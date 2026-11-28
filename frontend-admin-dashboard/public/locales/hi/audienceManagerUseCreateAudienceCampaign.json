@@ -1,0 +1,8 @@
+{
+    "success": {
+        "createCampaign": "अभियान सफलतापूर्वक बनाया गया"
+    },
+    "errors": {
+        "createCampaign": "अभियान बनाने में विफल"
+    }
+}

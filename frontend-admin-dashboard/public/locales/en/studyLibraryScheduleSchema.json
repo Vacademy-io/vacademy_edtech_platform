@@ -1,0 +1,41 @@
+{
+    "validation": {
+        "buttonTextRequired": "Button text is required",
+        "buttonTextMaxLength": "Button text must be 50 characters or less",
+        "invalidUrl": "Invalid URL",
+        "invalidHexColor": "Invalid hex color format",
+        "hoursRange": "Hours must be between 0 and 24",
+        "minutesRange": "Minutes must be between 0 and 59",
+        "classNameMaxLength": "Class name must be 100 characters or less",
+        "titleMinLength": "Title must be at least 1 characters",
+        "startTimeRequired": "Start time is required",
+        "invalidDate": "Invalid date",
+        "endDateRequired": "End date is required",
+        "timeZoneRequired": "Time zone is required",
+        "mustBeNumber": "Must be a number",
+        "durationRequired": "Duration is required",
+        "liveClassLinkRequired": "Live class link is required",
+        "durationGreaterThanZero": "Duration must be greater than zero.",
+        "endDateRequiredRecurring": "End date is required for recurring meetings.",
+        "endDateAfterStartDate": "End date should be greater than start date.",
+        "enterValidUrl": "Enter a valid URL",
+        "selectTime": "Select time",
+        "fieldLabelRequired": "Field label is required",
+        "fieldLabelTooLong": "Field label too long",
+        "paidClassPriceRequired": "Enter a price greater than 0 for a paid live class.",
+        "paidClassCurrencyRequired": "Select a currency for the paid live class.",
+        "emailOrPhoneRequired": "Keep either Email or Phone Number required — a registration needs one of them to identify the learner.",
+        "fieldStaysRequired": "\"{{label}}\" has to stay required {{why}}.",
+        "fieldRequiredGeneric": "This form needs a required {{role}} field {{why}}.",
+        "roleName": {
+            "phone": "Phone Number",
+            "email": "Email"
+        },
+        "whyReason": {
+            "whatsappOtp": "while the WhatsApp OTP verification is on, or turn that verification off",
+            "emailOtp": "while the email OTP verification is on, or turn that verification off",
+            "paidClass": "on a paid class — the invoice is billed and mailed to it"
+        },
+        "selectAudienceList": "Select at least one audience list, or turn the toggle off."
+    }
+}

@@ -1,0 +1,24 @@
+{
+    "header": {
+        "title": "Autorisations de téléchargement",
+        "description": "Choisissez les types de diapositives que {{roleLabel}} peuvent télécharger. Désactiver un type de diapositive masque son contrôle de téléchargement dans l'application — une dissuasion de meilleur effort qui ne peut pas bloquer tous les enregistrements au niveau du navigateur (par ex. le clic droit ou des lecteurs tiers)."
+    },
+    "slideTypes": {
+        "documentPdfDownload": "PDF — Télécharger",
+        "documentPdfPrint": "PDF — Imprimer",
+        "documentCode": "Code",
+        "assignment": "Devoir",
+        "video": "Vidéo",
+        "documentDoc": "Document (Docs) — Télécharger",
+        "audio": "Audio — Télécharger",
+        "image": "Images (dans les Docs) — Télécharger"
+    },
+    "footer": {
+        "saving": "Enregistrement…",
+        "save": "Enregistrer"
+    },
+    "toasts": {
+        "saveSuccess": "Autorisations de téléchargement des diapositives enregistrées",
+        "saveError": "Échec de l'enregistrement des autorisations de téléchargement des diapositives"
+    }
+}

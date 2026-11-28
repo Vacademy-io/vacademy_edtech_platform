@@ -1,5 +1,6 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { DotOutline } from '@phosphor-icons/react';
 import { Separator } from '@/components/ui/separator';
 import { MyButton } from '@/components/design-system/button';
@@ -22,8 +23,10 @@ import {
 import QuestionAssessmentStatus from './QuestionAssessmentStatus';
 import { toast } from 'sonner';
 import ExportDialogPDFCSV from '@/components/common/export-dialog-pdf-csv';
+import { sanitizeRichHtml } from '@/lib/sanitize-html';
 
 export function QuestionInsightsComponent() {
+    const { t } = useTranslation('assessmentQuestionInsights');
     const instituteId = getInstituteId();
     const { assessmentId, examType, assesssmentType } = Route.useParams();
     const { data: assessmentDetails } = useSuspenseQuery(
@@ -99,7 +102,7 @@ export function QuestionInsightsComponent() {
             link.click();
             link.remove();
             window.URL.revokeObjectURL(url);
-            toast.success('Student question insights data for PDF exported successfully');
+            toast.success(t('toasts.pdfExportSuccess'));
         },
         onError: (error: unknown) => {
             throw error;
@@ -164,26 +167,26 @@ export function QuestionInsightsComponent() {
                     </MyButton>
                 </div>
             </div>
-            <TabsContent
-                value={selectedSection || ''}
-                className="max-h-[calc(100vh-220px)] overflow-y-auto"
-            >
+            <TabsContent value={selectedSection || ''} className="max-h-[calc(100vh-220px)] overflow-y-auto"> {/* design-lint-ignore: viewport-relative offset height has no spacing token */}
                 {selectedSectionData.map((question, index) => (
                     <div key={index}>
                         <div className="flex w-full items-start justify-between gap-8">
                             <div className="my-4 flex w-1/2 flex-col gap-8 p-2">
                                 <h3>
-                                    Question&nbsp;({index + 1}.)&nbsp;
+                                    {t('questionCard.heading', { number: index + 1 })}&nbsp;
                                     <span
                                         dangerouslySetInnerHTML={{
-                                            __html:
+                                            __html: sanitizeRichHtml(
                                                 question.assessment_question_preview_dto
-                                                    .questionName || '',
+                                                    .questionName
+                                            ),
                                         }}
                                     />
                                 </h3>
                                 <div className="flex flex-nowrap items-center gap-8 text-sm font-semibold">
-                                    <p className="whitespace-nowrap font-normal">Correct Answer:</p>
+                                    <p className="whitespace-nowrap font-normal">
+                                        {t('questionCard.correctAnswerLabel')}
+                                    </p>
                                     <p className="flex w-full flex-col items-center gap-4 rounded-md bg-primary-50 p-4">
                                         {getCorrectOptionsForQuestion(
                                             question.assessment_question_preview_dto
@@ -198,7 +201,9 @@ export function QuestionInsightsComponent() {
                                                 </span>
                                                 <span
                                                     dangerouslySetInnerHTML={{
-                                                        __html: String(option.optionName) || '',
+                                                        __html: sanitizeRichHtml(
+                                                            String(option.optionName)
+                                                        ),
                                                     }}
                                                 />
                                             </div>
@@ -207,7 +212,7 @@ export function QuestionInsightsComponent() {
                                 </div>
                                 {question.assessment_question_preview_dto.explanation && (
                                     <p className="flex items-start gap-14 text-sm text-gray-600">
-                                        <span>Explanation:</span>
+                                        <span>{t('questionCard.explanationLabel')}</span>
                                         <span>
                                             {question.assessment_question_preview_dto.explanation}
                                         </span>
@@ -217,21 +222,25 @@ export function QuestionInsightsComponent() {
                                     question.top3_correct_response_dto.length > 0 && (
                                         <div className="flex flex-col gap-2">
                                             <h3 className="text-primary-500">
-                                                Top 3 quick correct responses
+                                                {t('questionCard.topResponsesTitle')}
                                             </h3>
                                             <div className="flex flex-wrap items-center gap-4">
                                                 {question.top3_correct_response_dto?.map(
-                                                    (response, index) => {
+                                                    (response, idx) => {
                                                         return (
                                                             <div
-                                                                key={index}
+                                                                key={idx}
                                                                 className="flex items-center whitespace-nowrap rounded-md border p-2 text-sm"
                                                             >
                                                                 <h1>{response.name}</h1>
                                                                 &nbsp;:&nbsp;
                                                                 <h1>
-                                                                    {response.timeTakenInSeconds}{' '}
-                                                                    sec
+                                                                    {t(
+                                                                        'questionCard.secondsSuffix',
+                                                                        {
+                                                                            count: response.timeTakenInSeconds,
+                                                                        }
+                                                                    )}
                                                                 </h1>
                                                             </div>
                                                         );
@@ -248,7 +257,9 @@ export function QuestionInsightsComponent() {
                                 />
                                 <div className="flex flex-col justify-center">
                                     <h1 className="text-center font-semibold text-neutral-500">
-                                        Total Attempt: {question.total_attempts} students
+                                        {t('summary.totalAttempts', {
+                                            count: question.total_attempts,
+                                        })}
                                     </h1>
                                     <div className="flex flex-col">
                                         <div className="-mb-8 flex items-center justify-between">
@@ -258,7 +269,7 @@ export function QuestionInsightsComponent() {
                                                     weight="fill"
                                                     className="text-success-400"
                                                 />
-                                                <p>Correct Respondents: </p>
+                                                <p>{t('respondents.correctLabel')}</p>
                                             </div>
                                             <div className="flex items-center gap-2">
                                                 <p>{question.question_status?.correctAttempt}</p>
@@ -277,18 +288,18 @@ export function QuestionInsightsComponent() {
                                                                       question?.skipped)) *
                                                               100
                                                           ).toFixed(2) + '%'
-                                                        : 'N/A'}
+                                                        : t('respondents.notAvailable')}
                                                     )
                                                 </p>
                                                 <Dialog>
                                                     <DialogTrigger>
                                                         <p className="text-sm text-primary-500">
-                                                            View List
+                                                            {t('respondents.viewList')}
                                                         </p>
                                                     </DialogTrigger>
-                                                    <DialogContent className="no-scrollbar !m-0 flex h-[90vh] !w-full !max-w-[90vw] flex-col items-start !gap-0 overflow-y-auto !p-0">
+                                                    <DialogContent className="no-scrollbar !m-0 flex h-[90vh] !w-full !max-w-[90vw] flex-col items-start !gap-0 overflow-y-auto !p-0">{/* design-lint-ignore: vh/vw dialog sizing matches MyDialog primitive */}
                                                         <h1 className="h-14 w-full bg-primary-50 p-4 font-semibold text-primary-500">
-                                                            Correct Respondents
+                                                            {t('dialogs.correctTitle')}
                                                         </h1>
                                                         <QuestionAssessmentStatus
                                                             assessmentId={assessmentId}
@@ -312,7 +323,7 @@ export function QuestionInsightsComponent() {
                                                     weight="fill"
                                                     className="text-warning-400"
                                                 />
-                                                <p>Partially Correct Respondents: </p>
+                                                <p>{t('respondents.partialLabel')}</p>
                                             </div>
                                             <div className="flex items-center gap-2">
                                                 <p>
@@ -336,18 +347,18 @@ export function QuestionInsightsComponent() {
                                                                       question?.skipped)) *
                                                               100
                                                           ).toFixed(2) + '%'
-                                                        : 'N/A'}
+                                                        : t('respondents.notAvailable')}
                                                     )
                                                 </p>
                                                 <Dialog>
                                                     <DialogTrigger>
                                                         <p className="text-sm text-primary-500">
-                                                            View List
+                                                            {t('respondents.viewList')}
                                                         </p>
                                                     </DialogTrigger>
-                                                    <DialogContent className="no-scrollbar !m-0 flex h-[90vh] !w-full !max-w-[90vw] flex-col items-start !gap-0 overflow-y-auto !p-0">
+                                                    <DialogContent className="no-scrollbar !m-0 flex h-[90vh] !w-full !max-w-[90vw] flex-col items-start !gap-0 overflow-y-auto !p-0">{/* design-lint-ignore: vh/vw dialog sizing matches MyDialog primitive */}
                                                         <h1 className="h-14 w-full bg-primary-50 p-4 font-semibold text-primary-500">
-                                                            Partially Correct Respondents
+                                                            {t('dialogs.partialTitle')}
                                                         </h1>
                                                         <QuestionAssessmentStatus
                                                             assessmentId={assessmentId}
@@ -371,7 +382,7 @@ export function QuestionInsightsComponent() {
                                                     weight="fill"
                                                     className="text-danger-400"
                                                 />
-                                                <p>Wrong Respondents: </p>
+                                                <p>{t('respondents.wrongLabel')}</p>
                                             </div>
                                             <div className="flex items-center gap-2">
                                                 <p>{question.question_status?.incorrectAttempt}</p>
@@ -390,18 +401,18 @@ export function QuestionInsightsComponent() {
                                                                       question?.skipped)) *
                                                               100
                                                           ).toFixed(2) + '%'
-                                                        : 'N/A'}
+                                                        : t('respondents.notAvailable')}
                                                     )
                                                 </p>
                                                 <Dialog>
                                                     <DialogTrigger>
                                                         <p className="text-sm text-primary-500">
-                                                            View List
+                                                            {t('respondents.viewList')}
                                                         </p>
                                                     </DialogTrigger>
-                                                    <DialogContent className="no-scrollbar !m-0 flex h-[90vh] !w-full !max-w-[90vw] flex-col items-start !gap-0 overflow-y-auto !p-0">
+                                                    <DialogContent className="no-scrollbar !m-0 flex h-[90vh] !w-full !max-w-[90vw] flex-col items-start !gap-0 overflow-y-auto !p-0">{/* design-lint-ignore: vh/vw dialog sizing matches MyDialog primitive */}
                                                         <h1 className="h-14 w-full bg-primary-50 p-4 font-semibold text-primary-500">
-                                                            Wrong Respondents
+                                                            {t('dialogs.wrongTitle')}
                                                         </h1>
                                                         <QuestionAssessmentStatus
                                                             assessmentId={assessmentId}
@@ -425,7 +436,7 @@ export function QuestionInsightsComponent() {
                                                     weight="fill"
                                                     className="text-neutral-200"
                                                 />
-                                                <p>Skipped: </p>
+                                                <p>{t('respondents.skippedLabel')}</p>
                                             </div>
                                             <div className="flex items-center gap-2">
                                                 <p>{question.skipped}</p>
@@ -443,18 +454,18 @@ export function QuestionInsightsComponent() {
                                                                       question?.skipped)) *
                                                               100
                                                           ).toFixed(2) + '%'
-                                                        : 'N/A'}
+                                                        : t('respondents.notAvailable')}
                                                     )
                                                 </p>
                                                 <Dialog>
                                                     <DialogTrigger>
                                                         <p className="text-sm text-primary-500">
-                                                            View List
+                                                            {t('respondents.viewList')}
                                                         </p>
                                                     </DialogTrigger>
-                                                    <DialogContent className="no-scrollbar !m-0 flex h-[90vh] !w-full !max-w-[90vw] flex-col items-start !gap-0 overflow-y-auto !p-0">
+                                                    <DialogContent className="no-scrollbar !m-0 flex h-[90vh] !w-full !max-w-[90vw] flex-col items-start !gap-0 overflow-y-auto !p-0">{/* design-lint-ignore: vh/vw dialog sizing matches MyDialog primitive */}
                                                         <h1 className="h-14 w-full bg-primary-50 p-4 font-semibold text-primary-500">
-                                                            Skipped Respondents
+                                                            {t('dialogs.skippedTitle')}
                                                         </h1>
                                                         <QuestionAssessmentStatus
                                                             assessmentId={assessmentId}

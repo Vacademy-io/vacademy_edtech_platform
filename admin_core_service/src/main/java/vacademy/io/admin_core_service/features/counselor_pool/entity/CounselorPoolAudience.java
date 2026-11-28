@@ -40,6 +40,16 @@ public class CounselorPoolAudience {
     @Column(name = "last_assigned_at")
     private Timestamp lastAssignedAt;
 
+    /**
+     * When this list hands out a counsellor. TRUE (default) = at intake, the moment the lead
+     * is submitted. FALSE = only on demand — the AI-call outcome processor asks for one once
+     * the bot has qualified the lead (or given up), and intake leaves the lead unowned so the
+     * CALL_AI node's already-assigned guard does not stop the call.
+     */
+    @Builder.Default
+    @Column(name = "assign_on_intake", nullable = false)
+    private Boolean assignOnIntake = Boolean.TRUE;
+
     @Column(name = "added_at", insertable = false, updatable = false)
     private Timestamp addedAt;
 }

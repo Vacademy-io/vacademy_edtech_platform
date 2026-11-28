@@ -1,0 +1,61 @@
+{
+    "questionTypes": {
+        "mcqs": "एकल विकल्प",
+        "mcqm": "बहु विकल्प",
+        "trueFalse": "सही / गलत",
+        "oneWord": "एक शब्द",
+        "longAnswer": "दीर्घ उत्तर",
+        "numeric": "संख्यात्मक",
+        "cmcqs": "गद्यांश (एकल)",
+        "cmcqm": "गद्यांश (बहु)"
+    },
+    "toasts": {
+        "linkCopied": "लिंक क्लिपबोर्ड पर कॉपी हो गया",
+        "copyFailed": "लिंक कॉपी करने में विफल"
+    },
+    "shareAssignment": {
+        "heading": "असाइनमेंट साझा करें",
+        "copyLinkTitle": "लिंक कॉपी करें"
+    },
+    "taskDescription": {
+        "heading": "कार्य विवरण"
+    },
+    "liveDateRange": {
+        "heading": "लाइव तिथि सीमा",
+        "description": "समय आपके स्थानीय समय क्षेत्र में दर्शाया जाता है। प्रारंभ समय से पहले सबमिशन अवरुद्ध हैं; समाप्ति समय के बाद सबमिशन स्वीकार किए जाते हैं लेकिन देर से चिह्नित होते हैं।",
+        "startDateLabel": "प्रारंभ तिथि और समय",
+        "endDateLabel": "समाप्ति तिथि और समय"
+    },
+    "reattemptCount": {
+        "label": "पुनः प्रयास संख्या"
+    },
+    "allowedFileTypes": {
+        "heading": "अनुमत सबमिशन फ़ाइल प्रकार",
+        "description": "चुनें कि शिक्षार्थी कौन-से फ़ाइल प्रकार अपलोड कर सकते हैं, या किसी भी फ़ाइल (जैसे .sb3 PictoBlox/Scratch प्रोजेक्ट) को स्वीकार करने के लिए All Files चुनें।"
+    },
+    "marks": {
+        "heading": "अंक",
+        "totalMarksLabel": "कुल अंक",
+        "totalMarksPlaceholder": "उदा. 100",
+        "passingMarksLabel": "उत्तीर्ण अंक (वैकल्पिक)",
+        "passingMarksPlaceholder": "उदा. 40"
+    },
+    "uploadQuestionPaper": {
+        "heading": "प्रश्न पत्र अपलोड करें",
+        "uploadFromDevice": "डिवाइस से अपलोड करें",
+        "uploadFromDeviceDialogTitle": "डिवाइस से प्रश्न पत्र अपलोड करें",
+        "createManually": "मैन्युअल रूप से बनाएं",
+        "createManuallyDialogTitle": "प्रश्न पत्र मैन्युअल रूप से बनाएं",
+        "chooseSavedPaper": "सहेजा गया पत्र चुनें",
+        "chooseSavedPaperDialogTitle": "सूची से सहेजा गया प्रश्न पत्र चुनें"
+    },
+    "questionsList": {
+        "heading_one": "प्रश्न ({{count}})",
+        "heading_other": "प्रश्न ({{count}})"
+    },
+    "responses": {
+        "heading": "प्रतिक्रियाएं",
+        "totalParticipants_one": "कुल प्रतिभागी: {{count}}",
+        "totalParticipants_other": "कुल प्रतिभागी: {{count}}"
+    }
+}

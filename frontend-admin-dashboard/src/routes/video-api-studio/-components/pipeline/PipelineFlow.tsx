@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import ReactFlow, {
     Background,
     Controls,
@@ -54,7 +55,7 @@ import { BrollLaneNode } from './nodes/BrollLaneNode';
 /**
  * Map of `nodeType` → component. Defined module-scope (not inside the
  * component) so React Flow doesn't warn about re-creating the registry on
- * every render — see https://reactflow.dev/error#002.
+ * every render — see https://reactflow.dev/error#002. design-lint-ignore: URL fragment, not a color literal.
  */
 const NODE_TYPES: NodeTypes = {
     pitch: PitchNode,
@@ -85,6 +86,7 @@ interface PipelineFlowProps {
 }
 
 function PipelineFlowInner({ state, apiKey }: PipelineFlowProps) {
+    const { t } = useTranslation('videoApiStudioPipelineFlow');
     const flow = useReactFlow();
     const fittedOnceRef = useRef(false);
 
@@ -190,12 +192,12 @@ function PipelineFlowInner({ state, apiKey }: PipelineFlowProps) {
         // 2. Apply timeline thumbnails into whichever scenes set we have.
         if (working.scenes.length > 0 && Object.keys(thumbnails).length > 0) {
             const merged: SceneSlot[] = working.scenes.map((s) => {
-                const t = thumbnails[s.index];
-                if (!t || (!t.imageUrl && !t.videoUrl)) return s;
+                const thumb = thumbnails[s.index];
+                if (!thumb || (!thumb.imageUrl && !thumb.videoUrl)) return s;
                 return {
                     ...s,
-                    imageUrl: t.imageUrl ?? s.imageUrl,
-                    videoUrl: t.videoUrl ?? s.videoUrl,
+                    imageUrl: thumb.imageUrl ?? s.imageUrl,
+                    videoUrl: thumb.videoUrl ?? s.videoUrl,
                 };
             });
             working = { ...working, scenes: merged };
@@ -357,7 +359,8 @@ function PipelineFlowInner({ state, apiKey }: PipelineFlowProps) {
                     error: a.error,
                 }));
                 const completedTakes = takes.filter(
-                    (t) => t.status === 'completed' || !!t.avatarVideoUrl || !!t.hostImageUrl
+                    (take) =>
+                        take.status === 'completed' || !!take.avatarVideoUrl || !!take.hostImageUrl
                 );
                 let talent: NodeSlot<TalentArtifact>;
                 if (isWrapped || total > 0) {
@@ -370,7 +373,7 @@ function PipelineFlowInner({ state, apiKey }: PipelineFlowProps) {
                         },
                     };
                 } else if (isHalted) {
-                    talent = { state: 'cut', error: 'Talent cut from production' };
+                    talent = { state: 'cut', error: t('errors.talentCutFromProduction') };
                 } else {
                     talent = { state: 'scheduled' };
                 }
@@ -398,7 +401,7 @@ function PipelineFlowInner({ state, apiKey }: PipelineFlowProps) {
                     },
                 };
             } else if (isHalted) {
-                score = { state: 'cut', error: 'Score cut from production' };
+                score = { state: 'cut', error: t('errors.scoreCutFromProduction') };
             } else {
                 score = { state: 'scheduled' };
             }
@@ -532,7 +535,7 @@ function PipelineFlowInner({ state, apiKey }: PipelineFlowProps) {
         }
 
         return working;
-    }, [state, gp, thumbnails, meta, musicTrack, statusResp, timelineShotMeta, timelineMotifs]);
+    }, [state, gp, thumbnails, meta, musicTrack, statusResp, timelineShotMeta, timelineMotifs, t]);
 
     /**
      * React Flow's `onNodeClick` is the canonical hook for "user clicked
@@ -809,8 +812,8 @@ function PipelineFlowInner({ state, apiKey }: PipelineFlowProps) {
     // unless the timeline JSON or palette changed.
     const htmlByIndex = useMemo(() => {
         const out: Record<number, string | undefined> = {};
-        for (const [idx, t] of Object.entries(thumbnails)) {
-            const raw = t.html;
+        for (const [idx, thumb] of Object.entries(thumbnails)) {
+            const raw = thumb.html;
             if (!raw) continue;
             out[Number(idx)] = processHtmlContent(raw, state.contentType, false, palette);
         }
@@ -861,14 +864,14 @@ function PipelineFlowInner({ state, apiKey }: PipelineFlowProps) {
                     followLiveRef.current = false;
                 }}
             >
-                <Background gap={24} size={1} color="#e5e7eb" />
+                <Background gap={24} size={1} color="hsl(var(--border))" />
                 <Controls position="bottom-left" showInteractive={false} />
                 {showMiniMap && <MiniMap pannable zoomable className="!bg-white" />}
                 <Panel
                     position="top-right"
-                    className="m-3 rounded-md border bg-white px-2 py-1 text-[10px] text-muted-foreground shadow-sm"
+                    className="m-3 rounded-md border bg-white px-2 py-1 text-2xs text-muted-foreground shadow-sm"
                 >
-                    Click any stage for details
+                    {t('hint.clickAnyStageForDetails')}
                 </Panel>
                 {/* Director-thinking ticker: a single live line of "what is
                     the pipeline doing right now" sourced from
@@ -878,12 +881,15 @@ function PipelineFlowInner({ state, apiKey }: PipelineFlowProps) {
                 {state.status === 'in_production' && (state.liveDirectorThought || state.liveActiveStage) && (
                     <Panel
                         position="bottom-center"
-                        className="m-3 max-w-[560px] truncate rounded-full border bg-white/95 px-3 py-1.5 text-xs text-foreground shadow-md backdrop-blur"
+                        className="m-3 max-w-xl truncate rounded-full border bg-white/95 px-3 py-1.5 text-xs text-foreground shadow-md backdrop-blur"
                     >
                         <span className="mr-2 inline-block size-1.5 animate-pulse rounded-full bg-blue-500 align-middle" />
-                        <span className="font-medium text-muted-foreground">Director:</span>{' '}
+                        <span className="font-medium text-muted-foreground">
+                            {t('directorTicker.label')}
+                        </span>{' '}
                         <span className="text-foreground/90">
-                            {state.liveDirectorThought ?? `working on ${state.liveActiveStage}…`}
+                            {state.liveDirectorThought ??
+                                t('directorTicker.workingOn', { stage: state.liveActiveStage })}
                         </span>
                     </Panel>
                 )}
@@ -905,7 +911,7 @@ function PipelineFlowInner({ state, apiKey }: PipelineFlowProps) {
 export function PipelineFlow(props: PipelineFlowProps) {
     return (
         <ReactFlowProvider>
-            <div className="size-full min-h-[480px]">
+            <div className="size-full min-h-[480px]"> {/* design-lint-ignore: no minHeight token in tailwind.config for this px value; Tailwind's default minHeight scale has no numeric steps */}
                 <PipelineFlowInner {...props} />
             </div>
         </ReactFlowProvider>

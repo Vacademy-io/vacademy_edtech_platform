@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 import { MyButton } from '@/components/design-system/button';
 import { BookOpen, Gamepad2, Code, Split, PlayCircle } from 'lucide-react';
@@ -45,6 +46,7 @@ export const VideoSplitScreenAddDialog: React.FC<VideoSplitScreenAddDialogProps>
     videoSlideId,
     isEditable,
 }) => {
+    const { t } = useTranslation('studyLibraryVideoSplitScreenAddDialog');
     const { setActiveItem, getSlideById } = useContentStore();
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [isCreating, setIsCreating] = useState(false);
@@ -72,23 +74,23 @@ export const VideoSplitScreenAddDialog: React.FC<VideoSplitScreenAddDialogProps>
     const splitScreenOptions: SplitScreenOption[] = [
         {
             icon: <BookOpen className="size-6 text-violet-600" />,
-            text: 'Jupyter Notebook',
+            text: t('jupyterNotebook'),
             type: 'JUPYTER',
-            description: 'Interactive coding notebooks with video',
+            description: t('jupyterDescription'),
             color: 'bg-violet-100 border-violet-200',
         },
         {
             icon: <Gamepad2 className="size-6 text-orange-600" />,
-            text: 'Scratch Project',
+            text: t('scratchProject'),
             type: 'SCRATCH',
-            description: 'Visual programming blocks with video',
+            description: t('scratchDescription'),
             color: 'bg-orange-100 border-orange-200',
         },
         {
             icon: <Code className="size-6 text-green-600" />,
-            text: 'Code Editor',
+            text: t('codeEditor'),
             type: 'CODE',
-            description: 'Interactive code environment with video',
+            description: t('codeDescription'),
             color: 'bg-green-100 border-green-200',
         },
     ];
@@ -100,7 +102,7 @@ export const VideoSplitScreenAddDialog: React.FC<VideoSplitScreenAddDialogProps>
             // Get the current video slide
             const currentSlide = getSlideById(videoSlideId);
             if (!currentSlide || currentSlide.source_type !== 'VIDEO') {
-                toast.error('Video slide not found');
+                toast.error(t('videoSlideNotFound'));
                 return;
             }
 
@@ -227,11 +229,17 @@ export const VideoSplitScreenAddDialog: React.FC<VideoSplitScreenAddDialogProps>
                 }
             }, 500);
 
-            toast.success(`Video converted to split-screen ${type.toLowerCase()} successfully!`);
+            const typeLabel = (
+                splitScreenOptions.find((o) => o.type === type)?.text ?? type
+            ).toLowerCase();
+            toast.success(t('convertSuccess', { type: typeLabel }));
             setIsDialogOpen(false);
         } catch (error) {
             console.error(`Error converting to split-screen ${type}:`, error);
-            toast.error(`Failed to convert to split-screen ${type.toLowerCase()}`);
+            const typeLabel = (
+                splitScreenOptions.find((o) => o.type === type)?.text ?? type
+            ).toLowerCase();
+            toast.error(t('convertError', { type: typeLabel }));
         } finally {
             setIsCreating(false);
         }
@@ -251,7 +259,7 @@ export const VideoSplitScreenAddDialog: React.FC<VideoSplitScreenAddDialogProps>
                     disabled={isCreating}
                 >
                     <Split className="mr-2 size-4" />
-                    Convert to Split Screen
+                    {t('convertToSplitScreen')}
                 </MyButton>
             </DialogTrigger>
             <DialogContent className="max-w-md">
@@ -262,11 +270,9 @@ export const VideoSplitScreenAddDialog: React.FC<VideoSplitScreenAddDialogProps>
                             <Split className="size-6 text-blue-600" />
                         </div>
                         <h2 className="text-lg font-semibold text-gray-900">
-                            Convert to Split Screen
+                            {t('convertToSplitScreen')}
                         </h2>
-                        <p className="mt-1 text-xs text-gray-600">
-                            Add interactive environment with video
-                        </p>
+                        <p className="mt-1 text-xs text-gray-600">{t('dialogSubtitle')}</p>
                     </div>
 
                     {/* Options */}
@@ -303,7 +309,7 @@ export const VideoSplitScreenAddDialog: React.FC<VideoSplitScreenAddDialogProps>
                     {isCreating && (
                         <div className="flex items-center justify-center space-x-2 text-xs text-gray-600">
                             <div className="size-3 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
-                            <span>Creating split screen slide...</span>
+                            <span>{t('creatingSlide')}</span>
                         </div>
                     )}
                 </div>

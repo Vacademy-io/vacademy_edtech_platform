@@ -1,0 +1,130 @@
+{
+    "common": {
+        "notAvailable": "N/A",
+        "remove": "Supprimer",
+        "generateButton": "Générer",
+        "confirmPaymentButton": "Confirmer le paiement",
+        "recordingEllipsis": "Enregistrement…",
+        "optionalLabel": "(facultatif)"
+    },
+    "defaults": {
+        "feeName": "Frais de dossier / d'inscription",
+        "recipientName": "Parent"
+    },
+    "paymentMethodLabel": {
+        "online": "Paiement en ligne",
+        "upi": "Paiement UPI"
+    },
+    "paymentModeLabels": {
+        "upi": "UPI",
+        "cash": "Espèces",
+        "card": "Carte",
+        "cheque": "Chèque",
+        "online": "En ligne",
+        "sendLink": "Lien de paiement",
+        "manual": "Manuel"
+    },
+    "upiDeepLink": {
+        "paymentNote": "Paiement {{feeName}}"
+    },
+    "toast": {
+        "linkRequiresApplication": "Veuillez d'abord soumettre la demande pour générer un lien de paiement.",
+        "paymentOptionNotConfigured": "Option de paiement non configurée.",
+        "linkCopied": "Lien de {{method}} copié dans le presse-papiers !",
+        "upiNotConfigured": "Identifiant UPI non configuré pour cette étape de paiement.",
+        "upiLinkCopied": "Lien UPI copié ! Envoyez-le au parent pour l'ouvrir dans une application UPI.",
+        "linkEmailSent": "Lien de paiement envoyé par e-mail avec succès",
+        "linkEmailFailed": "Échec de l'envoi de l'e-mail. Veuillez réessayer.",
+        "proofUploaded": "Justificatif téléversé",
+        "proofUploadFailed": "Échec du téléversement du justificatif",
+        "applicationNotSubmitted": "La demande n'a pas encore été soumise. Veuillez d'abord soumettre le formulaire.",
+        "enterTransactionId": "Veuillez saisir ou générer un identifiant de transaction",
+        "paymentRecorded": "Paiement enregistré avec succès !",
+        "paymentRecordFailed": "Échec de l'enregistrement du paiement. Veuillez réessayer."
+    },
+    "paid": {
+        "title": "Paiement reçu",
+        "summaryLine": "{{amount}} • Mode : {{mode}} • Date : {{date}}",
+        "todayFallback": "Aujourd'hui",
+        "refLabel": "Réf : {{transactionId}}",
+        "undoButton": "↩ Annuler — Marquer comme non payé"
+    },
+    "receipt": {
+        "receiptNoLabel": "N° de reçu",
+        "dateLabel": "Date",
+        "studentLabel": "Élève",
+        "feeDescriptionLabel": "Description des frais",
+        "paymentModeLabel": "Mode de paiement",
+        "transactionIdLabel": "Identifiant de transaction",
+        "amountPaidLabel": "Montant payé",
+        "downloadButton": "Télécharger le reçu"
+    },
+    "header": {
+        "title": "Finalisez votre paiement",
+        "subtitle": "Frais uniques pour soumettre la demande"
+    },
+    "invoice": {
+        "title": "Paiement des frais",
+        "gstLabel": "TPS / Taxes",
+        "processingChargeLabel": "Frais de traitement",
+        "waivedLabel": "Exonérés",
+        "totalDueLabel": "Montant total dû"
+    },
+    "tabs": {
+        "payNow": "Payer maintenant",
+        "generateLink": "Générer un lien"
+    },
+    "methods": {
+        "sectionTitle": "Payer maintenant",
+        "upi": {
+            "label": "UPI / Code QR",
+            "desc": "Scannez et payez instantanément"
+        },
+        "cash": {
+            "label": "Espèces reçues",
+            "desc": "Enregistrer un paiement en espèces"
+        }
+    },
+    "cashPanel": {
+        "title": "Paiement en espèces",
+        "amountToReceiveLabel": "Montant à recevoir",
+        "proofLabel": "Justificatif de paiement",
+        "proofHintCheque": "image du chèque",
+        "proofHintReceipt": "reçu / capture d'écran",
+        "uploadProofButton": "📎 Téléverser un reçu / une capture d'écran",
+        "txnLabelCheque": "Numéro de chèque / traite",
+        "txnLabelReceipt": "Identifiant de transaction / reçu",
+        "placeholderCheque": "Numéro de chèque / traite",
+        "placeholderCash": "Générer automatiquement ou saisir un identifiant de reçu",
+        "placeholderDefault": "Saisir l'identifiant de transaction"
+    },
+    "upiPanel": {
+        "title": "Paiement UPI",
+        "clickToEnlargeTitle": "Cliquer pour agrandir",
+        "openHoverLabel": "Ouvrir",
+        "openLargeQrTitle": "Ouvrir le grand code QR",
+        "qrCodeLabel": "Code QR",
+        "notConfiguredLabel": "Non configuré",
+        "proofLabel": "Image du paiement",
+        "uploadImageButton": "Téléverser une image",
+        "transactionIdLabel": "Identifiant de transaction",
+        "transactionIdPlaceholder": "ex. 312345678901"
+    },
+    "linkTab": {
+        "title": "Générer un lien de paiement",
+        "subtitle": "Partagez un lien avec les parents pour qu'ils effectuent le paiement depuis leur appareil",
+        "onlineLinkButton": "Lien en ligne",
+        "upiAppLinkButton": "Lien application UPI",
+        "configureUpiTitle": "Configurez l'identifiant UPI dans les paramètres de l'étape",
+        "scanQrLabel": "Scannez le code QR pour ouvrir le lien de paiement",
+        "sendViaEmailButton": "Envoyer le lien par e-mail",
+        "emailPlaceholder": "parent@example.com",
+        "sendingEllipsis": "Envoi en cours...",
+        "sendButton": "Envoyer"
+    },
+    "qrDialog": {
+        "scanToPayLabel": "Scanner pour payer — {{amount}}",
+        "upiIdLabel": "Identifiant UPI : {{upiId}}",
+        "closeHint": "Cliquez à l'extérieur ou appuyez sur Échap pour fermer"
+    }
+}

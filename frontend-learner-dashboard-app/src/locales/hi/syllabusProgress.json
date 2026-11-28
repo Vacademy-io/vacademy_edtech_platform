@@ -1,0 +1,64 @@
+{
+  "page": {
+    "title": "मेरा सिलेबस",
+    "subtitle": "आपकी कक्षा का सिलेबस, सप्ताह दर सप्ताह, जैसा आपके शिक्षक चिह्नित करते हैं।"
+  },
+  "nav": {
+    "mySyllabus": "मेरा सिलेबस"
+  },
+  "course": {
+    "progressLabel": "सिलेबस की प्रगति",
+    "blocksDone": "{{total}} में से {{done}} पूरे",
+    "onWeeks": "आप सप्ताह {{from}}–{{to}} पर हैं",
+    "onWeek": "आप सप्ताह {{week}} पर हैं",
+    "onBlock": "आप {{label}} पर हैं",
+    "allDone": "आपने पूरा सिलेबस पूरा कर लिया है",
+    "notStarted": "आपके शिक्षक ने अभी कोई सप्ताह चिह्नित नहीं किया है",
+    "noBlocks": "इस सिलेबस में अभी कोई सप्ताह नहीं जोड़ा गया है।"
+  },
+  "trimester": {
+    "label": "तिमाही {{number}}",
+    "other": "अन्य सप्ताह",
+    "summary": "{{total}} में से {{done}} पूरे"
+  },
+  "block": {
+    "weeks": "सप्ताह {{from}}–{{to}}",
+    "week": "सप्ताह {{week}}",
+    "month": "महीना {{month}}",
+    "fallback": "भाग {{order}}",
+    "current": "आप यहाँ हैं",
+    "pointsProgress": "{{total}} में से {{done}} बिंदु पूरे",
+    "pointDone": "पूरा हुआ",
+    "pointPending": "अभी बाकी है",
+    "noPoints": "इस भाग के लिए कोई विषय नहीं दिया गया है।"
+  },
+  "status": {
+    "completed": "पूरा हुआ",
+    "completedOn": "{{date}} को पूरा हुआ",
+    "inProgress": "जारी है",
+    "skipped": "छोड़ा गया",
+    "notStarted": "शुरू नहीं हुआ"
+  },
+  "note": {
+    "from": "{{name}} की टिप्पणी",
+    "fallback": "शिक्षक की टिप्पणी"
+  },
+  "empty": {
+    "title": "अभी दिखाने के लिए कोई सिलेबस नहीं है",
+    "description": "जब आपके शिक्षक आपकी कक्षा का सिलेबस ट्रैक करना शुरू करेंगे, आपकी प्रगति यहाँ दिखेगी।"
+  },
+  "error": {
+    "title": "आपका सिलेबस लोड नहीं हो सका"
+  },
+  "card": {
+    "title": "मेरा सिलेबस",
+    "open": "सिलेबस देखें",
+    "stagesLabel": "आपके कोर्स के चरण",
+    "currentStage": "(आपका चरण)",
+    "thisWeek": "इस हफ़्ते · {{label}}",
+    "blocksDone_one": "{{count}} में से {{done}} सप्ताह-खंड पूरे · {{percent}}%",
+    "blocksDone_other": "{{count}} में से {{done}} सप्ताह-खंड पूरे · {{percent}}%",
+    "morePoints_one": "+{{count}} और विषय",
+    "morePoints_other": "+{{count}} और विषय"
+  }
+}

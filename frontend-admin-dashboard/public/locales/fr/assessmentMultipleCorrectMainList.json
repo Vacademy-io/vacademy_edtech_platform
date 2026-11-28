@@ -1,0 +1,13 @@
+{
+    "emptyState": "Veuillez ajouter une question pour afficher les détails de la question",
+    "popover": {
+        "title": "Paramètres des questions",
+        "questionTypeLabel": "Type de question"
+    },
+    "comprehensionText": "Texte de compréhension",
+    "questionLabel": "Question {{number}}",
+    "answerLabel": "Réponse :",
+    "removeOptionTitle": "Supprimer l'option",
+    "addOptionButton": "Ajouter une option",
+    "explanationLabel": "Explication :"
+}

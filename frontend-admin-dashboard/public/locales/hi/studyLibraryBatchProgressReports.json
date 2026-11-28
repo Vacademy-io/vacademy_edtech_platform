@@ -1,0 +1,43 @@
+{
+    "validation": {
+        "batchRequired": "कम से कम एक बैच चुनें"
+    },
+    "toast": {
+        "noDataToExport": "निर्यात करने के लिए अभी कोई डेटा नहीं है",
+        "exportSuccess": "रिपोर्ट निर्यात की गई",
+        "exportFailed": "PDF निर्यात करने में विफल",
+        "csvExportSuccess": "CSV निर्यात हो गया",
+        "csvExportFailed": "CSV निर्यात विफल"
+    },
+    "form": {
+        "generateReport": "रिपोर्ट बनाएँ"
+    },
+    "report": {
+        "exporting": "निर्यात हो रहा है...",
+        "exportPdf": "PDF निर्यात करें",
+        "subjectWiseOverview": "{{term}}-वार अवलोकन",
+        "exportCsv": "CSV निर्यात करें",
+        "multiBatchTitle": "{{term}} रिपोर्ट · {{count}} चयनित",
+        "batchLoadFailed": "{{name}} की रिपोर्ट लोड नहीं हो सकी।"
+    },
+    "pdf": {
+        "batchSubjectWiseProgress": "{{batchTerm}} {{subjectTerm}}-वार प्रगति",
+        "learnerProgressReport": "शिक्षार्थी प्रगति रिपोर्ट",
+        "learnerLabel": "शिक्षार्थी",
+        "termCompleted": "{{term}} पूर्ण",
+        "termsTracked": "{{term}} ट्रैक किए गए",
+        "termWiseProgress": "{{term}}-वार प्रगति",
+        "termColonName": "{{term}}: {{name}}",
+        "completed": "पूर्ण",
+        "dailyTimeAvg": "दैनिक औसत समय",
+        "termDailyTimeAvg": "{{term}} दैनिक औसत समय",
+        "termWiseProgressReport": "{{term}}-वार प्रगति रिपोर्ट",
+        "learningProgressReport": "लर्निंग प्रगति रिपोर्ट"
+    },
+    "csv": {
+        "fileStem": "learning-progress",
+        "title": "{{term}}-वार प्रगति",
+        "moduleCompletedByBatch": "{{batch}} द्वारा {{module}} पूर्ण (%)",
+        "dailyTimeByBatchMin": "{{batch}} का दैनिक औसत समय (मिनट)"
+    }
+}

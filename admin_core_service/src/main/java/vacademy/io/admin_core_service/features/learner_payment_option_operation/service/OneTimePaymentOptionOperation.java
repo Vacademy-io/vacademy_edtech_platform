@@ -1,5 +1,6 @@
 package vacademy.io.admin_core_service.features.learner_payment_option_operation.service;
 
+import vacademy.io.admin_core_service.features.payments.util.GatewayCustomerContact;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,7 +20,7 @@ import vacademy.io.admin_core_service.features.payments.service.PaymentService;
 import vacademy.io.admin_core_service.features.user_subscription.entity.PaymentPlan;
 import vacademy.io.admin_core_service.features.user_subscription.entity.UserPlan;
 import vacademy.io.admin_core_service.features.user_subscription.handler.ReferralBenefitOrchestrator;
-import vacademy.io.admin_core_service.features.user_subscription.service.coupon.CouponDiscountUtil;
+import vacademy.io.admin_core_service.features.regional_pricing.service.RegionalPriceLock;
 import vacademy.io.common.auth.dto.learner.LearnerExtraDetails;
 import vacademy.io.common.auth.dto.learner.LearnerPackageSessionsEnrollDTO;
 import vacademy.io.common.auth.dto.learner.LearnerEnrollResponseDTO;
@@ -136,9 +137,16 @@ public class OneTimePaymentOptionOperation implements PaymentOptionOperationStra
                     learnerPackageSessionsEnrollDTO.getPaymentInitiationRequest().setAmount(amount);
                 }
             } else {
-                log.info("Setting payment amount to {} from plan {}", paymentPlan.getActualPrice(),
-                        paymentPlan.getId());
-                learnerPackageSessionsEnrollDTO.getPaymentInitiationRequest().setAmount(paymentPlan.getActualPrice());
+                // Regional lock (if any) wins over the plan's base price — see RegionalPriceLock.
+                // The line is unit price × the copies on this plan (user_plan.quantity).
+                double linePrice = RegionalPriceLock.linePrice(userPlan);
+                log.info("Setting payment amount to {} from plan {} (quantity {})",
+                        linePrice, paymentPlan.getId(), userPlan.getQuantity());
+                learnerPackageSessionsEnrollDTO.getPaymentInitiationRequest().setAmount(linePrice);
+            }
+            if (RegionalPriceLock.isLocked(userPlan)) {
+                learnerPackageSessionsEnrollDTO.getPaymentInitiationRequest()
+                        .setCurrency(userPlan.getRegionalCurrency());
             }
 
             // Apply the validated coupon discount to whatever base amount we
@@ -146,8 +154,8 @@ public class OneTimePaymentOptionOperation implements PaymentOptionOperationStra
             // the FE-supplied amount is ignored. This is what turns a 10% off
             // coupon on ₹500 into a ₹450 gateway capture.
             Double currentAmount = learnerPackageSessionsEnrollDTO.getPaymentInitiationRequest().getAmount();
-            double discountedAmount = CouponDiscountUtil.applyDiscount(
-                    currentAmount, userPlan.getAppliedCouponDiscount());
+            double discountedAmount = RegionalPriceLock.applyDiscount(
+                    userPlan, currentAmount, userPlan.getAppliedCouponDiscount());
             if (currentAmount != null && Double.compare(currentAmount, discountedAmount) != 0) {
                 log.info("Coupon {} reduced gateway amount {} -> {} on plan {}",
                         userPlan.getAppliedCouponDiscount() != null
@@ -165,10 +173,10 @@ public class OneTimePaymentOptionOperation implements PaymentOptionOperationStra
             // path. No action taken — the BE-derived amount has already won
             // and the gateway will see the correct value.
             //
-            // Multi-package child enrollments (PARENT_PAYMENT_LOG_ID set)
-            // always mismatch by design: each child reuses the parent's
-            // TOTAL amount as feSuppliedAmount but the BE narrows it to the
-            // child plan's price. Suppress so the WARN remains a real signal.
+            // Multi-package child enrollments (PARENT_PAYMENT_LOG_ID set) are
+            // priced by MultiPackageLearnerEnrollService (line total per item),
+            // not by the FE, so the comparison says nothing there. Suppress so
+            // the WARN remains a real signal.
             Double finalAmount = learnerPackageSessionsEnrollDTO.getPaymentInitiationRequest().getAmount();
             boolean isMultiPackageChild = extraData.containsKey("PARENT_PAYMENT_LOG_ID");
             if (!isMultiPackageChild && feSuppliedAmount != null && finalAmount != null
@@ -245,7 +253,7 @@ public class OneTimePaymentOptionOperation implements PaymentOptionOperationStra
             } else {
                 log.info("Initiating payment through PaymentService for user: {}", user.getId());
                 paymentResponseDTO = paymentService.handlePayment(
-                        user,
+                        GatewayCustomerContact.withCheckoutPhone(user, userDTO, extraData),
                         learnerPackageSessionsEnrollDTO,
                         instituteId,
                         enrollInvite,

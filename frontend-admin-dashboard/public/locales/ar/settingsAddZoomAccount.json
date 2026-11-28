@@ -1,0 +1,75 @@
+{
+    "dialog": {
+        "titleCreate": "إضافة حساب Zoom",
+        "titleEdit": "تعديل حساب Zoom",
+        "description": "الصق بيانات اعتماد تطبيق Server-to-Server OAuth من Zoom Marketplace. تطبيق Meeting SDK الخاص بكل حساب اختياري (انظر أدناه). يجب أن تكون التطبيقات ضمن نفس حساب Zoom.",
+        "editWarning": "اترك حقول الأسرار فارغة للاحتفاظ بالقيم الحالية."
+    },
+    "sections": {
+        "s2sCredentials": {
+            "title": "بيانات اعتماد S2S OAuth"
+        },
+        "sdkCredentials": {
+            "title": "بيانات اعتماد Meeting SDK (اختياري)",
+            "description": "اترك الحقل فارغًا لاستخدام تطبيق Meeting SDK مشترك توفره المنصة. بالنسبة لانضمام المتعلمين المجهولين، يجب أن ينتمي تطبيق Meeting SDK إلى نفس حساب Zoom هذا — أضف تطبيق SDK خاصًا بك هنا ما لم تكن منصتك تحتوي على تطبيق مشترك مُهيأ."
+        },
+        "webhook": {
+            "title": "Webhook (اختياري — مطلوب لاحقًا للحضور/التسجيلات)"
+        }
+    },
+    "fields": {
+        "label": {
+            "label": "التسمية",
+            "placeholder": "مثال: حساب الأكاديمية الرئيسي"
+        },
+        "zoomAccountId": {
+            "label": "معرّف حساب Zoom"
+        },
+        "s2sClientId": {
+            "label": "معرّف عميل S2S"
+        },
+        "s2sClientSecret": {
+            "label": "سر عميل S2S"
+        },
+        "sdkClientKey": {
+            "label": "مفتاح عميل SDK"
+        },
+        "sdkClientSecret": {
+            "label": "سر عميل SDK"
+        },
+        "webhookToken": {
+            "label": "رمز التحقق من Webhook",
+            "placeholder": "انسخ من Zoom Marketplace ← تطبيق S2S الخاص بك ← Feature ← Event Subscriptions"
+        },
+        "common": {
+            "leaveBlankToKeepExisting": "اترك الحقل فارغًا للاحتفاظ بالقيمة الحالية"
+        }
+    },
+    "setDefault": {
+        "title": "تعيين كحساب افتراضي",
+        "description": "يتم تحديد الحساب الافتراضي مسبقًا عندما ينشئ المسؤولون اجتماع Zoom جديدًا."
+    },
+    "footer": {
+        "testConnection": "اختبار الاتصال",
+        "cancel": "إلغاء",
+        "addAccount": "إضافة حساب",
+        "saveChanges": "حفظ التغييرات"
+    },
+    "common": {
+        "show": "إظهار",
+        "hide": "إخفاء"
+    },
+    "validation": {
+        "required": "هذا الحقل مطلوب"
+    },
+    "toasts": {
+        "accountAdded": "تمت إضافة حساب Zoom",
+        "accountUpdated": "تم تحديث حساب Zoom",
+        "saveFailed": "فشل حفظ حساب Zoom",
+        "connected": "تم الاتصال باسم {{email}}",
+        "connectedWithPlan": "تم الاتصال باسم {{email}} ({{planType}})",
+        "unknownAccount": "غير معروف",
+        "connectionFailed": "فشل الاتصال",
+        "connectionTestFailed": "فشل اختبار الاتصال"
+    }
+}

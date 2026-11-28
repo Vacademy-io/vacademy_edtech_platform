@@ -1,0 +1,17 @@
+{
+    "previewButton": "Preview Invite",
+    "instituteLogoAlt": "Institute Logo",
+    "courseBannerAlt": "Course Banner",
+    "coursePreviewAlt": "Course Preview Image",
+    "levelLabel": "Level",
+    "learnersGainHeading": "What Learners Will Gain",
+    "aboutCourseHeading": "About the Course",
+    "youtubePlayerTitle": "YouTube video player",
+    "videoNotSupported": "Your browser does not support the video tag.",
+    "registrationHeading": "Registration Details",
+    "registrationSubheading": "Fill in your details to enroll in the course",
+    "phoneNumberLabel": "Phone Number",
+    "phoneNumberPlaceholder": "123 456 7890",
+    "registerButton": "Register",
+    "resetFormButton": "Reset Form"
+}

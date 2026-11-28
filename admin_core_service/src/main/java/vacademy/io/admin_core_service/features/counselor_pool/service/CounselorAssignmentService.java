@@ -7,6 +7,7 @@ import org.springframework.transaction.annotation.Transactional;
 import vacademy.io.admin_core_service.features.audience.entity.Audience;
 import vacademy.io.admin_core_service.features.audience.repository.AudienceRepository;
 import vacademy.io.admin_core_service.features.audience.service.LeadAssignmentNotifier;
+import vacademy.io.admin_core_service.features.auth_service.service.AuthService;
 import vacademy.io.admin_core_service.features.counselor_pool.entity.CounselorPool;
 import vacademy.io.admin_core_service.features.counselor_pool.entity.CounselorPoolAudience;
 import vacademy.io.admin_core_service.features.counselor_pool.entity.CounselorPoolMember;
@@ -41,10 +42,13 @@ import java.util.stream.Collectors;
  *   3. Build the eligible candidate set — ACTIVE pool members only
  *      (TIME_BASED / shift_aware ROUND_ROBIN additionally requires being on
  *      shift right now)
- *   4. Acquire pessimistic lock on counselor_pool_audience
- *   5. Pick next via last_assigned_counselor_id + display_order, resuming
+ *   4. Acquire pessimistic locks on counselor_pool, then counselor_pool_audience
+ *   5. Pick next via the POOL-WIDE last-assigned counselor (latest
+ *      last_assigned_at across the pool's lists) + display_order, resuming
  *      from the last-assigned member's true order even if they've since gone
- *      INACTIVE or off-shift, so a status flip never re-biases the rotation
+ *      INACTIVE or off-shift, so a status flip never re-biases the rotation.
+ *      With unified_rotation_order on, "next" comes from the pool's single
+ *      order (PoolRotationOrder) instead of this list's display_order.
  *   6. Persist pointer update
  *
  * New leads always go to a currently-ACTIVE member chosen by fair rotation —
@@ -74,6 +78,15 @@ public class CounselorAssignmentService {
     private final AudienceRepository audienceRepository;        // for resolving campaign name in alert text
     private final NotificationService notificationService;      // existing helper that wraps notification_service HTTP call
     private final LeadAssignmentNotifier leadAssignmentNotifier; // shared bell-alert sender for ALL assignment paths
+    private final AuthService authService;                      // is the member still allowed into the institute?
+
+    /** How long a "still has access" answer from auth_service is reused before asking again. */
+    private static final long ACCESS_CACHE_TTL_MS = 60_000L;
+
+    private record AccessCheck(boolean hasAccess, long checkedAt) {}
+
+    /** instituteId:userId -> last access answer. One entry per pool member, so it stays small. */
+    private final Map<String, AccessCheck> accessCache = new java.util.concurrent.ConcurrentHashMap<>();
 
     /**
      * Pick a counselor for a lead that just arrived on the given audience.
@@ -85,10 +98,45 @@ public class CounselorAssignmentService {
      */
     @Transactional
     public Optional<String> assignCounselorForLead(String audienceId) {
+        return assignCounselorForLead(audienceId, false);
+    }
+
+    /**
+     * Intake variant: the same rotation, but honours the list's {@code assign_on_intake}
+     * choice. A list set to on-demand (AI-first) returns empty here so the lead arrives
+     * unowned and the CALL_AI node is free to dial it; the plain
+     * {@link #assignCounselorForLead(String)} — what the AI-call outcome processor and the
+     * exhausted-retries hand-off call — still assigns for that list.
+     */
+    @Transactional
+    public Optional<String> assignCounselorOnIntake(String audienceId) {
+        return assignCounselorForLead(audienceId, true, Set.of());
+    }
+
+    /**
+     * Intake rotation that passes over {@code skipCounselorIds} (a discarded lead's earlier
+     * owner, when it enquires again). When nobody else is eligible the skipped counselors are
+     * picked as usual, so the lead never arrives unowned just because of the skip.
+     */
+    @Transactional
+    public Optional<String> assignCounselorOnIntake(String audienceId, Set<String> skipCounselorIds) {
+        return assignCounselorForLead(audienceId, true, skipCounselorIds == null ? Set.of() : skipCounselorIds);
+    }
+
+    private Optional<String> assignCounselorForLead(String audienceId, boolean intake) {
+        return assignCounselorForLead(audienceId, intake, Set.of());
+    }
+
+    private Optional<String> assignCounselorForLead(String audienceId, boolean intake,
+                                                    Set<String> skipCounselorIds) {
         // Step 1: resolve the pool
         Optional<CounselorPoolAudience> poolAudienceOpt = poolAudienceRepository.findByAudienceId(audienceId);
         if (poolAudienceOpt.isEmpty()) {
             return Optional.empty(); // Audience isn't in any pool — nothing to do.
+        }
+        if (intake && Boolean.FALSE.equals(poolAudienceOpt.get().getAssignOnIntake())) {
+            log.info("Audience {} is on-demand (assign_on_intake=false) — leaving the new lead unassigned", audienceId);
+            return Optional.empty();
         }
         String poolId = poolAudienceOpt.get().getPoolId();
 
@@ -120,14 +168,23 @@ public class CounselorAssignmentService {
             sendUnassignedAlertToPoolAdmin(pool, audienceId);
             return Optional.empty();
         }
-        List<CounselorPoolMember> candidates = filterEligibleCandidates(pool, allMembers, mode);
-        if (candidates.isEmpty()) {
+        List<CounselorPoolMember> eligible = filterEligibleCandidates(pool, allMembers, mode);
+        if (eligible.isEmpty()) {
             log.info("No ACTIVE (eligible) counselors for audience={} in pool={}", audienceId, poolId);
             sendUnassignedAlertToPoolAdmin(pool, audienceId);
             return Optional.empty();
         }
+        List<CounselorPoolMember> others = skipCounselorIds.isEmpty() ? eligible : eligible.stream()
+                .filter(m -> m.getCounselorUserId() == null || !skipCounselorIds.contains(m.getCounselorUserId()))
+                .toList();
+        List<CounselorPoolMember> candidates = others.isEmpty() ? eligible : others;
 
-        // Step 4: pessimistic lock on the audience row (serializes concurrent assignments for same audience)
+        // Step 4: pessimistic locks — pool row first (serializes assignments across every list of
+        // the pool, so the pool-wide pointer below can't be read by two leads at once), then the
+        // audience row. Always pool → audience, so concurrent assignments can't deadlock.
+        if (poolRepository.findByIdForUpdate(poolId).isEmpty()) {
+            return Optional.empty(); // Race: pool deleted after resolution. Transient — no alert.
+        }
         CounselorPoolAudience locked = poolAudienceRepository.findByAudienceIdForUpdate(audienceId)
                 .orElse(null);
         if (locked == null) {
@@ -137,7 +194,11 @@ public class CounselorAssignmentService {
 
         // Step 5: pick the next ACTIVE member by rotation. picked is always eligible — no backup
         // redirection needed for routing a new lead.
-        CounselorPoolMember picked = pickNext(candidates, allMembers, locked.getLastAssignedCounselorId());
+        Optional<CounselorPoolMember> inPoolOrder = Boolean.TRUE.equals(pool.getUnifiedRotationOrder())
+                ? pickNextInPoolOrder(poolId, candidates)
+                : Optional.empty();
+        CounselorPoolMember picked = inPoolOrder.orElseGet(() -> pickNext(candidates, allMembers,
+                resolveRotationPointer(poolId, allMembers, locked.getLastAssignedCounselorId())));
 
         // Step 6: persist pointer as the actual recipient.
         poolAudienceRepository.updateLastAssigned(
@@ -223,9 +284,14 @@ public class CounselorAssignmentService {
     private List<CounselorPoolMember> filterEligibleCandidates(CounselorPool pool,
                                                                 List<CounselorPoolMember> allMembers,
                                                                 AssignmentMode mode) {
-        List<CounselorPoolMember> activeMembers = allMembers.stream()
+        List<CounselorPoolMember> activeInPool = allMembers.stream()
                 .filter(m -> PoolStatus.ACTIVE.name().equals(m.getStatus()))
                 .toList();
+        // ACTIVE in the pool is not enough: the person must still have access to the
+        // institute. Someone disabled or deleted in Institute → Teams (including before the
+        // pool rows were synced on disable) no longer gets new leads.
+        List<CounselorPoolMember> activeMembers =
+                keepMembersWithInstituteAccess(pool.getInstituteId(), activeInPool);
 
         // Shift-gating applies to TIME_BASED always, and to ROUND_ROBIN only when
         // the pool opted in via shift_aware. A plain ROUND_ROBIN pool
@@ -259,9 +325,115 @@ public class CounselorAssignmentService {
                 .toList();
     }
 
+    /**
+     * Drops members who hold no ACTIVE role in the institute any more (disabled, deleted or
+     * invite cancelled in Institute → Teams). Answers are cached for a minute, so busy pools
+     * add at most one auth_service call per minute. When auth_service cannot answer, the
+     * last known answer is used, and members never checked yet stay in rotation: an outage
+     * must not leave every new lead unassigned.
+     */
+    private List<CounselorPoolMember> keepMembersWithInstituteAccess(String instituteId,
+                                                                      List<CounselorPoolMember> members) {
+        if (members.isEmpty() || authService == null || instituteId == null || instituteId.isBlank()) {
+            return members;
+        }
+        long now = System.currentTimeMillis();
+        List<String> toCheck = members.stream()
+                .map(CounselorPoolMember::getCounselorUserId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .filter(id -> {
+                    AccessCheck c = accessCache.get(accessKey(instituteId, id));
+                    return c == null || now - c.checkedAt() >= ACCESS_CACHE_TTL_MS;
+                })
+                .toList();
+        if (!toCheck.isEmpty()) {
+            Map<String, List<String>> roles = authService.getActiveInstituteRolesOrNull(instituteId, toCheck);
+            if (roles == null) {
+                log.warn("Could not check institute access for {} pool member(s) in institute {}; "
+                        + "using last known answers", toCheck.size(), instituteId);
+            } else {
+                for (String id : toCheck) {
+                    List<String> held = roles.get(id);
+                    accessCache.put(accessKey(instituteId, id),
+                            new AccessCheck(held != null && !held.isEmpty(), now));
+                }
+            }
+        }
+        List<CounselorPoolMember> kept = new ArrayList<>(members.size());
+        for (CounselorPoolMember m : members) {
+            AccessCheck c = m.getCounselorUserId() == null ? null
+                    : accessCache.get(accessKey(instituteId, m.getCounselorUserId()));
+            if (c == null || c.hasAccess()) {
+                kept.add(m);
+            } else {
+                log.info("Skipping pool member {} in pool {}: no active role in institute {}",
+                        m.getCounselorUserId(), m.getPoolId(), instituteId);
+            }
+        }
+        return kept;
+    }
+
+    private static String accessKey(String instituteId, String userId) {
+        return instituteId + ":" + userId;
+    }
+
     // ────────────────────────────────────────────────────────────────
     // Pointer-based rotation
     // ────────────────────────────────────────────────────────────────
+
+    /**
+     * Pools with {@code unified_rotation_order} on: the first candidate after the pool's
+     * last-assigned counselor in the pool's single rotation order ({@link PoolRotationOrder}),
+     * wrapping around. A list's own {@code display_order} can drift from the others, and reading
+     * "next" from it skipped some counselors indefinitely. INACTIVE / off-shift rows still hold
+     * their place in the order, so a status flip never re-biases the rotation. Empty when the
+     * pool has no assignment yet or the last-assigned counselor has left the pool; the caller
+     * then falls back to the per-list rotation.
+     */
+    private Optional<CounselorPoolMember> pickNextInPoolOrder(String poolId,
+                                                              List<CounselorPoolMember> candidates) {
+        String poolPointer = poolAudienceRepository
+                .findFirstByPoolIdAndLastAssignedAtIsNotNullOrderByLastAssignedAtDesc(poolId)
+                .map(CounselorPoolAudience::getLastAssignedCounselorId)
+                .orElse(null);
+        if (poolPointer == null) {
+            return Optional.empty();
+        }
+        List<String> order = PoolRotationOrder.canonical(poolMemberRepository.findByPoolId(poolId));
+        int pointerIndex = order.indexOf(poolPointer);
+        if (pointerIndex < 0) {
+            return Optional.empty();
+        }
+        Map<String, CounselorPoolMember> candidateById = candidates.stream()
+                .collect(Collectors.toMap(CounselorPoolMember::getCounselorUserId, m -> m, (a, b) -> a));
+        for (int step = 1; step <= order.size(); step++) {
+            CounselorPoolMember next = candidateById.get(order.get((pointerIndex + step) % order.size()));
+            if (next != null) {
+                return Optional.of(next);
+            }
+        }
+        return Optional.empty();
+    }
+
+    /**
+     * Whose turn it was last. The rotation is pool-wide: the counselor who got the pool's most
+     * recent lead on ANY list, as long as they're also a member of this list. A per-list pointer
+     * alone never advances on a pool of many low-volume lists — each list's first lead goes to the
+     * top of the order, so one counselor gets every lead. Falls back to this list's own pointer
+     * when the pool-wide one isn't on this list (lists with different member sets).
+     */
+    private String resolveRotationPointer(String poolId,
+                                          List<CounselorPoolMember> allMembers,
+                                          String listPointer) {
+        String poolPointer = poolAudienceRepository
+                .findFirstByPoolIdAndLastAssignedAtIsNotNullOrderByLastAssignedAtDesc(poolId)
+                .map(CounselorPoolAudience::getLastAssignedCounselorId)
+                .orElse(null);
+        boolean onThisList = poolPointer != null && allMembers.stream()
+                .anyMatch(m -> poolPointer.equals(m.getCounselorUserId()));
+        return onThisList ? poolPointer : listPointer;
+    }
 
     /**
      * Pick the next counselor based on display_order and the last-assigned pointer.

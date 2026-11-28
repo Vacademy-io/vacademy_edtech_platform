@@ -1,0 +1,54 @@
+{
+    "heading": "AI Credit Usage by User",
+    "description": "Credits consumed per member in the selected period (net of refunds). Pick a member to see their detailed activity — including the prompts they sent and the AI's answers.",
+    "roleTabs": {
+        "all": "All"
+    },
+    "search": {
+        "placeholder": "Search by name or email…"
+    },
+    "common": {
+        "name": "Name",
+        "email": "Email",
+        "role": "Role",
+        "creditsUsed": "Credits used",
+        "requests": "Requests"
+    },
+    "table": {
+        "activity": "Activity",
+        "viewLogs": "View logs"
+    },
+    "export": {
+        "button": "Export to Excel",
+        "loading": "Exporting…",
+        "sheets": {
+            "summary": "Summary",
+            "activityLog": "Activity Log",
+            "chatSessions": "Chat Sessions",
+            "chatMessages": "Chat Messages"
+        },
+        "headers": {
+            "when": "When",
+            "tool": "Tool",
+            "model": "Model",
+            "credits": "Credits",
+            "detail": "Detail",
+            "started": "Started",
+            "lastActive": "Last active",
+            "context": "Context",
+            "mode": "Mode",
+            "status": "Status",
+            "messages": "Messages",
+            "firstMessage": "First message",
+            "session": "Session",
+            "sender": "Sender",
+            "message": "Message"
+        }
+    },
+    "sender": {
+        "learner": "Learner",
+        "ai": "AI",
+        "toolCall": "Tool call",
+        "toolResult": "Tool result"
+    }
+}

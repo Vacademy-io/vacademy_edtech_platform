@@ -5,10 +5,12 @@ import {
     handleFetchCampaignUsers,
 } from '../-services/get-campaign-users';
 
-export const useCampaignUsers = (payload: CampaignLeadsRequest) => {
+export const useCampaignUsers = (
+    payload: CampaignLeadsRequest,
+    options?: { enabled?: boolean }
+) => {
     return useQuery<CampaignLeadsResponse>({
         ...handleFetchCampaignUsers(payload),
-        enabled: !!payload.audience_id,
+        enabled: !!payload.audience_id && (options?.enabled ?? true),
     });
 };
-

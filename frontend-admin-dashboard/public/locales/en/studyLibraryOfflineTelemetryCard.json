@@ -1,0 +1,59 @@
+{
+    "header": {
+        "title": "Offline Downloads",
+        "reviewDiscrepancies": "Review sync discrepancies"
+    },
+    "states": {
+        "loading": "Loading…",
+        "loadFailed": "Couldn't load offline downloads for this batch.",
+        "noDownloads": "No learner has downloaded content from this batch yet."
+    },
+    "actions": {
+        "tryAgain": "Try again",
+        "revokeAccess": "Revoke access",
+        "revoking": "Revoking…",
+        "cancel": "Cancel",
+        "close": "Close"
+    },
+    "table": {
+        "learner": "Learner",
+        "username": "Username",
+        "email": "Email",
+        "device": "Device",
+        "downloaded": "Downloaded",
+        "validTill": "Valid till",
+        "deviceFallback": "Device",
+        "itemCount_one": "{{count}} item",
+        "itemCount_other": "{{count}} items"
+    },
+    "status": {
+        "active": "Active",
+        "revoked": "Revoked"
+    },
+    "revoke": {
+        "reason": "Revoked from course downloads",
+        "dialogHeading": "Revoke offline access?",
+        "thisLearner": "This learner",
+        "thisDevice": "this device",
+        "confirmationText": "{{learnerName}} will lose offline access on {{deviceName}}, and the content downloaded there will be deleted the next time it connects. They can download again if you re-enable access."
+    },
+    "toast": {
+        "revokeSuccess": "Offline access revoked",
+        "revokeFailed": "Could not revoke offline access — please try again"
+    },
+    "discrepancy": {
+        "dialogHeading": "Offline Sync Discrepancies",
+        "explainer": "When a learner answers a quiz or question offline, their device scores it on the spot. We score it again once the device reconnects. These are the answers where the two scores disagreed — the server's score is the one that counts, and it has already been saved.",
+        "noOpenDiscrepancies": "No open discrepancies for this batch.",
+        "loadFailed": "Failed to load discrepancies",
+        "updateFailed": "Failed to update discrepancy",
+        "markedReviewed": "Marked as reviewed",
+        "markReviewed": "Mark reviewed",
+        "table": {
+            "field": "Field",
+            "clientValue": "Client value",
+            "serverValue": "Server value",
+            "created": "Created"
+        }
+    }
+}

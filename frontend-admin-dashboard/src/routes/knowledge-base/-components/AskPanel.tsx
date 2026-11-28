@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 import { ArrowRight, ChatCircleDots, Quotes, Sparkle, Spinner } from '@phosphor-icons/react';
 import { MyButton } from '@/components/design-system/button';
 import { Card } from '@/components/ui/card';
@@ -29,6 +30,7 @@ interface Turn {
  * was read correctly before courses and question papers get built on top of it.
  */
 export const AskPanel = ({ kbId, kbName, suggestions = [], hasContent }: AskPanelProps) => {
+    const { t } = useTranslation('knowledgeBaseAskPanel');
     const [question, setQuestion] = useState('');
     const [turns, setTurns] = useState<Turn[]>([]);
     const ask = useAskKnowledgeBase(kbId);
@@ -63,12 +65,12 @@ export const AskPanel = ({ kbId, kbName, suggestions = [], hasContent }: AskPane
                 error as { response?: { status?: number; data?: { detail?: unknown } } }
             )?.response;
             const detail = response?.data?.detail;
-            let message = 'Could not answer that. Please try again.';
+            let message = t('errors.default');
             if (response?.status === 402) {
                 message =
                     typeof detail === 'object' && detail !== null && 'message' in detail
                         ? String((detail as { message: unknown }).message)
-                        : 'Not enough credits.';
+                        : t('errors.insufficientCredits');
                 toast.error(message);
             }
             setTurns((prev) => prev.map((t, i) => (i === index ? { ...t, error: message } : t)));
@@ -79,9 +81,7 @@ export const AskPanel = ({ kbId, kbName, suggestions = [], hasContent }: AskPane
         return (
             <Card className="flex flex-col items-center gap-2 p-8 text-center">
                 <ChatCircleDots className="size-6 text-neutral-300" />
-                <p className="text-body text-neutral-500">
-                    Add a document first, then ask questions here to check what the AI understood.
-                </p>
+                <p className="text-body text-neutral-500">{t('emptyState.noContent')}</p>
             </Card>
         );
     }
@@ -93,10 +93,10 @@ export const AskPanel = ({ kbId, kbName, suggestions = [], hasContent }: AskPane
                     <Sparkle className="mt-0.5 size-5 shrink-0 text-primary-500" />
                     <div className="min-w-0">
                         <p className="text-subtitle font-semibold text-neutral-700">
-                            Ask this knowledge base
+                            {t('title')}
                         </p>
                         <p className="break-words text-caption text-neutral-500">
-                            Answers come only from {kbName}, with the page they came from.
+                            {t('subtitle', { kbName })}
                         </p>
                     </div>
                 </div>
@@ -107,7 +107,7 @@ export const AskPanel = ({ kbId, kbName, suggestions = [], hasContent }: AskPane
                         onClick={() => setTurns([])}
                         disable={ask.isPending}
                     >
-                        Clear
+                        {t('actions.clear')}
                     </MyButton>
                 )}
             </div>
@@ -115,10 +115,7 @@ export const AskPanel = ({ kbId, kbName, suggestions = [], hasContent }: AskPane
             <div ref={scrollRef} className="max-h-96 min-w-0 overflow-y-auto p-4">
                 {turns.length === 0 && (
                     <div className="flex flex-col gap-3">
-                        <p className="text-caption text-neutral-500">
-                            Try asking something you already know the answer to — it is the quickest
-                            way to tell whether the material was read properly.
-                        </p>
+                        <p className="text-caption text-neutral-500">{t('emptyState.prompt')}</p>
                         {suggestions.length > 0 && (
                             <div className="flex flex-wrap gap-2">
                                 {suggestions.slice(0, 3).map((s) => (
@@ -149,7 +146,7 @@ export const AskPanel = ({ kbId, kbName, suggestions = [], hasContent }: AskPane
                             {!turn.response && !turn.error && (
                                 <p className="flex items-center gap-2 text-body text-neutral-500">
                                     <Spinner className="size-4 animate-spin" />
-                                    Looking through the material…
+                                    {t('status.searching')}
                                 </p>
                             )}
 
@@ -165,7 +162,7 @@ export const AskPanel = ({ kbId, kbName, suggestions = [], hasContent }: AskPane
 
                                     {!turn.response.grounded && (
                                         <p className="text-caption text-warning-600">
-                                            Nothing in this knowledge base covered that.
+                                            {t('status.notGrounded')}
                                         </p>
                                     )}
 
@@ -173,7 +170,7 @@ export const AskPanel = ({ kbId, kbName, suggestions = [], hasContent }: AskPane
                                         <div className="flex flex-col gap-2 rounded-md border border-neutral-200 bg-neutral-50 p-3">
                                             <p className="flex items-center gap-1.5 text-caption font-semibold text-neutral-600">
                                                 <Quotes className="size-3.5" />
-                                                From your material
+                                                {t('citations.heading')}
                                             </p>
                                             {turn.response.citations.map((c, ci) => (
                                                 <div
@@ -200,7 +197,7 @@ export const AskPanel = ({ kbId, kbName, suggestions = [], hasContent }: AskPane
                                                                         alt={
                                                                             f.caption ||
                                                                             f.alt_text ||
-                                                                            'Figure from the source'
+                                                                            t('citations.figureAlt')
                                                                         }
                                                                         className="h-20 w-auto max-w-full rounded border border-neutral-200 bg-white object-contain"
                                                                     />
@@ -247,8 +244,8 @@ export const AskPanel = ({ kbId, kbName, suggestions = [], hasContent }: AskPane
                         }
                     }}
                     rows={2}
-                    placeholder="Ask anything from this material…"
-                    aria-label="Your question"
+                    placeholder={t('input.placeholder')}
+                    aria-label={t('input.ariaLabel')}
                     className="flex-1 resize-none rounded-md border border-neutral-300 px-3 py-2 text-body focus:border-primary-300 focus:outline-none focus:ring-1 focus:ring-primary-100"
                 />
                 <MyButton
@@ -257,7 +254,7 @@ export const AskPanel = ({ kbId, kbName, suggestions = [], hasContent }: AskPane
                     onClick={() => void submit(question)}
                     disable={ask.isPending || !question.trim()}
                 >
-                    {ask.isPending ? 'Asking…' : 'Ask'}
+                    {ask.isPending ? t('actions.asking') : t('actions.ask')}
                 </MyButton>
             </div>
         </Card>

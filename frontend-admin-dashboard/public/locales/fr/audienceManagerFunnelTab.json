@@ -1,0 +1,41 @@
+{
+    "kpi": {
+        "medianDaysToConvert": {
+            "label": "Jours médians jusqu'à la conversion",
+            "sub": "De la première activité à la conversion, pour les leads gagnés sur cette période"
+        },
+        "conversionRate": {
+            "label": "Taux de conversion",
+            "sub": "Gagnés sur la période ÷ soumis sur la période"
+        }
+    },
+    "section": {
+        "title": "Entonnoir des étapes"
+    },
+    "emptyHint": "Aucune activité d'étape sur cette période.",
+    "csv": {
+        "headers": {
+            "stage": "Étape",
+            "entered": "Entrées",
+            "inStageNow": "Dans l'étape actuellement",
+            "medianDaysInStage": "Jours médians dans l'étape",
+            "advanced": "Avancées",
+            "advancedPct": "Avancées %",
+            "regressed": "Reculs"
+        }
+    },
+    "table": {
+        "headers": {
+            "stage": "Étape",
+            "entered": "Entrées",
+            "inStageNow": "Dans l'étape actuellement",
+            "medianDays": "Jours médians",
+            "advancedPct": "Avancées %",
+            "regressed": "Reculs"
+        }
+    },
+    "stageBar": {
+        "nowSuffix": "· {{value}} actuellement"
+    },
+    "footnote": "Jours médians = temps passé dans l'étape pour les séjours démarrés sur cette période. Avancées / Reculs = passages à une étape ultérieure / antérieure dans votre ordre de statuts."
+}

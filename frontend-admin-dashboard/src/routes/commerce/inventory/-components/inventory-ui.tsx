@@ -1,0 +1,397 @@
+import { type ReactNode, useCallback, useEffect, useState } from 'react';
+import type { TFunction } from 'i18next';
+import { useTranslation } from 'react-i18next';
+import { CheckCircle, CircleNotch, WarningCircle } from '@phosphor-icons/react';
+import { MyButton } from '@/components/design-system/button';
+import { MyDialog } from '@/components/design-system/dialog';
+import { cn } from '@/lib/utils';
+import { PlainSelect } from '@/routes/commerce/-components/CatalogueBits';
+import { DialogButtons, OrderNotice } from '@/routes/commerce/orders/-components/order-ui';
+import { formatQuantity } from '@/routes/commerce/orders/-shared/order-format';
+import { type InventoryError, inventoryErrorKey, readInventoryError } from '../-shared/inventory-errors';
+import type { InventoryLocation, LabelRow } from '../-shared/inventory-types';
+import { labelQuantity } from '../-shared/label-print';
+import { boxProblemText, lengthProblemText, parseLength, typedBoxProblem, unitWord } from '@/routes/commerce/-shared/units';
+
+/**
+ * Small pieces the inventory screens share: the error sentence, an item cell,
+ * a quantity, the "pick one place" card, a confirm dialog and a line's save
+ * state.
+ */
+
+/** The mapped sentence of an inventory error (with its SKU or count filled in). */
+export function useInventoryErrorText() {
+    const { t } = useTranslation('commerce');
+    return useCallback(
+        (error: unknown) => {
+            const read = readInventoryError(error);
+            return t(inventoryErrorKey(read), {
+                ...read.values,
+                amount: read.amount ?? '',
+                minutes: read.retryAfterSeconds ? Math.ceil(read.retryAfterSeconds / 60) : 1,
+            });
+        },
+        [t]
+    );
+}
+
+export function InventoryErrorNotice({ error, className }: { error: unknown; className?: string }) {
+    const text = useInventoryErrorText();
+    if (!error) return null;
+    const read: InventoryError = readInventoryError(error);
+    return (
+        <OrderNotice tone="danger" className={className}>
+            <p>{text(read)}</p>
+            {read.showServerSentence && read.message && (
+                <p className="text-caption text-muted-foreground">{read.message}</p>
+            )}
+        </OrderNotice>
+    );
+}
+
+const sameCode = (a: string | null | undefined, b: string | null | undefined) =>
+    !!a && !!b && a.trim().toLowerCase() === b.trim().toLowerCase();
+
+/**
+ * The non-empty parts, each once (case and spaces ignored): ["BAG-1", "BAG-1"]
+ * → ["BAG-1"]. For "variant · SKU" lines, where an unnamed variant is its SKU.
+ */
+export const distinctParts = (parts: (string | null | undefined)[]): string[] =>
+    parts.filter((part, index): part is string => !!part && parts.findIndex((other) => sameCode(other, part)) === index);
+
+/**
+ * The lines under an item's name: the variant, then the SKU and a piece code.
+ * A variant saved without a name is named after its SKU, and a label code can
+ * equal the SKU, so a line that only repeats what is already shown is left out.
+ */
+export function itemCellLines({
+    name,
+    variant,
+    sku,
+    code,
+}: {
+    name: string | null | undefined;
+    variant?: string | null;
+    sku?: string | null;
+    code?: string | null;
+}): { title: string; variant: string | null; codes: string } {
+    const title = name || sku || '—';
+    const shownVariant = variant && !sameCode(variant, sku) && !sameCode(variant, title) ? variant : null;
+    const shownSku = sku && !sameCode(sku, title) ? sku : null;
+    const shownCode = code && !sameCode(code, sku) && !sameCode(code, title) ? code : null;
+    return { title, variant: shownVariant, codes: [shownSku, shownCode].filter(Boolean).join(' · ') };
+}
+
+/** Name, variant and SKU (and a piece code) of an item, stacked; each line shown once. */
+export function ItemCell(props: {
+    name: string | null | undefined;
+    variant?: string | null;
+    sku?: string | null;
+    code?: string | null;
+}) {
+    const lines = itemCellLines(props);
+    return (
+        <div className="flex min-w-0 flex-col">
+            {/* A long name is cut with an ellipsis; the title shows it whole on hover. */}
+            <span className="truncate text-body text-foreground" title={lines.title}>
+                {lines.title}
+            </span>
+            {lines.variant && (
+                <span className="truncate text-caption text-muted-foreground" title={lines.variant}>
+                    {lines.variant}
+                </span>
+            )}
+            {lines.codes && (
+                <span className="truncate text-caption text-muted-foreground" title={lines.codes}>
+                    {lines.codes}
+                </span>
+            )}
+        </div>
+    );
+}
+
+/** A column heading over numbers: right-aligned like the numbers under it. */
+export function NumberHeader({ label }: { label: string }) {
+    return <span className="block text-end">{label}</span>;
+}
+
+export function Qty({
+    qty,
+    scale,
+    unit,
+    className,
+}: {
+    qty: number | null | undefined;
+    scale: number;
+    unit?: string | null;
+    className?: string;
+}) {
+    const { t } = useTranslation('commerce');
+    return (
+        <span className={cn('tabular-nums', className)}>
+            {qty === null || qty === undefined ? '—' : formatQuantity(qty, scale, unit, t)}
+        </span>
+    );
+}
+
+/** A label row's count: "×1200", or "×1200 · 1000 printed" while it prints in rounds. */
+export function LabelQuantity({ row }: { row: Pick<LabelRow, 'quantity' | 'original_quantity' | 'printed_quantity' | 'status'> }) {
+    const { t } = useTranslation('commerce');
+    const { total, printed } = labelQuantity(row);
+    return (
+        <span className="tabular-nums" data-testid="label-quantity">
+            ×{total}
+            {printed !== null && ` · ${t('inventory.labels.printedSoFar', { count: printed })}`}
+        </span>
+    );
+}
+
+/**
+ * The unit after a measured quantity: metres in the admin's words ("m" /
+ * "मीटर"), any other code as its short sign ("kg"), never a raw code ("MTR").
+ */
+export const qtyUnit = (unit: string | null | undefined, t: TFunction): string | null => unitWord(unit, t);
+
+/** A tab that works at one place, when "All my locations" is chosen. */
+export function NeedOneLocation({
+    places,
+    onPick,
+}: {
+    places: InventoryLocation[];
+    onPick: (id: string) => void;
+}) {
+    const { t } = useTranslation('commerce');
+    return (
+        <div className="flex flex-col gap-3 rounded-lg border border-dashed border-border p-6">
+            <p className="text-body text-foreground">{t('inventory.location.pickOne')}</p>
+            <PlainSelect
+                className="max-w-sm"
+                label={t('inventory.location.label')}
+                value=""
+                onChange={(id) => id && onPick(id)}
+                options={places.map((p) => ({ value: p.id, label: `${p.code} · ${p.name}` }))}
+            />
+        </div>
+    );
+}
+
+/** A yes/no question before an action that cannot be undone. */
+export function ConfirmDialog({
+    open,
+    onOpenChange,
+    heading,
+    children,
+    confirmLabel,
+    onConfirm,
+    danger,
+}: {
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+    heading: string;
+    children: ReactNode;
+    confirmLabel: string;
+    onConfirm: () => Promise<void>;
+    danger?: boolean;
+}) {
+    const [error, setError] = useState<unknown>(null);
+    useEffect(() => {
+        if (open) setError(null);
+    }, [open]);
+    return (
+        <MyDialog
+            heading={heading}
+            open={open}
+            onOpenChange={onOpenChange}
+            dialogWidth="max-w-md"
+            footer={
+                <DialogButtons onCancel={() => onOpenChange(false)}>
+                    <MyButton
+                        type="button"
+                        buttonType="primary"
+                        scale="medium"
+                        className={cn(TOUCH, danger && 'bg-danger-600 hover:bg-danger-600')}
+                        onAsyncClick={async () => {
+                            setError(null);
+                            try {
+                                await onConfirm();
+                                onOpenChange(false);
+                            } catch (e) {
+                                setError(e);
+                            }
+                        }}
+                    >
+                        {confirmLabel}
+                    </MyButton>
+                </DialogButtons>
+            }
+        >
+            <div className="flex flex-col gap-3 text-body text-foreground">
+                {children}
+                <InventoryErrorNotice error={error} />
+            </div>
+        </MyDialog>
+    );
+}
+
+export type SaveState = 'saved' | 'saving' | 'failed';
+
+/** "Saved / Saving / Not saved, retry" next to a count line. */
+export function SaveStateMark({ state, onRetry }: { state: SaveState; onRetry?: () => void }) {
+    const { t } = useTranslation('commerce');
+    if (state === 'saving') {
+        return (
+            <span className="flex items-center gap-1 text-caption text-muted-foreground" role="status">
+                <CircleNotch size={14} className="animate-spin" />
+                {t('inventory.save.saving')}
+            </span>
+        );
+    }
+    if (state === 'failed') {
+        return (
+            <button
+                type="button"
+                onClick={onRetry}
+                className="flex min-h-12 items-center gap-1 text-caption text-danger-600 underline md:min-h-0"
+            >
+                <WarningCircle size={14} weight="fill" />
+                {t('inventory.save.failed')}
+            </button>
+        );
+    }
+    return (
+        <span className="flex items-center gap-1 text-caption text-success-600">
+            <CheckCircle size={14} weight="fill" />
+            {t('inventory.save.saved')}
+        </span>
+    );
+}
+
+/** A place's name for a list ("WH1 · Main warehouse"), else its id. */
+export const placeLabel = (
+    place: { code?: string | null; name?: string | null; id?: string } | null | undefined
+): string => {
+    if (!place) return '—';
+    const parts = [place.code, place.name].filter(Boolean);
+    return parts.length ? parts.join(' · ') : (place.id ?? '—');
+};
+
+/** Today's date as YYYY-MM-DD, and the same a number of days ago. */
+export function isoDaysAgo(days: number, now: Date = new Date()): string {
+    const d = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
+    const two = (n: number) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${two(d.getMonth() + 1)}-${two(d.getDate())}`;
+}
+
+/** 48 px buttons: the floor works on tablets and phones. */
+export const TOUCH = 'h-12';
+
+/** A required choice as large radio buttons (no default unless `value` has one). */
+export function ChoiceGroup<V extends string>({
+    label,
+    value,
+    options,
+    onChange,
+    name,
+    columns = 2,
+}: {
+    label: string;
+    value: V | null;
+    options: { value: V; label: string; hint?: string }[];
+    onChange: (value: V) => void;
+    name: string;
+    columns?: 1 | 2 | 3;
+}) {
+    return (
+        <fieldset className="flex min-w-0 flex-col gap-1.5">
+            <legend className="mb-1.5 text-caption text-muted-foreground">{label}</legend>
+            <div
+                className={cn(
+                    'grid grid-cols-1 gap-2',
+                    columns === 2 && 'sm:grid-cols-2',
+                    columns === 3 && 'sm:grid-cols-3'
+                )}
+            >
+                {options.map((option) => {
+                    const checked = option.value === value;
+                    return (
+                        <label
+                            key={option.value}
+                            className={cn(
+                                'flex min-h-12 cursor-pointer items-start gap-2 rounded-md border p-3 text-body',
+                                checked ? 'border-primary-500 bg-primary-50' : 'border-neutral-300 hover:border-primary-200'
+                            )}
+                        >
+                            <input
+                                type="radio"
+                                name={name}
+                                value={option.value}
+                                checked={checked}
+                                onChange={() => onChange(option.value)}
+                                className="mt-1 size-4 shrink-0 accent-primary-500"
+                            />
+                            <span className="flex flex-col">
+                                <span className="text-foreground">{option.label}</span>
+                                {option.hint && <span className="text-caption text-muted-foreground">{option.hint}</span>}
+                            </span>
+                        </label>
+                    );
+                })}
+            </div>
+        </fieldset>
+    );
+}
+
+/**
+ * A number typed in display units (2.5 m), read back to base units; null when
+ * it is not a number or has more decimals than the scale allows ("2.55" at
+ * scale 10 is refused, never rounded).
+ */
+export function parseDisplayQuantity(text: string, scale: number): number | null {
+    const parsed = parseLength(text, scale);
+    return 'stored' in parsed ? parsed.stored : null;
+}
+
+/**
+ * The sentence under a length box when the typed text is refused (nothing while
+ * it is fine or untouched). With `range` a blank box and a quantity outside it
+ * are said too: those boxes stop Save (WP-44 W5).
+ */
+export function LengthProblem({
+    text,
+    scale,
+    id,
+    range,
+}: {
+    text: string | undefined;
+    scale: number;
+    id?: string;
+    range?: { min: number; max?: number; text: string };
+}) {
+    const { t } = useTranslation('commerce');
+    let sentence: string | null = null;
+    if (range) {
+        const problem = typedBoxProblem(text, scale, range);
+        sentence = problem ? boxProblemText(problem, scale, t, range.text) : null;
+    } else if (text !== undefined && text.trim() !== '') {
+        const parsed = parseLength(text, scale);
+        sentence = 'problem' in parsed ? lengthProblemText(parsed.problem, scale, t) : null;
+    }
+    if (!sentence) return null;
+    return (
+        <span id={id} role="alert" className="text-caption text-danger-600">
+            {sentence}
+        </span>
+    );
+}
+
+/** The problem sentence of a typed length for a dialog's error line (null when it parses). */
+export function typedLengthProblem(text: string, scale: number, t: TFunction): string | null {
+    const parsed = parseLength(text, scale);
+    return 'problem' in parsed ? lengthProblemText(parsed.problem, scale, t) : null;
+}
+
+/** A collection's name in the admin's language, else any name it has. */
+export const collectionName = (
+    c: { id: string; slug?: string | null; name_i18n?: Record<string, string> | null },
+    lang: 'hi' | 'en'
+): string => c.name_i18n?.[lang] || c.name_i18n?.en || c.name_i18n?.hi || c.slug || c.id;

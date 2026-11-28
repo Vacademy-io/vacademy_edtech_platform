@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { MyButton } from '@/components/design-system/button';
 import {
     Dialog,
@@ -52,11 +53,12 @@ export function RegenerateSlideDialog({
     onConfirm,
     promptRef,
 }: RegenerateSlideDialogProps) {
+    const { t } = useTranslation('studyLibraryCourseGenerationDialogs');
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="flex max-h-[90vh] w-[95vw] max-w-[95vw] flex-col p-0 sm:w-[80vw] sm:max-w-[80vw]">
                 <DialogHeader className="shrink-0 border-b px-6 pb-4 pt-6">
-                    <DialogTitle>Regenerate Page</DialogTitle>
+                    <DialogTitle>{t('regenerateSlideDialog.title')}</DialogTitle>
                 </DialogHeader>
                 <div className="flex-1 space-y-4 overflow-y-auto px-6 py-4 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                     <div>
@@ -64,14 +66,14 @@ export function RegenerateSlideDialog({
                             ref={promptRef}
                             value={prompt}
                             onChange={(e) => onPromptChange(e.target.value)}
-                            placeholder="Enter a prompt describing how you want this page to be regenerated..."
+                            placeholder={t('regenerateSlideDialog.promptPlaceholder')}
                             className="min-h-[150px] text-sm"
                         />
                     </div>
                 </div>
                 <div className="flex shrink-0 justify-end border-t px-6 py-4">
                     <MyButton buttonType="primary" onClick={onConfirm} disabled={!prompt.trim()}>
-                        Regenerate
+                        {t('regenerateSlideDialog.regenerate')}
                     </MyButton>
                 </div>
             </DialogContent>
@@ -140,42 +142,56 @@ export function RegenerateSessionDialog({
     onConfirm,
     promptRef,
 }: RegenerateSessionDialogProps) {
+    const { t } = useTranslation('studyLibraryCourseGenerationDialogs');
     const session = sessions.find((s) => s.sessionId === sessionId);
+    const chapterTerm = getTerminology(ContentTerms.Chapters, SystemTerms.Chapters);
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="flex max-h-[90vh] w-[95vw] max-w-[95vw] flex-col p-0 sm:w-[80vw] sm:max-w-[80vw]">
                 <DialogHeader className="shrink-0 border-b px-6 pb-4 pt-6">
                     <DialogTitle>
-                        {`Regenerate ${getTerminology(ContentTerms.Chapters, SystemTerms.Chapters)}${session ? `: ${session.sessionTitle}` : ''}`}
+                        {`${t('regenerateSessionDialog.title', { term: chapterTerm })}${session ? `: ${session.sessionTitle}` : ''}`}
                     </DialogTitle>
                 </DialogHeader>
                 <div className="flex-1 space-y-6 overflow-y-auto px-6 py-4 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                     <div>
-                        <Label className="mb-2 block">Prompt</Label>
+                        <Label className="mb-2 block">
+                            {t('regenerateSessionDialog.promptLabel')}
+                        </Label>
                         <Textarea
                             ref={promptRef}
                             value={prompt}
                             onChange={(e) => onPromptChange(e.target.value)}
-                            placeholder="Enter a prompt describing how you want this session to be regenerated..."
+                            placeholder={t('regenerateSessionDialog.promptPlaceholder')}
                             className="min-h-[150px] text-sm"
                         />
                     </div>
 
                     <div>
                         <Label htmlFor="regenerateSessionLength" className="mb-2 block">
-                            {getTerminology(ContentTerms.Chapters, SystemTerms.Chapters)} Length
+                            {t('regenerateSessionDialog.lengthLabel', { term: chapterTerm })}
                         </Label>
                         <div className="space-y-2">
                             <Select value={sessionLength} onValueChange={onSessionLengthChange}>
                                 <SelectTrigger id="regenerateSessionLength" className="w-full">
-                                    <SelectValue placeholder="Select session length" />
+                                    <SelectValue
+                                        placeholder={t('regenerateSessionDialog.lengthPlaceholder')}
+                                    />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="45">45 minutes</SelectItem>
-                                    <SelectItem value="60">60 minutes</SelectItem>
-                                    <SelectItem value="90">90 minutes</SelectItem>
-                                    <SelectItem value="custom">Custom</SelectItem>
+                                    <SelectItem value="45">
+                                        {t('regenerateSessionDialog.length45')}
+                                    </SelectItem>
+                                    <SelectItem value="60">
+                                        {t('regenerateSessionDialog.length60')}
+                                    </SelectItem>
+                                    <SelectItem value="90">
+                                        {t('regenerateSessionDialog.length90')}
+                                    </SelectItem>
+                                    <SelectItem value="custom">
+                                        {t('regenerateSessionDialog.lengthCustom')}
+                                    </SelectItem>
                                 </SelectContent>
                             </Select>
                             {sessionLength === 'custom' && (
@@ -184,7 +200,9 @@ export function RegenerateSessionDialog({
                                     min="1"
                                     value={customSessionLength}
                                     onChange={(e) => onCustomSessionLengthChange(e.target.value)}
-                                    placeholder="Enter custom length in minutes"
+                                    placeholder={t(
+                                        'regenerateSessionDialog.customLengthPlaceholder'
+                                    )}
                                     className="w-full"
                                 />
                             )}
@@ -192,7 +210,9 @@ export function RegenerateSessionDialog({
                     </div>
 
                     <div>
-                        <Label className="mb-2 block">Session Components</Label>
+                        <Label className="mb-2 block">
+                            {t('regenerateSessionDialog.componentsLabel')}
+                        </Label>
                         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                             <div className="flex items-center space-x-2">
                                 <Checkbox
@@ -206,7 +226,7 @@ export function RegenerateSessionDialog({
                                     htmlFor="regenerateIncludeDiagrams"
                                     className="cursor-pointer"
                                 >
-                                    Include diagrams
+                                    {t('regenerateSessionDialog.includeDiagrams')}
                                 </Label>
                             </div>
                             <div className="flex items-center space-x-2">
@@ -221,7 +241,7 @@ export function RegenerateSessionDialog({
                                     htmlFor="regenerateIncludeCodeSnippets"
                                     className="cursor-pointer"
                                 >
-                                    Include code snippets
+                                    {t('regenerateSessionDialog.includeCodeSnippets')}
                                 </Label>
                             </div>
                             <div className="flex items-center space-x-2">
@@ -236,7 +256,7 @@ export function RegenerateSessionDialog({
                                     htmlFor="regenerateIncludePracticeProblems"
                                     className="cursor-pointer"
                                 >
-                                    Include practice problems
+                                    {t('regenerateSessionDialog.includePracticeProblems')}
                                 </Label>
                             </div>
                             <div className="flex items-center space-x-2">
@@ -251,7 +271,7 @@ export function RegenerateSessionDialog({
                                     htmlFor="regenerateIncludeQuizzes"
                                     className="cursor-pointer"
                                 >
-                                    Include quizzes
+                                    {t('regenerateSessionDialog.includeQuizzes')}
                                 </Label>
                             </div>
                             <div className="flex items-center space-x-2">
@@ -266,7 +286,7 @@ export function RegenerateSessionDialog({
                                     htmlFor="regenerateIncludeHomework"
                                     className="cursor-pointer"
                                 >
-                                    Include assignments
+                                    {t('regenerateSessionDialog.includeAssignments')}
                                 </Label>
                             </div>
                             <div className="flex items-center space-x-2">
@@ -281,7 +301,7 @@ export function RegenerateSessionDialog({
                                     htmlFor="regenerateIncludeSolutions"
                                     className="cursor-pointer"
                                 >
-                                    Include solutions
+                                    {t('regenerateSessionDialog.includeSolutions')}
                                 </Label>
                             </div>
                         </div>
@@ -289,7 +309,9 @@ export function RegenerateSessionDialog({
 
                     <div>
                         <Label htmlFor="regenerateSessionNumberOfTopics" className="mb-2 block">
-                            {`Number of ${getTerminologyPlural(ContentTerms.Slides, SystemTerms.Slides)}`}
+                            {t('regenerateSessionDialog.numberOfLabel', {
+                                term: getTerminologyPlural(ContentTerms.Slides, SystemTerms.Slides),
+                            })}
                         </Label>
                         <Input
                             id="regenerateSessionNumberOfTopics"
@@ -297,23 +319,31 @@ export function RegenerateSessionDialog({
                             min="1"
                             value={numberOfTopics}
                             onChange={(e) => onNumberOfTopicsChange(e.target.value)}
-                            placeholder="e.g., 3, 4, 5, etc."
+                            placeholder={t('regenerateSessionDialog.topicsCountPlaceholder')}
                             className="w-full"
                         />
                     </div>
 
                     <div>
-                        <Label className="mb-2 block">{`${getTerminologyPlural(ContentTerms.Slides, SystemTerms.Slides)} in ${getTerminology(ContentTerms.Chapters, SystemTerms.Chapters)} (Optional)`}</Label>
+                        <Label className="mb-2 block">
+                            {t('regenerateSessionDialog.topicsInLabel', {
+                                plural: getTerminologyPlural(
+                                    ContentTerms.Slides,
+                                    SystemTerms.Slides
+                                ),
+                                term: chapterTerm,
+                            })}
+                        </Label>
                         <TagInput
                             tags={topics}
                             onChange={onTopicsChange}
-                            placeholder="Enter a topic and press Enter"
+                            placeholder={t('regenerateSessionDialog.topicsPlaceholder')}
                         />
                     </div>
                 </div>
                 <div className="flex shrink-0 justify-end border-t px-6 py-4">
                     <MyButton buttonType="primary" onClick={onConfirm} disabled={!prompt.trim()}>
-                        Regenerate
+                        {t('regenerateSessionDialog.regenerate')}
                     </MyButton>
                 </div>
             </DialogContent>
@@ -344,16 +374,19 @@ export function AddSlideDialog({
     onBack,
     promptRef,
 }: AddSlideDialogProps) {
+    const { t } = useTranslation('studyLibraryCourseGenerationDialogs');
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="flex max-h-[90vh] w-[95vw] max-w-[95vw] flex-col p-0 sm:w-[80vw] sm:max-w-[80vw]">
                 <DialogHeader className="shrink-0 border-b px-6 pb-4 pt-6">
                     <DialogTitle>
-                        {selectedType ? 'AI Generation Prompt' : 'Select Page Type'}
+                        {selectedType
+                            ? t('addSlideDialog.generationTitle')
+                            : t('addSlideDialog.selectTypeTitle')}
                     </DialogTitle>
                     {!selectedType && (
                         <DialogDescription>
-                            Choose the type of page you want to add to this session.
+                            {t('addSlideDialog.selectTypeDescription')}
                         </DialogDescription>
                     )}
                 </DialogHeader>
@@ -365,49 +398,63 @@ export function AddSlideDialog({
                                 className="flex flex-col items-center gap-2 rounded-lg border border-neutral-200 bg-white p-4 transition-colors hover:border-indigo-400 hover:bg-indigo-50"
                             >
                                 <FileText className="size-6 text-blue-600" />
-                                <span className="text-sm font-medium">Document</span>
+                                <span className="text-sm font-medium">
+                                    {t('addSlideDialog.types.document')}
+                                </span>
                             </button>
                             <button
                                 onClick={() => onSelectType('pdf')}
                                 className="flex flex-col items-center gap-2 rounded-lg border border-neutral-200 bg-white p-4 transition-colors hover:border-indigo-400 hover:bg-indigo-50"
                             >
                                 <File className="size-6 text-red-600" />
-                                <span className="text-sm font-medium">PDF</span>
+                                <span className="text-sm font-medium">
+                                    {t('addSlideDialog.types.pdf')}
+                                </span>
                             </button>
                             <button
                                 onClick={() => onSelectType('video')}
                                 className="flex flex-col items-center gap-2 rounded-lg border border-neutral-200 bg-white p-4 transition-colors hover:border-indigo-400 hover:bg-indigo-50"
                             >
                                 <Video className="size-6 text-red-600" />
-                                <span className="text-sm font-medium">Video</span>
+                                <span className="text-sm font-medium">
+                                    {t('addSlideDialog.types.video')}
+                                </span>
                             </button>
                             <button
                                 onClick={() => onSelectType('image')}
                                 className="flex flex-col items-center gap-2 rounded-lg border border-neutral-200 bg-white p-4 transition-colors hover:border-indigo-400 hover:bg-indigo-50"
                             >
                                 <ImageIcon className="size-6 text-blue-600" />
-                                <span className="text-sm font-medium">Image</span>
+                                <span className="text-sm font-medium">
+                                    {t('addSlideDialog.types.image')}
+                                </span>
                             </button>
                             <button
                                 onClick={() => onSelectType('jupyter')}
                                 className="flex flex-col items-center gap-2 rounded-lg border border-neutral-200 bg-white p-4 transition-colors hover:border-indigo-400 hover:bg-indigo-50"
                             >
                                 <Notebook className="size-6 text-orange-600" />
-                                <span className="text-sm font-medium">Jupyter</span>
+                                <span className="text-sm font-medium">
+                                    {t('addSlideDialog.types.jupyter')}
+                                </span>
                             </button>
                             <button
                                 onClick={() => onSelectType('code-editor')}
                                 className="flex flex-col items-center gap-2 rounded-lg border border-neutral-200 bg-white p-4 transition-colors hover:border-indigo-400 hover:bg-indigo-50"
                             >
                                 <Code className="size-6 text-green-600" />
-                                <span className="text-sm font-medium">Code Editor</span>
+                                <span className="text-sm font-medium">
+                                    {t('addSlideDialog.types.codeEditor')}
+                                </span>
                             </button>
                             <button
                                 onClick={() => onSelectType('scratch')}
                                 className="flex flex-col items-center gap-2 rounded-lg border border-neutral-200 bg-white p-4 transition-colors hover:border-indigo-400 hover:bg-indigo-50"
                             >
                                 <Puzzle className="size-6 text-purple-600" />
-                                <span className="text-sm font-medium">Scratch</span>
+                                <span className="text-sm font-medium">
+                                    {t('addSlideDialog.types.scratch')}
+                                </span>
                             </button>
                             <button
                                 onClick={() => onSelectType('video-jupyter')}
@@ -417,7 +464,9 @@ export function AddSlideDialog({
                                     <Video className="size-6 text-red-600" />
                                     <Notebook className="size-6 text-orange-600" />
                                 </div>
-                                <span className="text-sm font-medium">Video + Jupyter</span>
+                                <span className="text-sm font-medium">
+                                    {t('addSlideDialog.types.videoJupyter')}
+                                </span>
                             </button>
                             <button
                                 onClick={() => onSelectType('video-code-editor')}
@@ -427,7 +476,9 @@ export function AddSlideDialog({
                                     <Video className="size-6 text-red-600" />
                                     <Code className="size-6 text-green-600" />
                                 </div>
-                                <span className="text-sm font-medium">Video + Code</span>
+                                <span className="text-sm font-medium">
+                                    {t('addSlideDialog.types.videoCode')}
+                                </span>
                             </button>
                             <button
                                 onClick={() => onSelectType('video-scratch')}
@@ -437,21 +488,27 @@ export function AddSlideDialog({
                                     <Video className="size-6 text-red-600" />
                                     <Puzzle className="size-6 text-purple-600" />
                                 </div>
-                                <span className="text-sm font-medium">Video + Scratch</span>
+                                <span className="text-sm font-medium">
+                                    {t('addSlideDialog.types.videoScratch')}
+                                </span>
                             </button>
                             <button
                                 onClick={() => onSelectType('quiz')}
                                 className="flex flex-col items-center gap-2 rounded-lg border border-neutral-200 bg-white p-4 transition-colors hover:border-indigo-400 hover:bg-indigo-50"
                             >
                                 <FileQuestion className="size-6 text-purple-600" />
-                                <span className="text-sm font-medium">Quiz</span>
+                                <span className="text-sm font-medium">
+                                    {t('addSlideDialog.types.quiz')}
+                                </span>
                             </button>
                             <button
                                 onClick={() => onSelectType('assignment')}
                                 className="flex flex-col items-center gap-2 rounded-lg border border-neutral-200 bg-white p-4 transition-colors hover:border-indigo-400 hover:bg-indigo-50"
                             >
                                 <ClipboardList className="size-6 text-orange-600" />
-                                <span className="text-sm font-medium">Assignment</span>
+                                <span className="text-sm font-medium">
+                                    {t('addSlideDialog.types.assignment')}
+                                </span>
                             </button>
                         </div>
                     </div>
@@ -462,20 +519,20 @@ export function AddSlideDialog({
                                 ref={promptRef}
                                 value={prompt}
                                 onChange={(e) => onPromptChange(e.target.value)}
-                                placeholder="Enter a prompt describing the page you want to create..."
+                                placeholder={t('addSlideDialog.promptPlaceholder')}
                                 className="min-h-[150px] text-sm"
                             />
                         </div>
                         <div className="flex shrink-0 justify-end gap-2 border-t px-6 py-4">
                             <MyButton buttonType="secondary" onClick={onBack}>
-                                Back
+                                {t('addSlideDialog.back')}
                             </MyButton>
                             <MyButton
                                 buttonType="primary"
                                 onClick={onConfirm}
                                 disabled={!prompt.trim()}
                             >
-                                Create Page
+                                {t('addSlideDialog.createPage')}
                             </MyButton>
                         </div>
                     </>
@@ -500,22 +557,28 @@ export function AddSessionDialog({
     onSessionNameChange,
     onConfirm,
 }: AddSessionDialogProps) {
+    const { t } = useTranslation('studyLibraryCourseGenerationDialogs');
+    const chapterTerm = getTerminology(ContentTerms.Chapters, SystemTerms.Chapters);
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="w-[95vw] sm:w-full sm:max-w-[500px]">
                 <DialogHeader>
-                    <DialogTitle>{`Add New ${getTerminology(ContentTerms.Chapters, SystemTerms.Chapters)}`}</DialogTitle>
+                    <DialogTitle>
+                        {t('addSessionDialog.title', { term: chapterTerm })}
+                    </DialogTitle>
                 </DialogHeader>
                 <div className="space-y-4 py-4">
                     <div>
                         <Label htmlFor="sessionName" className="mb-2 block">
-                            {getTerminology(ContentTerms.Chapters, SystemTerms.Chapters)} Name
+                            {t('addSessionDialog.nameLabel', { term: chapterTerm })}
                         </Label>
                         <Input
                             id="sessionName"
                             value={sessionName}
                             onChange={(e) => onSessionNameChange(e.target.value)}
-                            placeholder={`Enter ${getTerminology(ContentTerms.Chapters, SystemTerms.Chapters).toLowerCase()} name`}
+                            placeholder={t('addSessionDialog.namePlaceholder', {
+                                term: chapterTerm.toLowerCase(),
+                            })}
                             onKeyDown={(e) => {
                                 if (e.key === 'Enter' && sessionName.trim()) {
                                     onConfirm();
@@ -527,14 +590,14 @@ export function AddSessionDialog({
                 </div>
                 <div className="flex justify-end gap-3">
                     <MyButton buttonType="secondary" onClick={() => onOpenChange(false)}>
-                        Cancel
+                        {t('addSessionDialog.cancel')}
                     </MyButton>
                     <MyButton
                         buttonType="primary"
                         onClick={onConfirm}
                         disabled={!sessionName.trim()}
                     >
-                        {`Add ${getTerminology(ContentTerms.Chapters, SystemTerms.Chapters)}`}
+                        {t('addSessionDialog.add', { term: chapterTerm })}
                     </MyButton>
                 </div>
             </DialogContent>
@@ -562,6 +625,7 @@ export function GenerateCourseAssetsDialog({
     onConfirm,
     costPreview,
 }: GenerateCourseAssetsDialogProps) {
+    const { t } = useTranslation('studyLibraryCourseGenerationDialogs');
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="w-[95vw] sm:w-full sm:max-w-md">
@@ -570,36 +634,35 @@ export function GenerateCourseAssetsDialog({
                         <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-amber-100">
                             <AlertTriangle className="size-5 text-amber-600" />
                         </div>
-                        <DialogTitle className="text-xl">Final Confirmation</DialogTitle>
+                        <DialogTitle className="text-xl">
+                            {t('generateCourseAssetsDialog.title')}
+                        </DialogTitle>
                     </div>
                     <DialogDescription className="pt-2">
                         <div className="space-y-3 text-neutral-700">
-                            <p>
-                                Please review the text content for each page carefully before
-                                proceeding.
-                            </p>
+                            <p>{t('generateCourseAssetsDialog.reviewNotice')}</p>
                             <p className="font-semibold text-neutral-900">
-                                Once you proceed, AI will start creating the actual course content
-                                and there is no coming back.
+                                {t('generateCourseAssetsDialog.noComingBack')}
                             </p>
                             {costPreview &&
                                 costPreview.credits !== null &&
                                 (costPreview.credits > 0 || costPreview.usageBilledSlides > 0) && (
                                 <div className="rounded-md border border-neutral-200 bg-neutral-50 p-3">
                                     <p className="text-sm font-medium text-neutral-900">
-                                        Estimated cost: ≈ {costPreview.credits} credits
+                                        {t('generateCourseAssetsDialog.estimatedCost', {
+                                            credits: costPreview.credits,
+                                        })}
                                     </p>
                                     {costPreview.usageBilledSlides > 0 && (
                                         <p className="mt-1 text-xs text-neutral-600">
-                                            + {costPreview.usageBilledSlides} AI video/slides/storybook{' '}
-                                            {costPreview.usageBilledSlides === 1 ? 'slide' : 'slides'}{' '}
-                                            billed by actual usage
+                                            {t('generateCourseAssetsDialog.usageBilled', {
+                                                count: costPreview.usageBilledSlides,
+                                            })}
                                         </p>
                                     )}
                                     {costPreview.sufficient === false && (
                                         <p className="mt-1 text-xs font-medium text-amber-700">
-                                            Your institute&apos;s credit balance may be insufficient —
-                                            please top up before proceeding.
+                                            {t('generateCourseAssetsDialog.insufficientBalance')}
                                         </p>
                                     )}
                                 </div>
@@ -609,7 +672,7 @@ export function GenerateCourseAssetsDialog({
                 </DialogHeader>
                 <div className="mt-6 flex justify-end gap-3">
                     <MyButton buttonType="secondary" onClick={() => onOpenChange(false)}>
-                        Cancel
+                        {t('generateCourseAssetsDialog.cancel')}
                     </MyButton>
                     <MyButton
                         buttonType="primary"
@@ -618,7 +681,7 @@ export function GenerateCourseAssetsDialog({
                             onOpenChange(false);
                         }}
                     >
-                        Proceed
+                        {t('generateCourseAssetsDialog.proceed')}
                     </MyButton>
                 </div>
             </DialogContent>
@@ -650,17 +713,17 @@ export function LeaveDuringGenerationDialog({
     onLeave,
     progressLabel,
 }: LeaveDuringGenerationDialogProps) {
+    const { t } = useTranslation('studyLibraryCourseGenerationDialogs');
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="w-[95vw] sm:w-full sm:max-w-md">
                 <DialogHeader>
-                    <DialogTitle>Generation still in progress</DialogTitle>
+                    <DialogTitle>{t('leaveDuringGenerationDialog.title')}</DialogTitle>
                     <DialogDescription className="text-neutral-600">
                         {progressLabel
-                            ? `Only ${progressLabel} pages have been generated. `
+                            ? t('leaveDuringGenerationDialog.progressPrefix', { progressLabel })
                             : ''}
-                        If you leave now, generation stops and everything created so far is lost.
-                        The credits already spent will not be returned.
+                        {t('leaveDuringGenerationDialog.warning')}
                     </DialogDescription>
                 </DialogHeader>
                 <div className="mt-6 flex flex-col items-center justify-end gap-3 border-t border-neutral-200 pt-4 sm:flex-row">
@@ -669,14 +732,14 @@ export function LeaveDuringGenerationDialog({
                         onClick={onLeave}
                         className="w-full min-w-[160px] border-red-300 text-red-600 hover:border-red-400 hover:bg-red-50 hover:text-red-700 sm:w-auto"
                     >
-                        Leave and stop
+                        {t('leaveDuringGenerationDialog.leaveAndStop')}
                     </MyButton>
                     <MyButton
                         buttonType="primary"
                         onClick={onStay}
                         className="w-full min-w-[130px] sm:w-auto"
                     >
-                        Stay on page
+                        {t('leaveDuringGenerationDialog.stayOnPage')}
                     </MyButton>
                 </div>
             </DialogContent>
@@ -697,14 +760,14 @@ export function BackToLibraryDialog({
     onDiscard,
     onSaveToDrafts,
 }: BackToLibraryDialogProps) {
+    const { t } = useTranslation('studyLibraryCourseGenerationDialogs');
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="w-[95vw] sm:w-full sm:max-w-md">
                 <DialogHeader>
-                    <DialogTitle>Go Back to Course Library?</DialogTitle>
+                    <DialogTitle>{t('backToLibraryDialog.title')}</DialogTitle>
                     <DialogDescription className="text-neutral-600">
-                        Are you sure you want to go back to course library? You can either discard
-                        your current course or save it to drafts.
+                        {t('backToLibraryDialog.description')}
                     </DialogDescription>
                 </DialogHeader>
                 <div className="mt-6 flex flex-col items-center justify-end gap-3 border-t border-neutral-200 pt-4 sm:flex-row">
@@ -713,21 +776,21 @@ export function BackToLibraryDialog({
                         onClick={() => onOpenChange(false)}
                         className="w-full min-w-[100px] sm:w-auto"
                     >
-                        Cancel
+                        {t('backToLibraryDialog.cancel')}
                     </MyButton>
                     <MyButton
                         buttonType="secondary"
                         onClick={onDiscard}
                         className="min-w-[120px] border-red-300 text-red-600 hover:border-red-400 hover:bg-red-50 hover:text-red-700"
                     >
-                        Discard Course
+                        {t('backToLibraryDialog.discardCourse')}
                     </MyButton>
                     <MyButton
                         buttonType="primary"
                         onClick={onSaveToDrafts}
                         className="min-w-[130px]"
                     >
-                        Save to Drafts
+                        {t('backToLibraryDialog.saveToDrafts')}
                     </MyButton>
                 </div>
             </DialogContent>

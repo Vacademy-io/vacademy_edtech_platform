@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import vacademy.io.admin_core_service.features.media_service.service.MediaService;
+import vacademy.io.admin_core_service.features.student_analysis.dto.comprehensive.AcademicsSection;
 import vacademy.io.admin_core_service.features.student_analysis.dto.comprehensive.ComprehensiveStudentReport;
 import vacademy.io.admin_core_service.features.student_analysis.dto.comprehensive.LearningInsightsSection;
 import vacademy.io.admin_core_service.features.student_analysis.entity.StudentAnalysisProcess;
@@ -18,6 +19,7 @@ import vacademy.io.admin_core_service.features.student_analysis.entity.StudentAn
 import java.util.List;
 import java.util.Locale;
 import vacademy.io.admin_core_service.features.student_analysis.repository.StudentAnalysisProcessRepository;
+import vacademy.io.admin_core_service.features.student_analysis.service.aggregation.ThemeColorResolver;
 import vacademy.io.common.media.dto.FileDetailsDTO;
 import vacademy.io.common.media.dto.InMemoryMultipartFile;
 
@@ -109,7 +111,16 @@ public class StudentReportPdfService {
 
     private byte[] renderReportToPdf(StudentAnalysisProcess process) {
         String html = buildReportHtml(process);
-        return generatePdfFromHtml(html);
+        try {
+            return generatePdfFromHtml(html);
+        } catch (Throwable t) {
+            // Chart labels are SVG <text>, which Batik draws via java.awt fonts; a host without
+            // fonts/fontconfig fails the whole render ("Fontconfig head is null"). Retry without the
+            // SVG text so the parent still gets a PDF (charts unlabelled) instead of an error.
+            log.error("[PDF] Render failed for processId={} ({}); retrying without SVG chart text",
+                    process.getId(), t.toString());
+            return generatePdfFromHtml(html.replaceAll("(?s)<text\\b[^>]*>.*?</text>", ""));
+        }
     }
 
     /**
@@ -137,9 +148,11 @@ public class StudentReportPdfService {
     // -----------------------------------------------------------------------
 
     String buildV2Html(ComprehensiveStudentReport r, StudentAnalysisProcess process) {
-        // Resolve institute accent colour (falls back to Vacademy blue)
-        String accent = (r.getInstitute() != null && r.getInstitute().getThemeColor() != null)
-                ? r.getInstitute().getThemeColor() : "#2563eb";
+        // Institute accent. Older reports stored the raw theme code — "" (emitted `background:;`,
+        // which openhtmltopdf drops) or a preset like "primary" (invalid in CSS/SVG, so charts lost
+        // their marks) — so resolve it here too, falling back to the web card's default.
+        String resolvedAccent = r.getInstitute() != null ? ThemeColorResolver.resolve(r.getInstitute().getThemeColor()) : null;
+        String accent = resolvedAccent != null ? resolvedAccent : "#2E7D6B"; // same default as the web report card
 
         StringBuilder sb = new StringBuilder();
 
@@ -156,12 +169,12 @@ public class StudentReportPdfService {
           .append(";color:#fff;font-family:").append(serif).append(";font-weight:700;font-size:18px;text-align:center;line-height:38px}\n")
           .append(".brand-name{font-weight:600;font-size:13px;color:#1C2433}\n")
           .append(".brand-sub{font-size:10.5px;color:#7C879B}\n")
-          .append(".period-pill{font-size:10.5px;color:#4A5568;background:#F4F2EC;border:1px solid #E7E3D9;padding:5px 12px;border-radius:999px;white-space:nowrap}\n")
+          .append(".period-pill{display:inline-block;font-size:10.5px;line-height:13px;color:#4A5568;background:#F4F2EC;border:1px solid #E7E3D9;padding:5px 12px;border-radius:12px;white-space:nowrap}\n")
           /* verdict card (white, with a status-colored left stripe set inline) */
           .append(".verdict{background:#fff;border:1px solid #E7E3D9;border-radius:12px;padding:20px 22px;margin-bottom:16px;page-break-inside:avoid}\n")
           .append(".student-name{font-family:").append(serif).append(";font-size:26px;line-height:1.12;margin:0 0 4px;color:#1C2433}\n")
           .append(".student-meta{color:#7C879B;font-size:11.5px}\n")
-          .append(".status-badge{display:inline-block;padding:6px 13px;border-radius:999px;font-weight:600;font-size:12px}\n")
+          .append(".status-badge{display:inline-block;padding:6px 13px;line-height:14px;border-radius:13px;font-weight:600;font-size:12px}\n")
           .append(".grade-chip{font-family:").append(serif).append(";font-size:14px;font-weight:700;width:30px;height:30px;border-radius:8px;text-align:center;line-height:30px;display:inline-block;margin-left:7px}\n")
           .append(".oneliner{font-size:14px;color:#1C2433;margin:14px 0 0}\n")
           .append(".parent-summary{margin:12px 0 0;padding:12px 14px;background:#F4F2EC;border-radius:9px;font-size:12px;color:#4A5568}\n")
@@ -180,8 +193,11 @@ public class StudentReportPdfService {
           .append(";border-radius:10px;padding:13px 15px;margin-bottom:12px;page-break-inside:avoid}\n")
           .append(".summ .sh{font-family:").append(serif).append(";font-weight:700;margin-bottom:4px}\n")
           /* progress bar */
-          .append(".bar{height:9px;background:#F4F2EC;border-radius:999px;overflow:hidden}\n")
-          .append(".bar i{display:block;height:100%;border-radius:999px;background:").append(accent).append("}\n")
+          /* Every radius in this sheet is half the element's (fixed) height, never 999px:
+             openhtmltopdf does not clamp an oversized radius the way browsers do, so bars, the
+             period pill and the status badge all came out as stretched ellipses. */
+          .append(".bar{height:9px;background:#F4F2EC;border-radius:4px;overflow:hidden}\n")
+          .append(".bar i{display:block;height:100%;border-radius:4px;background:").append(accent).append("}\n")
           .append(".bar.g i{background:#3F8F5B} .bar.w i{background:#C6803A} .bar.b i{background:#B4483D}\n")
           /* bar-row as table */
           .append(".brow{width:100%;border-spacing:0;border-collapse:collapse;margin:5px 0}\n")
@@ -190,10 +206,21 @@ public class StudentReportPdfService {
           .append(".brow .bv{width:96px;font-size:10px;color:#7C879B;text-align:right;vertical-align:middle}\n")
           /* table */
           .append("table.dt{width:100%;border-collapse:collapse;font-size:11px}\n")
-          .append("table.dt th,table.dt td{text-align:left;padding:6px 5px;border-bottom:1px solid #E7E3D9}\n")
+          .append("table.dt th,table.dt td{text-align:left;padding:4px 5px;border-bottom:1px solid #E7E3D9}\n")
           .append("table.dt th{color:#7C879B;font-weight:600;font-size:10px;text-transform:uppercase}\n")
           .append("table.dt td.num{text-align:right}\n")
-          .append(".pill{display:inline-block;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:600}\n")
+          /* long assessment lists: break between rows and repeat the header, instead of pushing
+             the whole table to the next page and leaving the first one half blank */
+          .append("table.dt{-fs-table-paginate:paginate} table.dt tr{page-break-inside:avoid}\n")
+          .append(".card.flow{page-break-inside:auto}\n")
+          .append(".keep{page-break-inside:avoid}\n")
+          /* chart headers + legends */
+          .append(".ch{width:100%;border-collapse:collapse;margin:10px 0 4px}\n")
+          .append(".ch td{padding:0;vertical-align:middle;white-space:nowrap}\n")
+          .append(".ch .ct{width:100%;font-size:11px;font-weight:700;color:#1C2433}\n")
+          .append(".ch .lsw{padding:0 4px 0 14px}\n")
+          .append(".ch .llb{font-size:9.5px;color:#4A5568}\n")
+          .append(".pill{display:inline-block;padding:1px 7px;line-height:12px;border-radius:7px;font-size:10px;font-weight:600}\n")
           .append(".pg{background:#E6F2EA;color:#3F8F5B} .pw{background:#F7ECDD;color:#C6803A} .pb{background:#F6E4E1;color:#B4483D} .pn{background:#F4F2EC;color:#4A5568}\n")
           /* chip row */
           .append(".chip{width:100%;border-spacing:0;border-collapse:collapse;margin:5px 0}\n")
@@ -237,8 +264,8 @@ public class StudentReportPdfService {
         // ── Header ───────────────────────────────────────────────────────────────
         String studentName    = r.getStudent()   != null ? nvl(r.getStudent().getName(), "—") : "—";
         String instituteName  = r.getInstitute() != null ? nvl(r.getInstitute().getName(), "")  : "";
-        String batch          = r.getStudent()   != null ? nvl(r.getStudent().getBatch(), "")    : "";
-        String classs         = r.getStudent()   != null ? nvl(r.getStudent().getClasss(), "")   : "";
+        String batch          = r.getStudent()   != null ? cleanBatchLabel(r.getStudent().getBatch())  : "";
+        String classs         = r.getStudent()   != null ? cleanBatchLabel(r.getStudent().getClasss()) : "";
         String enrollmentNo   = r.getStudent()   != null ? nvl(r.getStudent().getEnrollmentNo(), "") : "";
         String rollNo         = r.getStudent()   != null ? nvl(r.getStudent().getRollNo(), "")   : "";
         String periodLabel    = "";
@@ -273,7 +300,8 @@ public class StudentReportPdfService {
         sb.append("</td>");
         sb.append("<td>");
         if (!instituteName.isEmpty()) sb.append("<div class='brand-name'>").append(escHtml(instituteName)).append("</div>");
-        String clsBatchSub = classs.isEmpty() ? batch : (batch.isEmpty() ? classs : classs + " · " + batch);
+        // class and batch are the same string today (no separate class concept) — print it once.
+        String clsBatchSub = classs.isEmpty() || classs.equals(batch) ? batch : (batch.isEmpty() ? classs : classs + " · " + batch);
         String brandSub = (clsBatchSub.isEmpty() ? "" : clsBatchSub + " · ") + "Progress Report";
         sb.append("<div class='brand-sub'>").append(escHtml(brandSub)).append("</div>");
         sb.append("</td>");
@@ -288,7 +316,7 @@ public class StudentReportPdfService {
         sb.append("<td style='vertical-align:top'>");
         sb.append("<div class='student-name'>").append(escHtml(studentName)).append("</div>");
         StringBuilder meta = new StringBuilder();
-        if (!rollNo.isEmpty()) meta.append("Roll ").append(escHtml(rollNo));
+        if (!rollNo.isEmpty() && !rollNo.equals(enrollmentNo)) meta.append("Roll ").append(escHtml(rollNo));
         if (!enrollmentNo.isEmpty()) { if (meta.length() > 0) meta.append(" · "); meta.append("Enrollment ").append(escHtml(enrollmentNo)); }
         if (meta.length() > 0) sb.append("<div class='student-meta'>").append(meta).append("</div>");
         sb.append("</td>");
@@ -305,9 +333,9 @@ public class StudentReportPdfService {
             sb.append("</td>");
         }
         sb.append("</tr></table>");
-        if (!oneLine.isEmpty()) sb.append("<div class='oneliner'>").append(escHtml(oneLine)).append("</div>");
+        if (!oneLine.isEmpty()) sb.append("<div class='oneliner'>").append(inlineMd(oneLine)).append("</div>");
         if (StringUtils.hasText(r.getParentSummary())) {
-            sb.append("<div class='parent-summary'>").append(escHtml(r.getParentSummary())).append("</div>");
+            sb.append("<div class='parent-summary'>").append(inlineMd(r.getParentSummary())).append("</div>");
         }
         sb.append("</div>\n");
 
@@ -315,7 +343,7 @@ public class StudentReportPdfService {
         if (r.getOverview() != null && r.getOverview().getHeadlineMetrics() != null
                 && !r.getOverview().getHeadlineMetrics().isEmpty()) {
             var metrics = r.getOverview().getHeadlineMetrics();
-            int cols = 3; // chunk into rows of 3 so 6 tiles wrap (2 rows) instead of cramming one row
+            int cols = metrics.size() == 4 ? 4 : 3; // 4 → one row; otherwise rows of 3 so 6 tiles wrap
             sb.append("<table class='kpis'>");
             for (int i = 0; i < metrics.size(); i++) {
                 if (i % cols == 0) sb.append("<tr>");
@@ -326,9 +354,12 @@ public class StudentReportPdfService {
                 String valStr = m.getValue() != null ? m.getValue().toString() : "—";
                 String unit = nvl(m.getUnit(), "");
                 if (!unit.isEmpty() && !valStr.endsWith(unit)) valStr = valStr + unit;
-                sb.append("<td class='kpi' style='width:33%'>");
+                sb.append("<td class='kpi' style='width:").append(100 / cols).append("%'>");
                 sb.append("<div class='lbl'>").append(escHtml(nvl(m.getLabel(), ""))).append("</div>");
-                sb.append("<div class='val'>").append(escHtml(valStr)).append("</div>");
+                // a word value ("Business Studies") at 18px overflows a quarter-width tile
+                boolean wordy = !(m.getValue() instanceof Number) && valStr.length() > 9;
+                sb.append("<div class='val'").append(wordy ? " style='font-size:13px;margin-top:6px'" : "").append(">")
+                  .append(escHtml(valStr)).append("</div>");
                 if (m.getChange() != null) {
                     sb.append("<div class='chg ").append(trendCls).append("'>").append(arrow)
                       .append(escHtml(m.getChange())).append("</div>");
@@ -338,7 +369,7 @@ public class StudentReportPdfService {
                 if (rowEnd) {
                     // pad the final short row so tile widths stay uniform
                     int filled = (i % cols) + 1;
-                    for (int p = filled; p < cols; p++) sb.append("<td style='width:33%'></td>");
+                    for (int p = filled; p < cols; p++) sb.append("<td style='width:").append(100 / cols).append("%'></td>");
                     sb.append("</tr>");
                 }
             }
@@ -394,54 +425,92 @@ public class StudentReportPdfService {
         }
 
         // ── Academic Performance ──────────────────────────────────────────────────
-        if (r.getAcademics() != null && r.getAcademics().isAvailable()) {
+        // Charts first (trend, subject vs class, grade mix), then the full table in its own
+        // card so it can flow across pages.
+        // Skipped when the window has no graded work at all — an "Academic Performance" heading over
+        // an empty card read as broken.
+        if (r.getAcademics() != null && r.getAcademics().isAvailable()
+                && (r.getAcademics().getAveragePercentage() != null
+                    || (r.getAcademics().getAssessments() != null && !r.getAcademics().getAssessments().isEmpty()))) {
             var ac = r.getAcademics();
-            sb.append("<div class='card'><h2 class='sec'>Academic Performance</h2>");
+            // Oldest first; older rows were stored newest-first / in arbitrary order.
+            var rows = new java.util.ArrayList<AcademicsSection.AssessmentItem>(
+                    ac.getAssessments() != null ? ac.getAssessments() : List.of());
+            rows.sort(java.util.Comparator.comparing(a -> nvl(a.getDate(), "~")));
+            String[] nameParts = studentName.trim().split("\\s+");
+            String firstName = nameParts[0].isEmpty() ? "Student" : nameParts[0];
+
+            // flow: the card may break across pages (so a tall card doesn't leave page 1 half empty);
+            // each chart sits in a .keep block so a chart itself is never split.
+            sb.append("<div class='card flow'><h2 class='sec'>Academic Performance</h2>");
             if (ac.getAveragePercentage() != null) {
-                sb.append("<p class='muted' style='margin-top:-4px'>Average <b style='color:#1f2937'>")
-                  .append(String.format("%.0f%%", ac.getAveragePercentage())).append("</b>");
+                sb.append("<p class='muted' style='margin-top:-4px'>Average <b style='color:#1C2433'>")
+                  .append(fmtNum(ac.getAveragePercentage())).append("%</b>");
                 if (ac.getClassAveragePercentage() != null)
-                    sb.append(" vs class avg ").append(String.format("%.0f%%", ac.getClassAveragePercentage()));
+                    sb.append(" vs class average ").append(fmtNum(ac.getClassAveragePercentage())).append("%");
+                sb.append(" &middot; ").append(rows.size()).append(rows.size() == 1 ? " assessment" : " assessments");
                 if (ac.getBestSubject() != null) sb.append(" &middot; Best: ").append(escHtml(ac.getBestSubject()));
-                if (ac.getWeakestSubject() != null) sb.append(" &middot; Needs work: ").append(escHtml(ac.getWeakestSubject()));
+                if (ac.getWeakestSubject() != null && !ac.getWeakestSubject().equals(ac.getBestSubject()))
+                    sb.append(" &middot; Needs work: ").append(escHtml(ac.getWeakestSubject()));
                 sb.append("</p>");
             }
-            if (ac.getAssessments() != null && !ac.getAssessments().isEmpty()) {
-                sb.append("<table class='dt'><thead><tr><th>Assessment</th><th>Subject</th><th class='num'>Score</th><th class='num'>Rank</th><th>Grade</th></tr></thead><tbody>");
-                ac.getAssessments().forEach(a -> {
+            long plotted = rows.stream().filter(a -> a.getPercentage() != null).count();
+            if (plotted >= 2) {
+                sb.append("<div class='keep'>").append(chartHeader("Score over time", 0,
+                        legendDot(accent), firstName,
+                        legendLine(CLASS_GRAY), "Class average"));
+                sb.append(svgTrend(rows, accent)).append("</div>");
+            }
+            if (ac.getSubjectPerformance() != null && !ac.getSubjectPerformance().isEmpty()) {
+                sb.append("<div class='keep'>").append(chartHeader("By subject", 14,
+                        legendSquare(accent), "At or above class",
+                        legendSquare(belowClassColor(accent)), "Below class",
+                        legendTick(), "Class average"));
+                sb.append(svgSubjectBars(ac.getSubjectPerformance(), accent)).append("</div>");
+            }
+            String gradeMix = svgGradeMix(rows);
+            if (!gradeMix.isEmpty()) {
+                int[] gc = gradeCounts(rows);
+                int graded = java.util.Arrays.stream(gc).sum();
+                int bOrAbove = gc[0] + gc[1] + gc[2] + gc[3];
+                sb.append("<div class='keep'>").append(chartHeader("Grades earned: " + bOrAbove + " of " + graded
+                        + (graded == 1 ? " test" : " tests") + " at grade B or above", 14));
+                sb.append(gradeMix).append("</div>");
+            }
+            sb.append("</div>\n");
+
+            if (!rows.isEmpty()) {
+                boolean showSubject = rows.stream().anyMatch(a -> StringUtils.hasText(a.getSubject()));
+                // A long list gets its own page — otherwise its heading strands at the foot of page 1
+                // with every row on page 2. A short list still fits under the charts.
+                sb.append("<div class='card flow'").append(rows.size() > 8 ? " style='page-break-before:always'" : "")
+                  .append("><h2 class='sec'>All Assessments</h2>");
+                sb.append("<table class='dt'><thead><tr><th>Assessment</th>");
+                if (showSubject) sb.append("<th>Subject</th>");
+                sb.append("<th class='num'>Score</th><th class='num'>Rank</th><th>Grade</th></tr></thead><tbody>");
+                rows.forEach(a -> {
                     String grade = nvl(a.getGrade(), nvl(a.getStatus(), "—"));
                     String gradePillCls = "A+".equals(a.getGrade()) || "A".equals(a.getGrade()) || "B+".equals(a.getGrade()) || "B".equals(a.getGrade()) ? "pg"
                             : "D".equals(a.getGrade()) || "FAIL".equals(a.getStatus()) ? "pb"
-                            : "NEEDS_WORK".equals(a.getStatus()) ? "pw" : "pn";
+                            : "C".equals(a.getGrade()) || "NEEDS_WORK".equals(a.getStatus()) ? "pw" : "pn";
                     if ("NEEDS_WORK".equals(grade)) grade = "Needs work";
                     sb.append("<tr><td>").append(escHtml(nvl(a.getName(), "—")));
-                    if (a.getDate() != null) sb.append("<br/><span class='muted'>").append(escHtml(a.getDate())).append("</span>");
-                    sb.append("</td><td>").append(escHtml(nvl(a.getSubject(), ""))).append("</td>");
+                    String date = fmtDate(a.getDate());
+                    if (!date.isEmpty()) sb.append("<br/><span class='muted'>").append(escHtml(date)).append("</span>");
+                    sb.append("</td>");
+                    if (showSubject) sb.append("<td>").append(escHtml(nvl(a.getSubject(), ""))).append("</td>");
                     sb.append("<td class='num'>");
                     if (a.getMarks() != null && a.getTotalMarks() != null) {
-                        sb.append(String.format("%.0f/%.0f", a.getMarks(), a.getTotalMarks()));
-                        if (a.getPercentage() != null) sb.append(" &middot; ").append(String.format("%.0f%%", a.getPercentage()));
+                        // Half marks are real (4.5/20) — "%.0f" printed them as 5/20 next to 23%.
+                        sb.append(fmtNum(a.getMarks())).append("/").append(fmtNum(a.getTotalMarks()));
+                        if (a.getPercentage() != null) sb.append(" &middot; ").append(fmtNum(a.getPercentage())).append("%");
                     } else sb.append("—");
                     sb.append("</td>");
                     sb.append("<td class='num'>").append(a.getRank() != null ? a.getRank() : "—").append("</td>");
                     sb.append("<td><span class='pill ").append(gradePillCls).append("'>").append(escHtml(grade)).append("</span></td></tr>");
                 });
-                sb.append("</tbody></table>");
+                sb.append("</tbody></table></div>\n");
             }
-            if (ac.getSubjectPerformance() != null && !ac.getSubjectPerformance().isEmpty()) {
-                sb.append("<p class='muted' style='margin:12px 0 4px'>Subject performance vs class</p>");
-                ac.getSubjectPerformance().forEach(sp -> {
-                    double spPct = sp.getScorePercentage() != null ? sp.getScorePercentage() : 0;
-                    String spBar = "good".equals(sp.getSentiment()) ? "g" : "attention".equals(sp.getSentiment()) ? "b" : "";
-                    sb.append("<table class='brow'><tr>");
-                    sb.append("<td class='bl'>").append(escHtml(nvl(sp.getSubject(), ""))).append("</td>");
-                    sb.append("<td class='bb'><div class='bar ").append(spBar).append("'><i style='width:").append((int)Math.min(spPct,100)).append("%'></i></div></td>");
-                    sb.append("<td class='bv'>").append(String.format("%.0f%%", spPct));
-                    if (sp.getClassAverage() != null) sb.append(" &middot; cls ").append(String.format("%.0f%%", sp.getClassAverage()));
-                    sb.append("</td></tr></table>");
-                });
-            }
-            sb.append("</div>\n");
         }
 
         // ── Learning Insights (thinking skills / topic mastery / misconceptions) ───
@@ -519,8 +588,8 @@ public class StudentReportPdfService {
                     int conf = tc.getConfidence() != null ? tc.getConfidence() : 0;
                     sb.append("<table class='chip'><tr>");
                     sb.append("<td class='ct'>").append(escHtml(nvl(tc.getTopic(), ""))).append("</td>");
-                    sb.append("<td class='cb'><div class='bar g'><i style='width:").append(Math.min(conf,100)).append("%'></i></div></td>");
-                    sb.append("<td class='cp'>").append(conf).append("</td></tr></table>");
+                    sb.append("<td class='cb'>").append(svgMeter(conf, 110, "#3F8F5B", "#E6F2EA")).append("</td>");
+                    sb.append("<td class='cp'>").append(conf).append("%</td></tr></table>");
                 });
                 sb.append("</td>");
             }
@@ -528,11 +597,11 @@ public class StudentReportPdfService {
                 sb.append("<td class='tuc'><h2 class='sec'>Areas to Improve</h2>");
                 r.getAreasToImprove().forEach(tc -> {
                     int conf = tc.getConfidence() != null ? tc.getConfidence() : 0;
-                    String barCls = conf < 50 ? "b" : "w";
+                    boolean low = conf < 50;
                     sb.append("<table class='chip'><tr>");
                     sb.append("<td class='ct'>").append(escHtml(nvl(tc.getTopic(), ""))).append("</td>");
-                    sb.append("<td class='cb'><div class='bar ").append(barCls).append("'><i style='width:").append(Math.min(conf,100)).append("%'></i></div></td>");
-                    sb.append("<td class='cp'>").append(conf).append("</td></tr></table>");
+                    sb.append("<td class='cb'>").append(svgMeter(conf, 110, low ? "#B4483D" : "#C6803A", low ? "#F6E4E1" : "#F7ECDD")).append("</td>");
+                    sb.append("<td class='cp'>").append(conf).append("%</td></tr></table>");
                 });
                 sb.append("</td>");
             }
@@ -579,8 +648,8 @@ public class StudentReportPdfService {
                 String first = sh.getDailyStudyMinutes().get(0).getDate();
                 String last  = sh.getDailyStudyMinutes().get(sh.getDailyStudyMinutes().size()-1).getDate();
                 sb.append("<table style='width:100%;border-collapse:collapse'><tr>");
-                sb.append("<td style='font-size:9px;color:#6b7280'>").append(escHtml(nvl(first,""))).append("</td>");
-                sb.append("<td style='font-size:9px;color:#6b7280;text-align:right'>").append(escHtml(nvl(last,""))).append("</td>");
+                sb.append("<td style='font-size:9px;color:#6b7280'>").append(escHtml(fmtDate(first))).append("</td>");
+                sb.append("<td style='font-size:9px;color:#6b7280;text-align:right'>").append(escHtml(fmtDate(last))).append("</td>");
                 sb.append("</tr></table>");
             }
             // Content engagement line
@@ -610,7 +679,10 @@ public class StudentReportPdfService {
             sb.append("<div class='card'><h2 class='sec'>Course Progress")
               .append(cpPct.isEmpty() ? "" : " — " + cpPct + " complete").append("</h2>");
             if (cp.getSubjects() != null) {
-                cp.getSubjects().forEach(s -> {
+                cp.getSubjects().stream()
+                  // older reports carry the placeholder "DEFAULT" subject of a course without subjects
+                  .filter(s -> StringUtils.hasText(s.getSubject()) && !s.getSubject().trim().equalsIgnoreCase("default"))
+                  .forEach(s -> {
                     double p = s.getCompletionPercentage() != null ? s.getCompletionPercentage() : 0;
                     String barCls = p >= 70 ? "g" : p >= 50 ? "" : "w";
                     sb.append("<table class='brow'><tr>");
@@ -680,7 +752,7 @@ public class StudentReportPdfService {
             var ins = r.getAiInsights();
             if (ins.getCrossDomainInsights() != null && !ins.getCrossDomainInsights().isEmpty()) {
                 sb.append("<div class='card'><h2 class='sec'>What we noticed</h2><ul style='margin:0;padding-left:14px'>");
-                ins.getCrossDomainInsights().forEach(o -> sb.append("<li style='margin:5px 0;font-size:11px'>").append(escHtml(o)).append("</li>"));
+                ins.getCrossDomainInsights().forEach(o -> sb.append("<li style='margin:5px 0;font-size:11px'>").append(inlineMd(o)).append("</li>"));
                 sb.append("</ul></div>\n");
             }
             // Recommendations
@@ -692,8 +764,8 @@ public class StudentReportPdfService {
                     sb.append("<table class='rec'><tr>");
                     sb.append("<td style='padding-right:10px;white-space:nowrap;vertical-align:top'><span class='pr ").append(prCls).append("'>").append(escHtml(pr)).append("</span></td>");
                     sb.append("<td style='vertical-align:top'>");
-                    if (rec.getArea() != null) sb.append("<div style='font-weight:600;font-size:11px'>").append(escHtml(rec.getArea())).append("</div>");
-                    if (rec.getSuggestion() != null) sb.append("<div class='muted'>").append(escHtml(rec.getSuggestion())).append("</div>");
+                    if (rec.getArea() != null) sb.append("<div style='font-weight:600;font-size:11px'>").append(escHtml(rec.getArea().replace("**", ""))).append("</div>");
+                    if (rec.getSuggestion() != null) sb.append("<div class='muted'>").append(inlineMd(rec.getSuggestion())).append("</div>");
                     sb.append("</td></tr></table>");
                 });
                 sb.append("</div>\n");
@@ -702,7 +774,7 @@ public class StudentReportPdfService {
             if (StringUtils.hasText(ins.getSummary())) {
                 sb.append("<div class='card'><h2 class='sec'>AI Insights</h2>");
                 sb.append("<div style='background:#f3e5f5;border-left:4px solid #7b1fa2;padding:10px 12px;font-size:11px'>")
-                  .append(escHtml(ins.getSummary())).append("</div></div>\n");
+                  .append(inlineMd(ins.getSummary())).append("</div></div>\n");
             }
         }
 
@@ -727,6 +799,244 @@ public class StudentReportPdfService {
         if (!periodLabel.isEmpty()) sb.append(" &middot; ").append(escHtml(periodLabel));
         sb.append("</div></body></html>");
         return sb.toString();
+    }
+
+    // -----------------------------------------------------------------------
+    // Academic charts (static SVG, explicit width/height — no viewBox, see svgBloomRadar)
+    // -----------------------------------------------------------------------
+
+    private static final String INK = "#1C2433", INK3 = "#7C879B", GRID = "#ECE8DF", TRACK = "#F1EEE6";
+    /** De-emphasis grey for the class-average series (emphasis form: learner in the accent, class in grey). */
+    private static final String CLASS_GRAY = "#A7AFBD";
+    private static final String[] GRADES = {"A+", "A", "B+", "B", "C", "D"};
+    /** Ordered ramp, neutral at B: green arm for A+..B+, warm arm for C..D. */
+    private static final String[] GRADE_FILL = {"#2F6E48", "#3F8F5B", "#8FC19E", "#C4BEB1", "#D9A066", "#B4483D"};
+    /** Matches AcademicsCollector.gradeFromPct. */
+    private static final String[] GRADE_RANGE = {"90% and above", "80–89%", "70–79%", "60–69%", "50–59%", "below 50%"};
+
+    /** Score-over-time line: the learner (accent, faint area wash, ringed dots) against the class average. */
+    private String svgTrend(List<AcademicsSection.AssessmentItem> rows, String accent) {
+        List<AcademicsSection.AssessmentItem> pts = rows.stream()
+                .filter(a -> a.getPercentage() != null).collect(java.util.stream.Collectors.toList());
+        int n = pts.size();
+        double w = 660, h = 190, left = 34, right = 18, top = 18, bottom = 24;
+        double pw = w - left - right, ph = h - top - bottom;
+        java.util.function.IntToDoubleFunction x = i -> left + (n == 1 ? pw / 2 : pw * i / (n - 1));
+        java.util.function.DoubleUnaryOperator y = v -> top + ph * (1 - Math.max(0, Math.min(100, v)) / 100.0);
+
+        StringBuilder s = new StringBuilder("<svg xmlns='http://www.w3.org/2000/svg' width='660' height='190'>");
+        for (int g = 0; g <= 100; g += 25) {
+            double gy = y.applyAsDouble(g);
+            s.append(svgLine(left, gy, w - right, gy, GRID, 1));
+            s.append(svgText(left - 6, gy + 3, g + "%", "end", 8.5, INK3, false));
+        }
+        String lastMonth = null;
+        for (int i = 0; i < n; i++) {
+            java.time.LocalDate d = parseDate(pts.get(i).getDate());
+            String m = d == null ? null : d.format(java.time.format.DateTimeFormatter.ofPattern("MMM", Locale.ENGLISH));
+            if (m != null && !m.equals(lastMonth)) {
+                s.append(svgText(x.applyAsDouble(i), h - 6, m, i == 0 ? "start" : "middle", 8.5, INK3, false));
+                lastMonth = m;
+            }
+        }
+        StringBuilder cls = new StringBuilder();
+        for (int i = 0; i < n; i++) {
+            Double c = classPct(pts.get(i));
+            if (c != null) cls.append(fmt(x.applyAsDouble(i))).append(',').append(fmt(y.applyAsDouble(c))).append(' ');
+        }
+        if (cls.length() > 0) {
+            s.append("<polyline points='").append(cls.toString().trim()).append("' fill='none' stroke='").append(CLASS_GRAY)
+             .append("' stroke-width='2' stroke-linejoin='round' stroke-linecap='round'/>");
+        }
+        StringBuilder me = new StringBuilder();
+        for (int i = 0; i < n; i++) {
+            me.append(fmt(x.applyAsDouble(i))).append(',').append(fmt(y.applyAsDouble(pts.get(i).getPercentage()))).append(' ');
+        }
+        String line = me.toString().trim();
+        s.append("<polygon points='").append(line).append(' ')
+         .append(fmt(x.applyAsDouble(n - 1))).append(',').append(fmt(y.applyAsDouble(0))).append(' ')
+         .append(fmt(x.applyAsDouble(0))).append(',').append(fmt(y.applyAsDouble(0)))
+         .append("' fill='").append(accent).append("' fill-opacity='0.08'/>");
+        s.append("<polyline points='").append(line).append("' fill='none' stroke='").append(accent)
+         .append("' stroke-width='2' stroke-linejoin='round' stroke-linecap='round'/>");
+        int hi = 0, lo = 0;
+        for (int i = 0; i < n; i++) {
+            double v = pts.get(i).getPercentage();
+            if (v > pts.get(hi).getPercentage()) hi = i;
+            if (v < pts.get(lo).getPercentage()) lo = i;
+            s.append("<circle cx='").append(fmt(x.applyAsDouble(i))).append("' cy='").append(fmt(y.applyAsDouble(v)))
+             .append("' r='4' fill='").append(accent).append("' stroke='#FFFFFF' stroke-width='2'/>");
+        }
+        // Label only the extremes — a number on every point goes unread; the table carries the rest.
+        for (int i : new int[]{hi, lo}) {
+            double px = x.applyAsDouble(i), v = pts.get(i).getPercentage();
+            String anchor = px < left + 16 ? "start" : px > w - right - 16 ? "end" : "middle";
+            double py = i == hi ? y.applyAsDouble(v) - 9 : y.applyAsDouble(v) + 16;
+            s.append(svgText(px, py, fmtNum(v) + "%", anchor, 9, INK, true));
+            if (hi == lo) break;
+        }
+        return s.append("</svg>").toString();
+    }
+
+    /** One bar per subject (learner's average) with a tick at the class average. */
+    private String svgSubjectBars(List<AcademicsSection.SubjectPerformance> sps, String accent) {
+        double w = 660, labelW = 128, valW = 124, barW = w - labelW - valW, rowH = 26;
+        int n = sps.size();
+        StringBuilder s = new StringBuilder("<svg xmlns='http://www.w3.org/2000/svg' width='660' height='")
+                .append((int) (n * rowH + 4)).append("'>");
+        for (int i = 0; i < n; i++) {
+            var sp = sps.get(i);
+            double pct = sp.getScorePercentage() != null ? sp.getScorePercentage() : 0;
+            Double cls = sp.getClassAverage();
+            double top = 7 + i * rowH;
+            String subject = nvl(sp.getSubject(), "");
+            if (subject.length() > 22) subject = subject.substring(0, 21) + "…";
+            s.append(svgText(0, top + 9, subject, "start", 10.5, INK, false));
+            s.append(barPath(labelW, top, barW, 10, TRACK));
+            boolean below = cls != null && pct < cls;
+            s.append(barPath(labelW, top, barW * Math.min(100, pct) / 100.0, 10, below ? belowClassColor(accent) : accent));
+            if (cls != null) {
+                double cx = labelW + barW * Math.min(100, cls) / 100.0;
+                s.append(svgLine(cx, top - 3, cx, top + 13, INK, 2));
+            }
+            s.append("<text x='").append(fmt(labelW + barW + 10)).append("' y='").append(fmt(top + 9))
+             .append("' font-size='10' fill='").append(INK).append("' font-family='Helvetica, Arial, sans-serif'>")
+             .append("<tspan font-weight='700'>").append(fmtNum(pct)).append("%</tspan>");
+            if (cls != null) s.append("<tspan fill='").append(INK3).append("'>   class ").append(fmtNum(cls)).append("%</tspan>");
+            s.append("</text>");
+        }
+        return s.append("</svg>").toString();
+    }
+
+    /**
+     * One row per grade — the band it covers, a bar, and how many tests landed in it. A stacked
+     * bar with an "A ×6" legend was unreadable to a parent; every row now says it in words.
+     */
+    private String svgGradeMix(List<AcademicsSection.AssessmentItem> rows) {
+        int[] counts = gradeCounts(rows);
+        int max = java.util.Arrays.stream(counts).max().orElse(0);
+        if (max == 0) return "";
+        double w = 660, labelW = 150, valW = 64, barW = w - labelW - valW, rowH = 21;
+        StringBuilder s = new StringBuilder("<svg xmlns='http://www.w3.org/2000/svg' width='660' height='")
+                .append((int) (GRADES.length * rowH + 4)).append("'>");
+        for (int i = 0; i < GRADES.length; i++) {
+            double top = 5 + i * rowH;
+            s.append("<text x='0' y='").append(fmt(top + 9)).append("' font-size='10' fill='").append(INK)
+             .append("' font-family='Helvetica, Arial, sans-serif'><tspan font-weight='700'>").append(escHtml(GRADES[i]))
+             .append("</tspan><tspan fill='").append(INK3).append("'>   ").append(GRADE_RANGE[i]).append("</tspan></text>");
+            s.append(barPath(labelW, top, barW, 10, TRACK));
+            s.append(barPath(labelW, top, barW * counts[i] / max, 10, GRADE_FILL[i]));
+            s.append(svgText(labelW + barW + 10, top + 9, counts[i] + (counts[i] == 1 ? " test" : " tests"),
+                    "start", 10, counts[i] == 0 ? INK3 : INK, counts[i] > 0));
+        }
+        return s.append("</svg>").toString();
+    }
+
+    /** How many assessments earned each grade in {@link #GRADES}, in that order. */
+    private static int[] gradeCounts(List<AcademicsSection.AssessmentItem> rows) {
+        int[] counts = new int[GRADES.length];
+        for (var a : rows) {
+            int idx = java.util.Arrays.asList(GRADES).indexOf(a.getGrade());
+            if (idx >= 0) counts[idx]++;
+        }
+        return counts;
+    }
+
+    /** Horizontal meter: the fill carries the tone, the track is a lighter step of the same hue. */
+    private String svgMeter(int pct, double width, String fill, String track) {
+        // openhtmltopdf rejects a non-integer SVG width ("110.0")
+        return "<svg xmlns='http://www.w3.org/2000/svg' width='" + (int) Math.round(width) + "' height='8'>"
+                + barPath(0, 0, width, 8, track)
+                + barPath(0, 0, width * Math.max(0, Math.min(100, pct)) / 100.0, 8, fill)
+                + "</svg>";
+    }
+
+    /** Bar square at the baseline, 4px-rounded at the data end. */
+    private String barPath(double x, double y, double w, double h, String fill) {
+        if (w <= 0.5) return "";
+        double r = Math.min(4, Math.min(w, h / 2));
+        return "<path d='M" + fmt(x) + "," + fmt(y) + " H" + fmt(x + w - r)
+                + " Q" + fmt(x + w) + "," + fmt(y) + " " + fmt(x + w) + "," + fmt(y + r)
+                + " V" + fmt(y + h - r)
+                + " Q" + fmt(x + w) + "," + fmt(y + h) + " " + fmt(x + w - r) + "," + fmt(y + h)
+                + " H" + fmt(x) + " Z' fill='" + fill + "'/>";
+    }
+
+    private String svgLine(double x1, double y1, double x2, double y2, String stroke, double width) {
+        return "<line x1='" + fmt(x1) + "' y1='" + fmt(y1) + "' x2='" + fmt(x2) + "' y2='" + fmt(y2)
+                + "' stroke='" + stroke + "' stroke-width='" + fmt(width) + "'/>";
+    }
+
+    private String svgText(double x, double y, String text, String anchor, double size, String fill, boolean bold) {
+        return "<text x='" + fmt(x) + "' y='" + fmt(y) + "' text-anchor='" + anchor + "' font-size='" + fmt(size)
+                + "' fill='" + fill + "'" + (bold ? " font-weight='700'" : "")
+                + " font-family='Helvetica, Arial, sans-serif'>" + escHtml(text) + "</text>";
+    }
+
+    /**
+     * Colour for a below-class subject bar. The warm "attention" amber is indistinguishable from a
+     * warm institute accent (the default "primary" theme is orange), so warm accents get slate.
+     */
+    private static String belowClassColor(String accent) {
+        try {
+            java.awt.Color c = java.awt.Color.decode(accent.length() == 4
+                    ? "#" + accent.charAt(1) + accent.charAt(1) + accent.charAt(2) + accent.charAt(2) + accent.charAt(3) + accent.charAt(3)
+                    : accent.substring(0, 7));
+            float[] hsb = java.awt.Color.RGBtoHSB(c.getRed(), c.getGreen(), c.getBlue(), null);
+            boolean warm = hsb[1] > 0.25f && (hsb[0] < 0.17f || hsb[0] > 0.9f);
+            return warm ? "#546E7A" : "#C6803A";
+        } catch (Exception e) {
+            return "#C6803A";
+        }
+    }
+
+    /** Chart title on the left, legend (swatch, label, swatch, label, …) right-aligned on the same row. */
+    private String chartHeader(String title, int marginTop, String... legend) {
+        StringBuilder h = new StringBuilder("<table class='ch'")
+                .append(marginTop > 0 ? " style='margin-top:" + marginTop + "px'" : "")
+                .append("><tr><td class='ct'>").append(escHtml(title)).append("</td>");
+        for (int i = 0; i + 1 < legend.length; i += 2) {
+            h.append("<td class='lsw'>").append(legend[i]).append("</td><td class='llb'>").append(escHtml(legend[i + 1])).append("</td>");
+        }
+        return h.append("</tr></table>").toString();
+    }
+
+    private String legendSquare(String color) {
+        return "<svg xmlns='http://www.w3.org/2000/svg' width='9' height='9'><rect width='9' height='9' rx='2' fill='" + color + "'/></svg>";
+    }
+
+    private String legendDot(String color) {
+        return "<svg xmlns='http://www.w3.org/2000/svg' width='16' height='10'><line x1='0' y1='5' x2='16' y2='5' stroke='" + color
+                + "' stroke-width='2'/><circle cx='8' cy='5' r='3.5' fill='" + color + "' stroke='#FFFFFF' stroke-width='1.5'/></svg>";
+    }
+
+    private String legendLine(String color) {
+        return "<svg xmlns='http://www.w3.org/2000/svg' width='16' height='10'><line x1='0' y1='5' x2='16' y2='5' stroke='" + color
+                + "' stroke-width='2'/></svg>";
+    }
+
+    private String legendTick() {
+        return "<svg xmlns='http://www.w3.org/2000/svg' width='4' height='12'><rect x='1' width='2' height='12' fill='" + INK + "'/></svg>";
+    }
+
+    /** Class average of an assessment as a percentage of its total, or null when unknown. */
+    private static Double classPct(AcademicsSection.AssessmentItem a) {
+        if (a.getClassAverage() == null || a.getTotalMarks() == null || a.getTotalMarks() <= 0) return null;
+        return a.getClassAverage() / a.getTotalMarks() * 100.0;
+    }
+
+    /**
+     * "default 12th Commerce Offline (default)" → "12th Commerce Offline". "default" is the
+     * placeholder level/session of a course that has none — never print it on a parent's report.
+     */
+    static String cleanBatchLabel(String label) {
+        if (label == null) return "";
+        // Only the placeholder positions — a leading level and a "(default)" session — so a
+        // "default" elsewhere in the name ("Weekend (Default Timing)") is left alone.
+        return label.replaceAll("(?i)\\(\\s*default\\s*\\)", "")
+                .replaceAll("(?i)^\\s*default\\s+", "")
+                .replaceAll("\\s{2,}", " ")
+                .trim();
     }
 
     private String buildV1Html(StudentAnalysisProcess process) {
@@ -835,7 +1145,7 @@ public class StudentReportPdfService {
      * so the only tags in the output are the ones this method emits.
      */
     private String mdToHtml(String md) {
-        String[] lines = escHtml(md).replace("\r", "").split("\n");
+        String[] lines = escHtml(stripEmoji(md)).replace("\r", "").split("\n");
         StringBuilder out = new StringBuilder();
         boolean inUl = false, inTable = false;
         for (String raw : lines) {
@@ -857,7 +1167,8 @@ public class StudentReportPdfService {
             } else if (inTable) { out.append("</table>"); inTable = false; }
             if (line.startsWith("- ") || line.startsWith("* ") || line.startsWith("- [")) {
                 if (!inUl) { out.append("<ul>"); inUl = true; }
-                String item = line.replaceFirst("^[-*]\\s+", "").replaceFirst("^\\[[ xX]\\]\\s*", "");
+                String item = line.replaceFirst("^[-*]\\s+", "").replaceFirst("^\\[[ xX]\\]\\s*", "")
+                        .replaceFirst("^#{1,6}\\s*", ""); // "- ## Mathematics:" — a header inside a bullet
                 out.append("<li>").append(applyBold(item)).append("</li>");
                 continue;
             } else if (inUl) { out.append("</ul>"); inUl = false; }
@@ -874,6 +1185,47 @@ public class StudentReportPdfService {
 
     private String applyBold(String s) {
         return s.replaceAll("\\*\\*(.+?)\\*\\*", "<strong>$1</strong>");
+    }
+
+    /** Escapes a plain-text AI field, rendering any stray **bold** instead of printing the stars. */
+    private String inlineMd(String s) {
+        return applyBold(escHtml(stripEmoji(s))).replaceAll("(?m)^#{1,6}\\s+", "");
+    }
+
+    /**
+     * The PDF fonts have no emoji glyphs, so openhtmltopdf prints '#' for each code point —
+     * the narrative's "⚠️ **Mathematics:**" came out as "## Mathematics:". Drop them here only;
+     * the web report renders them fine.
+     */
+    private static String stripEmoji(String s) {
+        if (s == null) return null;
+        return s.replaceAll("[\\x{1F000}-\\x{1FAFF}\\x{2600}-\\x{27BF}\\x{2B00}-\\x{2BFF}\\x{FE0F}\\x{200D}]\\s?", "");
+    }
+
+    /** "2026-04-11T04:30:00.000+00:00" → "11 Apr 2026"; anything unparseable is shown as-is. */
+    private static String fmtDate(String iso) {
+        if (!StringUtils.hasText(iso)) return "";
+        java.time.LocalDate d = parseDate(iso);
+        return d == null ? iso : d.format(java.time.format.DateTimeFormatter.ofPattern("d MMM yyyy", Locale.ENGLISH));
+    }
+
+    private static java.time.LocalDate parseDate(String iso) {
+        if (!StringUtils.hasText(iso)) return null;
+        try {
+            return java.time.OffsetDateTime.parse(iso).toLocalDate();
+        } catch (Exception e) {
+            try {
+                return java.time.LocalDate.parse(iso.length() >= 10 ? iso.substring(0, 10) : iso);
+            } catch (Exception ignored) {
+                return null;
+            }
+        }
+    }
+
+    /** 32.0 → "32", 4.5 → "4.5", 66.67 → "66.7". */
+    private static String fmtNum(double d) {
+        double r = Math.round(d * 10.0) / 10.0;
+        return r == Math.rint(r) ? String.format(Locale.US, "%.0f", r) : String.format(Locale.US, "%.1f", r);
     }
 
     // -----------------------------------------------------------------------

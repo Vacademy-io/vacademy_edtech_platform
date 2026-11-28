@@ -1,0 +1,55 @@
+{
+    "searchPlaceholder": "Search by phone or name...",
+    "retrying": "Retrying…",
+    "tryAgain": "Try again",
+    "loading": "Loading...",
+    "botHandedOver": "Bot handed over",
+    "notDelivered": "Not delivered",
+    "notDeliveredCount_one": "{{count}} message was not delivered",
+    "notDeliveredCount_other": "{{count}} messages were not delivered",
+    "notDeliveredCountShort_one": "{{count}} not delivered",
+    "notDeliveredCountShort_other": "{{count}} not delivered",
+    "filters": {
+        "all": {
+            "label": "All",
+            "title": "Every conversation"
+        },
+        "unanswered": {
+            "label": "Unanswered",
+            "title": "The chatbot handed these over and nobody has replied yet"
+        },
+        "failed": {
+            "label": "Not delivered",
+            "title": "Conversations where a message was refused by WhatsApp"
+        }
+    },
+    "empty": {
+        "unanswered": "Every conversation has been replied to",
+        "failed": "Every message was delivered",
+        "all": "No conversations yet"
+    },
+    "escalation": {
+        "maxTurns": "The conversation reached its automated reply limit",
+        "aiError": "The assistant could not generate a reply",
+        "manual": "Handed over by an admin",
+        "noInfo": "The assistant didn't have the information to answer",
+        "withMessage": "{{why}}\n\nThey asked: {{message}}",
+        "existingLead": "An existing lead messaged again",
+        "crmSaveFailed": "The chatbot couldn't save this lead to the CRM",
+        "withLeadMessage": "{{why}}\n\nTheir message: {{message}}",
+        "withAnswers": "{{why}}\n\nTheir answers:\n{{message}}"
+    },
+    "lastKind": {
+        "image": "Photo",
+        "video": "Video",
+        "audio": "Audio",
+        "voice": "Voice message",
+        "sticker": "Sticker",
+        "document": "Document",
+        "location": "Location",
+        "contacts": "Contact card",
+        "other": "Attachment",
+        "reaction": "Reacted {{emoji}}",
+        "reactionRemoved": "Removed a reaction"
+    }
+}

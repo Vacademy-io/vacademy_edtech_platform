@@ -7,6 +7,8 @@ import {
 } from "@/components/ui/dialog";
 import { Clock, CheckCircle } from "@phosphor-icons/react";
 import { MyButton } from "@/components/design-system/button";
+import { getTerminology } from "@/components/common/layout-container/sidebar/utils";
+import { ContentTerms, SystemTerms } from "@/types/naming-settings";
 
 interface EnrollmentPendingDialogProps {
   open: boolean;
@@ -51,7 +53,7 @@ export const EnrollmentPendingDialog: React.FC<EnrollmentPendingDialogProps> = (
             <ul className="text-sm text-blue-700 mt-2 space-y-1">
               <li>• Admin will review your enrollment request</li>
               <li>• You'll receive notification once approved</li>
-              <li>• Access to course slides will be granted</li>
+              <li>• Access to {getTerminology(ContentTerms.Course, SystemTerms.Course).toLocaleLowerCase()} slides will be granted</li>
             </ul>
           </div>
           

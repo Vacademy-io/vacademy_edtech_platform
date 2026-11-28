@@ -1,0 +1,8 @@
+{
+    "title": "Destinataires des notifications de résultats",
+    "description": "Choisissez quels rôles reçoivent les notifications de résultats d'évaluation et de réévaluation (e-mails de publication des résultats et e-mails de rapport de l'apprenant). Par défaut, seuls les apprenants sont notifiés ; les administrateurs et les autres rôles sont désactivés.",
+    "roles": {
+        "admin": "Administrateur",
+        "learner": "Apprenant"
+    }
+}

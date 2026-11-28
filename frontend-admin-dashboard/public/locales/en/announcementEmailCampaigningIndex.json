@@ -1,0 +1,289 @@
+{
+    "page": {
+        "titleCreate": "Create Email Campaign",
+        "titleEdit": "Edit Scheduled Email Campaign",
+        "navHeadingCreate": "Email Campaigning",
+        "navHeadingEdit": "Edit Scheduled Campaign",
+        "subtitle": "Send targeted emails to your {{learners}}, {{teachers}}, or specific groups.",
+        "editingBadge": "Editing scheduled campaign"
+    },
+    "actions": {
+        "cancel": "Cancel",
+        "review": "Review & send",
+        "keepEditing": "Keep editing",
+        "sendCampaign": "Send email campaign",
+        "scheduleCampaign": "Schedule email campaign",
+        "updateCampaign": "Update scheduled campaign",
+        "sending": "Sending…",
+        "updating": "Updating…",
+        "backToSchedule": "Back to scheduled campaigns"
+    },
+    "fixIssues_one": "Fix {{count}} issue before sending this campaign.",
+    "fixIssues_other": "Fix {{count}} issues before sending this campaign.",
+    "footer": {
+        "blocked_one": "{{count}} thing still needs fixing.",
+        "blocked_other": "{{count}} things still need fixing.",
+        "ready_one": "Ready to go — {{count}} audience selected.",
+        "ready_other": "Ready to go — {{count}} audiences selected.",
+        "noAudience": "Add at least one audience before sending."
+    },
+    "locked": {
+        "banner": "This campaign is {{status}} and can no longer be edited. Create a new campaign instead.",
+        "toast": "A campaign in status {{status}} cannot be changed."
+    },
+    "prefill": {
+        "loading": "Loading the scheduled campaign…",
+        "notFound": "This campaign could not be found. It may have been deleted.",
+        "failed": "Could not load the campaign for editing."
+    },
+    "toast": {
+        "updated": "Scheduled campaign updated.",
+        "sent": "Email campaign created and queued for delivery.",
+        "scheduled": "Email campaign scheduled.",
+        "pendingApproval": "Email campaign submitted for approval.",
+        "templateApplied": "Applied template “{{name}}” — subject and content replaced."
+    },
+    "errors": {
+        "loadTemplates": "Could not load email templates.",
+        "loadTemplate": "Could not load that template. Try again.",
+        "loadSenders": "Could not load your sender addresses.",
+        "loadTags": "Could not load tags.",
+        "loadCustomFields": "Could not load custom fields — field filters are unavailable until this is fixed.",
+        "loadCampaigns": "Could not load campaigns."
+    },
+    "apiError": {
+        "fixHighlighted_one": "The server rejected {{count}} field — see the highlighted section.",
+        "fixHighlighted_other": "The server rejected {{count}} fields — see the highlighted sections.",
+        "noPermission": "You don't have permission to send email campaigns for this institute.",
+        "notFound": "This campaign no longer exists.",
+        "tooLarge": "The email content is too large. Trim it or host large images externally.",
+        "serverError": "Something went wrong on our side. Nothing was sent — please try again in a moment.",
+        "network": "Can't reach the server. Check your connection and try again — nothing was sent.",
+        "generic": "The campaign could not be saved. Please try again."
+    },
+    "validation": {
+        "title": {
+            "required": "Give the campaign a name.",
+            "tooLong": "Keep the campaign name under 500 characters."
+        },
+        "subject": {
+            "required": "Write an email subject — recipients see it in their inbox.",
+            "tooLong": "Keep the subject under 255 characters.",
+            "truncatedWarning": "Subjects longer than ~78 characters get cut off in most inboxes."
+        },
+        "previewText": {
+            "missingWarning": "No preview text — inboxes will show the first line of your content instead.",
+            "truncatedWarning": "Preview text longer than ~150 characters gets cut off in most inboxes."
+        },
+        "content": {
+            "required": "Write the email content."
+        },
+        "sender": {
+            "noneConfigured": "No sender address is configured. Set one up under Settings → Notifications before sending.",
+            "required": "Choose which address to send from.",
+            "noLongerAvailable": "The sender this campaign used is no longer configured — choose another."
+        },
+        "priority": {
+            "required": "Choose a priority."
+        },
+        "expiresAt": {
+            "invalid": "Enter a valid expiry date and time.",
+            "mustBeFuture": "The expiry time must be in the future.",
+            "beforeSend": "The expiry time must be after the scheduled send time."
+        },
+        "schedule": {
+            "pickTime": "Pick when this campaign should be sent.",
+            "invalidTime": "Enter a valid send date and time.",
+            "mustBeFuture": "The send time has already passed — pick a future time, or choose “Send now”.",
+            "cronRequired": "Enter a cron expression, or pick one of the presets.",
+            "cronInvalid": "That isn't a valid schedule. Use 6 fields (sec min hour day month weekday) with “?” in exactly one of day or weekday, e.g. 0 0 9 * * ?."
+        }
+    },
+    "details": {
+        "title": "Campaign details",
+        "description": "Basic information about your campaign.",
+        "campaignName": {
+            "label": "Campaign name",
+            "hint": "Internal name to identify this campaign in your dashboard.",
+            "placeholder": "e.g. Spring 2026 onboarding — batch A"
+        },
+        "subject": {
+            "label": "Email subject",
+            "hint": "This is what recipients see in their inbox.",
+            "placeholder": "Email subject line"
+        },
+        "previewText": {
+            "label": "Preview text",
+            "hint": "Shown next to the subject in the inbox, before the email is opened.",
+            "placeholder": "A short teaser for the inbox…"
+        }
+    },
+    "content": {
+        "title": "Email content",
+        "description": "Write the message, or start from a saved template.",
+        "previewEmail": "Preview email",
+        "template": {
+            "label": "Start from a template",
+            "hint": "Optional. Applying a template replaces the subject, preview text and content below.",
+            "appliedHint": "Template “{{name}}” applied. Edits you make here won't change the saved template.",
+            "manage": "Manage templates",
+            "applying": "Applying template…",
+            "placeholder": "Choose a saved email template",
+            "searchPlaceholder": "Search templates…",
+            "empty": "No templates found.",
+            "addNew": "Add new template",
+            "clear": "Clear template"
+        },
+        "tabs": {
+            "editor": "Rich editor",
+            "source": "HTML source"
+        },
+        "variables": {
+            "insert": "Insert variable",
+            "name": "Recipient name",
+            "firstName": "First name",
+            "email": "Recipient email",
+            "username": "Username",
+            "password": "Login password",
+            "mobile": "Mobile number",
+            "instituteEmail": "Institute email",
+            "currentDate": "Today's date",
+            "currentTime": "Current time"
+        },
+        "editorPlaceholder": "Write the email content…",
+        "sourcePlaceholder": "<p>Paste or write HTML here…</p>",
+        "wordCount_one": "{{count}} word",
+        "wordCount_other": "{{count}} words"
+    },
+    "settings": {
+        "title": "Sender & delivery settings",
+        "description": "Who the email comes from, and when it goes out.",
+        "sender": {
+            "verified": "Verified sender",
+            "label": "From email",
+            "hint": "Recipients will see this name and address as the sender.",
+            "fromHint": "From: {{email}}",
+            "noneTitle": "No sender address configured",
+            "noneDescription": "Add and verify a sender address before sending email campaigns.",
+            "configure": "Configure sending",
+            "placeholder": "Choose a sender"
+        },
+        "priority": {
+            "label": "Priority",
+            "hint": "Also shown on the in-app system alert.",
+            "placeholder": "Choose a priority",
+            "options": {
+                "HIGH": "High",
+                "MEDIUM": "Medium",
+                "LOW": "Low"
+            }
+        },
+        "expiresAt": {
+            "label": "Expires at (optional)",
+            "hint": "After this time the in-app alert is hidden. Emails already delivered are unaffected."
+        },
+        "schedule": {
+            "label": "Schedule sending",
+            "immediate": {
+                "label": "Send now",
+                "hint": "Goes out as soon as you confirm."
+            },
+            "oneTime": {
+                "label": "Send later",
+                "hint": "Pick a date and time.",
+                "sendAt": "Send at"
+            },
+            "recurring": {
+                "label": "Repeat",
+                "hint": "Send on a recurring schedule.",
+                "cron": "Cron expression",
+                "cronHint": "6 fields: second minute hour day month weekday — e.g. 0 0 9 * * ? is every day at 9:00 AM.",
+                "presets": "Presets:",
+                "note": "The campaign keeps sending on this schedule until it is cancelled from the scheduled list."
+            },
+            "timezone": {
+                "label": "Timezone",
+                "hint": "Send times are interpreted in this timezone."
+            },
+            "quickPicks": "Quick picks:",
+            "quick": {
+                "in1h": "In 1 hour",
+                "today5pm": "Today 5 PM",
+                "tomorrow9am": "Tomorrow 9 AM",
+                "nextMonday9am": "Mon 9 AM"
+            }
+        }
+    },
+    "preview": {
+        "from": "From:",
+        "to": "To:",
+        "recipients": "{{ Recipients }}",
+        "yourInstitute": "Your institute",
+        "noSubject": "(No subject)",
+        "frameTitle": "Email preview",
+        "emptyTitle": "Nothing to preview yet",
+        "emptyDescription": "Your email will appear here as you write it.",
+        "dialogTitle": "Email preview",
+        "dialogDescription": "This is how the email renders. Actual appearance can differ slightly between email clients.",
+        "device": {
+            "mobile": "Mobile",
+            "tablet": "Tablet",
+            "desktop": "Desktop"
+        }
+    },
+    "rail": {
+        "previewTitle": "Email preview",
+        "previewNote": "Live preview. Actual appearance may differ slightly by email client.",
+        "summaryTitle": "Campaign summary",
+        "tipTitle": "Tip:",
+        "tipBody": "Combine several audiences, exclusions and field filters to target exactly the right people — overlaps are de-duplicated."
+    },
+    "review": {
+        "heading": "Review & send",
+        "howItWillLook": "How it will look"
+    },
+    "summary": {
+        "campaignName": "Campaign",
+        "subject": "Subject",
+        "audience": {
+            "label": "Audience",
+            "none": "No audience yet",
+            "count_one": "{{count}} audience",
+            "count_other": "{{count}} audiences",
+            "breakdown": "Audience breakdown"
+        },
+        "tagReach": "Tag reach",
+        "estimating": "Estimating…",
+        "unavailable": "Estimate unavailable",
+        "people_one": "~{{count}} person",
+        "people_other": "~{{count}} people",
+        "from": "From",
+        "priority": "Priority",
+        "schedule": {
+            "label": "Schedule",
+            "immediate": "Send immediately",
+            "oneTime": "{{when}}",
+            "oneTimeUnset": "Send later — time not set",
+            "recurring": "Repeats: {{cron}}",
+            "recurringUnset": "Repeats — schedule not set"
+        },
+        "expires": "Expires",
+        "exclusions": "Exclusions",
+        "filters": "Field filters",
+        "none": "None",
+        "notSet": "Not set",
+        "edit": "Edit",
+        "roles": {
+            "all": "All {{noun}}",
+            "ADMIN": "All admins"
+        },
+        "ruleType": {
+            "ROLE": "Role",
+            "PACKAGE_SESSION": "Batch",
+            "USER": "User",
+            "TAG": "Tag",
+            "AUDIENCE": "Campaign",
+            "CUSTOM_FIELD_FILTER": "Filter"
+        }
+    }
+}

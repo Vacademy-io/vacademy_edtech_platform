@@ -1,4 +1,30 @@
+import type { TFunction } from 'i18next';
 import { AI_SERVICE_BASE_URL } from '@/constants/urls';
+
+// This is a plain service function (not a component/hook), so it cannot call
+// useTranslation() itself — the guide's convention is to thread the caller's
+// `t` in as a parameter. `t` is optional here because this service is
+// invoked from useContentGeneration.ts, which is wired for i18n in a
+// separate batch of this rollout; until that caller passes its own `t`,
+// this fallback resolves each call's defaultValue string so behavior (and
+// the English copy) stays exactly as before. Keys live under the
+// `studyLibraryGenerating` namespace's `contentGeneration.service.*` block,
+// matching the namespace already used by that caller and by the sibling
+// courseCreationService.ts.
+const fallbackT: TFunction = ((
+    _key: string,
+    defaultValue?: unknown,
+    options?: unknown
+) => {
+    if (typeof defaultValue !== 'string') return String(_key);
+    if (!options || typeof options !== 'object') return defaultValue;
+    // Minimal {{var}} substitution so callers that pass interpolation data
+    // (e.g. { seconds: 300 }) still see it rendered, not the raw token.
+    return defaultValue.replace(/\{\{\s*([^}]+?)\s*\}\}/g, (match, name) => {
+        const value = (options as Record<string, unknown>)[name];
+        return value === undefined ? match : String(value);
+    });
+}) as unknown as TFunction;
 
 export interface ContentGenerationRequest {
     course_tree: {
@@ -95,7 +121,8 @@ export async function generateContent(
     figuresPolicy?: string,
     // Opt-in second pass: after all slides generate, the server regenerates
     // slides that repeat material a chapter-mate already covers.
-    dedupeRepetition?: boolean
+    dedupeRepetition?: boolean,
+    t: TFunction = fallbackT
 ): Promise<void> {
     const apiUrl = `${AI_SERVICE_BASE_URL}/course/content/v1/generate`;
 
@@ -104,7 +131,9 @@ export async function generateContent(
     console.log('Todos count:', todos.length);
 
     if (onProgress) {
-        onProgress('Connecting to content generation service...');
+        onProgress(
+            t('contentGeneration.service.connecting', 'Connecting to content generation service...')
+        );
     }
 
     try {
@@ -175,7 +204,9 @@ export async function generateContent(
 
             // Handle aborted requests
             if (controller.signal.aborted) {
-                throw new Error('Request was aborted due to timeout');
+                throw new Error(
+                    t('contentGeneration.service.errors.abortedTimeout', 'Request was aborted due to timeout')
+                );
             }
 
             // Re-throw other fetch errors
@@ -201,7 +232,10 @@ export async function generateContent(
                 }
                 throw new Error(
                     detail ||
-                        "Your institute's AI credits are insufficient for this generation. Please top up credits to continue."
+                        t(
+                            'contentGeneration.service.errors.insufficientCredits',
+                            "Your institute's AI credits are insufficient for this generation. Please top up credits to continue."
+                        )
                 );
             }
 
@@ -222,11 +256,11 @@ export async function generateContent(
         const decoder = new TextDecoder();
 
         if (!reader) {
-            throw new Error('No response body');
+            throw new Error(t('contentGeneration.service.errors.noResponseBody', 'No response body'));
         }
 
         if (onProgress) {
-            onProgress('Generating content...');
+            onProgress(t('contentGeneration.service.generatingContent', 'Generating content...'));
         }
 
         // Read SSE stream with better buffer management
@@ -249,7 +283,11 @@ export async function generateContent(
                     controller.abort();
                     reject(
                         new Error(
-                            `Stream timed out after ${maxInactivity / 1000} seconds of inactivity`
+                            t(
+                                'contentGeneration.service.errors.inactivityTimeout',
+                                'Stream timed out after {{seconds}} seconds of inactivity',
+                                { seconds: maxInactivity / 1000 }
+                            )
                         )
                     );
                 }, maxInactivity);
@@ -325,7 +363,19 @@ export async function generateContent(
                         // Check for error events from SSE stream - throw immediately to break out of the loop
                         if (update.type === 'ERROR') {
                             throw new Error(
-                                update.message || `Server error (code: ${update.code || 'unknown'})`
+                                update.message ||
+                                    t(
+                                        'contentGeneration.service.errors.serverErrorWithCode',
+                                        'Server error (code: {{code}})',
+                                        {
+                                            code:
+                                                update.code ||
+                                                t(
+                                                    'contentGeneration.service.errors.unknownCode',
+                                                    'unknown'
+                                                ),
+                                        }
+                                    )
                             );
                         }
 
@@ -341,7 +391,11 @@ export async function generateContent(
                             }
                             if (onProgress && update.status === 'STARTED') {
                                 onProgress(
-                                    `Reducing repetition — rewriting ${update.paths?.length || 0} slide(s)...`
+                                    t(
+                                        'contentGeneration.service.reducingRepetition',
+                                        'Reducing repetition — rewriting {{count}} slide(s)...',
+                                        { count: update.paths?.length || 0 }
+                                    )
                                 );
                             }
                             continue;
@@ -391,7 +445,13 @@ export async function generateContent(
                             }
 
                             if (onProgress && update.type === 'SLIDE_CONTENT_UPDATE') {
-                                onProgress(`Generated ${update.slideType} for ${update.path}`);
+                                onProgress(
+                                    t(
+                                        'contentGeneration.service.generatedSlide',
+                                        'Generated {{slideType}} for {{path}}',
+                                        { slideType: update.slideType, path: update.path }
+                                    )
+                                );
                             }
                         }
                     }
@@ -406,39 +466,68 @@ export async function generateContent(
 
                     // Send progress update every 10 updates
                     if (onProgress) {
-                        onProgress(`Processing content updates... (${totalProcessed} completed)`);
+                        onProgress(
+                            t(
+                                'contentGeneration.service.processingUpdates',
+                                'Processing content updates... ({{count}} completed)',
+                                { count: totalProcessed }
+                            )
+                        );
                     }
                 }
             }
         } catch (streamError) {
             console.error('❌ Stream processing error:', streamError);
 
-            // Provide specific error messages for common issues
-            let errorMessage = 'Unknown stream error';
+            // Provide specific error messages for common issues.
+            // NOTE: the substrings 'aborted'/'network'/'timeout'/'buffer' and the
+            // 'Stream processing failed:' prefix below are also matched literally
+            // by the caller's own keyword-based branching (useContentGeneration.ts)
+            // while it still receives this file's raw (fallback) English text, so
+            // the English default values MUST keep those exact words.
+            let errorMessage = t('contentGeneration.service.errors.unknownStreamError', 'Unknown stream error');
             if (streamError instanceof Error) {
                 const message = streamError.message.toLowerCase();
 
                 if (message.includes('aborted') || message.includes('abort')) {
-                    errorMessage =
-                        'Connection was aborted - this may be due to network issues or server timeout';
+                    errorMessage = t(
+                        'contentGeneration.service.errors.streamAborted',
+                        'Connection was aborted - this may be due to network issues or server timeout'
+                    );
                 } else if (message.includes('buffer')) {
-                    errorMessage = 'Stream buffer overflow - content may be too large';
+                    errorMessage = t(
+                        'contentGeneration.service.errors.streamBufferOverflow',
+                        'Stream buffer overflow - content may be too large'
+                    );
                 } else if (message.includes('timeout')) {
-                    errorMessage = 'Stream processing timed out - server may be overloaded';
+                    errorMessage = t(
+                        'contentGeneration.service.errors.streamTimeout',
+                        'Stream processing timed out - server may be overloaded'
+                    );
                 } else if (
                     message.includes('network') ||
                     message.includes('fetch') ||
                     message.includes('failed to fetch')
                 ) {
-                    errorMessage = 'Network error during content generation';
+                    errorMessage = t(
+                        'contentGeneration.service.errors.streamNetworkError',
+                        'Network error during content generation'
+                    );
                 } else if (message.includes('cancelled') || message.includes('cancel')) {
-                    errorMessage = 'Request was cancelled';
+                    errorMessage = t(
+                        'contentGeneration.service.errors.streamCancelled',
+                        'Request was cancelled'
+                    );
                 } else {
                     errorMessage = streamError.message;
                 }
             }
 
-            throw new Error(`Stream processing failed: ${errorMessage}`);
+            throw new Error(
+                t('contentGeneration.service.errors.streamProcessingFailedPrefix', 'Stream processing failed: {{message}}', {
+                    message: errorMessage,
+                })
+            );
         } finally {
             // Cancel the stream so the connection is actually torn down — a
             // timed-out/failed run must not keep generating (and billing) into
@@ -464,12 +553,15 @@ export async function generateContent(
         }
 
         if (onProgress) {
-            onProgress('Content generation complete!');
+            onProgress(t('contentGeneration.service.complete', 'Content generation complete!'));
         }
     } catch (error) {
         console.error('=== Error in Content Generation ===');
         console.error('Error:', error);
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+        const errorMessage =
+            error instanceof Error
+                ? error.message
+                : t('contentGeneration.service.errors.unknownError', 'Unknown error occurred');
 
         // Don't retry SSE errors from backend (they have a specific message to show the user)
         const isSSEError =
@@ -494,7 +586,13 @@ export async function generateContent(
             );
 
             if (onProgress) {
-                onProgress(`Connection interrupted, retrying in ${delay / 1000} seconds...`);
+                onProgress(
+                    t(
+                        'contentGeneration.service.retrying',
+                        'Connection interrupted, retrying in {{seconds}} seconds...',
+                        { seconds: delay / 1000 }
+                    )
+                );
             }
 
             await new Promise((resolve) => setTimeout(resolve, delay));
@@ -511,7 +609,10 @@ export async function generateContent(
                 referenceDocumentFileIds,
                 kbGrounding,
                 documentContentTypes,
-                documentModel
+                documentModel,
+                undefined,
+                undefined,
+                t
             );
         }
 

@@ -1,7 +1,9 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { X, CaretLeft, CaretRight, Compass, MagicWand } from "@phosphor-icons/react";
+import { useTranslation } from "react-i18next";
 import { getTerminology, getTerminologyPlural } from "@/components/common/layout-container/sidebar/utils";
 import { ContentTerms, SystemTerms } from "@/types/naming-settings";
+import { useSiteT } from "../-utils/catalogue-locale";
 
 export type CourseFinderStep = "level" | "session" | "tag";
 
@@ -20,6 +22,12 @@ export interface CourseFinderSelection {
   levels: string[];
   sessions: string[];
   tags: string[];
+  /**
+   * The option labels exactly as the visitor saw them — group labels such as
+   * "Class 6" rather than the raw level names they expand into. Course blocks
+   * render these as removable "you picked" chips.
+   */
+  labels?: string[];
 }
 
 interface CourseFinderWizardProps {
@@ -51,6 +59,10 @@ export const CourseFinderWizard: React.FC<CourseFinderWizardProps> = ({
   onComplete,
   onSkip,
 }) => {
+  const { t } = useTranslation("coursePlayerA");
+  // Step titles and option names are shown in the visitor's language; the
+  // selection (ids, group labels) handed to the course grid stays as authored.
+  const siteT = useSiteT();
   const [stepIndex, setStepIndex] = useState(0);
   const [selection, setSelection] = useState<CourseFinderSelection>(EMPTY_SELECTION);
 
@@ -98,8 +110,11 @@ export const CourseFinderWizard: React.FC<CourseFinderWizardProps> = ({
     currentStep === "level" ? "levels" : currentStep === "session" ? "sessions" : "tags";
   const currentSelected = selection[selectionKey];
 
+  const courses = getTerminologyPlural(ContentTerms.Course, SystemTerms.Course);
+
+  const authoredStepLabel = stepLabels?.[currentStep];
   const stepTitle =
-    stepLabels?.[currentStep] ||
+    (authoredStepLabel ? siteT(authoredStepLabel) : "") ||
     (currentStep === "tag"
       ? getTerminologyPlural(ContentTerms.PopularTag, SystemTerms.PopularTag)
       : currentStep === "level"
@@ -119,7 +134,10 @@ export const CourseFinderWizard: React.FC<CourseFinderWizardProps> = ({
       const expandedLevels = hasLevelGroups
         ? selection.levels.flatMap((groupLabel) => levelGroups![groupLabel] ?? [groupLabel])
         : selection.levels;
-      onComplete({ ...selection, levels: expandedLevels });
+      // Carry the pre-expansion picks through untouched: they are the only
+      // record of what the visitor chose in their own words.
+      const labels = [...selection.levels, ...selection.sessions, ...selection.tags];
+      onComplete({ ...selection, levels: expandedLevels, labels });
     } else {
       setStepIndex((i) => i + 1);
     }
@@ -135,20 +153,20 @@ export const CourseFinderWizard: React.FC<CourseFinderWizardProps> = ({
             <button
               onClick={onSkip}
               className="absolute end-4 top-4 rounded-full p-1.5 text-catalogue-text-muted transition-colors hover:bg-catalogue-bg-subtle hover:text-catalogue-text-primary"
-              aria-label="Close"
-              title="Close"
+              aria-label={t("common.close")}
+              title={t("common.close")}
             >
               <X className="h-5 w-5" aria-hidden="true" />
             </button>
           )}
-          <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-primary-50">
+          <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-catalogue-lg bg-primary-50">
             <MagicWand className="h-5 w-5 text-primary-500" weight="fill" aria-hidden="true" />
           </div>
           <h2 className="text-lg font-semibold text-catalogue-text-primary">
-            Choose your {stepTitle}
+            {t("courseFinderWizard.chooseYour", { stepTitle })}
           </h2>
           <p className="mt-1 text-sm text-catalogue-text-secondary">
-            Pick one or more options below — we&apos;ll show courses that match.
+            {t("courseFinderWizard.pickOptionsHint", { courses })}
           </p>
         </div>
 
@@ -164,7 +182,7 @@ export const CourseFinderWizard: React.FC<CourseFinderWizardProps> = ({
           ))}
         </div>
         <p className="px-6 pb-3 pt-2 text-xs text-catalogue-text-muted">
-          Step {stepIndex + 1} of {activeSteps.length}
+          {t("courseFinderWizard.stepProgress", { current: stepIndex + 1, total: activeSteps.length })}
         </p>
 
         {/* Options */}
@@ -173,15 +191,15 @@ export const CourseFinderWizard: React.FC<CourseFinderWizardProps> = ({
             {currentOptions.map((option) => (
               <label
                 key={option.id}
-                className="flex cursor-pointer items-center rounded-md px-2 py-2 text-catalogue-text-secondary transition-colors hover:bg-catalogue-bg-subtle hover:text-catalogue-text-primary"
+                className="flex cursor-pointer items-center rounded-catalogue-sm px-2 py-2 text-catalogue-text-secondary transition-colors hover:bg-catalogue-bg-subtle hover:text-catalogue-text-primary"
               >
                 <input
                   type="checkbox"
-                  className="form-checkbox h-4 w-4 rounded border-catalogue-border text-primary-500 focus:ring-primary-400 me-2.5"
+                  className="form-checkbox h-4 w-4 rounded-catalogue-xs border-catalogue-border text-primary-500 focus:ring-primary-400 me-2.5"
                   checked={currentSelected.includes(option.id)}
                   onChange={() => toggleOption(option.id)}
                 />
-                <span className="text-sm">{option.name}</span>
+                <span className="text-sm">{siteT(option.name)}</span>
               </label>
             ))}
           </div>
@@ -192,7 +210,7 @@ export const CourseFinderWizard: React.FC<CourseFinderWizardProps> = ({
           {!mandatory ? (
             <button onClick={onSkip} className="catalogue-btn catalogue-btn-ghost">
               <Compass className="h-3.5 w-3.5" aria-hidden="true" />
-              Skip, show all courses
+              {t("courseFinderWizard.skipShowAll", { courses })}
             </button>
           ) : (
             <span />
@@ -201,7 +219,7 @@ export const CourseFinderWizard: React.FC<CourseFinderWizardProps> = ({
             {stepIndex > 0 && (
               <button onClick={handleBack} className="catalogue-btn catalogue-btn-secondary">
                 <CaretLeft className="h-3.5 w-3.5" aria-hidden="true" />
-                Back
+                {t("common.back")}
               </button>
             )}
             <button
@@ -209,7 +227,7 @@ export const CourseFinderWizard: React.FC<CourseFinderWizardProps> = ({
               disabled={currentSelected.length === 0}
               className="catalogue-btn catalogue-btn-primary"
             >
-              {isLastStep ? "Show courses" : "Next"}
+              {isLastStep ? t("courseFinderWizard.showCourses", { courses }) : t("common.next")}
               {!isLastStep && <CaretRight className="h-3.5 w-3.5" aria-hidden="true" />}
             </button>
           </div>

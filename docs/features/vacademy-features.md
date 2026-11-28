@@ -2,7 +2,7 @@
 
 > Vacademy unifies LMS, assessments, live classrooms, CRM & admissions, marketing, communication, finance, HR and a full AI studio — so coaching institutes, schools and edtech companies can run everything from one place, under their own brand.
 
-**15 products · 265 features · 1993 capabilities** · Last updated: 2026-07-17
+**15 products · 298 features · 2614 capabilities** · Last updated: 2026-10-10
 
 This document is maintained in parallel with `vacademy-features.html` (interactive explorer). When you add or change a feature, update **both** files — the HTML embeds the same content in its `DATA` object.
 
@@ -12,21 +12,21 @@ This document is maintained in parallel with `vacademy-features.html` (interacti
 
 | # | Product | What it covers | Features |
 |---|---------|----------------|----------|
-| 1 | [Learning Management (LMS)](#learning-management-lms) | Author rich courses and deliver them beautifully on every device | 21 |
-| 2 | [Assessments & Evaluation](#assessments-evaluation) | Every exam format — online, offline, OMR — with manual and AI grading | 19 |
-| 3 | [Live Classroom](#live-classroom) | Schedule, teach and engage live — built-in classroom or Zoom/Meet | 15 |
-| 4 | [CRM, Sales & Admissions](#crm-sales-admissions) | Capture every lead, empower counsellors, convert admissions | 22 |
-| 5 | [Marketing & Website](#marketing-website) | Websites, campaigns, coupons and referrals that fill your funnel | 16 |
+| 1 | [Learning Management (LMS)](#learning-management-lms) | Author rich courses and deliver them beautifully on every device | 23 |
+| 2 | [Assessments & Evaluation](#assessments-evaluation) | Every exam format — online, offline, OMR — with manual and AI grading | 21 |
+| 3 | [Live Classroom](#live-classroom) | Schedule, teach and engage live — built-in classroom or Zoom/Meet | 17 |
+| 4 | [CRM, Sales & Admissions](#crm-sales-admissions) | Capture every lead, empower counsellors, convert admissions | 26 |
+| 5 | [Marketing & Website](#marketing-website) | Websites, campaigns, coupons and referrals that fill your funnel | 19 |
 | 6 | [Communication Suite](#communication-suite) | Announcements, email, WhatsApp, push and chat — one hub | 15 |
-| 7 | [Voice & AI Calling](#voice-ai-calling) | Cloud telephony, IVR and AI agents that call for you | 17 |
-| 8 | [Vacademy AI](#vacademy-ai) | AI that builds courses, coaches teachers and tutors learners | 17 |
+| 7 | [Voice & AI Calling](#voice-ai-calling) | Cloud telephony, IVR and AI agents that call for you | 19 |
+| 8 | [Vacademy AI](#vacademy-ai) | AI that builds courses, coaches teachers and tutors learners | 22 |
 | 9 | [AI Video Studio (Vimotion)](#ai-video-studio-vimotion) | Prompt-to-video studio: avatars, voiceovers, editing, reels | 27 |
 | 10 | [Automation & Workflows](#automation-workflows) | Visual workflows and one-click automations across the platform | 6 |
-| 11 | [Finance & Payments](#finance-payments) | Fees, invoices, subscriptions and 6+ payment gateways | 14 |
-| 12 | [Institute ERP, HR & Operations](#institute-erp-hr-operations) | Enrollment, batches, branches, staff and payroll — run the institute | 28 |
-| 13 | [Analytics & Reports](#analytics-reports) | Dashboards and reports for learning, sales, fees and engagement | 15 |
-| 14 | [Community & Gamification](#community-gamification) | Shared question banks, leaderboards, XP and badges | 8 |
-| 15 | [Platform, Apps & White-Label](#platform-apps-white-label) | Your brand, your domain, your apps — on enterprise-grade rails | 25 |
+| 11 | [Finance & Payments](#finance-payments) | Fees, invoices, subscriptions and 6+ payment gateways | 16 |
+| 12 | [Institute ERP, HR & Operations](#institute-erp-hr-operations) | Enrollment, batches, branches, staff and payroll — run the institute | 32 |
+| 13 | [Analytics & Reports](#analytics-reports) | Dashboards and reports for learning, sales, fees and engagement | 18 |
+| 14 | [Community & Gamification](#community-gamification) | Shared question banks, leaderboards, XP and badges | 9 |
+| 15 | [Platform, Apps & White-Label](#platform-apps-white-label) | Your brand, your domain, your apps — on enterprise-grade rails | 28 |
 
 > **Note on terminology:** Every term below (Course, Level, Session, Batch, Learner, …) is configurable per institute via Settings → Naming Settings — your clients can rename them to match their own vocabulary (e.g. "Course" → "Program", "Learner" → "Student").
 
@@ -54,6 +54,10 @@ A central library where your team creates and manages every offering — classic
 - **Edit and delete with safeguards** — Update course details anytime; deletion asks for confirmation and supports removing multiple courses at once.
 - **Faculty-scoped views** — Teachers with restricted access see only their own courses, with irrelevant filters hidden automatically.
 - **Instructor invitations** — Invite co-instructors onto a course while creating it, so teaching teams are in place from the start.
+- **Coming soon courses with a waitlist** — Mark a course Coming soon with a launch date and custom ribbon; interested visitors join the course's own waitlist, which admins can notify in one step at launch.
+- **Sell straight from the creation wizard** — An optional final step in course creation sets the payment option and invite link for each batch, so a new course is ready to sell immediately.
+- **Shared author profiles** — Reusable author profiles with photo, subtitle and bio appear on course pages, without ever exposing staff email addresses to learners.
+- **Module and chapter descriptions** — Add a short description to each module and chapter that appears on the content cards admins and learners see.
 
 ### Flexible Course Hierarchy
 
@@ -87,6 +91,8 @@ Chapters are built from slides — individual learning units that can be a video
 - **Slide-level engagement stats** — An activity panel shows which learners viewed or submitted on each slide, flags late submissions, and exports all submissions to CSV.
 - **In-context doubt resolution** — Learner doubts raised on a slide appear in a sidebar where staff can reply, assign a teacher, mark resolved or delete.
 - **Read-time analytics by content type** — Slide counts and estimated read time per content type help gauge course length at a glance.
+- **Interactive HTML slides from uploads** — Upload a self-contained HTML file and it runs as an interactive slide with its own styling and scripts, safely sandboxed from the rest of the app.
+- **Course-wide unsaved drafts** — A banner lists every slide with unsaved changes across the course, so authors can compare and restore drafts instead of losing work.
 
 ### Interactive Course Player
 
@@ -106,6 +112,9 @@ Learners consume content slide by slide in a distraction-free player with a full
 - **Animated interactive lessons** — Animated HTML lessons can embed live code editors, Scratch projects or Jupyter notebooks directly inside the lesson.
 - **Embedded assessments** — Full assessments can be launched from within a course chapter without leaving the learning flow.
 - **End-of-course feedback slide** — An automatic feedback step at the end of a course collects the learner's rating and comments.
+- **Content-only course layout** — Show enrolled learners just the course content as drill-down cards, without marketing sections, opening slides in a focused full-width viewer.
+- **Mark as complete** — Learners can mark a slide complete themselves, recording real progress that unlocks drip content and counts toward certificates, and can undo it.
+- **Configurable viewer flow** — Choose how often the feedback step appears, show a Chapter complete — next up bar, and open chapters straight to their first slide.
 
 ### Video Lessons with In-Video Questions
 
@@ -137,6 +146,9 @@ Drop standalone questions, multi-question quizzes or surveys directly between le
 - **Survey mode** — Run question slides as surveys with no right answer to collect learner feedback inside the course.
 - **Preview as a learner** — Preview the full quiz exactly as a learner will see it before publishing.
 - **Learner quiz experience** — Quizzes run with timers, attempt limits, instant feedback, scorecards and a review mode inside the course player.
+- **Partial marks for multiple-answer questions** — Optionally award a proportional share of marks when a learner picks only some of the correct options, shown as Partially correct in reviews and results.
+- **Marks per question in quiz review** — Every question in the learner's review shows the marks it earned, colour-coded for full, partial, negative or skipped, so totals are easy to follow.
+- **Multiple-answer CSV import** — Comma-separated correct answers in a quiz CSV import automatically become multiple-correct questions.
 
 ### Assignments & Homework
 
@@ -168,6 +180,7 @@ Written content comes in every flavor: upload PDFs, convert Word documents into 
 - **Animated PPT decks** — Upload a .pptx and it becomes a web slideshow that preserves build-step animations as elegant cross-fades, played in an in-course deck player.
 - **PowerPoint-to-PDF conversion** — Classic .ppt and modern .pptx decks convert to PDFs through a professional-grade conversion engine with standard and high-quality modes; very large decks upload straight to cloud storage and convert by reference, sidestepping size limits.
 - **Embedded URL slides** — Embed any external web page or tool directly inside a chapter as its own slide.
+- **Upgraded block editor** — Drag blocks to reorder them, delete blocks on hover, and move older documents to the new editor with a safety check that warns before anything could be lost.
 
 ### Coding & STEM Slides
 
@@ -198,6 +211,8 @@ Two accelerators for content migration. Quick Add lets authors drop many files a
 - **Preview and issue checking** — A preview tree shows exactly what will be created, with warnings for misplaced or skipped files before you commit.
 - **Progress and results report** — Watch the import run step by step and get a results summary of everything created.
 - **Sample zip download** — Download a sample zip that demonstrates the expected folder conventions.
+- **SCORM packages in zips** — SCORM packages included in a bulk-upload zip become SCORM slides automatically.
+- **New chapters from unmatched folders** — Zip folders that match no existing chapter are created as new chapters instead of blocking the import.
 
 ### Drip Content & Prerequisites
 
@@ -213,6 +228,8 @@ Control exactly when learners can access content. Drip rules apply at course, ch
 - **Sequential learning** — Force learners to complete the previous item before moving on.
 - **Three levels of control** — Configure drip at whole-course, chapter or individual-slide level, each with its own dialog and enable toggle.
 - **Locked badges and unlock requirements** — Locked items show a lock indicator in the course tree, and learners see exactly what they must complete to unlock the next piece of content.
+- **Day-wise release schedule** — Release one item every N days counted from each learner's enrolment or the batch start, at a set time, choosing whether upcoming items show locked or stay hidden.
+- **Preview mode for progress rules** — Progress-based rules can be set up in preview without affecting learners until switched on, while date and day-wise rules apply immediately.
 
 ### Certificates: Designer, Auto-Issue & Bulk Generation
 
@@ -233,6 +250,12 @@ Design completion certificates visually with no designer needed: start from a te
 - **Auto-issue on course completion** — Certificates generate automatically with the learner's name and course details once completion passes the institute-set threshold.
 - **In-app celebration, view and download** — A completion banner with confetti celebrates the milestone, and learners view and download their certificate from the course page.
 - **Automatic certificate emails** — Every issued certificate is recorded and delivered to the learner by branded email with the PDF attached.
+- **Per-course certificate control** — Switch certificates on or off, set the completion threshold and choose the design for each course, overriding the institute defaults.
+- **Course certificates tab** — See issued, pending, completed-awaiting and near-threshold learners for a course in one tab, with a per-learner table.
+- **Custom certificate numbering** — Build your own certificate number format from prefix, suffix, year and a sequential counter, starting from any number you choose.
+- **QR and barcode verification** — Every certificate carries a scannable code that opens a branded public verification page — or, if preferred, the institute's own document with details filled in.
+- **Custom certificate fields** — Add your own fields such as grade or an accreditation line, filled with fixed text or each learner's own registration answers.
+- **Template library with auto-fit text** — Start from a library of ready designs; long names and titles automatically shrink to fit their box instead of overflowing.
 
 ### Learner Home Dashboard
 
@@ -254,6 +277,28 @@ The learner's landing page brings together courses, live classes, tests, progres
 - **Institute-configurable widget layout** — Admins choose per institute which dashboard widgets learners see, including alternative hero styles and a kid-friendly Play theme.
 - **Terms acceptance prompt** — A first-login modal captures the learner's acceptance of the institute's terms and conditions.
 - **Notifications preview** — Recent notifications listed on the dashboard with a link to the full notification center.
+- **Per-course progress widgets** — Optionally give each enrolled course its own dashboard widget with progress and a quick way back into the course.
+- **Custom Courses-page tabs** — Add tabs beside In Progress and Completed that show live sessions, free courses, hand-picked courses, sales pages or courses with chosen tags.
+- **Switchable onboarding and rewards blocks** — Admins can hide the first-run Getting started checklist and the XP, streak and badges block for institutes that don't use them.
+
+### Daily Engagement Plans
+
+*Daily bite-sized tasks that build a learning habit*
+
+Teachers schedule what each batch sees on the learner home page every day — readings, a question of the day, flashcards, polls, games or a lesson from the course — inside a set time window. Learners work through a Today queue, earn points, keep their streak alive and come back at reveal time to see answers. Plans run on calendar dates or on days counted from each learner's join date, and teachers can see exactly who is keeping up and who is slipping.
+
+**For:** Admin, Teacher, Learner · **Where:** Admin Web, Learner Web, Learner Mobile App
+
+- **Seven task types** — Mix readings, visual notes, questions of the day (multiple choice, written or file upload), flashcard decks, polls, sandboxed HTML games and existing course lessons in a single day's plan.
+- **Calendar or days-after-joining schedules** — Run a plan on fixed dates with repeat-on-weekdays, or as Day 1 to Day N counted from each learner's own enrolment, so every new joiner gets the same onboarding sequence.
+- **Time windows, reminders and answer reveal** — Each day opens and closes at set times in the institute's timezone, can push a reminder to learners, and reveals answers and poll results at a chosen time.
+- **Missed-task and catch-up policy** — Choose whether a missed task expires, can be caught up late for full points, or for reduced points — catch-up recovers points but never repairs a broken streak.
+- **Learner Today module** — A home-page card shows today's tasks with progress, countdowns, points, catch-up items and what is coming next, plus a Daily tasks page with Today, revealed Answers and a Past history.
+- **Flashcard decks with bulk import** — Build decks of up to 50 cards with hints, paste or upload a list to import, shuffle per learner; learners flip, self-rate and resume where they left off.
+- **Assign course lessons as tasks** — Turn any published slide into a daily task from the composer, the course page's Engagement tab or an Assign as task button on the slide; it completes when the lesson does.
+- **Multi-batch plans and duplication** — Create a plan for several batches at once — each keeps its own tracking — then publish, unpublish, archive, edit or duplicate plans to other batches.
+- **Progress tracking and CSV export** — Per-task learner tables show done, late, correct, points, written answers and uploads, answer distributions and card stats, while a plan overview flags learners who are falling behind.
+- **Plan with AI** — Describe the topic, pick chapters, duration and task types, and AI drafts the whole plan for the teacher to review and edit before anything reaches learners.
 
 ### Course Approval Workflow
 
@@ -269,6 +314,7 @@ Require editorial review before courses go live. Teachers author courses or crea
 - **Admin approval dashboard** — Admins see all courses pending review, open full review details, and approve or reject with reasons.
 - **Approval history and summary** — Every course keeps an approval history, and a summary view shows the institute's review pipeline at a glance.
 - **In-review protection** — Slides under review are guarded against conflicting edits.
+- **Direct publishing per role** — Switch approval off for a teacher or custom role to give them a Publish button, while other roles keep the review step.
 
 ### Content Copy & Reuse Across Batches
 
@@ -282,6 +328,7 @@ Copy whole course content between batches, sessions and courses, so new intakes 
 - **Copy lineage badge** — See the ancestry of copied content — which batch it was copied from — right on the course page.
 - **Granular copy and move** — Copy or move individual subjects, chapters and slides between any location in the library.
 - **Copy content during course creation** — Start a new course by copying content from an existing one via a guided dialog.
+- **Copy to many places at once** — Copy or move a slide or chapter to several destinations in one action, with a picker that asks only for the levels each course actually has.
 
 ### SCORM Course Import
 
@@ -360,6 +407,23 @@ Per-role content protection controls make it harder to copy or leak your study m
 - **Slide download control** — Decide role by role who may download slides and documents.
 - **Mobile privacy screen** — The mobile app adds a privacy screen that guards content against screenshots.
 
+### Offline Learning & Secure Downloads
+
+*Study anywhere — even without an internet connection*
+
+Learners download course content inside the mobile and desktop apps and keep studying with no connection — videos, PDFs, documents, audio and quizzes all play offline. Files are encrypted on the device, a device limit and periodic check-in keep paid content under control, and everything a learner does offline syncs back automatically when they reconnect. Admins decide institute-wide, per course and down to individual chapters or slides what may be downloaded.
+
+**For:** Admin, Learner · **Where:** Admin Web, Learner Mobile App, Learner Desktop App
+
+- **Institute offline switch with device limits** — Turn offline access on for the institute and set how many devices each learner may use and how often a device must check in online to keep its downloads.
+- **Per-course and per-item availability** — Allow or block downloads for a whole course or for individual subjects, chapters and slides, so premium or live-only material stays online-only.
+- **Downloads page and download buttons** — Learners download a course, chapter or slide with one tap and manage everything they have saved from a dedicated Downloads page in the app.
+- **Encrypted on-device storage** — Downloaded files are stored encrypted with device-held keys, so content can only be played inside the institute's app.
+- **Offline playback of every core content type** — Videos, PDFs, documents, audio lessons and quizzes play fully offline with the same player learners use online.
+- **Automatic progress and quiz sync** — Progress and quiz attempts made offline are queued and synced when the device reconnects, with quiz scores re-checked on the server.
+- **Device management and remote revoke** — Admins see each learner's offline devices and can revoke one remotely, which removes its downloaded content at the next check-in.
+- **Content update notices and download stats** — Learners are told when downloaded content has changed and can refresh it, while a course Downloads tab shows admins what is being downloaded.
+
 ---
 
 ## Assessments & Evaluation
@@ -390,6 +454,8 @@ A step-by-step wizard walks staff through creating an assessment: basic details,
 - **Duration distribution** — Apply the time limit at whole-assessment level, per section, or per question.
 - **Draft / publish lifecycle** — Assessments stay in draft while being built and publish only when ready; each wizard step tracks its own complete/incomplete status.
 - **Public or private visibility** — Mark an assessment public (open to anyone via link) or private (restricted to selected learners).
+- **Build from a knowledge base** — Plan sections from a knowledge base's topic tree and adjust the plan before generating. Each planned row becomes a section of questions that you review before saving.
+- **Edit questions in place** — Edit a question and its options directly in the sections step without leaving the wizard. Each edit is recorded in the admin activity log.
 
 ### Rich Question Type Library
 
@@ -411,6 +477,8 @@ Author questions in a wide range of formats: single-correct MCQ, multiple-correc
 - **Comprehension groups** — Attach a shared passage to sets of single-correct, multiple-correct or numeric questions.
 - **Rich content everywhere** — Question text, options and explanations support formatted text, images and mathematical formulas.
 - **Per-question evaluation mode** — Each question is marked for automatic or manual evaluation, so mixed papers grade the objective part instantly.
+- **Hidden test-case partial marking** — Coding answers earn marks in proportion to the hidden test cases they pass, and reports show hidden and sample results separately.
+- **Coding answer review** — Staff see each coding answer's verdict, a bar of test cases passed, every test result, the runtime and the submitted source code.
 
 ### AI Answer-Sheet Evaluation
 
@@ -429,7 +497,13 @@ Upload scanned answer sheets and let AI do the grading: the system reads each PD
 - **Per-student summaries with remarks** — Each student gets a consolidated score breakdown and written evaluation summary; evaluators can add their own remarks.
 - **Human review and override** — Teachers review each AI-graded question and adjust marks before release; a badge flags answers graded before a rubric change.
 - **Stop, retry and run history** — Stop a running evaluation, retry failures, and browse a history of every AI evaluation run per attempt with its status.
-- **Evaluator AI quick portal** — A focused portal for teachers who just want papers checked: a trimmed two-step builder for subjective papers, a student roster, batch evaluation and a guided first-time tour.
+- **Automatic AI evaluation on submission** — Turn on 'Evaluate submissions with AI' for an assessment. Every submission, including ones closed when time runs out, is then queued for AI grading with no teacher action needed.
+- **AI grading of typed long answers** — Essays, letters and emails typed in the online test are graded by AI against your rubric and model answer for content, format, organisation and language. Objective questions keep their exact auto-score.
+- **Bulk upload with name matching** — Upload every scanned copy at once. The AI reads the name on each sheet, matches it to a student and queues the checks. For any copy it cannot match, you pick the student.
+- **Bulk check of learner-submitted copies** — AI-check every answer sheet learners uploaded themselves, or only the selected ones. A preview shows what is already checked or running, and no copy is queued twice.
+- **Bulk check tracker and alerts** — A Bulk checks panel shows each copy's status and who it was matched to. An email and an in-app alert arrive when the batch finishes.
+- **Credit cost preview** — Before a check starts, see its cost in AI credits for each copy and in total, worked out from the number of questions, next to the institute's current balance.
+- **Results held for teacher review** — AI-checked marks stay hidden from learners until a teacher reviews them and releases results. This rule is enforced on the server.
 
 ### Manual Evaluation & Answer-Sheet Checking
 
@@ -449,6 +523,10 @@ A dedicated evaluation area lists every assessment awaiting grading and walks ev
 - **All-attempts view** — See every attempt of an assessment with its evaluation status in one list.
 - **Evaluator progress tracking** — See pages reviewed, questions not yet visited, total marks awarded and time spent on each evaluation.
 - **Quick checking setup** — Spin up a lightweight assessment with sections purely for answer-sheet checking, with AI-assisted publishing.
+- **Page rotation** — Rotate sideways or upside-down scans page by page. The rotation is saved into the checked PDF while untouched pages keep their original quality.
+- **Adjustable pen** — Change pen thickness and colour as you mark. You can also restyle a mark you already made by selecting it.
+- **Fullscreen and fit-to-width** — Go fullscreen for more room, and let pages fit the available width automatically as the workspace resizes.
+- **Click-to-place marks** — Ticks, crosses, text, boxes and circles appear where you click and stay selected, so you can mark repeatedly from a compact floating toolbar.
 
 ### Learner Exam Experience
 
@@ -469,6 +547,24 @@ Learners take scheduled and practice assessments in a purpose-built exam interfa
 - **Homework and file submissions** — Manual-upload assessments accept file, PDF or video submissions that learners mark complete.
 - **Re-attempt and extra-time requests** — Where allowed, learners request another attempt or more time and admins approve from the monitoring console.
 - **Attention tracking** — The exam screen records tab-switch and visibility events as part of the attempt data available to the institute.
+- **Collapsible question panel** — On desktop, learners can hide the question palette so the question or code editor uses the full width, then bring it back from the header.
+
+### Video Proctoring
+
+*Camera proctoring without the cost of streaming*
+
+Switch on camera proctoring for any assessment that needs it. The learner's own device checks for a missing face or extra people, and captures small snapshots on a timer and at every flag. No video is streamed, so it runs well on ordinary connections and costs little. Staff review each attempt's flags and snapshots in a timeline, during the exam or after it, and can set a violation limit that auto-submits the attempt.
+
+**For:** Admin, Assessment Creator, Evaluator, Learner · **Where:** Admin Web, Learner Web
+
+- **Per-assessment proctoring setting** — Pick a proctoring level for each assessment in the creation wizard. It is off unless you choose it, so existing tests are unchanged.
+- **Camera check-in** — Learners complete a camera check-in on the instructions page. You can choose to block the start until camera access is granted.
+- **On-device face checks** — Throughout the attempt, the learner's device flags moments with no face in view or more than one face. Nothing is streamed to a server.
+- **Timed and flag snapshots** — Small photos are captured on a schedule you set, from every 10 seconds to every 10 minutes, plus one at every flag as evidence.
+- **Tab-switch and camera-loss signals** — Leaving the exam tab, exiting fullscreen and losing the camera are recorded as warnings or flags alongside the face checks.
+- **Violation limit with auto-submit** — Set how many flags an attempt can collect before it auto-submits. Set it to zero to only record flags and leave the decision to a reviewer.
+- **Learner self-view** — Show learners a small self-view while they work, so they know the camera is on.
+- **Proctoring review timeline** — Open any attempt from the Attempted or Ongoing tab to see its flags, warnings and snapshots in order. While open, the view refreshes live during the exam.
 
 ### Live Exam Monitoring & Submissions Console
 
@@ -486,6 +582,12 @@ While an exam runs, staff see participants grouped into Attempted, Ongoing and P
 - **Send reminders** — Nudge pending participants who have not started yet.
 - **Release results** — Release results per learner, in bulk, or for the entire assessment when set to manual release.
 - **Search and filters** — Find participants by name and filter each tab before applying bulk actions.
+- **WhatsApp and email reminders** — Send reminders to pending learners on WhatsApp or email, for one learner or in bulk. 'Select all' reaches the whole filtered list, not just the visible page.
+- **Not-attempted list and export** — See batch learners who never attempted the test and export them to CSV, with contact details, for follow-up.
+- **Contact columns and column manager** — Add learner contact columns to the submissions table and choose which columns appear. Registration custom fields are included in the CSV export.
+- **Requests inbox** — A dedicated tab collects learners' reattempt and extra-time requests. Filter them by pending, approved or rejected, and grant between one and twenty extra attempts.
+- **Bulk report export as ZIP** — Generate a ZIP with one report PDF per student for the selected or filtered submissions. Progress is tracked, and the export can be resumed or cancelled.
+- **AI class diagnostic report** — Get one AI-written analysis of the whole assessment: weak areas by section, topic and question, common misconceptions with how to reteach them, and an action plan. You pay once, and every later download is free.
 
 ### Question Paper Bank
 
@@ -503,6 +605,9 @@ Every question paper lives in a central bank where staff can search, filter, fav
 - **Copy public papers to private** — One click imports a public paper into the institute's private bank for editing and use.
 - **Archive papers** — Remove outdated papers from the active bank without touching past assessments.
 - **Question selector** — Pick individual questions from existing papers when assembling a new assessment section.
+- **Add-paper chooser** — Add a paper by generating it with AI, uploading a file and reviewing every parsed question, or writing it by hand in the editor.
+- **Sorting, date groups and counts** — The bank shows totals for all papers, papers added this week and favourites. You can sort by newest, oldest or name, and papers are grouped by date.
+- **Delete with undo** — Deleting a paper asks for confirmation first, and the notification that follows has an Undo button.
 
 ### Word / DOCX Question Import
 
@@ -558,6 +663,7 @@ Decide exactly who can take each assessment. Closed tests are assigned to select
 - **Participant status check** — Registrants can look up whether their registration and attempt are confirmed.
 - **Registered participants list** — View, filter and export everyone registered, including their registration source: admin pre-registration, batch, or open link.
 - **Expected participants** — Record expected participant counts for planning open tests.
+- **Field help text and per-form required rules** — Add help text under registration fields. Built-in fields such as name, email and phone can be made required or optional for each form.
 
 ### Learner Results & Report Cards
 
@@ -573,6 +679,8 @@ After results release, learners get a detailed report: score breakdown, peer com
 - **Option distribution** — See what percentage of peers picked each option on every question.
 - **PDF report download** — Download the report as a formatted PDF.
 - **AI report card** — Generate an AI-written PDF report with narrative feedback on the attempt.
+- **Answer sheets with results** — Next to their results, learners open their own scanned answer sheet, the teacher's checked copy and any attached report, each clearly labelled.
+- **Richer report PDF** — A redesigned report PDF includes the learner's own answers and the criteria used for AI marking, so feedback is easy to follow.
 
 ### Re-evaluation Engine
 
@@ -601,6 +709,8 @@ For exams conducted on paper, staff enter learner responses into the platform af
 - **One-shot create-and-submit** — Create the attempt and submit all responses in a single step.
 - **Automatic grading of entered data** — Entered responses are graded by the same engine, feeding results, ranks and analytics.
 - **Institute-level offline entry setting** — Turn manual marks entry for offline and paper assessments on or off across the institute.
+- **Answer sheet and checked-copy attachments** — Attach the learner's scanned answer sheet, the checked copy and an optional report PDF to each offline entry. Learners see them with their result.
+- **Bulk offline import** — Download a CSV template and a sample ZIP already filled with the batch roster. Then upload one ZIP of marks and scanned PDFs to enter results for a whole class.
 
 ### Surveys & Feedback Forms
 
@@ -659,6 +769,7 @@ Per-assessment permissions let institutes split duties across the team. Separate
 - **Submission and report access** — Control who can open submissions and analytics for each assessment.
 - **Evaluation access** — Assign the evaluators allowed to grade answer sheets.
 - **Invite institute users** — Search existing staff by role and add them to any access list; filter and revoke invitations.
+- **Role-based assessment actions** — In Display Settings, choose for each role, including custom roles, whether staff see the create, edit and delete actions for assessments.
 
 ### Assessments & Quizzes Inside Courses
 
@@ -676,6 +787,8 @@ Embed a complete test from the assessment engine into any course chapter — lin
 - **Instant scorecard** — A score summary appears immediately after submission.
 - **Answer review mode** — Learners revisit each question to see their answer, the correct answer and explanations.
 - **Attempt history** — Past attempts are stored and viewable, so learners can track improvement.
+- **Schedule-locked assessment slides** — An assessment slide stays locked in the course outside its live window, and learners see when it opens.
+- **AI checking for paper-based chapter tests** — Create a paper-based test from the course. In the background, AI reads the uploaded question paper to set up questions and marks, then checks every answer sheet learners upload.
 
 ### Assessment & Homework Organization
 
@@ -691,6 +804,26 @@ The assessments home organises everything into Live, Upcoming, Previous and Draf
 - **Detail tabs** — Each assessment opens into Basic Info, Questions, Participants, Access Control and Submissions tabs, including a learner-view preview of the paper.
 - **Homework list with status tabs** — Browse homework tests split into upcoming, live and past states with per-tab counts, search and filter chips.
 - **Create homework via wizard** — Launch the multi-step assessment creation flow pre-set to homework mode, with schedule details and quick actions on every item.
+- **Redesigned test cards** — Each test is a card with coloured type, status and access badges. The tabs carry icons, and the list is ordered by exam start date.
+- **Share link and QR from the card** — Copy a test's join link, show or download its QR code, or build a campaign-tagged link from the card menu. Private tests explain how to make the link work.
+
+### Assessment Dashboard
+
+*Every test, score and checking backlog at a glance*
+
+One page shows how testing is going across the institute over any date range: which tests are live now, participation, scores and how much evaluation is still waiting. Charts show when and how well learners submit, how every copy was checked, and which batches are doing well. A follow-up list names learners who skip tests or score low, and you can contact them in one click.
+
+**For:** Admin, Teacher, Assessment Creator · **Where:** Admin Web
+
+- **Date range and filters** — Use date presets or a custom range, and filter by batch and test type. Filters stay in the page link, and the view exports to CSV or prints to PDF.
+- **Live now** — See the scheduled tests running right now, with counts of learners who have submitted, are still writing and have not started. The panel refreshes every minute.
+- **KPI cards with trends** — See tests held, participation, submissions, average score, not attempted and evaluation backlog. Each card has a sparkline and the change from the previous period.
+- **Activity and score charts** — A daily activity trend, a participation donut, the score distribution, a weekday-by-hour submission heatmap and the mix of test types.
+- **Evaluation queue** — Lists the tests that still have copies to check, how much is left on each and which teachers are checking them.
+- **Copy-checking breakdown** — Shows how each submission was checked: by a teacher, by AI, auto-graded or entered directly. A per-teacher table gives copies checked, time per copy and the last check date.
+- **Batch performance and top learners** — Compare participation and average score across batches, track copies checked per batch, and see the learners with the highest average scores.
+- **Learners to follow up** — Lists learners who skipped several closed tests or are averaging below a set score. Reach them by WhatsApp, email or phone, or export the list to CSV.
+- **All-tests table** — Every test in the range with its participation, scores and checkers. Click a row to open that test's details.
 
 ---
 
@@ -721,6 +854,12 @@ A guided two-step wizard schedules live classes across batches — one-time sess
 - **Cancel with learner notification** — Delete single occurrences or whole series and optionally notify enrolled learners automatically.
 - **Class cover, thumbnail and waiting-room music** — Attach a cover image, thumbnail and background audio track that plays in the waiting room for a polished pre-class experience.
 - **Search and audit trail** — Search across all sessions, and review each class's log of actions — created, starting, started, rescheduled — for accountability.
+- **Multiple instructors per class** — Assign one or more teachers or presenters to a class; they receive the class notification emails and appear on learners' class cards, while whoever schedules stays the default.
+- **Teachers in bulk scheduling** — The bulk scheduling grid has a searchable Teacher column, the CSV accepts teacher emails or usernames, and unmatched names are flagged per row instead of failing the import.
+- **Teacher on every card and one-click host start** — Session cards show the assigned teacher and a Start as Host button that works for the built-in classroom, Zoom, Google Meet, Zoho or an external link.
+- **Delete past classes** — Remove a single past class from the Past tab without notifying learners, available to roles you allow in display settings.
+- **Manage class materials** — Add, rename and remove the materials linked to a class from its detail page, with every change recorded in the admin activity log.
+- **Public classes for batches too** — A public class can also be assigned to batches, so enrolled learners see it in their app while outsiders register through the public link.
 
 ### Meeting Platform Integrations
 
@@ -756,6 +895,10 @@ Vacademy ships its own hosted virtual classroom, so institutes can run live clas
 - **Automatic attendance from the classroom** — When class ends, the classroom reports who attended and for how long, and attendance is recorded automatically.
 - **Recordings archived to your library** — Classroom recordings are processed and uploaded to secure cloud storage so learners can rewatch them later.
 - **Managed classroom server fleet** — Vacademy operates a pool of classroom servers with capacity and scaling controls, so classes stay smooth even at peak hours.
+- **Participant restrictions** — Stop participants from private messaging, posting in class chat, editing shared notes or seeing the attendee list, per class or as institute defaults; the host keeps full access.
+- **Auto-end when the host leaves** — Optionally close the room automatically a few minutes after the host leaves, so classes never run on unattended.
+- **Host opens the room** — Learners who arrive before the teacher are told the class hasn't started yet, so everyone ends up in the same room the host opens.
+- **Classroom on your own domain** — Run the built-in classroom — including audio and video — on your institute's own web address, set up by the Vacademy team.
 
 ### Volt — Live Presentation Studio
 
@@ -865,6 +1008,26 @@ Learners get a dedicated live-class home showing today's and upcoming classes gr
 - **Post-class feedback prompts** — After class, learners are guided to the feedback form when the institute has enabled it.
 - **Guest join links** — Non-enrolled guests join open sessions via public links, with an embed mode for external websites and their own waiting room.
 - **Public live-class registration pages** — Shareable registration pages for open live classes with a registration form, email verification and a session countdown — a lead-generation tool for webinars.
+- **Open classes for every enrolled learner** — An opt-in setting lists public classes that have no batch to every enrolled learner in the app, not only to people with the registration link.
+
+### Paid Live Classes & Smart Registration
+
+*Sell seats to live classes and webinars*
+
+Put a price on any public live class and registrants pay before they can join, then land straight in the class once payment clears. Registration accepts a phone number or email as identity, can require a one-time code by email or WhatsApp, and lets returning registrants get back in with one field from any device. Every registrant is captured as a CRM lead and can start your follow-up workflows automatically.
+
+**For:** Admin, Teacher, Learner · **Where:** Admin Web, Public Web, Learner Web, Learner Mobile App
+
+- **Ticketed live classes** — Set a price and currency on a public class; registrants pay through checkout before joining and receive an invoice, while unpaid visitors are held at the registration page.
+- **Payment gateway per class** — Choose which of the institute's active payment gateways collects payment for each class, or leave it on the institute default.
+- **Pay and go straight into class** — After a successful payment the learner is returned directly to the waiting room or class instead of a status page, with commerce wording that suits webinars rather than tuition fees.
+- **Phone or email as identity** — Registrations can be keyed on a mobile number or an email, so phone-first audiences can sign up without an email address on free classes.
+- **Optional OTP verification** — Switch on email or phone verification per class; registrants confirm a one-time code by email or WhatsApp, using the approved WhatsApp template you pick.
+- **Already registered? quick re-entry** — Returning registrants type just their phone or email to get back in, and a refreshed page or reopened link drops them straight into class — with a code check on a new device when verification is on.
+- **Hero cover image** — Upload a cover image that becomes the background of the public registration page and the waiting room, instead of a stretched logo.
+- **Registrants become CRM leads** — Every registrant, with their form answers, is saved automatically to a webinar lead list and, optionally, to any other lead lists you select for the class.
+- **Registration triggers workflows** — A new registration can start an automation workflow scoped to that class — for seat confirmations, reminders or counsellor follow-up.
+- **Class payments in the payment log** — Live-class payments appear alongside other payments in the institute payment log and can be filtered on their own.
 
 ### Waiting Room & Pre-Join
 
@@ -880,6 +1043,7 @@ Learners who arrive early land in a branded waiting room with a live countdown, 
 - **Waiting room or direct pre-join** — Choose between a classic waiting-room screen or a pre-join mode where learners enter the live class directly during the pre-class window.
 - **Last-entry cutoff** — Optionally set a last entry time after which late learners can no longer join the class.
 - **Attendance from the lobby** — Joining from the waiting room automatically marks the learner present and logs the join.
+- **Pre-class disclaimer video** — Require learners to watch a short institute video before joining; it appears once per class and stops once they are marked present.
 
 ### Attendance Tracking & Reports
 
@@ -900,6 +1064,26 @@ Attendance is captured automatically the moment learners join, enriched with joi
 - **Attendance notifications and summaries** — Optionally notify learners and parents when attendance is marked, with customizable messages and branded WhatsApp, email or dashboard summaries — no exports needed.
 - **Attendance-triggered automations** — Fire WhatsApp nudges on missed-class streaks, alert mentors, unlock assessments at an attendance threshold, or start CRM workflows on drop-off.
 - **Audit-ready records** — Versioned attendance records with timestamps and device information support accreditations and compliance reviews.
+- **Verified minimum attendance** — Opt in to mark learners present only if the meeting roster shows they stayed for a set share of the class, measured to the second — clicking Join is no longer enough.
+- **Attendance emails that explain the verdict** — Learners are told how long they were in class — and, if marked absent, how much time was required — so disputed marks are easy to resolve.
+
+### Live Class Dashboard
+
+*How every class went, at a glance*
+
+A dedicated dashboard shows what is live right now and how classes performed over any date range, broken down by teacher, batch and platform with comparisons to the previous period. Insights highlight the best-attended classes, empty ones and learners who keep missing class, and any class opens into a learner-by-learner breakdown. Views can be exported, printed or shared as a link that reopens the same filters.
+
+**For:** Admin, Teacher · **Where:** Admin Web
+
+- **Date presets and filters** — Pick today, the last 5, 7 or 30 days, the next 7 days or a custom range, and narrow by batch and teacher; data refreshes every minute.
+- **KPI cards with period comparison** — Classes held, attendance rate, average joined per class, average time in class, engagement and average rating, each with a change versus the previous equal period and a trend sparkline.
+- **Automatic insights** — Callouts for the best-attended class, the class that needs attention, the top-rated teacher, the busiest day and completed classes that nobody joined.
+- **Attendance trends and timing heatmap** — Daily expected-versus-present trends, an attendance breakdown chart and a weekday-by-start-time heatmap show when classes happen and when they are best attended.
+- **Teacher and batch roll-ups** — A teacher leaderboard and per-batch attendance table compare performance across your teaching team and cohorts.
+- **At-risk learners** — See learners who have missed several finished classes, with their current miss streak, so teachers can follow up before they drop off.
+- **Class drill-down** — Open any class to see every expected learner's status, time stayed, in-class engagement and written feedback, then call, WhatsApp or email them or export the list.
+- **Feedback wall** — The latest written feedback from learners across the selected range, in one scrolling view.
+- **Export, print and share** — Export the class table to CSV, print the dashboard to PDF, or copy a link that reopens the same date range and filters for a colleague.
 
 ### Class Recordings Hub
 
@@ -915,6 +1099,8 @@ Recordings from Zoom, Google Meet, Zoho and the built-in classroom are collected
 - **Learner replay** — Learners browse past sessions in list and calendar views and play recordings in an in-app player.
 - **Recording expiry and cleanup** — Per-recording expiry dates with automatic cleanup keep storage costs controlled.
 - **On-demand re-sync** — Admins trigger an immediate recordings sync for any class if a recording hasn't appeared yet.
+- **Auto-publish recordings to the course** — Pick course chapters for a class and each new recording is added there as a lesson automatically, with learners notified that it is ready.
+- **Google Meet recordings to your library** — Save a Google Meet recording into your library with one click once Drive access is granted, or upload it manually as a fallback.
 
 ### Post-Class Feedback
 
@@ -931,6 +1117,8 @@ Configure a feedback form per class and learners are prompted to rate the sessio
 - **Feedback statistics** — Per-session statistics summarize ratings so teaching-quality trends are visible at a glance.
 - **CSV export** — Export feedback data to CSV for further analysis or reporting.
 - **Institute-wide defaults** — Set default feedback questions and behavior once in settings; new classes inherit them.
+- **Low-rating filter and ratings-wise export** — Filter feedback to ratings below a chosen score and export results broken down by rating.
+- **Follow up on unhappy learners** — Open a learner straight from their feedback to call them and record remarks on their profile.
 
 ### Live Class Settings & Defaults
 
@@ -953,6 +1141,8 @@ An institute-level settings panel defines the rules every new live class inherit
 - **Learner display controls** — Toggle what learners see — the custom action button card, recording processing options, adding recordings to courses, and the class materials section.
 - **Class description and course connection** — Standardize class descriptions and connect live sessions to course content.
 - **Default timezone** — One institute timezone applied to all new live-class schedules.
+- **Role-based session visibility** — Decide per role whether staff see every class, only their own, or classes created by specific roles — custom roles included.
+- **Default recording destination** — Choose a course chapter where class recordings are published automatically by default; each class can override it.
 
 ### Volt Public Site & Self-Serve Signup
 
@@ -1000,6 +1190,17 @@ Build lead-capture campaigns with custom forms in minutes and share them anywher
 - **Quick automations** — From a campaign card, set an instant confirmation message or a follow-up that goes out N days later — and see which workflows are attached to the campaign — without opening the full workflow builder.
 - **Campaign lifecycle and search** — Campaigns move through Active, Paused, Completed and Archived states (only active campaigns accept leads), with search by name and filters by status and dates.
 - **Audience surveys** — Public survey pages with dynamic question sets collect structured responses from audiences and feed survey reports.
+- **Form appearance designer** — Restyle a campaign's public form — classic, hero or split layout, width, background, card style, accent colour, cover image, highlight bullets and footer note — with a live preview.
+- **Form heading and text** — Edit the page heading, form heading and sub-heading of any campaign form with rich text and left, centre or right alignment.
+- **Custom thank-you screen and redirect** — Replace the standard confirmation with your own message, up to four action buttons, a 'submit another' option, or a timed redirect — personalised with the respondent's name.
+- **Printable QR codes** — Download a non-expiring QR code for any campaign form as PNG or SVG, or print a ready-made sheet for posters and reception desks.
+- **Short links on every share surface** — Every campaign share dialog offers a compact short link alongside the full form URL.
+- **WhatsApp confirmations and follow-ups** — Campaign quick automations can send the confirmation and day-N follow-up over WhatsApp, email or both, using approved templates.
+- **Automatic lead capture** — Self sign-ups who haven't enrolled yet and public webinar registrants become leads automatically in their own lists, and webinars can push registrants into any list you choose.
+- **WhatsApp chatbot leads** — Chatbot flows can check whether a number is already a lead, ask questions tied to CRM fields, and save the conversation as a new or updated lead.
+- **Repeat-lead handling** — When a known person submits again, choose to reject the duplicate or let it through — keeping their counsellor, reassigning, or resetting their status to New.
+- **Facebook and Instagram campaign types** — Facebook and Instagram are built-in campaign types, and lead lists can be filtered by campaign type.
+- **OTP-verified form fields** — Require any form field — typically the phone number — to be verified by a WhatsApp one-time code before a campaign, enquiry, invite or checkout form can be submitted.
 
 ### Website Lead Capture
 
@@ -1015,6 +1216,23 @@ Built-in lead collection on your course catalogue website: gate browsing behind 
 - **Enquiry mode** — Let visitors submit an enquiry for a course instead of (or in addition to) paying — built for high-touch sales.
 - **Contact and newsletter widgets** — Drop-in contact forms with required-field control and newsletter signup sections anywhere on the site.
 - **Lead-focused hero sections** — Hero buttons can open the lead-collection form directly ('Talk to Us') alongside browse calls-to-action.
+- **Forms wired to campaigns** — Lead forms, contact and newsletter sections post straight into a chosen lead campaign, and a new campaign can be created inline from the picker.
+- **Any button opens a form** — Header and section buttons can open a lead form as a popup, so visitors enquire without leaving the page.
+- **WhatsApp click-to-chat** — Add a floating WhatsApp button or a WhatsApp button action that opens a chat with your team.
+- **Campaign health check** — See whether a site's campaign is receiving leads and send a test lead to confirm the form works end to end.
+
+### Gated Resources & Freebies
+
+*Trade free study material for qualified leads*
+
+Offer free PDFs, notes and sample material on your website as lead magnets. Ask for contact details before a download, and every resource a lead opens is recorded against them and collected into an automatic Freebies lead list. Counsellors see exactly which freebies a prospect downloaded before they call.
+
+**For:** Admin, Counsellor · **Where:** Admin Web, Public Web
+
+- **Resource cards** — Build resource sections with thumbnails, uploaded PDFs and drag-to-reorder cards.
+- **Email and lead gates** — Gate a single resource or the whole section behind an email or lead form before visitors can open it.
+- **Download tracking per lead** — Every resource a lead opens is recorded and shown on their lead profile and in the campaign list.
+- **Automatic Freebies list** — Visitors who download resources are collected into an auto-created Freebies lead list, ready for follow-up.
 
 ### Bulk Lead Import
 
@@ -1061,6 +1279,30 @@ A central workspace showing leads across all campaigns with rich filtering, bulk
 - **Lead profile editing** — Edit a lead's profile details after capture, with every change logged.
 - **Configurable CSV export** — Export leads with a column picker, including an optional lead-journey column that flattens every status change, note and call into the export.
 - **Fast at any scale** — Server-side sorting and pagination keep the table responsive even with very large lead databases.
+- **Called and worked windows** — Find leads called, or worked in any way, within a rolling window or custom range, or filter by an exact number of call attempts.
+- **Sort by last activity** — Sort the whole lead list by when each lead was last worked or last called, not just the current page.
+- **Bulk status change** — Select many leads and move them to a new status in one action, with full history recorded for each lead.
+- **Exclude-status filter** — Flip the status filter to 'everything except' — for example, all leads that are not New — in one click.
+- **Configurable filter bar** — Admins can switch off built-in filters, hide statuses from the filter dropdown and choose which custom-field and campaign filters each list shows.
+- **Campaign and UTM filters** — Filter leads by UTM source, medium, campaign, content or term, and see the campaign type and UTM campaign as columns.
+- **Pinned sidebar views** — Point a custom sidebar tab at a filtered lead list — such as 'Untouched leads' — and its filters stay pinned when others are cleared.
+- **Hide converted leads** — Optionally keep converted leads out of the 'All leads' view while they stay reachable through their own filter.
+- **Reorderable saved columns** — Drag columns into your preferred order and show or hide them; the layout is remembered per user.
+- **Move leads between lists** — Move selected leads to another lead list and optionally run that list's automations for them.
+
+### Check Lead (Duplicate Lookup)
+
+*Is this person already ours? Know before you dial*
+
+A focused lookup page where a counsellor types a phone number, email or name and instantly learns whether that person is already a lead — even one owned by a colleague they cannot otherwise see. The institute decides exactly which details the result reveals, so counsellors avoid duplicate calls without gaining access to the whole lead database. Opted-out contacts are always flagged so nobody calls them by mistake.
+
+**For:** Admin, Counsellor · **Where:** Admin Web
+
+- **Search by phone, email or name** — Pick what to search by — a full phone number, an email address or, where the institute allows it, a full name — and get a single clear answer.
+- **Country-aware phone check** — The phone box carries a country picker defaulting to the institute's countries, and only lets a search run once the number is complete, so partial numbers never return false matches.
+- **Institute-chosen result fields** — Admins tick which details a match reveals — such as owner, status, source, campaign or course — and everything else stays hidden, starting from nothing shared.
+- **Opt-out warning** — Contacts who opted out of communication are called out in red on every match, so a counsellor never rings someone who asked not to be contacted.
+- **Off until switched on** — The page and its sidebar entry appear only after an admin enables Check Lead in lead settings; admins always see full details.
 
 ### Automatic Lead Scoring
 
@@ -1077,6 +1319,7 @@ Every lead gets a 0–100 score computed in real time from source quality, profi
 - **Campaign-wide recalculation** — Recalculate scores for an entire campaign on demand.
 - **Score change history** — Every automatic or manual score update is logged as a journey event on the lead.
 - **Score badge visibility** — Choose whether lead-score badges are shown to the team.
+- **Custom interest levels** — Replace hot, warm and cold with your own named, coloured and ordered levels — derived from the lead score or set by hand.
 
 ### Custom Sales Pipeline
 
@@ -1092,6 +1335,9 @@ Define your own pipeline stages — a sensible starter set is created automatica
 - **Full stage history** — Every from-to stage movement is stored and shown on the lead's journey timeline.
 - **Conversion tracking** — Converted and lost outcomes are tracked separately from the working stage, feeding conversion reports.
 - **Analytics definitions** — Set the report timezone and define which call statuses count as 'connected' and which lead statuses count as 'interested' in analytics.
+- **Drag-and-drop lead board** — A Kanban board with one column per pipeline status — drag a lead card to another column to change its status, with the same filters as the lead list.
+- **Your own CRM vocabulary** — Rename 'Tier', 'Lead status' and 'Campaign type' to your institute's words — such as 'Interest level' or 'Source' — everywhere they appear.
+- **Pipeline change audit** — Creating, editing and deleting lists, statuses, tiers, assignments and connectors is recorded in the activity log, filterable by person.
 
 ### Lead Response SLAs & Alerts
 
@@ -1106,6 +1352,11 @@ Set service-level rules for how fast your team must make first contact with a ne
 - **Role-based notifications** — Choose which roles — counsellors, admins, managers — get notified for each SLA reminder.
 - **Overdue visibility everywhere** — Leads that missed first contact or follow-up are filterable in the lead list and surfaced on dashboards.
 - **Automation-ready events** — Reminder and overdue events can trigger notifications and workflows, so escalations run themselves.
+- **Working-hours deadlines** — Set working days and hours; leads arriving after closing or on a day off are due at a chosen time on the next working day.
+- **Minute-level turnaround** — Set first-contact and follow-up deadlines in hours and minutes, such as 1 hour 30 minutes.
+- **Admin deadline override** — Admins can set or reset a specific lead's first-contact deadline right from the lead table, and reminders re-arm automatically.
+- **Any real touch counts** — Notes, calls, meetings, status changes and assignments made by a person all count as a response, so the turnaround clock stops correctly.
+- **Sticky new-lead alerts** — A counsellor's new-lead alert stays up until they record a note, call or status change on that lead.
 
 ### Follow-up Task Management
 
@@ -1121,6 +1372,11 @@ Counsellors schedule follow-ups against leads and land on a focused task view th
 - **Complete with outcome** — Close a follow-up in place with a completion note, optionally scheduling the next touch in the same step.
 - **My-queue by default** — Counsellors automatically see only their own assigned leads; admins can switch to any counsellor's queue.
 - **Quick actions inline** — Call, note, counsellor assignment and tier updates are available directly from each follow-up row.
+- **Structured follow-up outcomes** — Optionally record the student's response, how the follow-up happened and the next action from your own dropdown lists, so outcomes can be counted.
+- **Completed follow-ups** — A Completed view lists closed follow-ups with search, a date window and the outcomes counsellors recorded.
+- **Search and filters** — Search follow-ups by name, phone or email and filter by source, list, UTM campaign and due-date range.
+- **Full follow-up export** — Export every follow-up in the current view — with owner, status, interest level, notes, outcomes and all custom fields — not just the visible page.
+- **Due follow-up pop-ups** — A reminder pops up when a counsellor's follow-up is due or overdue, with mark-done and snooze options and a section in the notification bell.
 
 ### Counsellor Pools & Auto-Assignment
 
@@ -1138,6 +1394,8 @@ Group counsellors into pools attached to specific campaigns and let the system a
 - **Monthly target matrix** — Set a monthly lead target per counsellor per campaign in a simple grid.
 - **Safe deactivation with handover** — Mark a rep inactive in one or many pools at once, name a backup, and optionally reassign their existing leads — every handover is logged with the right actor.
 - **Workflow triggers from pools** — Fire an automation workflow for pool events straight from the pool screen.
+- **AI-first assignment** — Per list, hold new leads unassigned so an AI agent calls them first; a counsellor is assigned only when the call qualifies the lead or retries run out.
+- **Pool visible on lead lists** — Each lead list and campaign card shows which counsellor pool it routes to.
 
 ### Counsellor Workbench
 
@@ -1265,6 +1523,24 @@ Process admissions through a guided form wizard or in bulk, review each admissio
 - **UPI payment collection** — Attach a payment QR code with payee name and UPI ID (VPA) to collect application fees.
 - **Counsellor auto-assignment** — Auto-assign counsellors to applications with a selectable assignment strategy and a chosen counsellor pool.
 
+### Onboarding Flows
+
+*Guided checklists that turn a lead into a student*
+
+Build step-by-step onboarding checklists — forms, document collection, course selection, account creation — and run one for each new admission. Each step decides which roles can see and fill it, so staff, parents and the learner each complete their own part, and a dashboard shows exactly where every person is stuck. Learners and parents finish their steps from their own portal before the regular dashboard opens. Opt-in per institute.
+
+**For:** Admin, Counsellor, Learner, Parent · **Where:** Admin Web, Learner Web, Learner Mobile App
+
+- **Flow builder** — Create named flows of ordered form steps built from your own custom fields, mark steps optional, and keep flows as draft, active or archived.
+- **Role-based step access** — Per step and per field, choose which roles — admin, counsellor or any custom role, parent or learner — can view or edit, so each party fills only their part.
+- **Enrol from a step** — A step can create the student account, send login credentials and enrol them in a course picked from a curated course pool — or complete itself if they are already enrolled.
+- **Start from the lead or student panel** — Staff start onboarding from the side panel on any lead or student, then complete, skip or partially save steps and review submitted forms.
+- **Onboarding dashboard** — One institute-wide list of every onboarding in progress, filterable by flow and status, showing who is on which step.
+- **Learner and parent self-service** — Learners complete their steps from their profile, and parents with their own login complete each linked child's steps, with a card per child.
+- **Dashboard gate** — While a learner has a step they can act on, their dashboard shows that step first, so required details are never skipped.
+- **Review what was submitted** — Learners can revisit everything they provided, and uploaded files open directly for both learners and staff.
+- **Workflow hooks** — Steps can fire your existing automation workflows, so welcome messages and internal tasks run as onboarding progresses.
+
 ### Enrollment Invites & Self-Registration
 
 *One link that sells, collects payment, and enrolls*
@@ -1283,6 +1559,9 @@ Create shareable enrollment links for any course batch that carry the enrollment
 - **Invite management** — Search, filter, update and delete invites; look up invites by learner or payment plan.
 - **Open self-signup** — Open registration pages let new learners create accounts directly, with institute-defined registration questions rendered dynamically; invitees land in the right batch automatically.
 - **Partner (sub-organization) registration wizard** — A reusable open link takes partner organizations through a multi-step wizard — details, custom fields, OTP verification, KYC, terms acceptance and payment — and mints a new sub-organization with its own admin and learner invites.
+- **Enrollment availability window** — Accept enrollments on an invite link only between chosen dates, and show your own message to anyone who opens it outside that window.
+- **Team alerts on invite sign-ups** — Listed team members get an email with the learner's answers whenever someone fills an invite form.
+- **Invite links manager** — Each course lists its invite links with search, creator and date, plus one-click short link, QR code, UTM link, edit, delete and make-default — every change is logged.
 
 ### Bookings & Appointments
 
@@ -1300,6 +1579,25 @@ Define your own booking types — school visits, counselling sessions, demo clas
 - **Calendar and list views** — Browse bookings on a month calendar with day drill-down, or as a filterable list of upcoming, live and past events.
 - **Linked pipeline records** — Bookings can reference a source record — a lead or enquiry — so appointments stay connected to the pipeline.
 
+### Booking Pages & Meetings
+
+*Let prospects book a counselling slot themselves*
+
+Calendly-style public booking pages let prospects, parents and learners pick a free slot with a counsellor or host and book it without logging in. Hosts set their weekly hours, buffers and session lengths; the platform blocks double-booking and the host's own live classes, sends branded confirmations, and can drop every booking straight into a lead list. Hosts and managers see every meeting on a personal or team schedule.
+
+**For:** Admin, Counsellor, Teacher, Learner, Parent · **Where:** Admin Web, Public Web, Learner Web
+
+- **Shareable booking pages** — Create a public booking link with a host, duration, weekly hours, slot interval, buffers, minimum notice, booking horizon, timezone and an auto-generated video meeting or custom location.
+- **Multiple session types** — Offer several options on one page — say a 15-minute chat and a 60-minute deep dive — and available slots adjust to the length chosen.
+- **Custom intake questions** — Ask invitees your own questions — text, dropdown, number, email or phone, required or optional — when they book.
+- **Optional approval** — Require host approval so new bookings start as pending until confirmed.
+- **Self-serve cancel and reschedule** — Invitees receive a private link to cancel or move their booking themselves, with no staff involvement.
+- **No double-booking** — A slot can only be taken once, and the host's scheduled live classes automatically count as busy time.
+- **Branded confirmations** — Invitee and host get an institute-branded confirmation email, and an approved WhatsApp template with booking details can be sent too.
+- **Calendar sync** — Confirmed bookings are pushed to the host's and invitee's Google Calendar and removed on cancel or reschedule.
+- **Bookings become leads** — Attach a booking page to a lead list so every booking creates a lead with its answers, and see each lead's meetings on its profile.
+- **My Schedule and Team Meetings** — Hosts see their own upcoming meetings and managers see their team's, in list or month-calendar view.
+
 ### Contacts Directory
 
 *Everyone you know, in one searchable place*
@@ -1312,6 +1610,7 @@ A unified directory combining enrolled users and campaign respondents into one c
 - **Rich filtering** — Filter by campaign, campaign status/type/dates, email, phone, region, gender, enrollment status, batch, payment status and organization type.
 - **Search and sort** — Name search with server-side sorting and pagination for large databases.
 - **Custom fields on contacts** — Each contact row carries its captured custom-field values and flags whether the person is an enrolled user, a lead respondent, or both.
+- **Totals and column manager** — See the total matching contacts at a glance, and hide or drag columns into order, remembered per browser.
 
 ### User Tags & Segmentation
 
@@ -1362,6 +1661,32 @@ An Elementor-style visual builder for creating your institute's public website a
 - **Version history and one-click restore** — Browse every saved draft and published revision, restore any old version into the editor, and re-publish it.
 - **Role-based editing permissions** — Read, write, delete and publish rights are gated by role — admins can publish and delete while other staff are limited to editing.
 - **Sticky header and back-to-top** — Optional site-wide sticky navigation header and a floating back-to-top button.
+- **Live website view** — Edit while the canvas shows your real site — including unsaved changes — at true desktop, tablet and mobile sizes, and click any block to select it.
+- **HTML pages** — Add a page by pasting HTML, point its buttons at site pages, forms, enrolment links or URLs without touching code, and optionally hide the site header and footer.
+- **Show-on rules** — Show any section only on certain URLs, so one page can serve several audiences or campaigns.
+- **PDF reader block** — Let visitors read a PDF inline or in a full-screen reader with zoom and download.
+- **Protected video player** — Uploaded videos play with simple play and pause controls and no download menu, and the hero can hold a video too.
+- **Program detail blocks** — Spec-table blocks for programme and course directories, plus photo cards and swipeable rows for feature grids.
+- **Header controls** — Hide individual header links, add a site search box, and choose filled, outlined or text styles for each header button.
+- **Mobile action bar** — A bottom bar on phones mirrors your header buttons, including ones that open a lead form.
+- **Media library** — Pick from images you have already uploaded and reuse them across pages instead of uploading them again.
+- **Autosave and pre-publish checks** — Work saves automatically every 45 seconds, and a checklist flags issues before you publish without blocking you.
+- **Traffic insights** — See page views, unique visitors, top pages and top sources for the last 7, 30 or 90 days right inside the editor.
+- **Search-engine ready** — Published sites ship canonical URLs, structured data, robots rules and an automatic sitemap, with keywords and search-console verification set in SEO settings.
+- **Edit from your AI assistant** — Connect an external AI assistant to read your sites and draft page changes, which stay as drafts until you publish them in the builder.
+
+### Institute Blog
+
+*Publish articles that bring learners to you*
+
+Write and publish blog posts right inside the website builder and show them on your site with a ready-made blog section. Every article gets its own search-friendly page and is listed in your sitemap automatically, helping your institute rank for the topics your learners search. Posts can also be drafted from a connected AI assistant for review before publishing.
+
+**For:** Admin · **Where:** Admin Web, Public Web
+
+- **Post editor in the builder** — Create, edit and publish posts from a Blog button on the sites list and in the editor toolbar.
+- **Blog section** — Add a blog block to any page to list your latest articles in the site's own design.
+- **Article pages with SEO** — Each post gets its own page with search and social-sharing tags, included in the site's sitemap.
+- **AI assistant drafts** — A connected AI assistant can draft posts for you, which stay unpublished until you review them.
 
 ### Website Themes & Design Studio
 
@@ -1385,6 +1710,22 @@ Deep design controls make institute sites look professionally designed rather th
 - **What you design is what visitors see** — The editor and the live site share one style engine, so the published page matches the design exactly.
 - **Audience mode** — Tune the site's presentation for children, adults or all audiences.
 
+### Multi-Language Websites
+
+*One website, every language your learners speak*
+
+Publish your institute website in several languages — for example English and Hindi — from a single site. Visitors switch language from the header and every page, link and search-engine tag follows their choice. Admins edit content directly in each language, see what still needs translating, and can fill the gaps with AI in one click.
+
+**For:** Admin · **Where:** Admin Web, Public Web
+
+- **Site languages** — Enable the languages your site offers in global settings; sites without extra languages behave exactly as before.
+- **Visitor language switch** — A language switch in the header lets visitors flip the whole site, and their choice carries across every page and link.
+- **Edit in any language** — An editing-language toggle in the builder lets you write each section's text directly in each offered language.
+- **Translations panel** — See every piece of site text — page titles, sections, course words, filters and checkout lines — with what is still untranslated.
+- **AI fill-in translation** — Translate everything missing with AI in one click, using AI credits; brand names, links and data are left untouched.
+- **Multilingual SEO** — Search engines receive language-aware tags and translated page titles and descriptions for each language version.
+- **Course language versions** — Show the English and Hindi versions of a course as one card with language chips, so visitors pick the version they want.
+
 ### Sales & Product Pages with Checkout
 
 *Landing pages that sell courses and take payment*
@@ -1404,6 +1745,16 @@ Purpose-built sales pages: pick the courses and payment plans to sell, design th
 - **Branded short link** — Every page gets an auto-generated short URL on your own domain, with one-click copy for sharing.
 - **Post-purchase behaviour** — Custom success-page content, an after-payment redirect URL, an optional login button, back-navigation control during checkout, and allow/disallow deselecting bundled courses.
 - **Draft status and buyer preview** — Keep pages in draft, preview them exactly as buyers will see them, and activate when ready.
+- **Basket pricing** — Price a basket as a whole — like 'any 3 for ₹799', a fixed price for a full class pack, or an extra-course price — instead of adding up individual course prices.
+- **Basket discounts** — Give automatic discounts by how many courses are picked or by basket value, with an optional cap, and show the savings on the course list and in the cart.
+- **Automatic offers** — Set code-free rules such as '₹99 off above ₹500'; the best applicable offer is applied automatically and offers never stack.
+- **Minimum-basket coupons** — Make a page coupon valid only when the buyer has enough courses in the cart.
+- **Course Finder** — Ask visitors which class or grade they are in first, then show only the matching courses — optionally skipping the cart and going straight to the form.
+- **View course from the offer** — Course cards on a sales page can open the full course page and bring the visitor back to checkout, with filters for long course lists.
+- **Itemised success screen** — The confirmation screen names every course the buyer just enrolled in, so there is no doubt about what was purchased.
+- **Site-wide cart and store page** — Add a cart to your website header so visitors collect courses from any page and check out once through a chosen store page.
+- **One-click catalogue sync** — Fill a store page with every course your public catalogue sells, at catalogue prices, with a plain-language report of what was added, skipped or switched off.
+- **Multi-currency checkout** — Each course is charged in its own currency, free courses can sit beside paid ones, and mixed-currency carts are asked to check out separately.
 
 ### Lead Ads & Form Connectors
 
@@ -1426,6 +1777,8 @@ Connect Facebook/Instagram Lead Ads, Google lead forms and third-party form tool
 - **Source tracking and deduplication** — Every lead is stamped with its source — website, Google Ads, Meta ads, manual entry and more — and repeat submissions from the same person are merged into the existing lead with the merge recorded on its timeline.
 - **Website enquiry capture** — Enquiries submitted from your public course catalogue pages are captured as leads automatically.
 - **Encrypted credential storage** — All connected-account tokens are encrypted at rest and never leave the server.
+- **Google Lead Form setup and status** — A guided setup dialog shows the webhook URL and key, the steps to follow in Google Ads, and live confirmation when Google's test data or a real lead arrives.
+- **Google Ads campaign attribution** — Leads from Google lead forms carry their Google campaign, ad group and click details, while Google's test submissions are acknowledged but never saved as leads.
 
 ### Email Campaigns
 
@@ -1445,6 +1798,8 @@ A dedicated email campaigning workspace for marketing and engagement emails. Sta
 - **Edit, reschedule and resend** — Open any not-yet-sent campaign back in the editor and change anything until its start time passes, or reopen a past campaign to adapt and send again.
 - **Bulk sending with rate control** — Large sends are processed as background batches with a configurable send rate, so big blasts don't trip provider limits.
 - **Attachments** — Emails can carry file attachments, including automatically generated documents like invoices.
+- **Daily send caps and warm-up** — Cap how many emails each sender address sends per day — with a warm-up schedule that raises the cap gradually — and overflow is queued for the next sending window automatically.
+- **Guided campaign editor** — A sectioned editor walks through details, content, audience and delivery with a live email preview, a campaign summary and inline error checks before sending.
 
 ### Drag-and-Drop Template Designer
 
@@ -1478,6 +1833,27 @@ A public course storefront where learners and anonymous visitors browse, search 
 - **Live seat availability** — Batch listings can reflect real-time seat availability from the seat inventory system.
 - **White-label catalog on your domain** — Domain-aware routing serves the catalog under the institute's own web domain with the institute's logo, colors and terminology.
 - **App-store compliant purchasing** — On iOS the app automatically adjusts paid-purchase UI where required, keeping the mobile app store-compliant.
+- **Stream tabs and badges** — The courses page can show stream tabs, live filter counts, quick filters and Bestseller, Popular, New or Free badges, with a Popular sort.
+- **Course showcase strip** — Feature newest, on-sale, tagged, hand-picked or coming-soon courses in a short strip, with optional ribbons like 'Hot' per course.
+- **Course finder wizard** — Guide visitors step by step through level, session and tag to the right course.
+- **Choose what 'View course' opens** — Per course, open the standard course page, a page you designed, an outline view or subject tiles.
+- **Default catalogue sort** — Choose how the course grid is sorted when visitors first arrive — for example newest, popular or by name.
+- **Sell a product page from your site** — A Product Page Offer section sells a sales page's courses directly from your marketing website.
+
+### Folder Libraries & Learning Paths
+
+*Organise big catalogues into browsable streams*
+
+Arrange a large course offering into shared folder trees — such as Stream, Class and Subject — with sales pages at the end of each branch, and reuse the same library on any website. Visitors drill down one level at a time, add courses to their cart along the way, and can follow guided learning paths. Folder edits go live immediately, so the catalogue always reflects what you sell.
+
+**For:** Admin · **Where:** Admin Web, Public Web
+
+- **Shared folder libraries** — Build folder trees once — for example Class, then Subject — with product pages as the final level, and use them across all your sites.
+- **Folder Browser section** — Drop a browser onto any page so visitors explore the library one level at a time and add courses to the cart inline.
+- **Streams mega menu** — Turn a header link into a mega menu of your streams, built automatically from a folder library.
+- **Folder styling and coming soon** — Give each folder a link key and accent colour, mark it coming soon, and attach a 'notify me' lead campaign to collect interest.
+- **Learning Path section** — Show a step-by-step learning path, or a list of paths, fed live from your product pages and folders.
+- **Live edits** — Changes to folders appear on the live site immediately, with no separate publish step.
 
 ### Discount Coupons
 
@@ -1548,7 +1924,7 @@ Connect the institute's YouTube channel once and publish platform videos to it �
 
 *Run open demo classes that capture every registrant*
 
-Make any live class public and share it as a registration link — perfect for demo classes, webinars and open houses. Visitors register through a custom form, verify their email, and join as guests without creating an account, while the institute captures every registrant's details as a ready-made follow-up list.
+Make any live class public and share it as a registration link — perfect for demo classes, webinars and open houses. Visitors register through a custom form with their email or phone number, optionally confirm a one-time code, and join as guests without creating an account, while the institute captures every registrant as a lead for follow-up.
 
 **For:** Admin, Counsellor, Learner · **Where:** Admin Web, Public Web
 
@@ -1586,6 +1962,10 @@ Wire your own analytics and ad pixels into every enrollment touchpoint. Add a Go
 - **GTM container per institute** — Paste a Container ID once and every tag you manage in GTM — GA4, Meta Pixel, remarketing — goes live on your platform pages.
 - **GTM per sales page** — Attach a separate GTM container to an individual sales page for campaign-specific conversion tracking.
 - **UTM tracking link generator** — Generate share links with utm_source, medium, campaign, term and content baked in, straight from the page editor toolbar.
+- **Campaign link builder everywhere** — Once Campaign Links are switched on, build UTM-tagged links from the share menu of invite links, sales pages, catalogues, lead campaigns, assessments and live classes.
+- **Per-learner campaign source** — The first campaign a visitor arrived from is remembered and attached to them when they enrol or submit a form, shown as a Campaign source card on their profile.
+- **Curated sources and mediums** — Define your standard UTM sources and mediums in settings so every team member tags links the same way.
+- **Pixel and analytics IDs** — Paste a GA4, Meta Pixel or GTM ID in website settings and tracking runs on every page of that site.
 
 ### Shareable Media Links
 
@@ -1641,6 +2021,7 @@ Compose a rich announcement once and deliver it simultaneously over push notific
 - **Delivery and read analytics** — Per-announcement stats show delivered, read, dismissed counts and dismiss rate, down to per-recipient delivery status with seen and dismissed timestamps.
 - **Edit, duplicate and re-deliver** — Update or duplicate any announcement, trigger delivery again on demand, and restart failed deliveries with recovery tracking.
 - **Planned and past views** — Separate history and schedule screens with search, status and date-range filters keep teams on top of what is queued and what already went out.
+- **Readable send history** — Announcement history lists recipients by name and audiences by batch or role label, with a delivery overview per announcement and times in the viewer's local time.
 
 ### In-App Announcement Channels
 
@@ -1710,6 +2091,11 @@ Learners raise doubts anchored to the exact spot in a lesson — even a specific
 - **Learner query tracking** — Learners see all their raised queries with status and institute responses, and can mark their own doubts resolved.
 - **Resolution workflow** — Doubts move through Active and Resolved states with raised and resolved timestamps, keeping accountability clear.
 - **Instant staff alerts** — Device push notifications tell assigned staff the moment a new doubt arrives.
+- **Doubt board** — Switch the inbox to a board grouped by teacher or status and drag doubts between columns to assign, reassign, move or resolve them.
+- **Custom doubt statuses** — Add statuses like In progress or Waiting on learner with a colour, choose whether each counts as open, in progress or resolved, and set the label learners see.
+- **Activity trail and staff remarks** — Every doubt keeps a history of who raised, assigned, auto-assigned or moved it, plus staff-only remarks learners never see.
+- **Always-assigned handlers** — Add fixed roles or staff to any query type on top of its automatic routing, so the right people are always included.
+- **Sub-organization routing** — Doubts from a sub-organization's learners also reach that sub-organization's own admins or whole team.
 
 ### WhatsApp Business Messaging
 
@@ -1728,6 +2114,7 @@ Send WhatsApp messages to learners and leads through official WhatsApp Business 
 - **Multiple numbers per institute** — Register one or more WhatsApp numbers against the institute, with webhook registration and verification handled in-product.
 - **Incoming message capture** — Replies and inbound messages are received, logged and routed to inboxes and chatbot flows automatically.
 - **Template-to-event mapping** — Map approved templates to system messages, such as which template is used for invoice notices or transactional updates.
+- **Send from a learner profile or list** — Send a template to one learner or a bulk selection from the learner list, mapping variables to profile fields — including their portal username and password — with a review of resolved values first.
 
 ### WhatsApp Team Inbox
 
@@ -1742,6 +2129,11 @@ A shared WhatsApp inbox where staff see every conversation with learners and lea
 - **Free-text replies** — Reply directly within WhatsApp's 24-hour customer-service window, with a clear notice when the window has expired.
 - **Template replies for expired windows** — Search and send any approved template — with variable prompts — to re-engage contacts outside the 24-hour window.
 - **Linked identities** — Conversations tie back to platform users wherever the phone number matches, so staff know exactly who they are talking to.
+- **Send photos, videos, documents and voice notes** — Reply with media and files inside the 24-hour window, with WhatsApp's size and caption rules checked before sending.
+- **Delivery ticks and clear failure reasons** — Every message shows real sent, delivered and read ticks, threads are split by day, and refused messages appear as red bubbles explaining what went wrong in plain language.
+- **Unanswered and Not delivered filters** — Jump to conversations the chatbot handed over that nobody has answered yet, or to conversations with undelivered messages; replying resolves the hand-over.
+- **See which automation sent a message** — Each automated message is labelled with the workflow or chatbot flow that sent it, in the inbox and on the learner's communication history.
+- **Template messages as the learner saw them** — Template sends render with their real header image, video or document, body and buttons, and media-header templates can be sent from the inbox with a preview first.
 
 ### WhatsApp Template Studio
 
@@ -1759,6 +2151,8 @@ Create official WhatsApp Business message templates in-app: compose header, body
 - **Live preview** — See the rendered message with sample values substituted as you type.
 - **Draft, submit and track approval** — Save drafts, edit them, submit to Meta from the template list, and monitor approval status and date per template.
 - **Provider sync** — Pull already-approved templates from your connected provider into the platform library, with last-synced status per template.
+- **Upload header sample media** — Upload the sample image, video or document for a media header directly in the builder, with WhatsApp's file limits checked, instead of hosting it yourself.
+- **WhatsApp-style preview cards** — The template library shows each template as a WhatsApp bubble with header, highlighted variables, footer and buttons, plus chips for header type, variable and button counts.
 
 ### Communication Hub & Email Inbox
 
@@ -1807,6 +2201,9 @@ Send from multiple verified institute addresses while the platform protects your
 - **Bounce statistics** — A stats view summarises bounce volume and types across the institute.
 - **Pre-send batch checking** — Check a whole recipient list against the suppression list in one call before a bulk send.
 - **One-click unsubscribe** — Public per-channel unsubscribe links honor opt-outs instantly.
+- **Daily sending caps per sender** — Limit how many emails each sender address sends per day; overflow queues automatically and goes out when the next sending window opens in the sender's timezone.
+- **Warm-up ramp and weekend pause** — Grow a new sender's daily cap on a schedule — start small, step up every few days, stop at a ceiling — and optionally hold mail over weekends.
+- **Standards-compliant unsubscribe** — Promotional emails carry one-click unsubscribe headers and a footer with your sender name and postal address, and opted-out recipients are skipped automatically.
 
 ### Transactional Email & OTP Delivery
 
@@ -1819,6 +2216,8 @@ The same messaging engine powers critical system emails — one-time login codes
 - **Email OTP** — One-time verification codes are generated and emailed for secure login and identity verification.
 - **New user invitations** — Invitation emails onboard newly added users with their access details.
 - **Full delivery logging** — System emails carry the same status tracking as all other communication and appear in the contact timeline.
+- **CC or BCC per email type** — Copy staff on enrolment, payment confirmation, invoice, fee receipt, certificate, guardian and team-invite emails, choosing CC or BCC and the addresses for each.
+- **Default or custom credential emails** — When sharing credentials or resetting a learner's password, choose the system email or your own template; resets can send a secure link instead of a password.
 
 ### Push & In-App Notifications
 
@@ -1881,7 +2280,7 @@ A first-party AI calling agent that holds natural phone conversations with leads
 
 - **Custom agent personas** — Create any number of named AI agents, each with its own opening line, conversation instructions, language, voice, direction (outbound, inbound or both) and enable/disable switch.
 - **Hindi, English and Hinglish** — The agent converses naturally in Hindi, English or mixed Hinglish and follows callers who switch mid-sentence — the way parents and students actually talk. Callers can interrupt it and it keeps up.
-- **37 natural Indian voices** — Pick from a catalog of 37 male and female Indian voices, with per-agent speaking pace (0.5–2.0x) and expressiveness controls, plus a voice tester in settings.
+- **Natural Indian voices** — Pick from a wide catalogue of male and female Indian voices across several speech engines, with per-agent speaking pace (0.5–2.0x) and expressiveness controls, plus a voice tester in settings.
 - **Calls every lead in about 60 seconds** — New enquiries are dialled within about a minute of arriving, and imported lead lists are worked through automatically.
 - **Question extraction onto the lead** — Define the questions each agent should get answered — class, budget, timeline and more — and the extracted answers are written straight onto the lead record after the call.
 - **Automatic disposition and lead rating** — After each call the outcome and a lead rating land on the lead record, so counsellors pick up ready, pre-qualified leads.
@@ -1890,6 +2289,28 @@ A first-party AI calling agent that holds natural phone conversations with leads
 - **Call-length cap** — A per-agent maximum call duration keeps AI conversations — and their cost — bounded.
 - **Try it live before you buy** — Prospects can talk to the AI agent from the public website in Hindi, English or Hinglish, and listen to a real sample recording.
 - **Runs on Vacademy's own telephony** — AI calls are carried on the institute's Vacademy Voice numbers — no third-party AI-calling vendor or extra account required.
+- **Choice of voice engines, priced upfront** — Pick a speech engine per agent — from a low-cost option to premium Indian voices or an English-only voice — with the credits-per-minute cost shown right in the picker.
+- **Voice modulation** — A per-agent preset widens how much the voice's pitch rises and falls, turning a flat, read-out tone conversational on any voice and engine.
+- **Knows today's date and time** — Agents greet by the actual time of day, turn 'tomorrow' or 'day after' into real dates, and scripts can use day, date and time placeholders in the institute's timezone.
+- **Natural phone manner** — Agents speak everyday phone Hindi, cushion questions warmly instead of interrogating, never repeat the same sentence, and stay in English for the rest of the call once a caller asks.
+- **Voicemail detection** — When a call lands on a carrier voicemail, the agent hangs up instead of talking to a machine, saving minutes and keeping the lead's history clean.
+
+### AI Agent Studio & Prompt Assistant
+
+*Launch a well-scripted AI caller in minutes*
+
+A dedicated AI Agents workspace under Calling where institutes create, test and refine their AI callers. Start from ready-made education use cases, answer a few plain questions, and AI drafts the full script, opening line, questions to ask and call outcomes together. A built-in prompt assistant scores any script, flags instructions that break on live calls, and rewrites it from your notes or from the agent's own recent calls — so agents keep getting better without prompt-engineering skills.
+
+**For:** Admin · **Where:** Admin Web
+
+- **Use-case gallery** — Start from six ready-made education agents — Doubt Solver, Study Mentor, Parent Update, Admissions Counsellor, Fee Reminder and Re-engagement — each card showing a sample exchange of how the call sounds.
+- **Guided setup wizard** — Answer three or four plain questions — institute name, language, what you offer, your goal — and the agent is created with a drafted script, with a ready fallback so setup never dead-ends.
+- **Draft with AI** — Describe the agent in plain words and AI writes the system prompt, opening line, questions to find out and call outcomes in one go, ready to review and save.
+- **Prompt review and scoring** — One click scores the script, rates it dimension by dimension and lists suggested improvements you can tick and apply selectively.
+- **Live-call checks** — The assistant flags instructions known to go wrong on real phone calls, so problems are fixed before the agent ever dials a lead.
+- **Improve from real calls** — Describe what went wrong and the assistant reads the agent's recent transcripts and outcomes to propose a revision grounded in how calls actually went.
+- **Regenerate with your notes** — Rewrite the prompt, opening line, questions and outcomes together from short notes, keeping your facts and every field in sync.
+- **Agents home** — Search and filter agents by status and direction, duplicate an agent as a starting point, and play each agent's voice straight from its card.
 
 ### Vacademy Voice (Built-in Cloud Telephony)
 
@@ -1925,20 +2346,45 @@ Govern exactly how AI calling behaves for your institute: which AI provider to u
 - **Counsellor assignment modes** — After an AI call, assign the lead to a counsellor manually, round-robin, or only to counsellors currently on shift.
 - **AI calls inside automation workflows** — Drop a 'Call with AI' step into any automation — for example, dial every new enquiry within about 60 seconds of it arriving — picking the agent by name.
 - **Lead-list button toggle** — Independently show or hide the manual 'AI call' button in lead lists without turning off workflow-driven AI calling.
+- **Engaged callers always reach a human** — If a caller held a real conversation but the call ended without a clear outcome, the lead goes to a counsellor instead of being re-dialled by the bot.
+- **Hand qualified leads to the list's pool** — An opt-in switch sends AI-qualified leads to the list's counsellor pool even if they already had an owner — ideal for re-working previously-called lead lists.
+- **AI re-call on lead status** — A ready workflow template has the AI call a lead back after a set wait when a counsellor marks a status such as 'Did not pick', optionally including leads a counsellor already owns.
+
+### AI Call Follow-Through
+
+*Every brochure, link or meeting promised actually goes out*
+
+When an AI agent offers a brochure, a quiz link or a counselling slot, follow-through rules make sure it actually happens. Admins write each rule as one plain sentence — when this happens on the call, send this WhatsApp template, email or book a meeting — using the agent's own questions and outcomes. Messages go out the moment the caller says yes or after the call ends, meetings agreed on the call are booked automatically, and every promise shows whether it was delivered.
+
+**For:** Admin, Counsellor · **Where:** Admin Web
+
+- **Plain-sentence rules** — Each rule reads as 'when … do … using …', built from the agent's own dispositions and questions — a short questionnaire, not a technical rule builder.
+- **Six kinds of trigger** — Fire a rule when the caller says yes or no to an offer, the call ends with a chosen outcome, an answer is captured, a meeting time is agreed, or a situation you describe is judged clearly true.
+- **WhatsApp, email or meeting actions** — Send an approved WhatsApp template (including image-header templates), one of the institute's email templates, or book a meeting on a booking page.
+- **Send during or after the call** — Deliver a link while the caller is still on the line, the moment they agree, or wait until the call has ended.
+- **Variables filled from the lead** — Template variables are filled automatically from the lead's own record, and a rule that cannot run explains why instead of failing silently.
+- **Automatic meeting booking** — Link an agent to a booking page and any demo, visit or callback time agreed on the call — even 'tomorrow at 3' — is booked with host, meeting link and reminders.
+- **Promise delivery status** — Each call lists what it promised and whether it went out — queued, sent, failed or expired — on the lead's call card and in the Call Log, with the failure reason.
 
 ### One-Click & Bulk AI Calling
 
-*AI-call one lead or a whole list, with a safe dry run*
+*AI-call one lead or a whole list, with full queue control*
 
-Trigger an AI call on any single lead with one click, choosing which agent speaks and which number it calls from. For whole audiences, a 'Call all with AI' action first runs a dry run that counts eligible leads without dialing, then paces the calls in the background while outcomes and counsellor assignments land automatically.
+Trigger an AI call on any single lead with one click, choosing which agent speaks and which number it calls from. For a whole audience or a hand-picked selection, 'Call all with AI' first runs a dry run that counts eligible leads without dialing, then queues and paces the calls in the background while outcomes and counsellor assignments land automatically. A dedicated Call Queue page shows everything waiting or live and lets admins pause, resume or cancel at any time.
 
-**For:** Admin, Counsellor · **Where:** Admin Web
+**For:** Admin, Counsellor · **Where:** Admin Web, API
 
 - **Per-lead AI call button** — One click on any lead row places an immediate AI call, with the acting counsellor recorded as the call's owner.
 - **Agent and caller-ID chooser** — When the institute has multiple agents or numbers, a chooser lets the caller pick which persona speaks and which caller-ID is used — otherwise sensible defaults apply.
 - **Bulk campaign with dry run** — 'Call all with AI' on an audience list first reports total vs eligible leads without dialing, then on confirmation dispatches paced background calls to every eligible lead.
 - **Automatic outcome processing** — Each call's end-of-call report drives the next step automatically — retry later, stop, or assign a counsellor — so no one has to babysit the campaign.
 - **Attempt tracking** — Each lead's AI calls display the true attempt number (Attempt 1, 2, 3...) so the retry sequence reads correctly in the call history.
+- **Selected-only or whole-list campaigns** — When rows are ticked, choose to AI-call only the selected leads or every eligible lead in the list, and set how many calls run at a time.
+- **Live campaign progress** — A progress view lists every lead in dial order with its status and an estimated finish time, and the run stays findable after the dialog is closed.
+- **AI Call Queue page** — A dedicated Calling → Call Queue page shows every AI call waiting, connecting, live or finished, with its agent, what queued it (manual click, campaign or automation) and the expected wait.
+- **Pause, resume and cancel** — Pause the institute's AI call queue and resume later without losing waiting calls, or cancel a single call, one campaign, or everything still waiting.
+- **Manual calls skip the line** — A one-click AI call placed by a counsellor goes ahead of queued campaign and automation calls, so live follow-ups never wait behind a bulk run.
+- **AI calling API** — Start single or bulk AI calls (up to 1,000 numbers per request) and fetch each call's status, duration and recording from your own systems with an institute API key.
 
 ### Inbound AI Receptionist & Auto Lead Capture
 
@@ -1957,7 +2403,7 @@ The AI agent can answer your inbound line — as a menu option or the whole line
 
 *Every call transcribed, scored and summarized by AI*
 
-Recordings of human and AI calls are automatically transcribed — Hindi, English and mixed speech — and analyzed by AI into a structured report: summary, outcome, ratings, objections, action items and coaching tips. You define the scoring rubric and the conversion goal, and the analysis attaches to the call and the lead, giving managers x-ray vision into thousands of conversations without listening to them.
+Recordings of human and AI calls are automatically transcribed — Hindi, English and mixed speech — and analysed by AI into a structured report: summary, outcome, ratings, objections, action items and coaching tips. Every AI-agent call is analysed automatically at no extra charge, while analysis of human calls is switched on per institute and metered against credits. You define the scoring rubric and the conversion goal, and the analysis attaches to the call and the lead, giving managers x-ray vision into thousands of conversations without listening to them.
 
 **For:** Admin, Counsellor · **Where:** Admin Web
 
@@ -1972,6 +2418,10 @@ Recordings of human and AI calls are automatically transcribed — Hindi, Englis
 - **Analyze or re-analyze on demand** — Any call — old, skipped or failed — can be queued for analysis from its call-log entry with one click.
 - **Per-lead intelligence history** — All analyzed calls for a lead in one view, across counsellors and attempts, so anyone picking up the lead has full context.
 - **On/off switch with cost control** — Call Intelligence is a per-institute setting, metered against credits, with minimum-duration gates and clear skip reasons so money isn't spent analysing empty calls.
+- **Free, automatic analysis of AI calls** — Every AI-agent call is transcribed and analysed automatically at no extra charge; the institute's switch and credit metering apply only to human calls.
+- **Two-line call update** — Each analysed call gets a two-line plain-language update of what happened and what's next, shown right in the Call Log row.
+- **Transcript tab** — Read the full call transcript beside the analysis, switching between the original language and an English translation.
+- **Analysis in call exports** — Call Log CSV and Excel exports include the AI summary, goal, outcome, ratings, sentiment, conversion likelihood and full transcripts for offline review.
 
 ### Counsellor Coaching & Team Call Analytics
 
@@ -2003,6 +2453,10 @@ Counsellors call leads directly from lead lists, the enquiry side view and the c
 - **Live call status** — Real-time call progress streams onto the screen — Queued, Counsellor Ringing, In Progress, Completed, No Answer, Busy and more — so the counsellor always knows where the call is.
 - **Calls panel on the lead record** — Every call — human and AI, inbound and outbound — appears in the lead's side-view call history with status, duration, attempt number and outcome.
 - **Call from the counsellor workbench** — Team leads reviewing a counsellor can open that counsellor's full call history in a coaching drawer.
+- **Call learners, not just leads** — Staff can call enrolled learners straight from the student side view, using the same caller-ID picker and live status as lead calls.
+- **Calls in the student Communication tab** — Calls to a learner sit alongside their emails and WhatsApp messages, with outcome, duration, AI result and inline recording playback.
+- **Extensions for admins too** — Admins as well as counsellors can be mapped to a calling extension, so anyone on the team can dial from the platform.
+- **Know why you can't call** — Staff see up front when calling isn't available to them — calling switched off or no extension mapped — instead of a dial that fails after the click.
 
 ### Unified Call Log & Calling Dashboard
 
@@ -2019,6 +2473,11 @@ One central Call Log shows every call the organisation makes or receives — hum
 - **Hierarchy-scoped visibility** — Access is automatically scoped by the reporting line: a counsellor sees their own calls, a team head their team's, leadership everything.
 - **Phone-number privacy control** — Lead phone numbers are masked by default; only staff granted a specific 'view call numbers' permission see unmasked numbers, on screen and in exports.
 - **AI outcome enrichment** — AI calls in the log show their AI-determined disposition and the true attempt number, so retry sequences read correctly.
+- **Hour-level time ranges** — Quick 1h, 3h, 6h and 24h presets plus a 'last N hours' box sit beside the 7/30/90-day ranges for watching today's calling as it happens.
+- **Outcome strip** — Every call outcome in the selected window appears with its count; one click filters the log down to that outcome.
+- **AI verdict columns** — Rows show the AI scores (caller, outcome, sentiment), the two-line call update, and what the agent did in-call — WhatsApp sends, call-backs and transfers.
+- **Follow-up advice per AI call** — Each AI call carries a one-line recommendation — worth a manual call, call back at the time they asked, or no manual call needed.
+- **Inline lead status and bulk actions** — Change a lead's status right from the call row, or select many calls to set status or disposition, assign a counsellor, add to a campaign or re-run AI analysis.
 
 ### Call Recordings & Playback
 
@@ -2133,9 +2592,11 @@ Calls carried on Vacademy's telephony bill by the minute against the institute's
 
 - **Four independent meters** — Outbound voice, inbound voice, outbound AI-conversation and inbound AI-conversation minutes are metered separately — an outbound AI call pays voice + AI, while an inbound call answered by a human pays voice only.
 - **Only Vacademy-carried calls billed** — Calls on the institute's own provider account (Exotel, Airtel) and uploaded recordings are never metered — only minutes on Vacademy-provided lines.
-- **Per-institute rate flexibility** — Standard per-minute credit rates with per-institute overrides per meter and a per-call minimum charge; minutes round up.
+- **Per-institute rate flexibility** — Standard per-minute credit rates with per-institute overrides per meter and a per-call minimum charge; calls are billed in half-minute pulses.
 - **Guaranteed exactly-once charging** — Every charge is applied exactly once, completed calls are stamped when billed, and a reconciliation job retries any charge lost to a transient failure.
 - **Channel-day rental support** — The billing model also supports per-channel per-day rental pricing for reserved concurrent-call capacity.
+- **Half-minute billing pulses** — Calls are billed in 30-second pulses at the same per-minute rate, so a five-second unanswered call no longer costs a full minute.
+- **Calls stop at zero credits** — AI and manual calls on Vacademy lines are blocked automatically once the institute's credits run out, so spend can never run past the wallet.
 
 ---
 
@@ -2162,6 +2623,8 @@ Describe the course you want and the AI drafts the whole thing — structure, le
 - **AI model choice and bring-your-own keys** — Pick a specific AI model or leave it on Auto; optionally supply your own OpenAI or Gemini API keys so generation runs on your accounts.
 - **Cost preview and confirmation** — See the exact credit cost before you commit, with a confirmation dialog showing current usage.
 - **Automatic draft resume** — In-progress course drafts save automatically; resume or discard a saved draft next time you open the builder.
+- **Courses from a knowledge base** — Pick a knowledge base or curriculum textbook and choose to follow the book or adapt it, stay within the material or fill gaps, and cover every section or highlights — chapter counts follow the material.
+- **Ready for the AI teacher** — Courses built with AI can be prepared for Tutor Mode so learners are taught each page one-to-one by the AI teacher.
 
 ### AI Outline Editor & Copilot
 
@@ -2200,6 +2663,47 @@ A built-in AI tutor rides along on every learner screen, aware of the course and
 - **Six chat mode toggles** — Enable or disable General Chat, Ask Doubt, Practice Quiz, Mock Interview, Voice Doubt and Oral Test modes for learners.
 - **Voice selection** — Choose the male and female voices the tutor speaks with in voice modes.
 - **Page visibility control** — Decide exactly where the tutor appears: Dashboard, All Courses, Course Details, Study Material — even logged-out catalogue pages.
+- **Branded launcher with nudges** — Upload your own assistant icon and title, let learners drag the launcher to either side, and set periodic nudge messages and a bounce animation to invite questions.
+- **Docked or popup chat** — Learners switch between a docked side panel and a centred popup, and the choice is remembered.
+- **Learner AI settings control** — Decide whether learners see the AI settings shortcut; it is hidden by default and learners can enable it on their own device.
+- **Reads the PDF on screen** — When a learner is on a PDF page, the tutor reads its actual text rather than just its title, so answers match what is in front of them.
+
+### AI Teacher (Tutor Mode)
+
+*A one-to-one AI teacher for every course*
+
+Turn any course into a one-to-one lesson: an AI teacher speaks each concept while the whiteboard draws itself, checks understanding after every idea, and re-teaches what a learner gets wrong. Admins prepare a course for teaching in one click with the credit cost shown up front, then choose the teacher's name, voice, pace, language and on-screen presence. Teacher insights reveal where each learner struggled and how attentive they were.
+
+**For:** Admin, Teacher, Learner · **Where:** Admin Web, Learner Web, Learner Mobile App
+
+- **Prepare a course for teaching** — One click turns documents, PDFs, YouTube videos and AI videos into teaching plans; uploaded videos are transcribed and scanned PDFs read first, with the credit cost shown before anything runs.
+- **Teaching notes for videos and PDFs** — Add a short description of what a video or PDF covers; the teacher asks the learner to watch or read it, then checks those exact points.
+- **Live whiteboard lessons** — The board fills as the teacher speaks — every concept opens with its diagram or illustration, followed by worked examples, recaps and visual notes.
+- **Checks, re-teaching and weak-spot revisits** — After each concept the learner answers by voice or text; wrong answers get a fresh explanation, and weak concepts are revisited later in the course.
+- **Doubts mid-lesson** — Learners can interrupt with a question at any time; for courses built from a knowledge base, answers draw on that material before the lesson resumes.
+- **Teacher voice, pace and language** — Set the teacher's name, voice, speaking pace and strictness per course or institute-wide; lessons run in English or Hindi and learners can switch language mid-lesson.
+- **Teacher presence and custom avatars** — Show a teacher photo, or a lip-synced animated avatar for a small per-minute premium — pick from a gallery, request your own avatar from a photo, or use your own cloned voice.
+- **Whole-course navigation** — An outline rail shows every chapter, so learners jump anywhere and the teacher carries on across chapters; lessons run full screen or in a phone-friendly layout.
+- **Opt-in activeness score** — On laptops and desktops, learners can opt in to an on-device camera check that scores attention without streaming video; the teacher pauses when they step away.
+- **Teacher insights and exports** — See lessons taken, voice usage, drop-offs, weak concepts and average activeness per learner and course, with learner and concept CSV exports.
+
+### Student Study Companions
+
+*Visual study buddies built from your own books*
+
+Turn any knowledge base into a friendly study companion that teaches students topic by topic, sets practice questions and answers doubts — strictly from your material, with page citations. Lessons are visual cards built around the book's real figures and tables, and are prepared once and shared by every student to keep costs low. Admins choose the topics, personality, language and who gets each companion, then track progress by topic and by student.
+
+**For:** Admin, Teacher, Learner · **Where:** Admin Web, Learner Web, Learner Mobile App
+
+- **Companion designer** — Name the companion, pick an avatar, accent colour and personality, choose the chapters or subtopics it covers, and switch Learn, Practice and Ask modes on or off.
+- **Targeted assignment** — Give a companion to the whole institute, selected batches or individual students, with an optional date window and a daily question limit per student.
+- **Visual lessons from the book** — Each topic becomes a sequence of visual cards — concepts, the textbook's own figures, comparisons, worked examples, flashcards, quick checks and a recap.
+- **Practice sets** — Topic-wise multiple-choice practice with instant explanations for every answer.
+- **Ask doubts with citations** — Students ask questions and get answers only from the material, with page references and zoomable figures; off-topic or do-my-homework requests are politely declined.
+- **Read aloud and multiple languages** — Companions teach in English, Hindi or Kannada, with key English terms kept alongside, and can read lessons and answers aloud.
+- **Progress and resume** — A topic map with progress rings and a continue card lets students pick up exactly where they left off.
+- **Prepare lessons in advance** — Prepare lessons in batches with the credit cost and balance shown first; each lesson is paid for once and shared by all students.
+- **Learner progress insights** — See students started, topics completed, questions asked and average mastery, broken down by topic and by student, plus a student-view lesson preview.
 
 ### Instructor Copilot
 
@@ -2275,6 +2779,23 @@ One prompt-driven engine produces thirteen kinds of learning content that run ri
 - **Slides** — Presentation decks in classic slide style, generated from a plain prompt.
 - **Practice quiz inside chat** — The learner tutor detects practice intent, generates a timed quiz on the topic, grades the submission, and returns per-question feedback, score and study recommendations.
 
+### AI Interactive Lesson Pages
+
+*Rich, illustrated lesson pages from one prompt*
+
+Describe a lesson and the AI builds a complete, self-contained page inside your course — notes, summaries, flashcards, quizzes, practical examples and even playable games — illustrated with diagrams and textbook-style pictures. Ground it in your own PDF and images, match your institute's brand, then keep refining it with plain-language edits. Generation runs in the background with step-by-step progress, so teachers can leave and come back.
+
+**For:** Admin, Teacher · **Where:** Admin Web, Learner Web, Learner Mobile App
+
+- **Prompt-to-page creation** — Describe the page, pick what to include — notes, summary, flashcards, quiz, practical examples, interactive games — and add optional key points.
+- **Ground in your material** — Attach a PDF or images so the page is written from your own content, with the extra cost shown before generating.
+- **Illustrated pages** — Pages teach visually with labelled diagrams, visual-note blocks and AI-drawn textbook-style illustrations placed where they help.
+- **Brand matching** — One switch styles the page in your institute's brand colours and look.
+- **Edit with AI and version history** — Ask for changes in plain words, step back and forth between versions, or edit the page's HTML directly.
+- **Quiz results to the gradebook** — Interactive quizzes inside the page report learners' scores back like any other graded activity.
+- **Background generation with progress** — Watch each step — reading the PDF, planning, writing sections in parallel, drawing illustrations — and leave the page while it finishes.
+- **Paste existing HTML for free** — Already built a page elsewhere? Paste it in at no cost and refine it with AI afterwards.
+
 ### AI Question Paper Generator (Vsmart)
 
 *Question papers from PDFs, photos, audio or a plain prompt*
@@ -2297,6 +2818,10 @@ A family of AI tools that produce editable question papers from whatever you hav
 - **My Resources file library** — A personal library of uploaded source files you can re-run tools against without re-uploading.
 - **Complete assessment generation** — Generate a full, structured assessment (sections, questions, answers) ready to publish into the assessment system.
 - **AI model picker** — Choose which AI model runs each tool via a model selector backed by the institute's model registry.
+- **Word-for-word paper digitisation** — Vsmart Extract now reads an existing paper verbatim — passages, tables, formulas, cropped figures, answer key and printed solutions — without inventing, rephrasing or skipping questions.
+- **Section-wise import with the paper's marking** — Sections, per-question marks and negative marking are read from the paper itself; choose to mirror the paper's sections in your assessment or merge them into one.
+- **Question count and exact cost on upload** — Before extracting, see how many questions were found across how many pages and exactly how many credits will be used, priced by question band.
+- **One-click add to question bank** — Save any AI-generated or extracted paper straight to the question bank from the preview, in the AI Center or the assessment wizard.
 
 ### AI Presentation Generator
 
@@ -2325,6 +2850,9 @@ Chat with an AI agent that understands your institute's data and performs real p
 - **Secure institute context** — The agent operates with the signed-in user's own credentials, so answers and actions respect their role and institute.
 - **Conversation history** — Agent sessions and messages are stored and reviewable in the AI usage console.
 - **Role-based access controls** — Grant a baseline toolset to all staff and fine-tune per-role access for advanced tools, so counsellors, teachers and admins each get an assistant matched to their job.
+- **Dashboard launch bar** — The assistant sits at the top of the admin dashboard with ready-made starters — pending fees, find a learner, pending evaluations, today's classes, draft an announcement — so staff start from one box.
+- **Website, lead form and automation tools** — Grant roles assistant tools to view and draft website pages, create lead campaigns and fields, and draft automations — nothing goes live without a person.
+- **Your assistant's name** — The assistant appears under your institute's own chatbot name.
 
 ### AI Website Builder & Page Copilot
 
@@ -2346,6 +2874,14 @@ Type a short brief and the AI composes a complete, on-brand web page — or an e
 - **Chat-based page editing** — Instructions like 'rewrite the FAQ answers to be friendlier' are turned into a short list of concrete edits — add a section, restyle a block, rewrite copy — applied to the page you are editing.
 - **Change preview before apply** — Each proposed edit is summarized so you see exactly what will change before accepting.
 - **Works with the normal editor** — Copilot edits land as regular unsaved changes — undo, tweak manually, save as draft, and publish on your schedule.
+- **Chat-first site creation** — An AI interviewer asks about your institute, accepts your photos and documents, and builds the site from the conversation.
+- **Match a reference design** — Share screenshots or a reference website and the AI follows its colours, layout and structure instead of a house style.
+- **Regenerate one section** — Ask for two to four alternative versions of a single section and pick the one you like.
+- **AI header, footer and theme** — Describe changes to the site's header, footer or theme in plain words and the AI applies them.
+- **Theme-locked rebuilds** — Rebuild a page with AI while keeping your current theme exactly as it is.
+- **Image-guided edits** — Attach images to copilot instructions — for example a screenshot of what to change.
+- **Safe custom code sections** — The AI can add custom HTML and CSS sections when no ready-made block fits, filtered for safety.
+- **Self-checking pages** — Every generated page is automatically audited and repaired before you see it.
 
 ### Math & Document OCR
 
@@ -2360,6 +2896,40 @@ Specialized math-aware OCR converts scanned pages and PDFs into clean digital co
 - **Course grounding from reference PDFs** — Uploaded reference PDFs steer AI course outlines and content, and the document's real figures are embedded verbatim into lessons and videos instead of AI-invented ones.
 - **Conversion caching** — Converted documents are cached, so re-using the same PDF across passes never pays for a second conversion.
 - **Layout-aware scanned-document OCR** — A high-throughput OCR pipeline with region detection handles scanned documents and complex page layouts.
+
+### Knowledge Base & Textbook Library
+
+*Teach the AI what your institute teaches*
+
+Upload your textbooks, notes, past papers and policies once, and the AI reads them — diagrams, tables and formulas included — so courses, tests, tutors and answers come from your own material. A free library of ready-made NCERT textbooks, organised by board or exam, class and subject, lets any institute start without uploading anything. Every answer and generated question points back to the page it came from.
+
+**For:** Admin, Teacher, Assessment Creator · **Where:** Admin Web
+
+- **Add any material** — Add PDFs (including scanned books), web pages, YouTube videos with captions or typed notes, with a page count and credit estimate before anything is charged.
+- **Reads diagrams, tables and formulas** — Digital pages are read for free and scanned pages with math-aware OCR; figures and tables are kept as real images, and unreliable pages are flagged for review.
+- **Automatic topic map** — A chapter-and-subtopic outline is built from the material, which you can skim and rebuild — it drives course plans, papers and companions.
+- **Ask this knowledge base** — Test what the AI understood by asking questions; answers come only from the material, with the source page and figures.
+- **Free curriculum textbook library** — NCERT textbooks for Classes 1–12, chapter by chapter, free for every institute; pick a board or exam, class and subject and the matching books appear.
+- **Board and exam mapping** — Boards and competitive exams that follow NCERT books are mapped to them automatically, and syllabus-only libraries keep papers within the official syllabus.
+- **Build courses from the book** — The AI course builder can follow the book's own structure or adapt it for teaching, stick to the material or fill gaps, and cover every section or just highlights.
+- **Questions from your material in assessments** — While building an assessment, fill a section — or plan a whole assessment — with questions written from a knowledge base, each citing its page.
+
+### Question Paper Studio
+
+*Board-style papers from your books in minutes*
+
+A guided wizard builds a complete question paper from any knowledge base or curriculum textbook: choose chapters and weightage, question types and marks, and test details, then review the AI's plan before a single question is written. Every question cites its page and uses the book's own diagrams. Download a branded, print-ready PDF in three layouts, share it by link, save it to the question bank or turn it straight into an offline test.
+
+**For:** Admin, Teacher, Assessment Creator · **Where:** Admin Web
+
+- **Syllabus and weightage** — Pick chapters or subtopics and set how much of the paper each one carries.
+- **Rich question-type mix** — Combine single and multi-correct MCQs, assertion–reason, case or passage-based, true/false, one-word, numericals, and short, long and very long answers, each with its own count and marks.
+- **Plan first, then generate** — See the full blueprint with total marks, time and estimated credits, ask for changes in plain words, and only then generate the questions.
+- **Review and refine** — Edit, reorder, remove or rewrite any question, or nudge it harder, easier or more application-based; every question shows its page and marking scheme.
+- **Book diagrams and optional drawn figures** — Questions reuse diagrams from the book, and you can let the AI draw labelled figures where a question needs one the book doesn't have.
+- **Branded print-ready PDF** — Download the paper or paper-plus-answer-key in Classic board, Compact two-column or Coaching layouts, with your logo, watermark, letterhead and editable instructions.
+- **Preview and share by link** — Preview the laid-out paper in the app and publish a shareable link for WhatsApp or email, with a separate teachers-only answer-key link.
+- **Question bank and offline test hand-off** — Save the paper to your question bank, or create an offline test pre-filled with its sections, marks, duration and the paper attached, with its marking scheme ready for AI checking.
 
 ### AI Model Registry & Model Choice
 
@@ -2418,6 +2988,8 @@ All AI features run on a prepaid credit balance, so costs are always visible and
 - **Cost preview before you spend** — Expensive actions show a credit-cost badge and a confirmation dialog with the exact estimated cost before running.
 - **Usage ledger and analytics** — Overview, Usage, Analytics and History tabs show your balance, every transaction, and spend broken down by tool, model and learner activity.
 - **Credit packs and top-up** — Buy credit packs in your currency with secure in-app top-up; billing details, invoices and payment handling live under Finance & Payments.
+- **GST tax invoices for top-ups** — Every credit purchase comes with a GST tax invoice PDF attached to the confirmation email, with your GSTIN captured at checkout so you can claim input tax credit.
+- **Billing history** — A Billing tab lists every credit purchase with its tax invoice ready to download, including purchases made before invoices were introduced.
 
 ### Explore AI Hub
 
@@ -2464,6 +3036,7 @@ Turn a plain-text prompt, document or link into a complete narrated video. The A
 - **Course builder integration** — AI course outlines can mark slides as video items; the pipeline generates each one and streams progress straight into the course editor.
 - **Course-wide video settings** — A single settings card controls how every video in a generated course is produced — narration language, voice, audio quality, video model, target length and quality tier — set once and applied throughout.
 - **Versioned re-renders** — Re-render any video on a prompt change without re-recording; past versions remain intact for rollback.
+- **Your script, spoken verbatim** — Paste a brief with your own voiceover lines per shot and they are narrated word for word instead of rewritten — essential for exact clinical or technical terms.
 
 ### Quality Tiers & AI Director
 
@@ -2545,6 +3118,7 @@ Turn lessons into short films: the AI writes characters and dialogue, then produ
 - **Character consistency via reference images** — Up to 9 reference images lock character and setting appearance across independently generated clips.
 - **Clip quality control and re-takes** — Every filmed clip passes an automated quality check, and in Assist Mode you can review clips and send back specific shots with re-take notes.
 - **Dialogue budget caps** — Dialogue-scene spend is estimated up front and capped per tier, so drama videos stay within predictable cost.
+- **Seamless scene cuts** — Continuing dialogue clips start from the previous clip's final frame and dissolve at the join, new scenes match the established colour grade, and no line repeats across cuts.
 
 ### Cinematic AI Video Clips
 
@@ -2560,6 +3134,8 @@ On the top quality tiers, opt in to fully AI-generated cinematic video clips wov
 - **Hard per-video cost cap** — A circuit breaker rejects further AI-clip generation past a fixed per-video ceiling and falls back to standard scene designs, so costs never run away.
 - **Worst-case cost preview** — The pre-generation estimate shows the AI-clip upper bound in credits before you commit.
 - **Extended clip chaining** — Image-to-video chaining supports clips longer than a single generation window.
+- **AI-footage-led films** — Opt in and the Director can let generated footage carry the whole film, using AI clips for visual and physical moments and motion graphics for numbers and definitions.
+- **Clip quality choice** — Choose Best, Balanced or Budget quality for generated clips, each showing its per-clip cost, so you trade realism against spend per video.
 
 ### Cinematic Shot Library & Motion Design
 
@@ -2578,6 +3154,9 @@ Videos are assembled from a library of professionally designed animated scene ty
 - **On-screen text density control** — Choose minimal, low, auto or rich on-screen text independently of narration length — from title-only scenes to full supporting labels.
 - **Domain-aware shot selection** — The planner picks scene types suited to the subject — math gets equation builds, business gets data stories — and enforces shot diversity so scenes never repeat.
 - **Subject-matched pacing and music mood** — Speaking pace, transition style and music mood adapt to the detected subject and target duration.
+- **Narration-synced visuals** — Every content shot carries two to four supporting photos or icons that appear at the exact moment the narrator mentions them, so videos never become walls of text.
+- **Frame composition variety** — Each shot gets one of ten named compositions on a shared grid — columns, corner type, margin notes, full-bleed overlays and more — with repeats and centred layouts limited.
+- **Documentary staging** — Shots can stage documents, prints and film strips on paper, slate or desk surfaces with perspective, shadows, marker highlights and timelines, with subtle film finishing on educational videos.
 
 ### Real Footage & Imagery Sourcing
 
@@ -2610,6 +3189,8 @@ Upload your own videos and images — demos, lectures, podcasts, product walkthr
 - **Source clip priority** — Tell the Director to lean lightly or heavily on your footage versus generated visuals.
 - **Smart overlay placement** — Face detection identifies free screen regions so text and graphics never cover the speaker.
 - **Asset library management** — Browse, filter, inspect and delete uploaded source videos and images from a dedicated library.
+- **Screenshot-led walkthroughs** — Build a full product or process walkthrough from up to 20 screenshots or images in one video, with explanatory diagram scenes between them and no invented interface.
+- **Batch asset upload** — Upload a whole set of screenshots or videos at once, with per-file names, automatic type detection, per-file status and retry of only the failed uploads.
 
 ### AI Sound Design & Generated Music
 
@@ -2932,6 +3513,13 @@ A full visual builder for event-driven and scheduled automations across the plat
 - **Execution history & step-by-step logs** — Every run appears in a history tab with summary cards (total, completed, failed, success rate, average duration), a visual execution flow, a timeline, and per-node logs including messages sent and any errors.
 - **Duplicate-safe delivery** — Built-in safeguards ensure a learner never receives the same automated message twice for the same event.
 - **Workflow management** — Search and list all workflows (event-driven vs scheduled), edit them on the canvas, pause or deactivate with full history preserved, and view a simplified diagram of any automation.
+- **More trigger events** — Start automations when an assessment is published, results are released, a test is about to start, a reattempt is requested or granted, an AI copy-check finishes, a plan changes, onboarding steps progress, or HR leave and payroll events occur.
+- **Wait until a weekday** — Delay steps can pause until the next chosen weekday and time — for example, start a drip the Monday after signup — not only for a fixed duration.
+- **Branded short links** — Messages can carry short links instead of long join URLs, optionally with a readable code such as the learner's mobile number, and each learner keeps the same link.
+- **WhatsApp steps on par with email** — Send WhatsApp to any phone field — including parent numbers or a form's phone question — in any template-gallery automation, with variables mapped to lead details or form answers and a live preview.
+- **Plain-language Configuration tab** — A simple view lets non-technical admins edit message text, links, day-by-day schedules and step settings as readable cards with live template previews; a developer view keeps the full editor.
+- **Clear 'what fires, for whom' diagram** — The workflow diagram names the actual trigger event, the batch or audience it is scoped to, and the template each step sends.
+- **Per-learner automation history with Retry** — A Workflows tab on each learner's profile lists every automation that ran for them, step by step, with a one-click Retry using the original inputs.
 
 ### AI-Assisted Workflow Creation
 
@@ -2946,6 +3534,8 @@ Type your goal in plain language — 'email parents every Friday with attendance
 - **Step-by-step rationale** — Every draft comes with an explanation of why each step exists, so you can trust it and tweak it confidently.
 - **Human review before publish** — Drafts load into the visual builder for full review and editing — an admin always makes the final call to publish.
 - **Same validation as hand-built workflows** — AI drafts run through the standard validation checks, surfacing errors and warnings inline before going live.
+- **Multi-day drip drafting** — AI can draft multi-day sequences — such as a 14-day WhatsApp trial series that starts the Monday after signup — with duplicate-safe delivery to each person built in.
+- **Build workflows from your own AI assistant** — Through the institute's AI-assistant connector, admins can list, inspect and draft workflows from their preferred AI chat tool; drafts stay unpublished until reviewed in the builder.
 
 ### One-Click Automations Library
 
@@ -2967,6 +3557,7 @@ A curated library of plug-and-play automations organised by what they do for lea
 - **Assessment notifications** — Notify a batch when an assessment is published and remind them when the assessment window opens.
 - **Guided configuration** — Each recipe asks only friendly questions — which template, which batch, what time, how many days — with sample email templates offered when you have none.
 - **Toggle on and off with confidence** — Automations show as simple switches; turning one off pauses the underlying workflow with all history preserved.
+- **WhatsApp lead confirmations** — Lead-form confirmation and follow-up automations can go out by email, WhatsApp or both, with each template variable mapped to lead details or form answers and a live message preview.
 
 ### WhatsApp Chatbot Flow Builder
 
@@ -2990,6 +3581,8 @@ A visual drag-and-drop builder for automated WhatsApp conversations. Trigger flo
 - **Flow analytics** — Per-flow and institute-wide analytics on sessions and completions show exactly how each bot performs.
 - **Flow lifecycle management** — Draft, activate, deactivate, duplicate, archive and edit flows, with everything listed in one place.
 - **Works with your WhatsApp provider** — Flows run transparently over the institute's connected WhatsApp provider.
+- **CRM lead capture steps** — Check whether a number is already a lead, ask one CRM question at a time with validation, and save each answer immediately — so even half-finished chats land in the CRM.
+- **Hand over to a human** — When the AI does not know the answer it says so instead of guessing, tells the learner someone will reply, and flags the chat as Unanswered in the WhatsApp inbox.
 
 ### Audience Messaging & Drip Automation
 
@@ -3068,6 +3661,7 @@ Sell every course or batch under the pricing model that fits it: free access, on
 - **Plan descriptions, tags and feature lists** — Each plan supports a marketing description, tag and feature list that render on public plan cards.
 - **Checkout previews** — Live previews show subscription and donation plans exactly as learners will see them before you publish.
 - **Plan library management** — Edit, list and safely delete payment plans from one place.
+- **Searchable plan picker** — Find payment plans by name and filter by type, newest first, with each plan showing when it was created and by whom; every plan change is recorded in the activity log.
 
 ### Subscriptions & Auto-Pay
 
@@ -3085,6 +3679,26 @@ Recurring plans charge learners automatically when each period renews, using sav
 - **Membership details view** — Per-learner membership lookup showing the plan, validity window, payment option and full payment history behind it.
 - **Expiry and re-enrollment policies** — Configurable policies define what happens when a plan expires, including re-enrollment rules and follow-up actions.
 - **Saved card updates** — Learners can securely replace the card on file and update billing details without contacting the institute.
+- **Pay to continue** — Learners whose auto-pay was cancelled or failed can pay once from their subscriptions page to reactivate the same membership, optionally re-enabling auto-pay for future renewals.
+- **Grace period on failed renewals** — Keep a learner's access for a set number of days after a failed renewal while the charge is retried, and only revoke access if it is still unpaid.
+- **Fixed-term subscriptions** — Set a total subscription duration in months so auto-pay stops charging once the term is complete, with access running to the end of the final paid period.
+- **One free trial per learner** — A learner who has already used a free trial at your institute is charged the full price on return, even through a different enrollment link.
+
+### Plan Upgrades & Switching
+
+*Let members move up a plan without re-enrolling*
+
+Members on a recurring plan can upgrade to a longer or richer plan themselves, paying only the price difference and keeping their membership, payment history and invoices intact. Admins decide exactly which plans are switchable, and can also move a learner between plans directly as a back-office correction. Auto-pay is re-authorised at the new price so future renewals charge the right amount.
+
+**For:** Admin, Learner · **Where:** Admin Web, Learner Web, Learner Mobile App
+
+- **Self-service upgrades** — Learners see a Change plan option on their membership and subscriptions page, with a clear quote of what they will pay and what they will get before confirming.
+- **Pay only the difference** — An upgrade costs the new plan's price minus the current plan's price, and the extra validity is added onto the learner's existing end date — no lost days, no restarted term.
+- **Same membership, unbroken history** — The learner's existing membership is updated in place, so payment history, invoices, ledger entries and course access stay continuous instead of being split across a new enrollment.
+- **Three-level opt-in** — An institute-wide master switch plus per-payment-option and per-plan switches let you open plan changes only where you want them; everything stays off by default.
+- **Admin plan change** — From a learner's profile, admins can move them to another plan immediately without a charge, for corrections and negotiated arrangements.
+- **Auto-pay re-authorisation** — When an upgrade affects recurring billing, the learner re-approves the mandate so future cycles automatically debit the new plan's full price, honouring UPI or card.
+- **Works for lapsed members too** — Learners whose plan has expired or whose renewal failed can still pick an upgrade to get back in, with an abandoned earlier checkout shown rather than silently blocking them.
 
 ### School Fee Structures
 
@@ -3104,6 +3718,7 @@ Model true school-style fees with multiple fee heads — tuition, admission, tra
 - **Batch linking** — Attach a fee structure to one or more batches or enrollment invites so new admissions automatically inherit the right fee plan.
 - **Fee-type priority ordering** — Set an institute-wide priority order of fee heads that controls how incoming payments are allocated across dues.
 - **Edit and retire safely** — Update structures and fee types or retire a structure without losing historical payment records.
+- **Approval-required fee plans** — Mark an instalment fee plan so enrollments on it wait for admin approval before access is granted.
 
 ### Fee Collection Desk
 
@@ -3135,6 +3750,25 @@ A master view of every student's fee status — expected, paid, due, overdue and
 - **Receipts history** — List and download all fee receipts and invoice receipts for any student.
 - **Per-student fee tools** — From a student's profile, staff can view payment history, edit that student's installment plan, apply a plan-level discount, record an offline payment and generate an invoice.
 - **Learner self-view** — Learners can check their own dues and receipts and pay pending installments from their app.
+- **Split an instalment** — Move part of a part-paid instalment's remaining balance into a new instalment with its own due date, keeping the plan total unchanged.
+
+### Dues, Upcoming & Revenue Tracking
+
+*Know who owes what, and when the rest arrives*
+
+A clear, honest picture of money across every plan type — what has been collected, what is genuinely overdue, and what is scheduled to come in. Dues count only money owed on access already granted, so abandoned checkouts and coupon discounts never inflate the number. Drill into any learner's balance, see instalments month by month, and track revenue trends on a dedicated Payment Dashboard.
+
+**For:** Admin · **Where:** Admin Web
+
+- **Honest Due figure** — Due counts only overdue instalments, failed subscription renewals and unpaid invoices on active enrollments — never unfinished checkouts, one-time purchases or coupon discounts.
+- **Upcoming and Outstanding** — See money falling due in the next 30 days, or every future instalment with its next due date for institutes that collect fees in instalments, plus an all-unpaid Outstanding view.
+- **Who-owes drill-down** — Open any Due, Upcoming or Outstanding figure to get the list of learners behind it, with the amount each one owes.
+- **Learner balance sheet** — One sheet per learner shows billed, paid, outstanding and due amounts, a percent-collected bar, the next instalment, the full schedule and payment history — with due dates editable in place.
+- **Instalment forecast** — Track instalment-plan progress (billed, paid, overdue, still to come) and see upcoming money split month by month, with the learners paying in each month.
+- **Choose your summary cards** — Pick which KPI cards appear on Manage Payments and the Payment Dashboard; sensible defaults follow your fee model and can be reset any time.
+- **Payment Dashboard** — Month-by-month, financial-year and daily revenue views compared with the same period last year, split by source, payment method, course and batch.
+- **Overdue ageing and cash-flow forecast** — See how long overdue money has been outstanding and a month-by-month forecast of expected collections, overall and per batch.
+- **Unrecorded payment check** — Paid plans that were activated without any recorded payment are flagged separately, so offline payments nobody logged can be found and reconciled.
 
 ### Concessions & Penalties with Approval Workflow
 
@@ -3171,6 +3805,8 @@ Every successful payment can generate a professional PDF invoice automatically, 
 - **Payment reminders** — Send a reminder email for any unpaid invoice or overdue installment with one click.
 - **PDF download and regeneration** — Download any invoice PDF at any time; expired links are regenerated automatically.
 - **Invoice lists and search** — Browse all invoices institute-wide or per learner; learners see their own invoices too.
+- **Invoices for every renewal** — Each recurring renewal payment now generates its own invoice and receipt email, with the PDF available in the learner's payment history.
+- **Proforma invoices** — Optionally issue unpaid invoices as proformas that take a real invoice number only when paid, keeping your tax invoice series free of gaps.
 
 ### Invoice Branding, Templates & Tax Settings
 
@@ -3187,6 +3823,9 @@ Control exactly how invoices look and how tax is applied. Pick and customize inv
 - **Tax registration fields** — Store your GSTIN/tax ID, HSN/SAC code and place of supply so invoices meet local requirements.
 - **Invoice email placement** — Choose whether the PDF arrives in a dedicated invoice email or attached to the payment-confirmation email.
 - **Internal notification recipients** — Pick which admins are notified about invoice events.
+- **Custom invoice numbering** — Build your own invoice number format from tokens — sequence, institute code, financial year, quarter, date parts and more — with a live preview and a warning before changing it.
+- **Fee-receipt placeholders** — Templates can show course, learner and fee-schedule details plus your institute tagline, all insertable from the template editor.
+- **Custom payment-confirmation email** — Replace the standard payment-confirmation email with your own template, built in the email editor with payment and receipt placeholders.
 
 ### Payment Links & Public Checkout
 
@@ -3254,6 +3893,8 @@ Give an individual enrollment a special price without editing the published plan
 - **Markdown lookup** — Query which plans currently carry markdowns and by how much before quoting a price.
 - **One-click reset** — Remove a markdown and restore the standard published price instantly.
 - **Enrollment-invite discounts** — Attach discount options directly to specific enrollment invites so a particular admission link carries its own pricing.
+- **Admin discounts on enrollment and invoices** — Apply a percentage (with optional cap), flat or coupon discount when enrolling a learner, bulk-assigning, or raising an invoice, with the granting admin recorded.
+- **Subscription discount duration** — For subscriptions, choose whether an admin discount applies to the first payment, the first several payments, or every billing cycle.
 
 ### Coupons & Discount Codes
 
@@ -3295,6 +3936,8 @@ A central directory of every learner in the institute with fast search, deep fil
 - **CSV export** — Export the full filtered list or a basic-details version to CSV, including an account-credentials export for offline distribution.
 - **Learner statistics** — Aggregate headcounts by status, batch and user type for instant reporting.
 - **Multi-course memberships view** — See every course and batch a learner is enrolled in, with expiry date and status per enrollment.
+- **Trial and paid filters** — A Trial or Paid badge on each learner and filters for membership type and joining month show who is on a free trial and which intake they belong to.
+- **Edit login credentials** — Admins can change a learner's username or password from their profile, and the new credentials are kept in sync across the platform.
 
 ### Enrollment Invite Links
 
@@ -3392,6 +4035,8 @@ Day-to-day registrar actions available on any learner or any multi-select of lea
 - **Share credentials** — Send usernames and passwords to selected learners via your configured channels.
 - **Bulk WhatsApp & email** — Message any selection of learners straight from the list.
 - **Create certificates** — Generate course-completion certificates for selected learners from the same bulk menu.
+- **Manage access days with history** — Extend, shorten, set, make unlimited or revoke course access for one or many learners, with a timeline of every access change kept per learner.
+- **Last-access date on soft removal** — When removing a learner softly, pick the date their access ends; hard removal ends it now and triggers the termination workflow.
 
 ### Batch & Academic Session Management
 
@@ -3409,6 +4054,7 @@ Manage the institute's academic structure end to end: create academic sessions, 
 - **Learner grouping** — Tie batches to named groups for organizing cohorts within a course.
 - **Bulk batch lookup** — Look up many batches at once for reporting or integration scenarios.
 - **Safe deletion** — Remove batches that are no longer needed, individually or in bulk, with confirmation.
+- **Batch board** — Browse batches grouped by course as cards or a list, search by name or invite code, sort, filter by status and start date, and enroll or open a batch directly.
 
 ### Seat Inventory Management
 
@@ -3460,6 +4106,13 @@ Create and manage sub-organizations — branches, franchise partners or client c
 - **Member outstanding balances** — Per-member financial summary of total accrued, paid, balance and overdue amounts in the sub-org's currency.
 - **Partner self-serve roster** — Partners get their own in-app screen to view their member roster, add learners individually with custom fields, or bulk upload many at once.
 - **Partner member removal** — Partners can select and terminate members from their own organization directly.
+- **Partner list with seats and status** — The sub-org list shows admin contact, plan status and seats used versus total, with search, status and location filters and CSV export.
+- **Share partner admin credentials** — Send a sub-org admin their login details again straight from the partner list.
+- **Sub-org step in enrollment** — When enrolling into a partner-linked batch, pick or create the sub-org, confirm its admins and choose the member's role in one step.
+- **Soft or hard member removal** — Remove a sub-org member immediately, or keep them active until a chosen last-access date.
+- **Sub-org scoped staff access** — Assign specific sub-orgs to a staff member or custom role so they only see those partners' learners and data.
+- **Partner network dashboard widgets** — Home-dashboard widgets show partners by location, top partners by seats, plan and seat insights and collection trends, while sub-org admins see their own seats, dues and collections.
+- **Your own name for sub-orgs** — Rename 'sub-org' to the term your network uses — branch, centre, partner — and the admin screens follow it.
 
 ### Sub-Org Self-Registration
 
@@ -3496,6 +4149,8 @@ Manage every staff account centrally — invite by email with pre-assigned roles
 - **Hierarchy lookups** — Trace any member's full chain of managers upward, everyone beneath them, and every team they belong to.
 - **Sub-org scoped team views** — Filter users by sub-org and view a per-sub-org team page with its own analytics.
 - **Inactive-user export** — Export a CSV of users inactive for a chosen number of days to drive re-engagement.
+- **Bulk team import and export** — Invite up to 500 people from a CSV with every row validated first and a results file with login details, and export members or pending invites with current filters.
+- **Redesigned Teams workspace** — Summary cards for members, active, disabled and pending invites double as filters, with a multi-role invite flow and a member drawer for quick edits.
 
 ### Roles & Granular Permissions
 
@@ -3548,6 +4203,8 @@ Link parent and guardian accounts to learners so families stay connected to prog
 - **Bulk guardian backfill** — Detect learners whose records contain parent details but no linked guardian account — including from leads — and create the links in one run.
 - **Credential backfill** — Send portal credentials to guardians of all existing students in one action, choosing who receives the notification.
 - **Parent experience settings** — Institute-level settings control how guardian details are collected and what parents can access.
+- **Share guardian credentials** — Email a guardian their portal login from the learner's Guardian tab, with a warning when no real email is on file.
+- **Export guardian credentials** — Download a CSV of guardian logins with their linked children, available only to roles allowed to view passwords.
 
 ### Parent Portal
 
@@ -3569,6 +4226,11 @@ Parents get their own portal — with a child selector for multi-child families 
 - **Structured faculty messaging** — Parent-to-faculty messages routed through the platform, keeping staff personal numbers private.
 - **Progress digests & alerts** — Automatic progress digests and alerts delivered over WhatsApp, email and push.
 - **Multi-language interface** — Parents choose their preferred language for the portal.
+- **My Child monitoring hub** — After enrollment, parents get a per-child home with progress, attendance, tests, live classes, fees and rewards modules, plus items that need their attention.
+- **AI parent assistant** — Parents ask questions about their child in their own words — typed or spoken — and get answers drawn only from that child's data, in the language they asked in, with a listen option.
+- **View as my child** — When the institute allows it, a parent can switch into their child's learner view, with a clear banner and one tap to return.
+- **Rewards and points** — A rewards screen shows the child's points, institute rank, badges and certificates earned.
+- **Guided tour and quick search** — A first-time tour walks parents through the portal, and quick search jumps straight to any module.
 
 ### Learner Attendance Reports
 
@@ -3647,7 +4309,7 @@ Upload your institute's terms and conditions as a PDF and have learners sign dig
 
 *A proper HRIS for your staff, inside the platform*
 
-Maintain complete employee records for all staff: profiles, departments, designations, employment type and status, bank accounts for salary and a document vault. Employee state changes — probation, notice period, relieved — are tracked formally. Fully API-driven, so it plugs into your existing systems.
+Maintain complete employee records for all staff: profiles, departments, designations, employment type and status, bank accounts for salary and a document vault. Employee state changes — probation, notice period, relieved — are tracked formally. Everything is managed from an opt-in ERP section of the admin portal, restricted to HR roles, and is also available by API.
 
 **For:** Admin · **Where:** Admin Web, API
 
@@ -3657,6 +4319,9 @@ Maintain complete employee records for all staff: profiles, departments, designa
 - **Bank details** — Store one or more bank accounts per employee for salary payout, editable over time.
 - **Document vault** — Upload and manage employee documents — offer letters, appointment letters, ID proofs, PAN, Aadhaar, passport, degrees, experience and relieving letters.
 - **Reporting-line view** — See any employee's position in the org chart — their manager and their reports.
+- **Bring existing staff into HR** — See every team member and whether they have an HR profile, and create one from their existing account in one click — no new user or invitation.
+- **Employee workspace** — Each employee has a detail page with profile, employment and salary tabs, and a guided dialog for status changes such as probation or notice period.
+- **Probation and document reminders** — HR is emailed a week before an employee's probation ends, and 30 and 7 days before documents such as visas or contracts expire.
 
 ### HR: Staff Attendance & Shifts
 
@@ -3673,6 +4338,10 @@ Track staff attendance with self check-in and check-out or admin bulk marking, s
 - **Regularization requests** — Staff raise requests for missed or incorrect punches; approvers act on them through the approval workflow.
 - **Shift management** — Create shifts, edit timings and assign shifts to employees.
 - **Holiday calendar** — Maintain holidays individually or via bulk upload, with edit and delete.
+- **Daily attendance board** — See everyone active on a given day, including those with no record yet, and mark selected employees present, absent, half day or on leave in one go.
+- **Time-tracking or day-level mode** — Choose check-in based tracking with hour thresholds for full and half days, or simple day-level marking, plus weekly off-days and the institute time zone.
+- **Auto checkout and auto absent** — Open check-ins can be closed automatically at a set time, and working days with no record or approved leave are marked absent so payroll is never overpaid.
+- **Month freeze after payroll** — Attendance and leave for a month lock once its payroll is processed, so paid figures cannot change unless the run is rejected first.
 
 ### HR: Leave Management
 
@@ -3688,6 +4357,8 @@ A full leave system: define leave types and policies with monthly or yearly accr
 - **Leave balances** — Per-employee balances with manual adjustment for corrections.
 - **Accrual & year-end runs** — Run accrual processing and year-end carry-forward or lapse processing across the institute.
 - **Compensatory off** — Grant comp-off for extra days worked, approve or reject requests, and keep full comp-off history.
+- **Automatic accrual and comp-off expiry** — Leave accrues on schedule and unused compensatory offs expire automatically, with joiners and leavers prorated.
+- **Decision emails** — Employees are emailed as soon as their leave, comp-off or regularization request is approved or rejected.
 
 ### HR: Approval Workflows
 
@@ -3718,6 +4389,11 @@ Run monthly payroll end to end: create a run, auto-calculate every employee's en
 - **Payslip generation** — Generate payslips in bulk for a run, retrievable individually per employee.
 - **Bank export files** — Produce bank-ready disbursement exports for salary transfer, with a log of every export.
 - **Payroll summary reports** — Aggregate payroll cost reporting across periods for management and finance.
+- **Off-cycle, bonus and full-and-final runs** — Alongside the regular monthly run, create runs that pay only pending off-cycle items, bonuses, or the final dues of employees leaving that month.
+- **Payslip PDFs by email** — Generate a PDF payslip per employee and email each person their own copy when you choose, with held employees skipped.
+- **Bank-ready files** — Download salary transfer files as CSV, a formatted workbook, or NEFT layouts for HDFC, ICICI and SBI, restricted to HR admins.
+- **Errors without failed runs** — Employees whose pay cannot be computed are listed on an Errors tab instead of failing the whole run.
+- **Reject and unwind** — Rejecting a processed or approved run reverses loan deductions, reimbursements and journal postings so the month can be corrected and re-run.
 
 ### HR: Salary Structures & Employee Tax
 
@@ -3734,6 +4410,75 @@ Model compensation with earning and deduction components calculated as flat amou
 - **Tax configuration** — Institute-level tax setup covering financial-year parameters.
 - **Investment declarations** — Employees submit and update declarations, and HR verifies them before they affect tax.
 - **Regime-aware tax computation** — A built-in engine computes each employee's liability under India's old or new tax regime, keeping TDS deductions accurate.
+- **Statutory deductions built in** — Provident Fund, ESI and Professional Tax are calculated automatically as part of every payroll run.
+- **Current-year tax rules** — Tax is computed under the current financial year's rules for both regimes, including rebate, HRA exemption, surcharge and cess, with year-to-date true-up.
+- **Formula components and effective dates** — Define components with formulas, date salary revisions from when they take effect, and prorate pay for mid-month joiners and leavers.
+- **Gulf payroll support** — Run payroll for the UAE and Saudi Arabia with local social-security contributions and end-of-service benefit accrual.
+
+### HR: Statutory Compliance & Provisions
+
+*Statutory returns and provisions straight from payroll*
+
+Generate the statutory files your institute must submit, built directly from approved payroll runs. A filings hub shows only the returns that apply to your country — India or the Gulf — with a preview of what each contains and what is missing before you download. Long-service and bonus provisions are computed for the books, and a statutory bonus can be pushed into payroll in one step.
+
+**For:** Admin · **Where:** Admin Web
+
+- **Country-aware filings hub** — Only the returns relevant to your institute's country appear, each with a lazy preview listing contents and gaps before you download the file.
+- **Provident Fund ECR** — Produce the monthly electronic challan-cum-return file for upload to the EPFO employer portal, with employees missing a UAN flagged.
+- **ESI and Professional Tax returns** — Generate the monthly ESIC contribution return and the state professional-tax return, slab-wise, from the month's payroll.
+- **Form 24Q quarterly TDS** — Prepare the quarterly salary-TDS return, reconciled against your recorded tax deposits so any mismatch is highlighted before filing.
+- **Form 16 for employees** — Produce each employee's annual salary and TDS statement (Part B) as a PDF, ready to pair with Part A from the tax portal.
+- **TDS challan register** — Record every tax deposit made against salary withholding by financial year and quarter, feeding the Form 24Q reconciliation.
+- **Gratuity provision** — Compute what the institute would owe staff for long service as of any date, applying statutory vesting rules and caps, and download the report.
+- **Statutory bonus** — Calculate the annual statutory bonus at a rate you choose within the legal range, then create bonus entries for a bonus payroll run in one click.
+- **Gulf payroll compliance** — Generate Wage Protection System salary files for the UAE and Saudi Arabia and an end-of-service benefit provision split between statutory liability and accounting accrual.
+
+### HR: Variable Pay, Teaching Pay & Incentives
+
+*Pay teachers for classes and counsellors for sales*
+
+Add one-off earnings and deductions to any month's payroll, and turn real platform activity into pay. Teaching pay is priced from the live classes each teacher actually took, and counsellor incentives are computed from fees actually collected on leads they converted. Everything is previewed first and only paid when a payroll run picks it up, so nothing moves money on its own.
+
+**For:** Admin · **Where:** Admin Web
+
+- **One-off adjustments** — Record incentives, arrears, recoveries and other one-off earnings or deductions for a month; each waits for the matching payroll run and locks once paid.
+- **Teaching pay from live classes** — See what each teacher taught in the month and price it from a per-session or per-hour rate on their employee record.
+- **Teaching days to attendance** — Mark every day a teacher took a class as present in staff attendance, leaving days already marked present or on leave untouched.
+- **Counsellor sales incentives** — Compute each counsellor's incentive from revenue collected on leads they converted, using a commission percentage, a fixed amount per conversion, or both.
+- **Choose the payout month** — Earn incentives in one month and pay them in a later month's payroll run, with a warning if both months are the same by mistake.
+- **Preview, then pay safely** — Every calculation is previewed before anything is written, and creating the payroll entries twice for the same month never doubles a payment.
+- **Unlinked staff flagged** — Teachers or counsellors without an HR profile are listed separately so you can fix their records rather than silently missing their pay.
+
+### HR: Employee Self-Service (My HR)
+
+*Staff manage their own HR tasks in one place*
+
+Every staff member with an employee profile gets a My HR area inside the admin portal. They can check in and out, apply for leave, claim expenses, download payslips and declare tax-saving investments without chasing the HR team. Their details stay maintained by HR, and every request flows into the same approval queues admins already use.
+
+**For:** Admin, Teacher, Counsellor · **Where:** Admin Web
+
+- **My HR overview** — One page with the employee's profile, this month's attendance, leave balances and latest payslip, with sensitive ID numbers partly masked.
+- **Check in and check out** — Staff punch in and out from a simple card, with the day's status visible immediately.
+- **Apply for leave** — Request full or half-day leave against available balances, follow each request's status and cancel when plans change.
+- **Expense claims** — Submit travel, medical, food, phone or internet reimbursements and track them through approval to payout in payroll.
+- **My payslips** — View and download every payslip by year as a PDF, as soon as payroll has been run for the month.
+- **Tax declarations** — Choose the tax regime and declare planned investments and rent so monthly tax deductions match what the employee will actually owe; declarations lock once HR verifies them.
+
+### ERP Finance: Payroll Journal & P&L Snapshot
+
+*Payroll lands in your books automatically*
+
+Approving a payroll run automatically posts a balanced double-entry salary journal, and rejecting it reverses the entries, so the books always match payroll. Export journals to your accounting software, and see a monthly P&L snapshot comparing fee revenue actually collected with what payroll cost — overall and by department.
+
+**For:** Admin · **Where:** Admin Web
+
+- **Automatic salary journal** — Approving a payroll run posts salary expense, statutory liabilities and net pay payable as one balanced journal entry, with no manual bookkeeping.
+- **Automatic reversals** — Rejecting or cancelling an approved run writes the reversing entries, so corrections never leave the ledger out of step.
+- **Ledger account mapping** — Map each salary component to a ledger account code so postings land in the right accounts of your chart.
+- **Monthly journal view** — Browse every posting for a month, newest first, with debit and credit lines shown for each entry.
+- **Accounting export** — Download a month's journal as a voucher batch that imports into Tally or Zoho Books.
+- **P&L snapshot** — Compare collected fee revenue with total payroll cost for a month, with margin and cost-to-revenue ratio, and download it as CSV.
+- **Payroll cost by department** — See headcount, employer cost and share of total payroll for each department, including employer statutory contributions.
 
 ---
 
@@ -3777,6 +4522,10 @@ The landing dashboard adapts to each staff member's role — admins see institut
 - **User management tabs** — Manage institute users, send invites and view learners without leaving the dashboard.
 - **Guided onboarding tracker** — New institutes see a step-by-step onboarding tracker that walks them through setting up their workspace.
 - **Admin profile editing** — Edit your own profile and account details directly from the dashboard.
+- **Amount-collected trend** — A chart of fees collected over the last few days or all time, with the total and number of payments for the period.
+- **Partner network widgets** — Institutes running branches or partners see a network snapshot, plan status, seat utilisation, top partners by seats used and a location map by state, city or pincode.
+- **Sub-organization home** — Sub-organization admins land on their own dashboard showing learners, seats left, fees collected and outstanding, recent enrolments, their courses and their plan dues.
+- **External LMS health widget** — An opt-in card that checks each connected external LMS every minute and shows any failure with its reason and a link to fix it.
 
 ### Sales Dashboard
 
@@ -3797,6 +4546,23 @@ A live command center for admissions sales: headline KPIs, the conversion funnel
 - **Counsellor leaderboard** — A team ranking embedded right on the dashboard.
 - **Automatic insights strip** — System-generated callouts highlight notable movements in your numbers.
 - **Team and date scoping** — 7/30/90-day presets or custom ranges plus a team picker; permissions control whether a manager sees their team or the whole institute.
+
+### Live Business Activity Feed
+
+*Leads, enrolments, calls and payments as they happen*
+
+A live, institute-wide stream of business activity: prospects moving through enrolment forms, leads arriving from any source, counsellors on calls and payments succeeding or failing. Each person appears as a single row that updates in place, so you see that someone is stuck at payment rather than a pile of separate events. A built-in dashboard adds KPIs, the enrolment funnel and team activity, and the tab is opt-in per role.
+
+**For:** Admin, Counsellor · **Where:** Admin Web
+
+- **Real-time streaming feed** — New activity appears instantly without refreshing, with recent history loaded first and missed events replayed after a reconnect.
+- **One row per person** — Each prospect's enrolment journey collapses into one live row showing their current stage, so payment drop-offs and stuck applicants stand out.
+- **Category tabs** — Switch between invite-form progress, lead forms, calls, payments and counsellor activity, or view everything together.
+- **KPI tiles with trends** — Leads, enrolments, revenue, call connect rate and a needs-attention count, each compared with the previous period.
+- **Enrolment funnel and charts** — See where prospects stop in the enrolment funnel, activity by hour, lead sources, counsellor activity and call outcomes.
+- **Needs-attention list** — Abandoned checkouts are surfaced from their live status and clear themselves automatically once the person pays.
+- **Pause on hover** — Hovering over the feed holds new rows back so you can read without the list moving under you.
+- **Opt-in role access** — The tab ships hidden and is switched on per role in Display Settings, so prospect details and payment amounts are only shown to roles you choose.
 
 ### CRM Reports Center
 
@@ -3822,6 +4588,9 @@ A tabbed analytics hub with shared date, team and counsellor filters feeding eve
 - **CRM intelligence report** — AI-assisted intelligence summaries of CRM performance when call intelligence is enabled.
 - **Center heatmap** — Center-level heatmap analytics of lead activity across locations.
 - **Shared filter bar and deep links** — Date presets or custom ranges, team scope and counsellor scope apply across every tab; the active tab lives in the URL for shareable deep links.
+- **Campaigns (UTM) report** — How many people each campaign source, medium and channel brought in, how many enrolled and the daily trend, with every row drilling through to the matching leads.
+- **Lead calls report** — Attempts and outcomes per lead — connected, callback, not picked up — plus a list of new leads that have never been called.
+- **Current status by counsellor** — A matrix of each counsellor's leads by their current status for the selected period, exportable to CSV.
 
 ### Admission Pipeline Dashboard
 
@@ -3850,6 +4619,29 @@ Track every learner's study progress subject by subject, chapter by chapter and 
 - **Institute and per-learner settings** — Admins set the institute-wide report policy; individual learners can carry their own digest settings.
 - **PDF exports** — Export batch reports, learner reports, subject-wise reports, module progress reports and chapter-wise batch or learner reports as PDFs.
 - **In-context study library reports** — Batch, individual-learner and leaderboard views open directly inside the study library, so teachers spot who is falling behind without leaving the content area.
+- **Course Reports tab** — Batch, learner, timeline and leaderboard reports open directly inside each course, so teachers review progress without leaving the course.
+- **Per-learner course progress** — A dedicated tab breaks down any learner's progress through a course, with details in a side drawer.
+- **Multi-batch reports and CSV export** — Select several batches at once for progress and AI analysis reports, and export the results to CSV.
+- **Quiz Results tab** — See how a batch performed on every quiz in a course: participation, average score, score distribution and who has not attempted yet.
+- **Question-level quiz insights** — For each quiz question, see what share of the class got it wrong and which wrong option pulled them there.
+
+### Scheduled Email Reports
+
+*Institute insights delivered to your team's inbox*
+
+Instead of waiting for someone to log in and look, the platform emails your team a digest of what happened — daily, weekly or monthly. Choose the sections, the scope (whole institute, per batch, per subject or per faculty) and the roles who receive it, preview exactly what each person will get, and optionally add an AI analysis that says what to do next. Every delivery is logged so you always know who received which report.
+
+**For:** Admin, Teacher, Evaluator · **Where:** Admin Web
+
+- **Daily, weekly and monthly digests** — Set up any number of schedules with their own day and hour, worked out in the institute's own timezone.
+- **Report sections** — Pick from inactive learners, learner engagement, live-class attendance, assessments, doubts, payments, admissions pipeline, calling activity, session feedback and AI usage.
+- **Only sections with data** — Sections are offered only where your institute actually has data, and the reason is shown for any section that is unavailable.
+- **Scoped fan-out** — Send one institute report or a separate report per batch, subject or faculty, with a plain-language count of how many reports each run will produce.
+- **Role-based recipients** — Send to everyone holding a role such as admin, teacher or evaluator; teachers automatically receive only their own batches.
+- **Preview and send now** — See the report exactly as you would receive it before saving, or send it immediately to test a schedule.
+- **Optional AI analysis** — Add an AI-written section that reads the numbers and recommends who to reach and what to fix, with a per-run credit cap.
+- **Skip quiet periods** — Optionally skip sending when there is nothing to report, so empty digests never reach anyone.
+- **Delivery history** — A log of every run with its status, recipients and how many learners were named, plus a who-received-it view per run.
 
 ### Learner Activity & Usage Analytics
 
@@ -3866,6 +4658,27 @@ Live and historical analytics on learner behavior across the institute: who is o
 - **Device usage breakdown** — See the split of learners across web, mobile and desktop.
 - **Feature usage breakdown** — Which parts of the platform — learning, assessments, live classes and more — get used most.
 - **Student login statistics** — Login frequency and recency per student, feeding attendance-style regularity reports.
+- **Completion threshold** — Choose the progress percentage at which a slide or chapter shows as completed in the learner app.
+- **Honest reading time** — Set the minimum time per document page or interactive step, and require time proportional to length before long pages count as read.
+- **Idle detection** — An 'are you still there?' check and an automatic pause stop idle time from being counted as study time, with configurable delays.
+- **Video focus check** — An optional prompt during video lessons asks learners to tap a highlighted number at random intervals, feeding a concentration score.
+
+### Live Learning Pulse
+
+*See what every learner is doing, right now*
+
+A real-time window into learning as it happens, for a single course or the whole institute. See who is studying, which slide they are on and who looks stuck, which classes are on air with live turnout, and which assessments are in progress with at-risk attempts flagged. A live feed of submissions, answers and class joins ties it all together, so teachers can step in while it still matters.
+
+**For:** Admin, Teacher · **Where:** Admin Web
+
+- **Course Pulse roster** — A live roster for any batch showing each learner as active, idle or needing help, with the slide they are on and how long they have been there.
+- **Content map** — A subject-to-slide tree of only the parts of the course learners are in right now, with head counts rolled up so you see where the class actually is.
+- **Live activity feed** — A rolling feed of recent submissions, quiz answers and class joins, newest first, for a course or across the institute.
+- **Institute Pulse overview** — One page that shows learning activity across every course, class and assessment in the institute at once, with headline counts that refresh automatically.
+- **Classes on air** — Live sessions currently running with real turnout against invited learners, plus what is scheduled to start in the next hour.
+- **Assessments in flight** — A live funnel of in-progress attempts, a risk list of stalled or struggling attempts, recent submissions and a results pipeline for assessments that just ended.
+- **Batch filter** — Narrow the whole institute view to one batch, with totals recalculated for that batch rather than filtered on screen.
+- **Role-based visibility** — Course Pulse and Institute Pulse appear for admins and teachers by default and can be switched on or off per role from Display Settings.
 
 ### Assessment Analytics & Results
 
@@ -3942,7 +4755,7 @@ A visual dashboard that shows how fee collection is tracking across the institut
 
 *Every transaction tracked, filterable and reconciled*
 
-A dedicated payment log records every payment attempt across all gateways with its live, reconciled status. Filter by time, status or plan, see revenue statistics at the top, and drill into any transaction's full details.
+Manage Payments records every payment attempt across all gateways and invoices with its live, reconciled status. Search by learner, invoice or plan, filter by date, status, plan, batch and source, and see collection summaries at the top. Drill into any transaction, preview its invoice, export to CSV, and void or remove mistaken entries.
 
 **For:** Admin · **Where:** Admin Web
 
@@ -3953,6 +4766,12 @@ A dedicated payment log records every payment attempt across all gateways with i
 - **Reconciled status logic** — Displayed status is derived from gateway confirmations, not just the initial attempt, so the table reflects reality.
 - **Tracking updates** — Payment records can be annotated with tracking information as follow-ups happen.
 - **Built for scale** — Configurable page sizes with newest-first sorting keep large institutes' logs fast to work through.
+- **Search by learner, invoice or plan** — Find payments by the payer's name, email or phone, the amount, the invoice number or the payment plan name, across the whole log.
+- **Invoice column with preview** — See the invoice number issued for each payment and open the actual invoice PDF without leaving the table.
+- **More filters** — Narrow the log by payment type, payment plan, payment source, batch and course alongside a single date-range control.
+- **Pending versus abandoned checkouts** — Checkouts that can still complete are shown as pending, while ones left unfinished for over a day are marked abandoned — a ready list for follow-up.
+- **Custom columns and CSV export** — Show, hide and drag columns into your preferred order, add enrollment and next-due dates, and export the filtered log to CSV.
+- **Void and delete payments** — Void a mistaken offline payment to restore instalments, invoices and ledger, or permanently delete it where an admin-controlled permission allows.
 
 ### Membership Analytics & Expiry Tracking
 
@@ -3981,6 +4800,9 @@ A complete audit trail of administrative actions across the platform — enrollm
 - **CSV export** — Export filtered audit logs as CSV for external compliance archives.
 - **Automatic capture** — Actions across enrollment, settings, certificates, live sessions, bookings, courses and parent-link operations are logged asynchronously, without slowing the app.
 - **Retention management** — A retention policy automatically prunes old logs on your configured schedule.
+- **CRM activity coverage** — Lead lists, lead deletions, status changes, counsellor assignments, follow-ups, tags, lead connectors and calling settings are all recorded, with names resolved for readability.
+- **Wider product coverage** — Assessment edits, invite links, payment plans, progress reports, class materials, mentorship, bookings and HR and payroll actions are captured too.
+- **Filter by person** — Filter by one or more team members chosen by name, alongside multi-select resource and action filters.
 
 ### Report Branding
 
@@ -4022,6 +4844,27 @@ A built-in messenger connects admins, teachers and learners without anyone excha
 - **Message deletion** — Senders and moderators can remove messages from a conversation.
 - **Member, Moderator and Owner roles** — Conversations distinguish members, moderators and owners for management actions.
 - **Per-institute opt-in** — Chat is off by default and switched on per institute, so every school adopts messaging on its own terms.
+- **Message editing** — Members edit their own messages with an edited marker, and institutes choose whether students may edit or delete their own messages.
+- **Unread badge and smarter push** — An unread counter sits on the Messages menu item, and push alerts reach anyone not currently viewing that conversation, including on iPhone.
+
+### Mentorship Programs
+
+*Pair every learner with a mentor who checks in*
+
+Run a structured mentorship programme inside the platform. Make team members or invited experts into mentors, pair them with learners by hand or in an even round-robin, or let learners browse a mentor directory and request one. Learners book one-to-one sessions on their mentor's own calendar, mentors record outcomes and keep notes, learners rate every session, and admins watch workload, sessions and requests from one dashboard. The module is opt-in per institute.
+
+**For:** Admin, Teacher, Learner · **Where:** Admin Web, Learner Web, Learner Mobile App
+
+- **Mentor profiles and invitations** — Promote a team member or invite an outside expert by email, with photo, title, bio, expertise tags, an optional cap on mentees and a choice to appear in the directory.
+- **Manual and round-robin assignment** — Pair chosen learners with a mentor, or spread a filtered group of learners evenly across several mentors while respecting each mentor's capacity.
+- **Mentor directory and requests** — Learners browse discoverable mentors by expertise and request one, or any available mentor; admins approve or decline from a requests queue.
+- **Availability and one-to-one booking** — Each mentor sets weekly hours, time off, session types and lengths, and a Google Meet or custom meeting link; learners book open slots with double-booking prevented.
+- **Calendar sync per mentor** — Mentors connect their own Google account so every booked session lands on their calendar with its own meeting link.
+- **Staff scheduling, cancel and reschedule** — Admins and mentors can book sessions on a learner's behalf, and anyone involved can cancel or reschedule, with calendars and reminders updated automatically.
+- **Session outcomes and learner ratings** — Mentors mark each session completed or no-show with topic and notes, and learners rate sessions out of five so admins can see each mentor's feedback.
+- **Mentor workspace and mentee profile** — Mentors get a My Mentorship home with mentees, upcoming sessions and their booking link, plus a mentee panel showing course progress, notes and past calls.
+- **Admin overview and dashboard widgets** — An overview with workload, outcomes and items needing attention, a filterable sessions table, and home-page widgets for both admins and learners.
+- **Reminders and notifications on every channel** — Assignment, booking, cancellation, reminder, request and optional inactivity check-in messages go out by email, in-app, push and WhatsApp, each switchable in settings.
 
 ### Chat Moderation & Safety
 
@@ -4055,6 +4898,12 @@ Learners earn experience points for studying, attending live classes and scoring
 - **Configurable unlock criteria** — Choose the activity- or achievement-based rule that unlocks each badge.
 - **Institute-controlled scoring** — Institutes define the badge and scoring rules, and a master toggle disables badges entirely when they are not wanted.
 - **Play theme** — A gamified, kid-friendly dashboard theme with progress rings, XP pills and badge showcases.
+- **Staff-awarded badges** — Teachers and admins award badges by hand from a learner's profile, with an optional note, and can create new badges on the spot.
+- **Bulk badge awards** — Award a badge to many learners at once from any student list, with progress and a results summary.
+- **Hidden-until-earned badges** — Keep surprise badges invisible to learners until the moment they earn them.
+- **Ready-made badge artwork** — Pick from a library of playful tiered badge artwork instead of designing icons from scratch.
+- **Achievements popup and celebrations** — Learners open an achievements view from the header and get a celebration whenever a new badge arrives.
+- **Server-tracked streaks and points** — Streaks and points are kept on the server in the institute's timezone, so learners see the same totals on every device.
 
 ### Leaderboards
 
@@ -4073,6 +4922,7 @@ Leaderboards rank learners everywhere they compete: within their batch, across t
 - **Speed-aware ranking** — Total response time is recorded alongside score, so faster correct answers rank higher among ties.
 - **Full performance breakdown** — Each leaderboard row shows rank, name, total score, total time, correct, wrong and unanswered counts, and total questions.
 - **CSV export** — Download the complete session leaderboard as a spreadsheet for records or prize distribution.
+- **Badges on every leaderboard** — Leaderboards show earned badges prominently, and tapping a learner opens their full badge collection.
 
 ### Course Ratings & Reviews
 
@@ -4162,6 +5012,9 @@ Run the learner, teacher and admin portals on your own domains (e.g. learn.mysch
 - **Sub-organization branded domains** — Bind a domain to a specific sub-organization so each branch or partner brand gets its own branded login and signup entry point.
 - **Regional & terminology preferences** — Set preferred country lists for phone-number inputs per domain, and choose whether your custom naming terminology applies on each white-labeled domain.
 - **White-label status dashboard** — See at a glance which portals are configured, their URLs, domain types and provisioning state — verify what is live at any time.
+- **Branded Google sign-in** — Use your own Google sign-in identity so learners see your brand, not the platform's, on the 'Continue with Google' screen — with a step-by-step setup guide.
+- **Branded short links** — The setup screen provides the DNS record that lets short links for campaigns and shares run on your own domain.
+- **Location-aware phone codes** — Choose per portal whether phone fields default to your institute's country, the visitor's detected region, or your country only.
 
 ### Branded Mobile & Desktop Apps
 
@@ -4180,6 +5033,9 @@ The learner experience ships as installable apps for Android, iOS, Windows and M
 - **Offline resilience** — Network status detection, offline message queuing and cached preferences keep the app usable on poor connections.
 - **Mobile-native UX** — Pull-to-refresh, in-app browser, network awareness and mobile-first layouts throughout — no cut-down web wrapper.
 - **iOS purchase compliance** — Purchase flows automatically adapt on iOS to meet App Store rules.
+- **App status tracker** — See each branded app's live store status on Android, iOS, Windows and Mac, any pending update, the latest over-the-air update and the reason if a store rejected it.
+- **Mac App Store distribution** — The branded Mac app can be published on the Mac App Store alongside the Microsoft Store listing for Windows.
+- **App download links in the portal** — Your Android, iOS, Windows and Mac download links appear inside the learner portal, including on desktop, so learners find your apps.
 
 ### Over-the-Air App Updates
 
@@ -4227,6 +5083,23 @@ Rename every user-facing term per institute, with independent singular and plura
 - **Applies across the product** — Custom names appear in sidebars, tabs, dialogs, table headers, toasts and page titles across admin and learner apps, and can apply on white-labeled domains and per-domain overrides.
 - **Session vs Batch taxonomy** — Distinguishes academic Session (semester or year) from Batch (learner group), so schools and corporate L&D both get natural language.
 
+### Multi-Language Interface & Course Translation
+
+*Run your institute in your learners' language*
+
+The admin dashboard and learner app are available in English, Hindi, French and Arabic, and each institute chooses its default language and which languages users can switch between. Courses can be translated into another language with AI, reviewed line by line and published, so learners see course content in the language they picked. Your custom terminology carries through in every language.
+
+**For:** Admin, Teacher, Learner · **Where:** Admin Web, Learner Web, Learner Mobile App, Learner Desktop App
+
+- **Translated admin and learner apps** — Menus, screens, dialogs and messages across the admin dashboard and learner app are available in English, Hindi, French and Arabic.
+- **Institute language settings** — Set the default language users see first, the languages offered in the switcher, the language your content is written in and the institute timezone.
+- **In-app language switcher** — Staff and learners switch language from the top bar whenever more than one language is enabled, and the change applies instantly.
+- **AI course translation** — Translate a whole course into another enabled language with AI, with the credit cost shown up front against your balance before you confirm.
+- **Review before publishing** — Choose to publish translations automatically or hold them as drafts, then approve or reject each translated item side by side with the original.
+- **Learners see their language** — Learners automatically get published course translations in the language they chose, while the original content is never altered.
+- **Terminology in every language** — Your custom names for courses, batches, learners and more are applied consistently, whichever interface language is in use.
+- **Worldwide timezones** — Institute and class-scheduling timezone pickers cover dozens of zones across every region, so schedules and reports line up wherever you operate.
+
 ### Flexible Login & Single Sign-On
 
 *Every sign-in method your learners and staff prefer*
@@ -4247,6 +5120,7 @@ Learners and staff sign in the way that suits them — password, one-time codes 
 - **Credential recovery & distribution** — Users request their credentials by email in one click; admins can push login credentials to individual users or in bulk.
 - **Silent session renewal** — Sessions refresh securely in the background, so users stay signed in without interruption while security is preserved.
 - **Account identifier & duplicate detection** — Choose the identifier (such as email) that uniquely identifies users at registration and login; enrollment automatically detects existing accounts instead of creating duplicates.
+- **Edit and send learner credentials** — Admins update a learner's username or password and send it by email or WhatsApp using a template chosen in Learner Credential settings.
 
 ### Device & Session Security
 
@@ -4280,6 +5154,24 @@ Shape everything a learner sees — sidebar layout, navigation style, custom tab
 - **Profile field visibility** — Choose which profile fields learners can see and which they can edit.
 - **Language selection** — A language dropdown lets learners switch the app language where enabled.
 
+### Appearance Studio & Learner Skins
+
+*Give the learner app your own look and feel*
+
+A single Appearance page controls how your portals look: brand colour, font, page background, accent colours and sidebar colours, all with live previews. On top of your brand, choose a learner skin — from playful to corporate — and fine-tune corner style, spacing density and gradients. These choices reshape the learner app only, so your team's admin tools stay consistent.
+
+**For:** Admin · **Where:** Admin Web, Learner Web, Learner Mobile App, Learner Desktop App
+
+- **Brand colour** — Pick from preset palettes or enter any custom colour, and the full shade range is generated for buttons, highlights and charts.
+- **Font choice** — Choose the typeface used across your portals, with the editor previewing it immediately.
+- **Page background and accents** — Set the page background with brand-tint or neutral suggestions, plus secondary and tertiary accent colours.
+- **Sidebar colours** — Customise the sidebar surface, hover, active item and text colours to match your brand.
+- **Learner skins** — Switch the whole learner app between Default, Vibrant, Play, Cleaner Play and a modern Corporate skin suited to workplace training.
+- **Corner style** — Choose sharp, rounded or pill-shaped corners for cards, buttons and inputs throughout the learner app.
+- **Spacing density** — Choose compact, default or comfortable spacing to suit content-heavy courses or a more relaxed layout.
+- **Gradient intensity** — Pick flat, subtle or full gradients for headers and highlights in the learner app.
+- **Live scale previews** — Every option shows a miniature preview of the learner app, so you see the result before saving.
+
 ### Feature & Tab Visibility Controls
 
 *Turn whole product areas on or off per institute*
@@ -4292,6 +5184,7 @@ Switch entire product areas on or off so your team only sees what you actually u
 - **Sub-item toggles** — Within a visible area, toggle individual sub-items; at least one sub-item always stays visible as a safety net.
 - **Reset to defaults** — One click restores the standard tab layout.
 - **Module entitlements** — Institutes are provisioned with product modules (Assessment, LMS, Volt, Vsmart) and their sub-modules, controlling which product areas appear at all.
+- **Copy settings to other roles** — Copy one role's display settings to any or all other roles, including custom roles, while each role keeps its own safety rules.
 
 ### Branded Sender Email
 
@@ -4319,6 +5212,25 @@ Real-time webhooks for platform events and a REST API covering the platform's co
 - **Reliable delivery** — Webhook deliveries retry automatically on failure so transient outages on your side don't lose events.
 - **Native connectors** — Ready-made integrations for WordPress sites, Meta and Google lead ads into the CRM, and payment-gateway webhooks.
 - **External LMS connections** — Manage connections to external learning systems from a single settings screen, with optional custom fields mapped across each connection so records stay in sync.
+
+### AI Assistant Connector (MCP)
+
+*Work with your institute from your favourite AI assistant*
+
+Connect popular AI assistants and coding tools to your institute through a secure MCP server, so your team can ask questions about the institute and draft websites, blog posts, lead forms, automations and courses in plain language. Each person signs in with their own account and only ever sees what they can already see in the dashboard. Every change is saved as a draft or added alongside existing data — nothing goes live until an admin publishes it.
+
+**For:** Admin, Teacher, Counsellor · **Where:** Admin Web, API
+
+- **One-switch enablement** — The server is off until an admin turns it on; the settings page then shows the server URL and step-by-step connection instructions.
+- **Personal sign-in and consent** — Each person connects with their own account and approves the connection, so access always matches their role in the institute.
+- **White-label aware** — Institutes on their own branded portals get an institute-specific server address, so sign-in shows their own brand instead of a generic one.
+- **Area-by-area permissions** — For each area — institute stats, website, blog, lead forms, automations and courses — choose off, view only or edit, with presets for view-only or everything.
+- **Role allow-list and per-role overrides** — Pick which staff roles may connect at all and grant extra capabilities to specific roles; learners and parents can never connect.
+- **Website and blog drafting** — Review site pages, audit them, compose or edit pages and blog posts — every change lands as a draft the admin reviews and publishes.
+- **Lead forms and automations** — Read lead campaigns and recent leads, create new campaigns and fields, and draft automations plus their email and WhatsApp templates.
+- **Course drafting** — Explore courses and their structure, create draft courses and slides, set drip rules on unpublished courses and create invites and payment plans.
+- **Client IDs for other apps** — Issue extra client IDs with their own redirect URLs for any other AI app your team uses.
+- **Active connections and revoke** — See every connected app with who connected it and when it was last used, and revoke any connection instantly.
 
 ### Institute Profile & Settings Engine
 
@@ -4485,6 +5397,12 @@ A floating assist dock in the admin portal offers page-aware tutorials, support 
 - **Centrally published guides** — New walkthrough guides are published by the platform team, targeted to specific screens, and appear for customers instantly — no software update, with full create/update/activate management.
 - **In-app roadmap viewer** — Read the latest published roadmap and release highlights in a rich formatted panel without leaving the dashboard.
 - **New-update indicator** — An unread dot lights up on the dock whenever the roadmap changes, and clears once you open the panel.
+- **Training video library** — A Training tab offers step-by-step video lessons organised by module and section, with a start-here path, continue watching and progress marked as you watch.
+- **Smart training search** — Find the right video by describing the task in your own words, including Hinglish phrasing and typos, with highlighted best matches.
+- **Shareable tutorial links** — Copy a short link to any training video and send it to a colleague on WhatsApp or email.
+- **Explore the product** — Browse a full catalogue of platform features from the dock to discover capabilities your institute is not using yet.
+- **Get the admin app** — Request the admin mobile app download link for Android or iOS on WhatsApp straight from the dock.
+- **Per-role dock visibility** — Show the assist dock to admins by default and switch it on or off for teachers and custom roles from Display Settings.
 
 ### Platform Owner Console (Super Admin)
 

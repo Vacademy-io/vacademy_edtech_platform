@@ -1,0 +1,127 @@
+{
+    "header": {
+        "title": "डिफ़ॉल्ट प्रवेश फ़ॉर्म",
+        "admissionForm": "प्रवेश फ़ॉर्म",
+        "bulkImport": "बल्क इम्पोर्ट",
+        "subtitle": "एक सत्र के प्रवेश और आवेदन — नया शुरू करें या किसी पूछताछ को बदलें।",
+        "sessionLabel": "सत्र"
+    },
+    "filters": {
+        "status": "स्थिति",
+        "source": "स्रोत",
+        "dateRange": "दिनांक सीमा",
+        "class": "कक्षा",
+        "section": "सेक्शन",
+        "applyFilter": "फ़िल्टर लागू करें",
+        "applying": "लागू किया जा रहा है...",
+        "clearAll": "सभी साफ़ करें"
+    },
+    "dateRanges": {
+        "today": "आज",
+        "last7Days": "पिछले 7 दिन",
+        "last30Days": "पिछले 30 दिन",
+        "last3Months": "पिछले 3 महीने",
+        "last6Months": "पिछले 6 महीने",
+        "lastYear": "पिछला वर्ष"
+    },
+    "overallStatuses": {
+        "application": "आवेदन",
+        "admission": "प्रवेश"
+    },
+    "sourceTypes": {
+        "website": "वेबसाइट",
+        "googleAds": "गूगल विज्ञापन",
+        "facebook": "फेसबुक",
+        "google": "गूगल",
+        "friends": "मित्र",
+        "zohoForms": "ज़ोहो फ़ॉर्म्स",
+        "audienceCampaign": "ऑडियंस कैंपेन",
+        "directApplication": "प्रत्यक्ष आवेदन",
+        "manualAdmission": "मैनुअल प्रवेश",
+        "other": "अन्य"
+    },
+    "searchByOptions": {
+        "studentName": "छात्र का नाम",
+        "applicationNo": "आवेदन संख्या",
+        "parentMobile": "अभिभावक मोबाइल"
+    },
+    "search": {
+        "criteriaHeading": "खोज मानदंड",
+        "searchByLabel": "इसके अनुसार खोजें",
+        "enterDetailsLabel": "विवरण दर्ज करें",
+        "enterDetailsPlaceholder": "{{field}} दर्ज करें",
+        "searchButton": "खोजें",
+        "searching": "खोजा जा रहा है..."
+    },
+    "results": {
+        "totalResponses": "कुल प्रतिक्रियाएँ:",
+        "noRecordsFound": "आपकी खोज मानदंड से मेल खाता कोई रिकॉर्ड नहीं मिला।",
+        "createAdmission": "प्रवेश बनाएँ",
+        "alreadyAdmitted": "पहले से प्रवेशित"
+    },
+    "table": {
+        "sNo": "क्र.सं.",
+        "class": "कक्षा",
+        "studentName": "छात्र का नाम",
+        "gender": "लिंग",
+        "dateOfBirth": "जन्म तिथि",
+        "parentName": "अभिभावक का नाम",
+        "parentEmail": "अभिभावक ईमेल",
+        "parentMobile": "अभिभावक मोबाइल",
+        "trackingId": "ट्रैकिंग आईडी",
+        "status": "स्थिति",
+        "source": "स्रोत",
+        "actions": "कार्रवाइयाँ"
+    },
+    "genderLabels": {
+        "male": "पुरुष",
+        "female": "महिला",
+        "other": "अन्य"
+    },
+    "statusLabels": {
+        "new": "नया",
+        "contacted": "संपर्क किया गया",
+        "followUp": "फ़ॉलो अप",
+        "qualified": "योग्य",
+        "notEligible": "अयोग्य",
+        "enquiry": "पूछताछ",
+        "application": "आवेदन",
+        "admission": "प्रवेश"
+    },
+    "emptyState": {
+        "title": "शुरू करने के लिए एक छात्र चुनें",
+        "description": "किसी मौजूदा पूछताछ या आवेदन को खोजने के लिए ऊपर दिए गए खोज पैनल का उपयोग करें। वैकल्पिक रूप से, नया फ़ॉर्म शुरू करने के लिए 'प्रवेश फ़ॉर्म' पर क्लिक करें।"
+    },
+    "admissionTypeModal": {
+        "title": "प्रवेश प्रकार चुनें",
+        "subtitle": "चुनें कि आप नया प्रवेश कैसे बनाना चाहते हैं",
+        "newAdmissionTitle": "नया प्रवेश",
+        "newAdmissionDesc": "नया प्रवेश फ़ॉर्म शुरू करें",
+        "fromEnquiryTitle": "पूछताछ से",
+        "fromEnquiryDesc": "मौजूदा पूछताछ से प्रवेश बनाएँ",
+        "fromApplicationTitle": "आवेदन से",
+        "fromApplicationDesc": "मौजूदा आवेदन से प्रवेश बनाएँ"
+    },
+    "applicationModal": {
+        "title": "आवेदन विवरण दर्ज करें",
+        "applicationIdLabel": "आवेदन आईडी / ट्रैकिंग आईडी",
+        "applicationIdPlaceholder": "जैसे, APP-12345",
+        "or": "या",
+        "phoneLabel": "फ़ोन नंबर",
+        "phonePlaceholder": "जैसे, 9876543210",
+        "helperText": "जिस आवेदन को आप प्रवेश में बदलना चाहते हैं, उसकी आवेदन आईडी या फ़ोन नंबर दर्ज करें",
+        "cancel": "रद्द करें",
+        "continueButton": "जारी रखें",
+        "loading": "लोड हो रहा है..."
+    },
+    "alerts": {
+        "enterIdOrPhone": "कृपया आवेदन आईडी या फ़ोन नंबर में से कोई एक दर्ज करें",
+        "noApplicationFound": "दी गई जानकारी से कोई आवेदन नहीं मिला।",
+        "fetchFailed": "आवेदन विवरण प्राप्त करने में विफल। कृपया आईडी या फ़ोन नंबर जाँचें।"
+    },
+    "quickViews": {
+        "admitted": "प्रवेश हुआ",
+        "applications": "आवेदन",
+        "all": "सभी रिकॉर्ड"
+    }
+}

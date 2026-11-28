@@ -1,0 +1,15 @@
+{
+    "title": "Sélectionner les paramètres de remise",
+    "description": "Choisissez un coupon de remise ou créez-en un nouveau",
+    "badge": {
+        "active": "Actif"
+    },
+    "discount": {
+        "percentOff": "{{value}} % de réduction",
+        "rupeesOff": "₹{{value}} de réduction",
+        "expires": "Expire le : {{date}}"
+    },
+    "actions": {
+        "addNew": "+ Ajouter une nouvelle remise"
+    }
+}

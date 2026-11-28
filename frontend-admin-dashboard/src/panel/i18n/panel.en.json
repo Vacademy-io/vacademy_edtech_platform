@@ -1,0 +1,167 @@
+{
+    "app": { "name": "Vacademy Classroom" },
+    "common": {
+        "back": "Back",
+        "home": "Home",
+        "retry": "Try again",
+        "cancel": "Cancel",
+        "continue": "Continue"
+    },
+    "states": {
+        "loading": "Loading…",
+        "errorTitle": "Something went wrong",
+        "errorDescription": "Check the internet connection and try again."
+    },
+    "topBar": {
+        "signOut": "Sign out",
+        "signedOut": "Signed out",
+        "signOutTitle": "Sign out of this panel?",
+        "signOutBody": "The next teacher will need to sign in again. The whiteboard and panel settings stay on this panel.",
+        "signOutLiveTitle": "End the live session and sign out?",
+        "signOutLiveBody": "A live presentation is still running. Signing out ends it for every student.",
+        "fullscreen": "Full screen",
+        "exitFullscreen": "Exit full screen"
+    },
+    "idle": { "signedOut": "Signed out after 3 hours without use" },
+    "errors": {
+        "screenTitle": "This screen stopped working",
+        "screenBody": "Try again, or go back to Home and open it again."
+    },
+    "home": {
+        "greeting": "Hello, {{name}}",
+        "greetingSignedOut": "Welcome",
+        "subtitle": "What would you like to do in class today?",
+        "subtitleSignedOut": "Use the whiteboard right away, or sign in to present and teach lessons.",
+        "signInToUse": "Sign in to use",
+        "settingsUnavailable": "This panel does not have that settings screen",
+        "tiles": {
+            "whiteboard": "Whiteboard",
+            "whiteboardHint": "Draw and write, no sign-in needed",
+            "volt": "Present",
+            "voltHint": "Run your Volt presentations live",
+            "lessons": "Lessons",
+            "lessonsHint": "Play course videos, PDFs and slides",
+            "signIn": "Sign in",
+            "signInHint": "Teachers and admins",
+            "diagnostics": "Diagnostics",
+            "diagnosticsHint": "Check this panel and its connection",
+            "androidSettings": "Android settings",
+            "androidSettingsHint": "Wi-Fi, date and other panel settings",
+            "switchHome": "Switch home app",
+            "switchHomeHint": "Go back to the panel's own launcher"
+        }
+    },
+    "login": {
+        "title": "Sign in to your classroom",
+        "subtitle": "Use the same username and password as the Vacademy admin dashboard.",
+        "sharedDeviceNote": "This is a shared panel: sign out when your class ends. You are signed out automatically after 3 hours without use.",
+        "whiteboardLink": "Open the whiteboard without signing in",
+        "diagnosticsLink": "Panel diagnostics",
+        "username": "Username",
+        "password": "Password",
+        "usernameRequired": "Enter your username",
+        "passwordRequired": "Enter your password",
+        "submit": "Sign in",
+        "submitting": "Signing in…",
+        "errors": {
+            "WRONG_CREDENTIALS": "The username or password is not correct.",
+            "STUDENT_BLOCKED": "Student accounts cannot sign in on classroom panels. Ask your teacher.",
+            "NO_INSTITUTE": "This account is not a teacher or admin in any institute.",
+            "NETWORK": "Cannot reach Vacademy. Check the panel's internet connection.",
+            "SERVER": "Vacademy could not sign you in right now. Try again in a minute."
+        }
+    },
+    "language": { "label": "Language", "en": "English", "hi": "हिन्दी" },
+    "institutes": {
+        "title": "Choose your institute",
+        "subtitle": "Your account works in more than one institute. Pick the one you are teaching for now.",
+        "unnamed": "Institute {{id}}",
+        "current": "Last used on this panel",
+        "emptyTitle": "No institute to open",
+        "emptyBody": "This account has no teacher or admin access. Sign out and use another account."
+    },
+    "diagnostics": {
+        "title": "Panel diagnostics",
+        "firstRunNote": "Welcome! Check that this panel is ready, then tap Continue.",
+        "sections": {
+            "browser": "Browser engine",
+            "device": "Panel hardware",
+            "touch": "Touch test",
+            "features": "Features",
+            "backend": "Connection to Vacademy",
+            "errors": "Captured errors",
+            "report": "Support report"
+        },
+        "chrome": "Chrome version",
+        "unknown": "unknown",
+        "needs": "needs {{min}}+",
+        "ok": "OK",
+        "tooOld": "Too old",
+        "userAgent": "User agent",
+        "classroomShell": "Classroom app",
+        "yes": "Yes",
+        "no": "No",
+        "viewport": "Screen area (CSS px)",
+        "screen": "Screen",
+        "touchPoints": "Touch points",
+        "build": "Build",
+        "preflight": "Start-up check",
+        "preflightOk": "All required features present",
+        "webOnlyTitle": "Running in a browser",
+        "webOnlyBody": "Panel hardware details appear when this runs inside the Vacademy Classroom app.",
+        "deviceErrorTitle": "Could not read the panel details",
+        "deviceErrorBody": "The app's device bridge did not answer.",
+        "webView": "System WebView",
+        "android": "Android",
+        "model": "Model",
+        "hardware": "Board / CPU",
+        "memory": "Memory",
+        "display": "Display",
+        "app": "App",
+        "defaultHome": "Default home app",
+        "open": {
+            "home": "Home app settings",
+            "settings": "Android settings",
+            "wifi": "Wi-Fi",
+            "date": "Date & time"
+        },
+        "features": {
+            "pointerEvent": "Pointer events",
+            "resizeObserver": "ResizeObserver",
+            "intersectionObserver": "IntersectionObserver",
+            "webgl": "WebGL",
+            "webgl2": "WebGL 2",
+            "abortController": "AbortController",
+            "eventSource": "Live updates (EventSource)",
+            "cryptoSubtle": "Web Crypto",
+            "localStorage": "Local storage",
+            "cookies": "Cookies",
+            "nativePromise": "Native Promise",
+            "promiseAllSettled": "Promise.allSettled",
+            "globalThis": "globalThis",
+            "structuredClone": "structuredClone",
+            "wasm": "WebAssembly"
+        },
+        "missing": "Missing",
+        "backendChecking": "Checking the connection…",
+        "backendStatus": "Status",
+        "unreachable": "Unreachable",
+        "latency": "Response time",
+        "endpoint": "Checked address",
+        "testToast": "Test message",
+        "testToastMessage": "Messages show here, at the top of the screen",
+        "noErrors": "No errors captured",
+        "reportHint": "Scan with a phone and send it to Vacademy support.",
+        "touchActive": "fingers touching now",
+        "touchMax": "Most at once: {{count}}",
+        "touchHint": "Put several fingers on this box"
+    },
+    "activity": {
+        "diagLabel": "Activity to send",
+        "diagValue": "{{queued}} waiting, {{dropped}} over the limit"
+    },
+    "update": {
+        "diagChannel": "App channel",
+        "diagLast": "Last update"
+    }
+}

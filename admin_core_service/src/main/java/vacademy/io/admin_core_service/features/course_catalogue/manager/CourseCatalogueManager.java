@@ -36,6 +36,11 @@ public class CourseCatalogueManager {
         return ResponseEntity.ok(service.updateCatalogue(catalogueId, request, userDetails != null ? userDetails.getUserId() : null));
     }
 
+    public ResponseEntity<Void> deleteCatalogue(CustomUserDetails userDetails, String catalogueId) {
+        service.deleteCatalogue(catalogueId);
+        return ResponseEntity.ok().build();
+    }
+
     public ResponseEntity<List<CourseCatalogueResponse>> getAllCatalogues(CustomUserDetails userDetails, String instituteId) {
         return ResponseEntity.ok(service.getAllCataloguesByInstitute(instituteId));
     }
@@ -49,7 +54,7 @@ public class CourseCatalogueManager {
     }
 
     public ResponseEntity<CourseCatalogueResponse> getCatalogueByTag(CustomUserDetails userDetails, String instituteId, String tagName) {
-        return ResponseEntity.ok(service.getCatalogueByInstituteAndTag(instituteId, tagName));
+        return ResponseEntity.ok(service.getCatalogueByInstituteAndTagForEditor(instituteId, tagName));
     }
 
     // Public method without authentication

@@ -1,0 +1,21 @@
+{
+    "card": {
+        "title": "Copy & Screen Protection",
+        "description": {
+            "part1": "Disable right-click and the common developer / view-source shortcuts (F12, Ctrl/Cmd+Shift+I/J/C, Ctrl+U) on slides for",
+            "part2": "in the learner app. This is a best-effort deterrent — it does not fully prevent inspection (developer tools can still be opened from the browser menu). Append",
+            "part3": "to the URL to bypass it while testing."
+        }
+    },
+    "toggle": {
+        "label": "Disable right-click & inspect shortcuts on slides"
+    },
+    "button": {
+        "save": "Save",
+        "saving": "Saving…"
+    },
+    "toasts": {
+        "saveSuccess": "Slide content protection saved",
+        "saveFailed": "Failed to save slide content protection"
+    }
+}

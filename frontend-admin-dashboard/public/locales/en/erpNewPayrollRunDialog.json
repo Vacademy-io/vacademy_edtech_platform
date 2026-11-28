@@ -1,0 +1,25 @@
+{
+    "heading": "New payroll run",
+    "actions": {
+        "cancel": "Cancel",
+        "creating": "Creating…",
+        "createRun": "Create run"
+    },
+    "fields": {
+        "payrollMonth": "Payroll month",
+        "monthHint": "Creating the run does not compute anything yet — you process it in the next step.",
+        "runType": "Run type",
+        "notes": "Notes",
+        "notesOptional": "(optional)",
+        "notesPlaceholder": "Why this run exists — e.g. Diwali bonus approved by the board on 12 Oct."
+    },
+    "runTypes": {
+        "regular": "Everyone employed during the month — the normal monthly salary run.",
+        "offCycle": "Only employees who have a pending off-cycle adjustment for the month.",
+        "fnf": "Only employees exiting during the month — settles their final dues.",
+        "bonus": "Only employees who have a pending bonus adjustment for the month."
+    },
+    "toast": {
+        "created": "Payroll run created. Process it when you are ready to compute salaries."
+    }
+}

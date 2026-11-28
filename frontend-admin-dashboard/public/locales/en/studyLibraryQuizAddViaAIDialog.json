@@ -1,0 +1,36 @@
+{
+    "createQuestionsFromAi": "Create Questions From AI",
+    "generateQuestions": {
+        "title": "Generate Questions",
+        "description": "Ask AI to use PDF, Image or any topic to generate new questions"
+    },
+    "extractQuestions": {
+        "title": "Extract Questions",
+        "description": "Ask AI to extract questions from any PDF, Image or Audio Lecture"
+    },
+    "vsmartUpload": {
+        "title": "VSmart Upload",
+        "subtitle": "(Generate questions by uploading pdf, doc and ppt files)",
+        "description": "Generate question papers instantly by uploading study materials in PDF, Word, or PowerPoint formats."
+    },
+    "vsmartAudio": {
+        "title": "Vsmart Audio",
+        "subtitle": "(Generate questions by uploading audio files)",
+        "description": "Convert any lecture, meeting, or audio recording into a full question paper."
+    },
+    "vsmartTopics": {
+        "title": "Vsmart Topics",
+        "subtitle": "(Generate questions by providing topics)",
+        "description": "Generate custom question papers in seconds by just typing a topic, concept, or instruction."
+    },
+    "vsmartExtract": {
+        "title": "Vsmart Extract",
+        "subtitle": "(Extract questions by uploading pdf, doc and ppt files)",
+        "description": "Easily extract all existing questions from any PDF document."
+    },
+    "vsmartImage": {
+        "title": "Vsmart Image",
+        "subtitle": "(Extract questions by uploading images)",
+        "description": "Turn images into questions with ease using OCR and AI."
+    }
+}

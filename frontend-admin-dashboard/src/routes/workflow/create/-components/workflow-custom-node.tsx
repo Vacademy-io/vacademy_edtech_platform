@@ -3,6 +3,8 @@ import { Handle, Position, NodeProps } from 'reactflow';
 import { Badge } from '@/components/ui/badge';
 import { WORKFLOW_NODE_TYPES } from '@/types/workflow/workflow-types';
 import { Warning } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 
 interface WorkflowNodeData {
     name: string;
@@ -12,59 +14,68 @@ interface WorkflowNodeData {
     isEndNode?: boolean;
 }
 
-/** Check if a node has its minimum required config filled */
-export function getNodeIssues(nodeType: string, config: Record<string, unknown>): string[] {
+/**
+ * Check if a node has its minimum required config filled. `t` is optional so callers that
+ * cannot yet thread a translator (e.g. a component outside this i18n batch) keep compiling
+ * against a plain-English fallback — every caller within this batch always passes `t`.
+ */
+export function getNodeIssues(
+    nodeType: string,
+    config: Record<string, unknown>,
+    t?: TFunction
+): string[] {
     const issues: string[] = [];
     const has = (key: string) => {
         const v = config[key];
         return v !== undefined && v !== null && v !== '';
     };
+    const tr = (key: string, fallback: string) => (t ? t(key) : fallback);
 
     switch (nodeType) {
         case 'TRIGGER':
-            if (!has('triggerEvent')) issues.push('Select a trigger event');
+            if (!has('triggerEvent')) issues.push(tr('issues.selectTriggerEvent', 'Select a trigger event'));
             break;
         case 'QUERY':
-            if (!has('prebuiltKey')) issues.push('Select a query');
+            if (!has('prebuiltKey')) issues.push(tr('issues.selectQuery', 'Select a query'));
             break;
         case 'SEND_EMAIL':
-            if (!has('on')) issues.push('Select a data source for recipients');
+            if (!has('on')) issues.push(tr('issues.selectRecipientsSource', 'Select a data source for recipients'));
             break;
         case 'SEND_WHATSAPP':
-            if (!has('templateName')) issues.push('Select a WhatsApp template');
-            if (!has('on')) issues.push('Set recipients expression');
+            if (!has('templateName')) issues.push(tr('issues.selectWhatsappTemplate', 'Select a WhatsApp template'));
+            if (!has('on')) issues.push(tr('issues.setRecipientsExpression', 'Set recipients expression'));
             break;
         case 'HTTP_REQUEST':
-            if (!has('url')) issues.push('Enter a URL');
+            if (!has('url')) issues.push(tr('issues.enterUrl', 'Enter a URL'));
             break;
         case 'FILTER':
-            if (!has('source')) issues.push('Set source expression');
-            if (!has('condition')) issues.push('Set filter condition');
+            if (!has('source')) issues.push(tr('issues.setSourceExpression', 'Set source expression'));
+            if (!has('condition')) issues.push(tr('issues.setFilterCondition', 'Set filter condition'));
             break;
         case 'AGGREGATE':
-            if (!has('source')) issues.push('Set source expression');
+            if (!has('source')) issues.push(tr('issues.setSourceExpression', 'Set source expression'));
             break;
         case 'CONDITION':
-            if (!has('condition')) issues.push('Set condition expression');
+            if (!has('condition')) issues.push(tr('issues.setConditionExpression', 'Set condition expression'));
             break;
         case 'LOOP':
-            if (!has('source')) issues.push('Set source expression');
+            if (!has('source')) issues.push(tr('issues.setSourceExpression', 'Set source expression'));
             break;
         case 'DELAY':
-            if (!has('delayValue') && !has('delay')) issues.push('Set delay value');
+            if (!has('delayValue') && !has('delay')) issues.push(tr('issues.setDelayValue', 'Set delay value'));
             break;
         case 'UPDATE_RECORD':
-            if (!has('table')) issues.push('Select a table');
+            if (!has('table')) issues.push(tr('issues.selectTable', 'Select a table'));
             break;
         case 'SEND_PUSH_NOTIFICATION':
-            if (!has('title')) issues.push('Enter notification title');
-            if (!has('body')) issues.push('Enter notification body');
+            if (!has('title')) issues.push(tr('issues.enterNotificationTitle', 'Enter notification title'));
+            if (!has('body')) issues.push(tr('issues.enterNotificationBody', 'Enter notification body'));
             break;
         case 'SCHEDULE_TASK':
-            if (!has('delayDuration')) issues.push('Set delay duration');
+            if (!has('delayDuration')) issues.push(tr('issues.setDelayDuration', 'Set delay duration'));
             break;
         case 'SET_LEAD_STATUS':
-            if (!has('statusKey')) issues.push('Select a lead status');
+            if (!has('statusKey')) issues.push(tr('issues.selectLeadStatus', 'Select a lead status'));
             break;
         // MERGE, ACTION, TRANSFORM, ROUTER — no strict required fields
         default:
@@ -172,14 +183,15 @@ const nodeColorMap: Record<string, { border: string; bg: string; badge: string }
 };
 
 function WorkflowCustomNodeInner({ data, selected }: NodeProps<WorkflowNodeData>) {
-    const nodeMeta = WORKFLOW_NODE_TYPES.find((t) => t.type === data.nodeType);
+    const { t } = useTranslation('workflowCustomNode');
+    const nodeMeta = WORKFLOW_NODE_TYPES.find((n) => n.type === data.nodeType);
     const colors = nodeColorMap[data.nodeType] ?? {
         border: 'border-gray-400',
         bg: 'bg-gray-50',
         badge: 'bg-gray-100 text-gray-800',
     };
 
-    const issues = getNodeIssues(data.nodeType, data.config ?? {});
+    const issues = getNodeIssues(data.nodeType, data.config ?? {}, t);
     const isIncomplete = issues.length > 0;
 
     return (
@@ -210,14 +222,14 @@ function WorkflowCustomNodeInner({ data, selected }: NodeProps<WorkflowNodeData>
                 </Badge>
                 {isIncomplete && (
                     <span className="text-[9px] text-orange-500">
-                        {issues.length} issue{issues.length > 1 ? 's' : ''}
+                        {t('issueCount', { count: issues.length })}
                     </span>
                 )}
             </div>
 
             {data.isStartNode && (
                 <div className="mt-1 text-[10px] text-green-600 font-medium">
-                    Start
+                    {t('start')}
                 </div>
             )}
 

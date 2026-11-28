@@ -1,5 +1,6 @@
 import { createLazyFileRoute, useParams } from '@tanstack/react-router';
 import { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { FlowBuilder } from './-components/flow-builder';
 import { useChatbotFlowStore } from './-stores/chatbot-flow-store';
 import { getChatbotFlow } from './-services/chatbot-flow-api';
@@ -12,6 +13,7 @@ export const Route = createLazyFileRoute('/automation/chatbot-flows/$flowId')({
 });
 
 function ChatbotFlowBuilderWrapper() {
+    const { t } = useTranslation('automationFlowIdIndex');
     const { flowId } = useParams({ from: '/automation/chatbot-flows/$flowId' });
     const loadFlow = useChatbotFlowStore((s) => s.loadFlow);
     const reset = useChatbotFlowStore((s) => s.reset);
@@ -29,7 +31,7 @@ function ChatbotFlowBuilderWrapper() {
                     loadFlow(data);
                 })
                 .catch((err) => {
-                    toast.error('Failed to load flow');
+                    toast.error(t('toast.loadFailed'));
                     console.error(err);
                 });
         }
@@ -37,7 +39,7 @@ function ChatbotFlowBuilderWrapper() {
         return () => {
             reset();
         };
-    }, [flowId, loadFlow, reset, setInstituteId]);
+    }, [flowId, loadFlow, reset, setInstituteId, t]);
 
     return (
         <LayoutContainer intrnalMargin={false}>

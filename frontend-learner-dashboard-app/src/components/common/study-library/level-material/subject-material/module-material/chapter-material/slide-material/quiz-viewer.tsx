@@ -1,5 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { CheckCircle } from "@phosphor-icons/react";
+import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
+import { CheckCircle, ListChecks } from "@phosphor-icons/react";
 import QuizTimer from "./QuizTimer";
 import QuizTimeWarning from "./QuizTimeWarning";
 import { MyInput } from "@/components/design-system/input";
@@ -8,10 +10,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { useSubmitQuizSlideActivityLog } from "@/services/study-library/tracking-api/submit-quiz-slide-activity-log";
 import { QuizSlideActivityLogPayload } from "@/types/quiz-slide-activity-log";
 import { getUserId } from "@/constants/getUserId";
-import { v4 as uuidv4 } from "uuid";
+import { v4 as uuidv4, v5 as uuidv5 } from "uuid";
 import { toast } from "sonner";
 import { trackOrQueue, isNetworkError } from "@/lib/offline/events/track-or-queue";
 import QuizReview from "./QuizReview";
+import { isMultiSelectQuestion, partialCreditFraction } from "./quiz-scoring";
+import { numericToleranceVerdict } from "./numeric-answer-match";
 import { useGetQuizSlideActivityLogs } from "@/services/study-library/tracking-api/get-quiz-slide-activity-logs";
 import { getStudentDisplaySettings } from "@/services/student-display-settings";
 import confetti from "canvas-confetti";
@@ -22,6 +26,39 @@ import type { Slide } from "@/hooks/study-library/use-slides";
 import { useSelectedSessionStore } from "@/stores/study-library/selected-session-store";
 import { useQuizActiveStore } from "@/stores/study-library/quiz-active-store";
 import { refreshProgressAfterSubmit as invalidateProgressCaches } from "@/utils/study-library/tracking/refreshProgressAfterSubmit";
+import {
+  clearQuizSession,
+  quizAttemptEnd,
+  quizNeedsStart,
+  quizSecondsLeft,
+  quizSessionKey,
+  readOwnQuizSession,
+  readQuizSession,
+  writeQuizSession,
+  type QuizSession,
+} from "./quiz-session";
+import { QuizAttemptScreenGuard, QuizStartCard, QuizTimeUpCard } from "./quiz-start-card";
+import { QUESTION_SETTLE_MS } from "./press-settle";
+import { useFunTheme } from "@/hooks/use-fun-theme";
+import { FunQuizQuestion, FunQuizTimer } from "./fun-quiz/FunQuizQuestion";
+import { FunQuizEmpty, FunQuizTimeWarning } from "./fun-quiz/FunQuizCards";
+import {
+  checkAnswerRequestBody,
+  feedbackFromLocalKey,
+  feedbackFromServer,
+  isNumericQuestion,
+  optionFeedbackState,
+  type InstantFeedback,
+} from "./quiz-instant-feedback";
+import { QuizInstantFeedbackPanel } from "./quiz-instant-feedback-panel";
+import { checkQuizAnswer } from "@/services/study-library/tracking-api/check-quiz-answer";
+import {
+  getQuizCbeResults,
+  gradeQuizCbe,
+  type QuizCbeResults,
+} from "@/services/study-library/tracking-api/quiz-cbe-grading";
+import { cbeQuizResponseJson, cbeStateWantsGrading, isCbeQuizQuestion, parseCbeRow } from "./quiz-cbe";
+import { QuizCbeQuestion, type QuizCbeQuestionHandle } from "./quiz-cbe-question";
 
 interface Option {
   id: string;
@@ -50,41 +87,63 @@ interface Question {
   auto_evaluation_json?: string;
   marks?: number | null;
   negative_marking?: number | null;
+  /** The author's explanation, shown by study-mode quizzes once a question is checked. */
+  explanation_text?: {
+    id?: string;
+    type?: string;
+    content?: string;
+  };
 }
 
 export interface ScoreCard {
   earned: number;
   totalMarks: number;
   correct: number;
+  /** Not fully correct, but earned a share of the marks (partial-marking quizzes). */
+  partial?: number;
   wrong: number;
   skipped: number;
+  /** Spreadsheet & Written Response answers still waiting for their AI check (0 marks so far). */
+  pending?: number;
 }
 
 interface QuizViewerProps {
+  /** The slide this quiz belongs to. Attempts and the running clock are kept per slide. */
+  slideId: string;
+  title?: string;
+  description?: string | null;
   questions: Question[];
   onAnswer: (questionId: string, selectedOptionId: string | number | string[]) => void;
   onComplete?: () => void;
   timeLimitMinutes?: number | null;
   marksPerQuestion?: number;
   defaultNegativeMarking?: number;
+  /** Multiple-correct questions earn a share of their marks for a subset of the key. */
+  partialMarking?: boolean;
   passPercentage?: number | null;
   reAttemptCount?: number | null;
+  /**
+   * Study mode ("show answer after each question"): the learner checks each answer and
+   * sees right or wrong, the correct answer and the explanation; the answer then locks.
+   */
+  showAnswerAfterEachQuestion?: boolean;
 }
 
-const BASE_QUESTION_TYPE_DESCRIPTIONS: Record<string, string> = {
-  MCQS: "Multiple Choice Questions - Single Correct Option",
-  MCQM: "Multiple Choice Questions - Multiple Correct Option",
-  NUMERIC: "Numeric Answer",
-  ONE_WORD: "One Word Answer",
-  TEXT: "Short Answer - Text Response",
-  LONG_ANSWER: "Long Answer - Detailed Response",
-  TRUE_FALSE: "True or False",
-  MATCH: "Match the Following",
-  FILL_IN_THE_BLANK: "Fill in the Blank",
-};
+const getBaseQuestionTypeDescriptions = (t: TFunction): Record<string, string> => ({
+  MCQS: t("quizViewer.questionTypeDescriptions.mcqs"),
+  MCQM: t("quizViewer.questionTypeDescriptions.mcqm"),
+  NUMERIC: t("quizViewer.questionTypeDescriptions.numeric"),
+  ONE_WORD: t("quizViewer.questionTypeDescriptions.oneWord"),
+  TEXT: t("quizViewer.questionTypeDescriptions.text"),
+  LONG_ANSWER: t("quizViewer.questionTypeDescriptions.longAnswer"),
+  TRUE_FALSE: t("quizViewer.questionTypeDescriptions.trueFalse"),
+  MATCH: t("quizViewer.questionTypeDescriptions.match"),
+  FILL_IN_THE_BLANK: t("quizViewer.questionTypeDescriptions.fillInTheBlank"),
+  CBE_RESPONSE: t("cbeSlide.typeLabel"),
+});
 
-const formatQuestionTypeLabel = (type?: string) => {
-  if (!type) return "Question";
+const formatQuestionTypeLabel = (type: string | undefined, t: TFunction) => {
+  if (!type) return t("quizViewer.questionTypeDescriptions.genericQuestion");
   return type
     .split("_")
     .filter(Boolean)
@@ -139,28 +198,41 @@ const isAnswerCorrect = (q: Question, answer: AnswerValue): boolean => {
     const ans = answer.map(String);
     return ans.length === correct.length && correct.every((c) => ans.includes(c));
   }
-  return correct.includes(String(answer));
+  return isSingleAnswerCorrect(q, String(answer), correct);
 };
 
-const getQuestionTypeDescription = (type?: string): string => {
+// On a multiple-correct question a lone option id must match the WHOLE key: picking
+// one of two correct options is not a correct answer. Single-select questions keep
+// accepting any keyed option (an author may key two options as both acceptable).
+// A numeric question with a ± tolerance is judged on that (null = no tolerance, old rule).
+const isSingleAnswerCorrect = (q: Question, answer: string, correct: string[]): boolean =>
+  numericToleranceVerdict(q.question_type, q.auto_evaluation_json, answer) ??
+  (isMultiSelectQuestion(q.question_type)
+    ? correct.length === 1 && correct[0] === answer
+    : correct.includes(answer));
+
+const getQuestionTypeDescription = (type: string | undefined, t: TFunction): string => {
+  const baseDescriptions = getBaseQuestionTypeDescriptions(t);
   if (!type) {
-    return BASE_QUESTION_TYPE_DESCRIPTIONS.MCQS;
+    return baseDescriptions.MCQS;
   }
 
-  const directMatch = BASE_QUESTION_TYPE_DESCRIPTIONS[type];
+  const directMatch = baseDescriptions[type];
   if (directMatch) {
     return directMatch;
   }
 
   if (type.startsWith("C")) {
     const baseType = type.slice(1);
-    const baseDescription = BASE_QUESTION_TYPE_DESCRIPTIONS[baseType];
+    const baseDescription = baseDescriptions[baseType];
     if (baseDescription) {
-      return `Comprehension ${baseDescription}`;
+      return t("quizViewer.questionTypeDescriptions.comprehensionPrefix", {
+        description: baseDescription,
+      });
     }
   }
 
-  return formatQuestionTypeLabel(type);
+  return formatQuestionTypeLabel(type, t);
 };
 
 
@@ -168,36 +240,101 @@ const getQuestionTypeDescription = (type?: string): string => {
 
 
 export const QuizViewer: React.FC<QuizViewerProps> = ({
+  slideId,
+  title,
+  description,
   questions,
   onAnswer,
   onComplete,
   timeLimitMinutes,
   marksPerQuestion = 1,
   defaultNegativeMarking = 0,
+  partialMarking = false,
   passPercentage,
   reAttemptCount,
+  showAnswerAfterEachQuestion = false,
 }) => {
-  const [current, setCurrent] = useState(0);
-  const [answers, setAnswers] = useState<{ [questionId: string]: string | number | string[] }>({});
+  const { t } = useTranslation("libraryCommonB");
+  // The Fun skin draws its own question screen and result; every other skin is unchanged.
+  // A quiz with a spreadsheet question keeps the standard screen, which has room for the grid.
+  const funTheme = useFunTheme();
+  const hasCbe = useMemo(() => (questions ?? []).some(isCbeQuizQuestion), [questions]);
+  const isFun = funTheme && !hasCbe;
+  const timeLimitSeconds = timeLimitMinutes && timeLimitMinutes > 0 ? timeLimitMinutes * 60 : 0;
+  const needsStart = quizNeedsStart(timeLimitMinutes, reAttemptCount);
+  // Already submitted on this device. Read before the first paint so a finished
+  // quiz opens on its review, not on a frame of something else.
+  const [submittedAnswers] = useState<QuizSession["answers"] | null>(() => {
+    const chapterId = new URLSearchParams(window.location.search).get("chapterId") || "";
+    try {
+      return JSON.parse(localStorage.getItem(`quiz_answers_${slideId}_${chapterId}`) || "null");
+    } catch {
+      return null;
+    }
+  });
+  // The attempt in progress. An existing one resumes directly with its own clock.
+  const [session, setSession] = useState<QuizSession | null>(() =>
+    needsStart && !submittedAnswers ? readQuizSession(slideId) : null
+  );
+  // The clock has run out, on screen or while the learner was away. From here
+  // the attempt can only be submitted: the questions do not come back.
+  const [timeUp, setTimeUp] = useState<"submitting" | "failed" | null>(() =>
+    session &&
+    timeLimitSeconds > 0 &&
+    quizSecondsLeft(session.startedAt, timeLimitSeconds, Date.now()) <= 0
+      ? "submitting"
+      : null
+  );
+  // Where the attempt had got to, within the questions the quiz has now.
+  const resumeAt = Math.min(session?.current ?? 0, Math.max((questions?.length ?? 1) - 1, 0));
+  const [current, setCurrent] = useState(resumeAt);
+  const [answers, setAnswers] = useState<{ [questionId: string]: string | number | string[] }>(
+    submittedAnswers ?? session?.answers ?? {}
+  );
   const [numericErrors, setNumericErrors] = useState<{ [questionId: string]: string }>({});
+  // Study mode: questions checked in this attempt (their answers are locked) and what each showed.
+  const [checkedIds, setCheckedIds] = useState<string[]>(() =>
+    submittedAnswers ? [] : session?.checked ?? []
+  );
+  const [feedbackById, setFeedbackById] = useState<Record<string, InstantFeedback>>({});
+  const [checking, setChecking] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showFullPassage, setShowFullPassage] = useState(false);
-  const [showReview, setShowReview] = useState(false);
+  const [showReview, setShowReview] = useState(!!submittedAnswers);
   const [moveOnlyOnCorrectAnswer, setMoveOnlyOnCorrectAnswer] = useState(false);
   const [celebrateOnQuizComplete, setCelebrateOnQuizComplete] = useState(true);
   const [showReportAndCorrectAnswers, setShowReportAndCorrectAnswers] = useState(true);
   const [passed, setPassed] = useState<boolean | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | undefined>(undefined);
+  const [userResolved, setUserResolved] = useState(false);
   const [showIncorrectNotice, setShowIncorrectNotice] = useState(false);
   const [showWarning, setShowWarning] = useState(false);
   const timerExpiredRef = useRef(false);
-  // Real time the learner has had this quiz open (mount → submit) so the
-  // reported "Time Spent" reflects actual engagement, not a fake 1 minute.
-  const activityStartRef = useRef<number>(Date.now());
+  // Real time the learner has spent on this attempt so the reported "Time
+  // Spent" reflects actual engagement, not a fake 1 minute. A timed attempt counts
+  // from Start, since its clock kept running. An untimed one resumed later counts
+  // what it had spent so far, not the days in between. One without a session
+  // counts from mount.
+  const activityStartRef = useRef<number>(
+    session
+      ? timeLimitSeconds > 0
+        ? session.startedAt
+        : Date.now() - session.spentMs
+      : Date.now()
+  );
   // Keep a ref to always-current answers so the timer's stale closure gets the latest values
   const answersRef = useRef(answers);
   useEffect(() => { answersRef.current = answers; }, [answers]);
   const [scoreCard, setScoreCard] = useState<ScoreCard | null>(null);
+  // Spreadsheet & Written Response: marked by AI after the submit (POST .../quiz-slide/cbe/grade).
+  const [cbeResults, setCbeResults] = useState<QuizCbeResults | null>(null);
+  const [cbeChecking, setCbeChecking] = useState(false);
+  /** The attempt whose CBE answers this viewer is grading or showing. */
+  const cbeAttemptRef = useRef<string | null>(null);
+  /** The attempt whose CBE results were already asked for on opening the review. */
+  const cbeLoadedForRef = useRef<string | null>(null);
+  const cbePollRef = useRef<number | null>(null);
+  const cbeQuestionRef = useRef<QuizCbeQuestionHandle>(null);
 
   const submitQuizMutation = useSubmitQuizSlideActivityLog();
   const queryClient = useQueryClient();
@@ -205,22 +342,33 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
 
   // Resolve userId for attempt tracking query
   useEffect(() => {
-    getUserId().then((id) => setCurrentUserId(id || undefined));
+    getUserId().then((id) => {
+      setCurrentUserId(id || undefined);
+      setUserResolved(true);
+      // A session left by someone else on a shared device is not this learner's.
+      const opened = readQuizSession(slideId);
+      if (opened?.userId && id && opened.userId !== id) {
+        setSession(null);
+        setAnswers({});
+        setCurrent(0);
+        setTimeUp(null);
+        setCheckedIds([]);
+        setFeedbackById({});
+      }
+    });
+    // Once per viewer: each slide mounts its own.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Flag the quiz as active while this viewer is mounted so the floating
-  // chatbot button hides itself and never covers the Next/Finish controls
-  // (bottom-right) on mobile/desktop. Cleared on unmount (slide navigation).
+  // chatbot button moves up, clear of the Next/Finish controls (bottom-right).
+  // Cleared on unmount (slide navigation).
   const setQuizActive = useQuizActiveStore((state) => state.setActive);
   useEffect(() => {
     setQuizActive(true);
     return () => setQuizActive(false);
   }, [setQuizActive]);
-  const currentSlideIdForAttempts = useMemo(() => {
-    return new URLSearchParams(window.location.search).get("slideId") || undefined;
-  // Re-compute when questions change (indicates slide navigation)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [questions]);
+  const currentSlideIdForAttempts = slideId;
   const attemptLogsQuery = useGetQuizSlideActivityLogs(currentUserId, currentSlideIdForAttempts);
 
   // Attempts already consumed (server-recorded). `reAttemptCount` is the TOTAL
@@ -229,14 +377,86 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
   const usedAttempts = attemptLogsQuery.data?.length ?? 0;
   const attemptsExhausted = reAttemptCount != null && usedAttempts >= reAttemptCount;
   const attemptLogsLoaded = !attemptLogsQuery.isLoading && attemptLogsQuery.data !== undefined;
+  // Only a capped quiz has to wait for the count. A failed or offline lookup
+  // settles too: the count is then unknown and the server still records submits.
+  const attemptsPending = reAttemptCount != null && (!userResolved || attemptLogsQuery.isLoading);
 
   // Once logs have loaded, if the user has no attempts left, force the
   // review screen so they can never re-enter the answer-collection UI.
   useEffect(() => {
     if (attemptLogsLoaded && attemptsExhausted) {
       setShowReview(true);
+      setTimeUp(null);
+      clearQuizSession(slideId);
+      setSession(null);
     }
-  }, [attemptLogsLoaded, attemptsExhausted]);
+  }, [attemptLogsLoaded, attemptsExhausted, slideId]);
+
+  // Keep the attempt's answers and position with its start time, so coming back
+  // to it loses neither.
+  useEffect(() => {
+    if (session) {
+      writeQuizSession(slideId, {
+        ...session,
+        answers,
+        current,
+        spentMs: Date.now() - activityStartRef.current,
+        ...(showAnswerAfterEachQuestion && { checked: checkedIds }),
+      });
+    }
+  }, [session, answers, current, slideId, showAnswerAfterEachQuestion, checkedIds]);
+
+  // Take over an attempt that is already running on this device. It keeps its
+  // own clock and its own id, wherever it was started.
+  const joinSession = (running: QuizSession) => {
+    activityStartRef.current =
+      timeLimitSeconds > 0 ? running.startedAt : Date.now() - running.spentMs;
+    timerExpiredRef.current = false;
+    setShowReview(false);
+    setAnswers(running.answers);
+    setCheckedIds(running.checked ?? []);
+    setFeedbackById({});
+    setCurrent(Math.min(running.current, Math.max((questions?.length ?? 1) - 1, 0)));
+    setSession(running);
+    if (
+      timeLimitSeconds > 0 &&
+      quizSecondsLeft(running.startedAt, timeLimitSeconds, Date.now()) <= 0
+    ) {
+      setTimeUp("submitting");
+    }
+  };
+
+  // Another tab can start or finish this attempt while this one is open. Follow
+  // it, so a start screen left open never starts a second clock and a finished
+  // attempt cannot be answered again here.
+  useEffect(() => {
+    if (!needsStart) return;
+    const answersKey = `quiz_answers_${slideId}_${getUrlParams().chapterId}`;
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === answersKey && e.newValue) {
+        try {
+          setAnswers(JSON.parse(e.newValue));
+          setSession(null);
+          setTimeUp(null);
+          setShowReview(true);
+        } catch {
+          // A damaged record says nothing about this attempt.
+        }
+        queryClient.invalidateQueries({ queryKey: ["quiz-slide-activity-logs", currentUserId, slideId] });
+      } else if (e.key === quizSessionKey(slideId)) {
+        if (e.newValue === null) {
+          queryClient.invalidateQueries({ queryKey: ["quiz-slide-activity-logs", currentUserId, slideId] });
+        } else if (!session && !showReview) {
+          const running = readOwnQuizSession(slideId, currentUserId);
+          if (running) joinSession(running);
+        }
+      }
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+    // joinSession and getUrlParams read nothing beyond these and the props.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [needsStart, slideId, session, showReview, currentUserId, queryClient]);
 
   // ✅ Helper: Restore 100% for ALL completed quizzes from localStorage
   const restoreLocalStorageCompletions = useCallback((chapterId: string) => {
@@ -321,7 +541,7 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
 
   // ✅ Load answers from localStorage on mount AND when slide changes
   useEffect(() => {
-    const { slideId, chapterId } = getUrlParams();
+    const { chapterId } = getUrlParams();
     console.log("🔄 [QuizViewer] useEffect triggered - checking slide:", { slideId, chapterId });
     
     if (!slideId || !chapterId) {
@@ -358,10 +578,12 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
     } else {
       console.log("ℹ️ [QuizViewer] No stored answers - quiz not completed yet, resetting state");
       // ✅ Reset state when navigating to a different quiz that hasn't been completed
-      setAnswers({});
+      setAnswers(session?.answers ?? {});
       setShowReview(false);
-      setCurrent(0);
+      setCurrent(resumeAt);
     }
+    // Runs on arrival; the session it reads is the one this viewer opened with.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [queryClient, questions, restoreLocalStorageCompletions]);
 
   // Helper to get URL params
@@ -385,7 +607,7 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
     const packageSessionId = (sessionId && sessionId.trim()) || courseId || sessionFromStore;
     
     return {
-      slideId: urlParams.get("slideId") || "",
+      slideId,
       chapterId: urlParams.get("chapterId") || "",
       moduleId: urlParams.get("moduleId") || "",
       subjectId: urlParams.get("subjectId") || "",
@@ -407,16 +629,15 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
     finalAnswers: typeof answers
   ): Promise<QuizSlideActivityLogPayload> => {
     const userId = (await getUserId()) || "";
-    const { slideId } = getUrlParams();
     const now = Date.now();
     return {
-      id: uuidv4(),
+      id: session?.attemptId ?? uuidv4(),
       source_id: slideId,
       source_type: "QUIZ",
       user_id: userId,
       slide_id: slideId,
       start_time_in_millis: activityStartRef.current,
-      end_time_in_millis: now,
+      end_time_in_millis: quizAttemptEnd(activityStartRef.current, timeLimitSeconds, now),
       percentage_watched: 100,
       videos: [],
       documents: [],
@@ -437,6 +658,21 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
           typeof q.text === "string"
             ? q.text
             : q.text_data?.content ?? q.text?.content ?? "";
+        if (isCbeQuizQuestion(q)) {
+          // Marked by AI on the server after the submit: no key here, and no marks claimed.
+          const answered = typeof answer === "string" && answer.trim() !== "";
+          return {
+            id: session ? uuidv5(q.id, session.attemptId) : uuidv4(),
+            response_json: cbeQuizResponseJson(
+              questionName,
+              answer,
+              q.marks != null ? q.marks : marksPerQuestion,
+            ),
+            response_status: answered ? "SUBMITTED" : "SKIPPED",
+            activity_id: slideId,
+            question_id: q.id,
+          };
+        }
         const selectedOptions = buildSelectedOptions(q, answer);
         const correctIds = getCorrectOptionIds(q);
         const correctOptions = correctIds.map((id) => ({
@@ -448,10 +684,18 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
         const isAnswered =
           answer != null && !(typeof answer === "string" && answer.trim() === "");
         const correct = isAnswered && isAnswerCorrect(q, answer);
-        const earnedMarks = correct ? qMaxMarks : isAnswered ? -qNeg : 0;
+        const partial =
+          !correct && isAnswered && partialMarking ? partialCreditFraction(answer, correctIds) : 0;
+        const earnedMarks = correct
+          ? qMaxMarks
+          : partial > 0
+            ? qMaxMarks * partial
+            : isAnswered
+              ? -qNeg
+              : 0;
         const responseStatus = !isAnswered ? "SKIPPED" : correct ? "CORRECT" : "WRONG";
         return {
-          id: uuidv4(),
+          id: session ? uuidv5(q.id, session.attemptId) : uuidv4(),
           response_json: JSON.stringify({
             questionName,
             selectedOptions,
@@ -459,6 +703,7 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
             marks: earnedMarks,
             maxMarks: qMaxMarks,
             isCorrect: correct,
+            isPartial: partial > 0,
             questionType: q.question_type ?? "",
           }),
           response_status: responseStatus,
@@ -469,12 +714,22 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
     };
   };
 
+  // Submit an attempt whose time is up, once it is known that an attempt is still
+  // available. Retrying goes back through "submitting".
+  const submitTimeUpRef = useRef<(() => void) | null>(null);
+  const timeUpSendingRef = useRef(false);
+  useEffect(() => {
+    if (timeUp !== "submitting" || !userResolved || attemptsPending || timeUpSendingRef.current) return;
+    timeUpSendingRef.current = true;
+    submitTimeUpRef.current?.();
+  }, [timeUp, userResolved, attemptsPending]);
+
   const currentQuestion = questions?.[current];
   const total = questions?.length || 0;
   const questionType = currentQuestion?.question_type || "MCQS";
   const questionTypeDescription = useMemo(
-    () => getQuestionTypeDescription(questionType),
-    [questionType]
+    () => getQuestionTypeDescription(questionType, t),
+    [questionType, t]
   );
   // Derive correct answers from auto_evaluation_json
   const correctAnswers = useMemo<(string | number)[]>(() => {
@@ -523,18 +778,200 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
       return correctAsStrings.every((c) => asStrings.includes(c));
     }
 
-    // Single answer
-    return correctAnswers.map((x) => String(x)).includes(String(userAns));
+    // Single answer (a numeric question with a ± tolerance is judged on that)
+    return (
+      numericToleranceVerdict(currentQuestion.question_type, currentQuestion.auto_evaluation_json, userAns) ??
+      correctAnswers.map((x) => String(x)).includes(String(userAns))
+    );
   }, [answers, correctAnswers, currentQuestion]);
 
+  // Study mode: mark from the key the app holds; ask the server only when it was withheld.
+  const resolveFeedback = useCallback(
+    async (q: Question, answer: AnswerValue): Promise<InstantFeedback> => {
+      const local = feedbackFromLocalKey(q, answer);
+      if (local) return local;
+      const response = await checkQuizAnswer(
+        checkAnswerRequestBody(slideId, q.id, q.question_type, answer)
+      );
+      return feedbackFromServer(q.question_type, answer, response);
+    },
+    [slideId]
+  );
+
+  // A resumed attempt knows which questions were checked but not what they showed.
+  useEffect(() => {
+    if (!showAnswerAfterEachQuestion || !currentQuestion) return;
+    const id = currentQuestion.id;
+    if (!checkedIds.includes(id) || feedbackById[id]) return;
+    let cancelled = false;
+    resolveFeedback(currentQuestion, answersRef.current[id])
+      .then((feedback) => {
+        if (!cancelled) setFeedbackById((prev) => ({ ...prev, [id]: feedback }));
+      })
+      .catch(() => {
+        // The answer stays locked; Next still works without the feedback.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [showAnswerAfterEachQuestion, currentQuestion, checkedIds, feedbackById, resolveFeedback]);
+
+  // --- Spreadsheet & Written Response: the AI check after the submit -------------------
+  const stopCbePolling = useCallback(() => {
+    if (cbePollRef.current !== null) {
+      window.clearTimeout(cbePollRef.current);
+      cbePollRef.current = null;
+    }
+  }, []);
+  useEffect(() => stopCbePolling, [stopCbePolling]);
+
+  /** Another call is still grading (another tab, or a check started before a reload): read back until it lands. */
+  const pollCbeResults = useCallback(
+    (attemptId: string, round = 0) => {
+      stopCbePolling();
+      if (round >= 15) return;
+      cbePollRef.current = window.setTimeout(async () => {
+        cbePollRef.current = null;
+        if (cbeAttemptRef.current !== attemptId) return;
+        try {
+          const result = await getQuizCbeResults(slideId, attemptId);
+          if (cbeAttemptRef.current !== attemptId) return;
+          setCbeResults(result);
+          if (result.questions.some((q) => q.state === "EVALUATING" || q.state === "PENDING")) {
+            pollCbeResults(attemptId, round + 1);
+          } else {
+            queryClient.invalidateQueries({ queryKey: ["quiz-slide-activity-logs", currentUserId, slideId] });
+          }
+        } catch {
+          pollCbeResults(attemptId, round + 1);
+        }
+      }, 8000);
+    },
+    [slideId, queryClient, currentUserId, stopCbePolling],
+  );
+
+  /** Grades the attempt's CBE answers that are not marked yet; the review shows each one's progress. */
+  const runCbeGrading = useCallback(
+    async (attemptId: string) => {
+      cbeAttemptRef.current = attemptId;
+      cbeLoadedForRef.current = attemptId;
+      stopCbePolling();
+      setCbeChecking(true);
+      try {
+        const { chapterId, packageSessionId } = getUrlParams();
+        const result = await gradeQuizCbe({
+          slide_id: slideId,
+          attempt_id: attemptId,
+          chapter_id: chapterId || undefined,
+          package_session_id: packageSessionId || undefined,
+        });
+        if (cbeAttemptRef.current !== attemptId) return;
+        setCbeResults(result);
+        // The marks are on the attempt now: the review's score reads them from the attempt logs.
+        queryClient.invalidateQueries({ queryKey: ["quiz-slide-activity-logs", currentUserId, slideId] });
+        if (result.questions.some((q) => q.state === "EVALUATING")) pollCbeResults(attemptId);
+      } catch {
+        // The answers are recorded; show where they stand and let the learner ask again.
+        try {
+          const result = await getQuizCbeResults(slideId, attemptId);
+          if (cbeAttemptRef.current === attemptId) setCbeResults(result);
+        } catch {
+          // The review falls back to the recorded rows.
+        }
+      } finally {
+        if (cbeAttemptRef.current === attemptId) setCbeChecking(false);
+      }
+    },
+    // getUrlParams reads the URL and the session store, never stale state.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [slideId, queryClient, currentUserId, stopCbePolling, pollCbeResults],
+  );
+
+  /**
+   * After a submit: the review now belongs to this attempt. When it reached the server,
+   * grade the CBE answers the learner wrote; one queued offline is graded when the review
+   * is next opened online.
+   */
+  const afterSubmitCbe = (attemptId: string, finalAnswers: typeof answers, reachedServer: boolean) => {
+    if (!hasCbe) return;
+    stopCbePolling();
+    cbeAttemptRef.current = attemptId;
+    cbeLoadedForRef.current = null;
+    setCbeResults(null);
+    setCbeChecking(false);
+    const anyWritten = (questions ?? []).some(
+      (q) => isCbeQuizQuestion(q) && typeof finalAnswers[q.id] === "string" && String(finalAnswers[q.id]).trim() !== "",
+    );
+    if (!anyWritten) return;
+    if (reachedServer) {
+      void runCbeGrading(attemptId);
+    } else {
+      // Not on the server yet: nothing to read back until the queued submit syncs.
+      cbeLoadedForRef.current = attemptId;
+      toast.info(t("quizCbe.savedOffline"));
+    }
+  };
+
+  /** Saves the spreadsheet cell still being typed in on the question on screen. */
+  const withCommittedCbe = (base: typeof answers): typeof answers => {
+    const question = questions?.[current];
+    if (!question || !isCbeQuizQuestion(question)) return base;
+    // Not on screen (e.g. the time-up card replaced it): what the answers map holds stands.
+    const handle = cbeQuestionRef.current;
+    if (!handle) return base;
+    const committed = handle.commit();
+    if (committed === null || (committed === undefined && base[question.id] === undefined)) return base;
+    if (committed !== undefined && base[question.id] === committed) return base;
+    const next = { ...base };
+    if (committed === undefined) delete next[question.id];
+    else next[question.id] = committed;
+    answersRef.current = next;
+    setAnswers(next);
+    return next;
+  };
+
+  // The latest recorded attempt, as the review picks it.
+  const latestAttemptId = useMemo(() => {
+    type LogLite = { id: string; end_time?: string | null; start_time?: string | null; quiz_sides?: unknown[] };
+    const logs = (attemptLogsQuery.data ?? []) as LogLite[];
+    const ts = (l: LogLite) => new Date(l.end_time ?? l.start_time ?? 0).getTime();
+    const sorted = [...logs].sort((a, b) => ts(b) - ts(a));
+    return (sorted.find((l) => (l.quiz_sides?.length ?? 0) > 0) ?? sorted[0])?.id ?? null;
+  }, [attemptLogsQuery.data]);
+
+  // Opening the review of a quiz with CBE questions: read where their AI checks stand,
+  // and run a check that never ran (offline submit, closed tab) or failed (no credits then).
+  useEffect(() => {
+    if (!hasCbe || !showReview) return;
+    const attemptId = cbeAttemptRef.current ?? latestAttemptId;
+    if (!attemptId || cbeLoadedForRef.current === attemptId) return;
+    cbeLoadedForRef.current = attemptId;
+    cbeAttemptRef.current = attemptId;
+    (async () => {
+      try {
+        const result = await getQuizCbeResults(slideId, attemptId);
+        if (cbeAttemptRef.current !== attemptId) return;
+        setCbeResults(result);
+        if (result.questions.some((q) => cbeStateWantsGrading(q.state))) {
+          void runCbeGrading(attemptId);
+        } else if (result.questions.some((q) => q.state === "EVALUATING")) {
+          pollCbeResults(attemptId);
+        }
+      } catch {
+        // No results: the review shows what the attempt recorded.
+      }
+    })();
+  }, [hasCbe, showReview, latestAttemptId, slideId, runCbeGrading, pollCbeResults]);
+
   if (!questions || questions.length === 0) {
+    if (isFun) return <FunQuizEmpty />;
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <div className="w-16 h-16 mx-auto bg-gray-100 rounded-full flex items-center justify-center">
             <div className="w-8 h-8 text-gray-400 text-2xl font-bold">?</div>
           </div>
-          <p className="text-gray-500">No quiz questions available.</p>
+          <p className="text-gray-500">{t("quizViewer.noQuestionsAvailable")}</p>
         </div>
       </div>
     );
@@ -545,8 +982,10 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
     let earned = 0;
     let totalMarks = 0;
     let correct = 0;
+    let partial = 0;
     let wrong = 0;
     let skipped = 0;
+    let pending = 0;
 
     const checkAnswerCorrect = (q: Question, userAns: string | number | string[] | undefined): boolean => {
       if (userAns == null || (typeof userAns === "string" && userAns.trim() === "")) return false;
@@ -564,7 +1003,7 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
           const corrStr = correctAnswers.map(String);
           return asStr.length === corrStr.length && corrStr.every((c) => asStr.includes(c));
         }
-        return correctAnswers.map(String).includes(String(userAns));
+        return isSingleAnswerCorrect(q, String(userAns), correctAnswers.map(String));
       } catch {
         return false;
       }
@@ -574,11 +1013,26 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
       const qMarks = q.marks != null ? q.marks : marksPerQuestion;
       const qNeg = q.negative_marking != null ? q.negative_marking : defaultNegativeMarking;
       totalMarks += qMarks;
+      if (isCbeQuizQuestion(q)) {
+        // Marked by AI after the submit: no marks yet and never a wrong answer here. The
+        // review reads the marks from the attempt once they are recorded.
+        const written = typeof finalAnswers[q.id] === "string" && String(finalAnswers[q.id]).trim() !== "";
+        if (written) pending++;
+        else skipped++;
+        return;
+      }
       const isAnswered = finalAnswers[q.id] != null;
       const isCorrect = isAnswered && checkAnswerCorrect(q, finalAnswers[q.id]);
+      const partialShare =
+        !isCorrect && isAnswered && partialMarking
+          ? partialCreditFraction(finalAnswers[q.id], getCorrectOptionIds(q))
+          : 0;
       if (isCorrect) {
         earned += qMarks;
         correct++;
+      } else if (partialShare > 0) {
+        earned += qMarks * partialShare;
+        partial++;
       } else if (isAnswered) {
         earned -= qNeg;
         wrong++;
@@ -587,12 +1041,14 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
       }
     });
 
-    return { earned: Math.max(0, earned), totalMarks, correct, wrong, skipped };
+    return { earned: Math.max(0, earned), totalMarks, correct, partial, wrong, skipped, pending };
   };
 
   // Show review whenever we have answers OR the user has exhausted attempts
   // (so re-entering an exhausted quiz never lands them in the answer UI).
-  if (showReview && (Object.keys(answers).length > 0 || attemptsExhausted)) {
+  // A clock can run out before anything is answered, and that submission still
+  // has a result to show.
+  if (showReview && (Object.keys(answers).length > 0 || attemptsExhausted || scoreCard)) {
     const logsCount = attemptLogsQuery.data?.length ?? 0;
     // Display attempt number = how many attempts have been recorded. If we just
     // submitted but the refetch hasn't arrived, fall back to 1 so we don't show 0.
@@ -638,7 +1094,11 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
         if (!s.question_id || !s.response_json) return;
         try {
           const parsed = JSON.parse(s.response_json);
-          if (
+          const cbeRow = parseCbeRow(s.response_json);
+          if (cbeRow) {
+            // A spreadsheet answer: kept as JSON text, as the answers map holds it.
+            if (cbeRow.answer) result[s.question_id] = JSON.stringify(cbeRow.answer);
+          } else if (
             Array.isArray(parsed.selectedOptions) &&
             parsed.selectedOptions.length > 0
           ) {
@@ -670,28 +1130,46 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
         ? (effectiveScoreCard.earned / effectiveScoreCard.totalMarks) * 100 >= passPercentage
         : null);
     return <QuizReview
+      title={title}
       questions={questions}
       userAnswers={reconstructedAnswers}
       scoreCard={effectiveScoreCard}
       showCorrectAnswers={showReportAndCorrectAnswers}
       passed={effectivePassed}
       passPercentage={passPercentage}
+      partialMarking={partialMarking}
+      marksPerQuestion={marksPerQuestion}
+      defaultNegativeMarking={defaultNegativeMarking}
       attemptNumber={displayedAttemptNumber}
       maxAttempts={reAttemptCount}
       canReattempt={canReattempt}
       attemptLogs={displayedAttemptLogs}
+      cbeResults={cbeResults}
+      cbeChecking={cbeChecking}
+      onRetryCbe={() => {
+        const attemptId = cbeResults?.attempt_id ?? cbeAttemptRef.current;
+        if (attemptId && !cbeChecking) void runCbeGrading(attemptId);
+      }}
       onRestart={() => {
         if (attemptsExhausted) {
-          toast.error("No attempts remaining for this quiz.");
+          toast.error(t("quizViewer.toast.noAttemptsRemaining"));
           return;
         }
-        const { slideId, chapterId } = getUrlParams();
+        // A new attempt: the last one's AI checks are no longer on screen.
+        stopCbePolling();
+        cbeAttemptRef.current = null;
+        cbeLoadedForRef.current = null;
+        setCbeResults(null);
+        setCbeChecking(false);
+        const { chapterId } = getUrlParams();
         const storageKey = `quiz_answers_${slideId}_${chapterId}`;
         localStorage.removeItem(storageKey);
 
         setShowReview(false);
         setCurrent(0);
         setAnswers({});
+        setCheckedIds([]);
+        setFeedbackById({});
         setScoreCard(null);
         setPassed(null);
         timerExpiredRef.current = false;
@@ -703,24 +1181,24 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
   const handleTimerExpire = () => {
     if (timerExpiredRef.current) return;
     timerExpiredRef.current = true;
-    // Use ref to avoid stale closure — answersRef always holds the latest answers
-    handleQuizSubmit(answersRef.current);
+    setTimeUp("submitting");
   };
 
-  const handleQuizSubmit = async (finalAnswers: typeof answers) => {
+  // Resolves false if the attempt is still unsent.
+  const handleQuizSubmit = async (finalAnswers: typeof answers): Promise<boolean> => {
     if (attemptsExhausted) {
-      toast.error("No attempts remaining for this quiz.");
+      toast.error(t("quizViewer.toast.noAttemptsRemaining"));
       setShowReview(true);
-      return;
+      return true;
     }
     setIsSubmitting(true);
     try {
-      const { slideId, chapterId, moduleId, subjectId, packageSessionId } = getUrlParams();
+      const { chapterId, moduleId, subjectId, packageSessionId } = getUrlParams();
       const userId = (await getUserId()) || "";
 
       if (!slideId || !chapterId || !moduleId || !subjectId || !packageSessionId || !userId) {
-        toast.error("Cannot submit quiz — missing context. Please reopen this slide.");
-        return;
+        toast.error(t("quizViewer.toast.missingContext"));
+        return false;
       }
 
       const payload = await buildQuizPayload(finalAnswers);
@@ -754,15 +1232,21 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
       }
 
       toast.success(
-        offlineQueued ? "Saved — will sync when online" : "Quiz submitted!",
+        offlineQueued
+          ? t("quizViewer.toast.savedOffline")
+          : timerExpiredRef.current
+            ? t("quizViewer.toast.timeUpSubmitted")
+            : t("quizViewer.toast.quizSubmitted"),
         { className: "text-center" }
       );
+      // Answers before the session: another tab reads these in this order.
+      const storageKey = `quiz_answers_${slideId}_${chapterId}`;
+      localStorage.setItem(storageKey, JSON.stringify(finalAnswers));
+      clearQuizSession(slideId);
+      setSession(null);
 
       // Refresh attempt history
       queryClient.invalidateQueries({ queryKey: ["quiz-slide-activity-logs", currentUserId, currentSlideIdForAttempts] });
-
-      const storageKey = `quiz_answers_${slideId}_${chapterId}`;
-      localStorage.setItem(storageKey, JSON.stringify(finalAnswers));
 
       queryClient.setQueryData<Slide[]>(["slides", chapterId], (oldSlides) => {
         if (!oldSlides) return oldSlides;
@@ -782,44 +1266,63 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
       setScoreCard(card);
       if (passPercentage != null && card.totalMarks > 0) {
         const pct = (card.earned / card.totalMarks) * 100;
-        setPassed(pct >= passPercentage);
+        // Spreadsheet answers still to be marked could lift a fail: wait for them.
+        setPassed(pct >= passPercentage ? true : (card.pending ?? 0) > 0 ? null : false);
       } else {
         setPassed(null);
       }
       setAnswers(finalAnswers);
       setShowReview(true);
+      afterSubmitCbe(payload.id, finalAnswers, !offlineQueued);
       if (onComplete) onComplete();
+      return true;
     } catch {
-      toast.error("Failed to submit quiz. Please try again.");
+      return false;
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  submitTimeUpRef.current = () => {
+    timerExpiredRef.current = true;
+    // Use ref to avoid stale closure — answersRef always holds the latest answers
+    void handleQuizSubmit(withCommittedCbe(answersRef.current)).then((sent) => {
+      timeUpSendingRef.current = false;
+      setTimeUp(sent ? null : "failed");
+    });
+  };
 
+  // Study mode: a checked question's answer is locked.
+  const currentLocked =
+    showAnswerAfterEachQuestion && !!currentQuestion && checkedIds.includes(currentQuestion.id);
+  const currentFeedback = currentLocked ? feedbackById[currentQuestion.id] : undefined;
 
   const handleOptionSelect = (optionId: string) => {
+    if (currentLocked) return;
     setAnswers((prev) => ({ ...prev, [currentQuestion.id]: optionId }));
     onAnswer(currentQuestion.id, optionId);
     setShowIncorrectNotice(false);
   };
 
   const handleTextInput = (value: string) => {
+    if (currentLocked) return;
     setAnswers((prev) => ({ ...prev, [currentQuestion.id]: value }));
     onAnswer(currentQuestion.id, value);
     setShowIncorrectNotice(false);
   };
 
   const handleNumericInput = (value: string) => {
-    // Check if the input is a valid number
-    const isNumeric = /^\d*\.?\d*$/.test(value);
+    if (currentLocked) return;
+    // Check if the input is a valid number. A leading minus is allowed, as on question,
+    // video and assignment slides: accounting answers are often negative (-500).
+    const isNumeric = /^-?\d*\.?\d*$/.test(value);
     
     if (value === "") {
       setNumericErrors((prev) => ({ ...prev, [currentQuestion.id]: "" }));
       setAnswers((prev) => ({ ...prev, [currentQuestion.id]: "" }));
       onAnswer(currentQuestion.id, "");
     } else if (!isNumeric) {
-      setNumericErrors((prev) => ({ ...prev, [currentQuestion.id]: "Please enter a valid number" }));
+      setNumericErrors((prev) => ({ ...prev, [currentQuestion.id]: t("quizViewer.invalidNumber") }));
       setAnswers((prev) => ({ ...prev, [currentQuestion.id]: value }));
       onAnswer(currentQuestion.id, value);
     } else {
@@ -833,6 +1336,7 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
 
   // For MCQM (multiple choice, multiple answers)
   const handleMultiOptionSelect = (optionId: string) => {
+    if (currentLocked) return;
     let current = Array.isArray(answers[currentQuestion.id]) ? [...(answers[currentQuestion.id] as string[])] : [];
     if (current.includes(optionId)) {
       current = current.filter((id) => id !== optionId);
@@ -845,15 +1349,42 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
   };
 
   const handlePrev = () => {
+    withCommittedCbe(answers);
     if (current > 0) setCurrent(current - 1);
   };
 
+  // Study mode: show right or wrong, the key and the explanation, and lock the answer.
+  const handleCheckAnswer = async () => {
+    if (!currentQuestion || checking || currentLocked) return;
+    const id = currentQuestion.id;
+    setChecking(true);
+    try {
+      const feedback = await resolveFeedback(currentQuestion, answers[id]);
+      setFeedbackById((prev) => ({ ...prev, [id]: feedback }));
+      setCheckedIds((prev) => (prev.includes(id) ? prev : [...prev, id]));
+      setShowIncorrectNotice(false);
+    } catch {
+      toast.error(t("quizViewer.instantFeedback.checkFailed"));
+    } finally {
+      setChecking(false);
+    }
+  };
+
   const handleNext = async () => {
+    // A spreadsheet answer: keep the cell still being typed in before moving or submitting.
+    const latestAnswers = withCommittedCbe(answers);
     // When showReportAndCorrectAnswers is on, don't block on wrong answers —
     // correct answers will be shown in the final report after the quiz.
-    if (!showReportAndCorrectAnswers && moveOnlyOnCorrectAnswer && !isCurrentAnswerCorrect) {
+    // Study mode never blocks either: the learner has seen the answer and cannot
+    // change a checked one, so the move-on-when-correct gate would trap them.
+    if (
+      !showAnswerAfterEachQuestion &&
+      !showReportAndCorrectAnswers &&
+      moveOnlyOnCorrectAnswer &&
+      !isCurrentAnswerCorrect
+    ) {
       setShowIncorrectNotice(true);
-      toast.error("Incorrect answer. Please try again.");
+      toast.error(t("quizViewer.toast.incorrectAnswer"));
       return;
     }
 
@@ -864,7 +1395,7 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
       // On Finish: submit quiz
       setIsSubmitting(true);
       try {
-        const { slideId, chapterId, moduleId, subjectId, packageSessionId } = getUrlParams();
+        const { chapterId, moduleId, subjectId, packageSessionId } = getUrlParams();
         const userId = (await getUserId()) || "";
 
         if (!slideId || !chapterId || !moduleId || !subjectId || !packageSessionId || !userId) {
@@ -876,11 +1407,11 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
             packageSessionId: packageSessionId,
             userId,
           });
-          toast.error("Cannot submit quiz — missing context. Please reopen this slide.");
+          toast.error(t("quizViewer.toast.missingContext"));
           return;
         }
 
-        const payload = await buildQuizPayload(answers);
+        const payload = await buildQuizPayload(latestAnswers);
 
         console.group("📤 [QuizViewer] Submitting quiz activity log");
         console.log("Params:", { slideId, chapterId, moduleId, subjectId, packageSessionId, userId });
@@ -925,15 +1456,20 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
         console.groupEnd();
         console.log("Quiz submitted successfully");
         toast.success(
-          offlineQueued ? "Saved — will sync when online" : "Quiz submitted successfully!",
+          offlineQueued
+            ? t("quizViewer.toast.savedOffline")
+            : t("quizViewer.toast.quizSubmittedSuccessfully"),
           { className: "text-center" }
         );
         queryClient.invalidateQueries({ queryKey: ["quiz-slide-activity-logs", currentUserId, currentSlideIdForAttempts] });
-        
+
         // ✅ STEP 1: Save answers to localStorage for persistence across refreshes
+        // Answers before the session: another tab reads these in this order.
         const storageKey = `quiz_answers_${slideId}_${chapterId}`;
-        localStorage.setItem(storageKey, JSON.stringify(answers));
+        localStorage.setItem(storageKey, JSON.stringify(latestAnswers));
         console.log("💾 [QuizViewer] Saved answers to localStorage:", storageKey);
+        clearQuizSession(slideId);
+        setSession(null);
         
         // ✅ STEP 2: Optimistic UI update - instantly show 100% in sidebar
         queryClient.setQueryData<Slide[]>(["slides", chapterId], (oldSlides) => {
@@ -950,7 +1486,15 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
         if (!offlineQueued) {
           void refreshProgressAfterSubmit(chapterId);
         }
-        if (celebrateOnQuizComplete) {
+        // The Fun skin keeps the celebration for an attempt that did not miss the pass mark.
+        const funMissedPassMark =
+          isFun &&
+          passPercentage != null &&
+          (() => {
+            const card = computeScore(latestAnswers);
+            return card.totalMarks > 0 && (card.earned / card.totalMarks) * 100 < passPercentage;
+          })();
+        if (celebrateOnQuizComplete && !funMissedPassMark) {
           try {
             // Confetti: multi-wave, spread across screen with streamers and bursts
             const shoot = (opts: Partial<import("canvas-confetti").Options>) => confetti({
@@ -961,6 +1505,8 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
               gravity: 0.9,
               scalar: 1.0,
               origin: { x: Math.random() * 0.8 + 0.1, y: Math.random() * 0.2 + 0.05 },
+              // Fun: no confetti for a learner who asked for reduced motion.
+              ...(isFun && { disableForReducedMotion: true }),
               ...opts,
             });
 
@@ -971,6 +1517,7 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
               spread: 55,
               origin: { x, y: 0.6 },
               colors: ["#22C55E", "#3B82F6", "#A78BFA", "#F59E0B"], // design-lint-ignore: confetti animation colors
+              ...(isFun && { disableForReducedMotion: true }),
             });
 
             // Main waves
@@ -1033,24 +1580,78 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
             // ignore celebration errors
           }
         }
-        const card = computeScore(answers);
+        const card = computeScore(latestAnswers);
         setScoreCard(card);
         if (passPercentage != null && card.totalMarks > 0) {
           const pct = (card.earned / card.totalMarks) * 100;
-          setPassed(pct >= passPercentage);
+          // Spreadsheet answers still to be marked could lift a fail: wait for them.
+          setPassed(pct >= passPercentage ? true : (card.pending ?? 0) > 0 ? null : false);
         } else {
           setPassed(null);
         }
         setShowReview(true); // <-- Show review page
+        afterSubmitCbe(payload.id, latestAnswers, !offlineQueued);
         if (onComplete) onComplete();
       } catch (err) {
         console.error("❌ [QuizViewer] Quiz submission failed", err);
-        toast.error("Failed to submit quiz. Please try again.");
+        toast.error(t("quizViewer.toast.submitFailed"));
       } finally {
         setIsSubmitting(false);
       }
     }
   };
+
+  if (timeUp) {
+    return (
+      <QuizTimeUpCard failed={timeUp === "failed"} onRetry={() => setTimeUp("submitting")} />
+    );
+  }
+
+  if (needsStart && !session) {
+    return (
+      <QuizStartCard
+        title={title}
+        description={description}
+        questionCount={total}
+        timeLimitMinutes={timeLimitMinutes}
+        maxAttempts={reAttemptCount}
+        usedAttempts={attemptLogsQuery.data?.length}
+        attemptsPending={attemptsPending}
+        passPercentage={passPercentage}
+        negativeMarking={defaultNegativeMarking}
+        canStart={userResolved && !attemptsPending}
+        onStart={() => {
+          // Started already in another tab: there is one attempt and one clock.
+          const running = readOwnQuizSession(slideId, currentUserId);
+          if (running) {
+            joinSession(running);
+            return;
+          }
+          const startedAt = Date.now();
+          activityStartRef.current = startedAt;
+          timerExpiredRef.current = false;
+          // A new attempt replaces whatever this device kept from the last one.
+          localStorage.removeItem(`quiz_answers_${slideId}_${getUrlParams().chapterId}`);
+          setShowReview(false);
+          setAnswers({});
+          setCheckedIds([]);
+          setFeedbackById({});
+          setCurrent(0);
+          // Saved now, not after the next render, so another tab cannot miss it.
+          const started: QuizSession = {
+            userId: currentUserId ?? null,
+            attemptId: uuidv4(),
+            startedAt,
+            spentMs: 0,
+            answers: {},
+            current: 0,
+          };
+          writeQuizSession(slideId, started);
+          setSession(started);
+        }}
+      />
+    );
+  }
 
   // Progress bar width
   const progress = ((current + 1) / total) * 100;
@@ -1098,6 +1699,15 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
     ? passageHtml
     : getPlainText(passageHtml).slice(0, PASSAGE_LIMIT) + "...";
 
+  // Study mode: once checked, the keyed options turn green and a wrong pick red.
+  const optionTone = (optionId: string, selected: boolean): string | null => {
+    if (!currentLocked) return null;
+    const state = optionFeedbackState(currentFeedback, optionId, selected);
+    if (state === "correct") return "border-success-500 bg-success-50 text-success-700";
+    if (state === "wrong") return "border-danger-500 bg-danger-50 text-danger-700";
+    return selected ? "border-primary-500 text-primary-500" : "border-primary-100 text-neutral-700";
+  };
+
   // Render input based on question type
   const renderInput = () => {
     const currentAnswer = answers[currentQuestion.id];
@@ -1111,8 +1721,9 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
               inputType="text"
               input={String(currentAnswer || "")}
               onChangeFunction={(e) => handleNumericInput(e.target.value)}
-              inputPlaceholder="Enter numeric value"
+              inputPlaceholder={t("quizViewer.placeholders.numeric")}
               inputMode="numeric"
+              disabled={currentLocked}
               className={`text-sm py-3 font-normal w-full border-primary-100 focus:border-primary-500 focus:ring-primary-500 ${
                 numericErrors[currentQuestion.id] ? "border-danger-600 focus:border-danger-600 focus:ring-danger-600" : ""
               }`}
@@ -1134,7 +1745,8 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
               inputType="text"
               input={String(currentAnswer || "")}
               onChangeFunction={(e) => handleTextInput(e.target.value)}
-              inputPlaceholder="Type your answer"
+              inputPlaceholder={t("quizViewer.placeholders.text")}
+              disabled={currentLocked}
               className="text-sm py-3 font-normal w-full border-primary-100 focus:border-primary-500 focus:ring-primary-500"
               onCopy={(e) => e.preventDefault()}
               onCut={(e) => e.preventDefault()}
@@ -1149,7 +1761,8 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
             <Textarea
               value={currentAnswer || ""}
               onChange={(e) => handleTextInput(e.target.value)}
-              placeholder="Type your answer..."
+              placeholder={t("quizViewer.placeholders.longAnswer")}
+              disabled={currentLocked}
               className="min-h-reg-150 sm:min-h-reg-200 text-sm w-full border-primary-100 focus:border-primary-500 focus:ring-primary-500"
               onCopy={(e) => e.preventDefault()}
               onCut={(e) => e.preventDefault()}
@@ -1161,7 +1774,14 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
       case "CMCQM":
       case "MCQM":
         return (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mt-4">
+          <>
+          {/* Single- and multiple-correct options used to look identical, so learners
+              ticked one box on a multi-answer question. Say it where they are looking. */}
+          <div className="mt-4 flex items-center gap-2 rounded-md border border-primary-200 bg-primary-50 px-3 py-2 text-sm font-medium text-primary-500">
+            <ListChecks size={18} weight="bold" className="shrink-0" />
+            <span>{t("quizViewer.selectAllThatApply")}</span>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-stack sm:gap-4 mt-4">
             {currentQuestion.options.map((option, index) => {
               const selected = Array.isArray(currentAnswer) && currentAnswer.includes(option.id);
               return (
@@ -1169,9 +1789,9 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
                   key={option.id}
                   onClick={() => handleMultiOptionSelect(option.id)}
                   className={`flex items-center space-x-3 rounded-md border p-3 w-full cursor-pointer transition-all duration-200 select-none
-                    ${selected
+                    ${optionTone(option.id, selected) ?? (selected
                       ? "border-primary-500 text-primary-700"
-                      : "border-primary-100 hover:border-primary-500 text-neutral-700"}
+                      : "border-primary-100 hover:border-primary-500 text-neutral-700")}
                   `}
                   style={{ userSelect: "none" }}
                 >
@@ -1194,13 +1814,14 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
               );
             })}
           </div>
+          </>
         );
       case "CMCQS":
       case "MCQS":
       case "TRUE_FALSE":
       default:
         return (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mt-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-stack sm:gap-4 mt-4">
             {currentQuestion.options.map((option, index) => {
               const selected = currentAnswer === option.id;
               return (
@@ -1208,19 +1829,20 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
                   key={option.id}
                   onClick={() => handleOptionSelect(option.id)}
                   className={`flex items-center space-x-3 rounded-md border p-3 w-full cursor-pointer transition-all duration-200 select-none
-                    ${selected
+                    ${optionTone(option.id, selected) ?? (selected
                       ? "border-primary-500 text-primary-700"
-                      : "border-primary-100 hover:border-primary-500 text-neutral-700"}
+                      : "border-primary-100 hover:border-primary-500 text-neutral-700")}
                   `}
                   style={{ userSelect: "none" }}
                 >
+                  {/* Round radio = pick one; the multi-answer case keeps square checkboxes. */}
                   <div className="relative flex items-center">
                     <div
-                      className={`w-5 h-5 border rounded-md flex items-center justify-center transition-colors
-                        ${selected ? "bg-primary-500 border-primary-500" : "border-primary-200 bg-white"}
+                      className={`w-5 h-5 border-2 rounded-full flex items-center justify-center transition-colors
+                        ${selected ? "border-primary-500" : "border-primary-200 bg-white"}
                       `}
                     >
-                      {selected && <span className="text-white text-sm">✓</span>}
+                      {selected && <span className="w-2.5 h-2.5 rounded-full bg-primary-500" />}
                     </div>
                   </div>
                   <label
@@ -1261,19 +1883,106 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
     }
   };
 
+  // Study mode: the primary button checks the answer first, then moves on. A spreadsheet
+  // answer has no key to check against: it is marked by AI after the submit.
+  const isCbeCurrent = isCbeQuizQuestion(currentQuestion);
+  const needsCheck = showAnswerAfterEachQuestion && !currentLocked && !isCbeCurrent;
+  const primaryAction = needsCheck ? handleCheckAnswer : handleNext;
+  const checkLabel = checking
+    ? t("quizViewer.instantFeedback.checking")
+    : t("quizViewer.instantFeedback.checkAnswer");
+  const escapeText = (text: string) => {
+    const div = document.createElement("div");
+    div.textContent = text;
+    return div.innerHTML;
+  };
+  const renderFeedbackPanel = (feedback: InstantFeedback) => {
+    const answerHtml =
+      feedback.correctOptionIds.length > 0
+        ? feedback.correctOptionIds.flatMap((id) => {
+            const option = currentQuestion.options.find((o) => o.id === id);
+            return option ? [renderHtmlWithMath(option.text.content)] : [];
+          })
+        : feedback.correctAnswerText
+          ? [
+              questionType === "LONG_ANSWER"
+                ? renderHtmlWithMath(feedback.correctAnswerText)
+                : escapeText(feedback.correctAnswerText),
+            ]
+          : [];
+    return (
+      <QuizInstantFeedbackPanel
+        verdict={feedback.verdict}
+        answerHtml={answerHtml}
+        answerKind={feedback.verdict === "compare" && !isNumericQuestion(questionType) ? "model" : "key"}
+        explanationHtml={feedback.explanationHtml ? renderHtmlWithMath(feedback.explanationHtml) : null}
+      />
+    );
+  };
+  const feedbackPanel = currentFeedback ? renderFeedbackPanel(currentFeedback) : null;
+
+  if (isFun) {
+    return (
+      <>
+        <QuizAttemptScreenGuard settleMs={QUESTION_SETTLE_MS} />
+        {showWarning && <FunQuizTimeWarning onDismiss={() => setShowWarning(false)} />}
+        <FunQuizQuestion
+          title={title}
+          current={current}
+          total={total}
+          questionId={currentQuestion.id}
+          questionType={questionType}
+          questionHtml={renderHtmlWithMath(getQuestionText())}
+          passageHtml={hasPassage ? renderHtmlWithMath(passageHtml) : undefined}
+          marks={currentQuestion.marks != null ? currentQuestion.marks : marksPerQuestion}
+          options={currentQuestion.options.map((option) => ({
+            id: option.id,
+            html: renderHtmlWithMath(option.text.content),
+          }))}
+          answer={answers[currentQuestion.id]}
+          numericError={numericErrors[currentQuestion.id] || undefined}
+          incorrectNotice={showIncorrectNotice}
+          answered={isAnswered()}
+          submitting={isSubmitting || checking}
+          onSelect={handleOptionSelect}
+          onToggle={handleMultiOptionSelect}
+          onText={handleTextInput}
+          onNumeric={handleNumericInput}
+          onPrev={handlePrev}
+          onNext={primaryAction}
+          nextLabel={needsCheck ? checkLabel : undefined}
+          feedback={feedbackPanel ?? undefined}
+          timer={
+            session && timeLimitSeconds > 0 ? (
+              <QuizTimer
+                startedAt={session.startedAt}
+                totalSeconds={timeLimitSeconds}
+                onWarn={() => setShowWarning(true)}
+                onExpire={handleTimerExpire}
+                render={(secondsLeft, warning) => <FunQuizTimer secondsLeft={secondsLeft} warning={warning} />}
+              />
+            ) : undefined
+          }
+        />
+      </>
+    );
+  }
+
   return (
     <div className="w-full min-h-screen-80 bg-white rounded-xl shadow-lg p-4 sm:p-8">
+      <QuizAttemptScreenGuard settleMs={QUESTION_SETTLE_MS} />
       {/* Timer warning overlay */}
       {showWarning && <QuizTimeWarning onDismiss={() => setShowWarning(false)} />}
 
       {/* Question X of Y and Progress bar */}
-      <div className="mb-8">
-        <div className="mb-2 flex items-center justify-between">
-          <span className="text-sm text-gray-700 font-medium">Question {current + 1} of {total}</span>
+      <div className="mb-8 space-y-2">
+        <div className="flex items-center justify-between">
+          <span className="text-sm text-gray-700 font-medium">{t("quizViewer.questionOf", { current: current + 1, total })}</span>
           <div className="ms-auto flex items-center gap-3">
-            {timeLimitMinutes && timeLimitMinutes > 0 && (
+            {session && timeLimitSeconds > 0 && (
               <QuizTimer
-                totalSeconds={timeLimitMinutes * 60}
+                startedAt={session.startedAt}
+                totalSeconds={timeLimitSeconds}
                 onWarn={() => setShowWarning(true)}
                 onExpire={handleTimerExpire}
               />
@@ -1293,12 +2002,36 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
       </div>
 
       {/* Question Content */}
+      {isCbeCurrent ? (
+        <div className="mb-8">
+          <QuizCbeQuestion
+            key={currentQuestion.id}
+            ref={cbeQuestionRef}
+            scenarioHtml={passageHtml}
+            requirementHtml={getQuestionText()}
+            autoEvaluationJson={currentQuestion.auto_evaluation_json}
+            value={answers[currentQuestion.id]}
+            onChange={(value) => {
+              const id = currentQuestion.id;
+              setAnswers((prev) => {
+                if (prev[id] === value) return prev;
+                const next = { ...prev };
+                if (value === undefined) delete next[id];
+                else next[id] = value;
+                return next;
+              });
+              setShowIncorrectNotice(false);
+            }}
+            renderHtml={renderHtmlWithMath}
+          />
+        </div>
+      ) : (
       <div className="mb-8">
         {/* Render passage and question together if passage exists */}
         {hasPassage ? (
           <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
-            <h3 className="text-sm font-semibold text-gray-700 mb-2">Passage:</h3>
-            <div 
+            <h3 className="text-sm font-semibold text-gray-700 mb-2">{t("quizViewer.passageLabel")}</h3>
+            <div
               className="text-sm text-gray-800 leading-relaxed rich-text-content"
               dangerouslySetInnerHTML={{ __html: showFullPassage || !isPassageLong ? renderHtmlWithMath(passageHtml) : renderHtmlWithMath(passageToShow) }}
             />
@@ -1308,31 +2041,33 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
                 onClick={() => setShowFullPassage((prev) => !prev)}
                 type="button"
               >
-                {showFullPassage ? "Show less" : "Show more"}
+                {showFullPassage ? t("quizViewer.showLess") : t("quizViewer.showMore")}
               </button>
             )}
             {/* Question text inside the same box */}
-            <div className="mt-4">
-              <h3 className="text-sm font-semibold text-gray-700 mb-2">Question:</h3>
-              <div 
+            <div className="mt-4 space-y-2">
+              <h3 className="text-sm font-semibold text-gray-700">{t("quizViewer.questionLabel")}</h3>
+              <div
                 className="text-sm font-medium text-gray-900 leading-relaxed rich-text-content"
-                dangerouslySetInnerHTML={{ __html: renderHtmlWithMath(getQuestionText() || "Question text not available") }}
+                dangerouslySetInnerHTML={{ __html: renderHtmlWithMath(getQuestionText() || t("quizViewer.questionTextUnavailable")) }}
               />
             </div>
           </div>
         ) : (
           // No passage, just show question text as before
-          <div className="mb-6">
-            <h3 className="text-sm font-semibold text-gray-700 mb-2">Question:</h3>
+          <div className="mb-6 space-y-2">
+            <h3 className="text-sm font-semibold text-gray-700">{t("quizViewer.questionLabel")}</h3>
             <div
               className="text-sm font-medium text-gray-900 leading-relaxed rich-text-content"
-              dangerouslySetInnerHTML={{ __html: renderHtmlWithMath(getQuestionText() || "Question text not available") }}
+              dangerouslySetInnerHTML={{ __html: renderHtmlWithMath(getQuestionText() || t("quizViewer.questionTextUnavailable")) }}
             />
           </div>
         )}
 
         {renderInput()}
+        {feedbackPanel}
       </div>
+      )}
 
       {/* Navigation */}
       <div className="flex justify-between items-center pt-6 border-t border-gray-200">
@@ -1344,7 +2079,7 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
           className="flex items-center justify-center min-w-reg-120 space-x-2"
         >
           <span>←</span>
-          <span>Previous</span>
+          <span>{t("quizViewer.buttons.previous")}</span>
         </MyButton>
 
         <div className="flex items-center space-x-2">
@@ -1352,22 +2087,22 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
             <CheckCircle className="w-5 h-5 text-green-500" />
           )}
           <span className="text-sm text-gray-500">
-            {isAnswered() ? "Answered" : "Not answered"}
+            {isAnswered() ? t("quizViewer.answered") : t("quizViewer.notAnswered")}
           </span>
           {showIncorrectNotice && (
-            <span className="text-sm text-danger-600 ms-2">Incorrect. Try again.</span>
+            <span className="text-sm text-danger-600 ms-2">{t("quizViewer.incorrectTryAgain")}</span>
           )}
         </div>
 
         <MyButton
           buttonType="primary"
           scale="medium"
-          disable={!isAnswered() || isSubmitting}
-          onClick={handleNext}
+          disable={!isAnswered() || isSubmitting || checking}
+          onClick={primaryAction}
           className="flex items-center justify-center min-w-reg-120 space-x-2"
         >
-          <span>{isSubmitting ? "Submitting..." : current === total - 1 ? "Finish" : "Next"}</span>
-          {current !== total - 1 && !isSubmitting && <span>→</span>}
+          <span>{needsCheck ? checkLabel : isSubmitting ? t("quizViewer.buttons.submitting") : current === total - 1 ? t("quizViewer.buttons.finish") : t("quizViewer.buttons.next")}</span>
+          {!needsCheck && current !== total - 1 && !isSubmitting && <span>→</span>}
         </MyButton>
       </div>
     </div>

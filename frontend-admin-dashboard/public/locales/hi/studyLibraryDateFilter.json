@@ -1,0 +1,18 @@
+{
+    "label": {
+        "date": "तिथि"
+    },
+    "options": {
+        "today": "आज",
+        "thisWeek": "इस सप्ताह",
+        "thisMonth": "इस महीने",
+        "thisYear": "इस वर्ष",
+        "custom": "कस्टम"
+    },
+    "customRange": {
+        "pickARange": "एक सीमा चुनें",
+        "clear": "साफ़ करें",
+        "cancel": "रद्द करें",
+        "apply": "लागू करें"
+    }
+}

@@ -1,0 +1,15 @@
+{
+    "dialog": {
+        "defaultTitle": "Rapport d'analyse"
+    },
+    "tabs": {
+        "efforts": "Efforts",
+        "overview": "Aperçu",
+        "topics": "Sujets",
+        "remedial": "Remédiation"
+    },
+    "sections": {
+        "strengths": "Points forts",
+        "weaknesses": "Points faibles"
+    }
+}

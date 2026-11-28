@@ -8,6 +8,8 @@ import {
     UsersThree,
     X,
 } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { cn } from '@/lib/utils';
 import { MyButton } from '@/components/design-system/button';
 import { MyInput } from '@/components/design-system/input';
@@ -37,14 +39,16 @@ import type {
     RuleExclusion,
 } from '../-types';
 
-const RULE_TYPE_LABELS: Record<AudienceRuleType, string> = {
-    ROLE: 'Everyone with a role',
-    PACKAGE_SESSION: 'Specific batches',
-    USER: 'Specific people',
-    TAG: 'People with tags',
-    AUDIENCE: 'A campaign audience',
-    CUSTOM_FIELD_FILTER: 'People matching field values',
-};
+function buildRuleTypeLabels(t: TFunction): Record<AudienceRuleType, string> {
+    return {
+        ROLE: t('ruleTypes.role'),
+        PACKAGE_SESSION: t('ruleTypes.packageSession'),
+        USER: t('ruleTypes.user'),
+        TAG: t('ruleTypes.tag'),
+        AUDIENCE: t('ruleTypes.audience'),
+        CUSTOM_FIELD_FILTER: t('ruleTypes.customFieldFilter'),
+    };
+}
 
 let idSeq = 0;
 const nextId = (prefix: string) => `${prefix}-${++idSeq}-${Math.random().toString(36).slice(2, 7)}`;
@@ -76,6 +80,8 @@ interface RecipientCardProps {
 }
 
 export function RecipientCard(props: RecipientCardProps) {
+    const { t, i18n } = useTranslation('announcementRecipientCard');
+    const RULE_TYPE_LABELS = buildRuleTypeLabels(t);
     const {
         rule,
         index,
@@ -165,8 +171,8 @@ export function RecipientCard(props: RecipientCardProps) {
                                 orgRole: undefined,
                                 userIds: [],
                                 tagIds: [],
-                                campaignId: '',
-                                campaignName: '',
+                                campaignIds: [],
+                                campaignNames: {},
                                 fieldFilters:
                                     value === 'CUSTOM_FIELD_FILTER' ? rule.fieldFilters : [],
                             })
@@ -184,7 +190,9 @@ export function RecipientCard(props: RecipientCardProps) {
                                 .map((type) => (
                                     <SelectItem key={type} value={type}>
                                         {type === 'PACKAGE_SESSION'
-                                            ? `Specific ${batchNounPlural}`
+                                            ? t('ruleTypes.packageSessionSpecific', {
+                                                  batchNounPlural,
+                                              })
                                             : RULE_TYPE_LABELS[type]}
                                     </SelectItem>
                                 ))}
@@ -195,7 +203,7 @@ export function RecipientCard(props: RecipientCardProps) {
                     buttonType="secondary"
                     scale="small"
                     layoutVariant="icon"
-                    aria-label={`Remove audience ${index + 1}`}
+                    aria-label={t('removeAudience', { index: index + 1 })}
                     onClick={onRemove}
                 >
                     <Trash className="size-4" />
@@ -205,18 +213,18 @@ export function RecipientCard(props: RecipientCardProps) {
             <div className="mt-4 space-y-3">
                 {rule.type === 'ROLE' && (
                     <div className="space-y-1">
-                        <Label className="text-caption font-semibold">Role</Label>
+                        <Label className="text-caption font-semibold">{t('role.label')}</Label>
                         <Select
                             value={rule.roleId}
                             onValueChange={(value) => onChange({ roleId: value })}
                         >
                             <SelectTrigger className={cn(err('role') && 'border-danger-400')}>
-                                <SelectValue placeholder="Choose a role" />
+                                <SelectValue placeholder={t('role.placeholder')} />
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="STUDENT">{learnerNounPlural}</SelectItem>
                                 <SelectItem value="TEACHER">{teacherNounPlural}</SelectItem>
-                                <SelectItem value="ADMIN">Admins</SelectItem>
+                                <SelectItem value="ADMIN">{t('role.admins')}</SelectItem>
                             </SelectContent>
                         </Select>
                         <FieldError message={err('role')} />
@@ -252,7 +260,7 @@ export function RecipientCard(props: RecipientCardProps) {
                         {needsOrgRole && (
                             <div className="space-y-1">
                                 <Label className="text-caption font-semibold">
-                                    Who inside the sub-organisation?
+                                    {t('packageSession.orgRoleLabel')}
                                 </Label>
                                 <Select
                                     value={rule.orgRole ?? ''}
@@ -263,16 +271,21 @@ export function RecipientCard(props: RecipientCardProps) {
                                     <SelectTrigger
                                         className={cn(err('orgRole') && 'border-danger-400')}
                                     >
-                                        <SelectValue placeholder="Choose Admin or Learner" />
+                                        <SelectValue
+                                            placeholder={t('packageSession.orgRolePlaceholder')}
+                                        />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="LEARNER">Learners</SelectItem>
-                                        <SelectItem value="ADMIN">Admins</SelectItem>
+                                        <SelectItem value="LEARNER">
+                                            {t('packageSession.orgRoleLearners')}
+                                        </SelectItem>
+                                        <SelectItem value="ADMIN">
+                                            {t('packageSession.orgRoleAdmins')}
+                                        </SelectItem>
                                     </SelectContent>
                                 </Select>
                                 <FieldHint>
-                                    One or more selected {batchNounPlural} belong to a
-                                    sub-organisation, which needs an explicit role.
+                                    {t('packageSession.orgRoleHint', { batchNounPlural })}
                                 </FieldHint>
                                 <FieldError message={err('orgRole')} />
                             </div>
@@ -282,7 +295,7 @@ export function RecipientCard(props: RecipientCardProps) {
 
                 {rule.type === 'USER' && (
                     <div className="space-y-2">
-                        <Label className="text-caption font-semibold">User ids or emails</Label>
+                        <Label className="text-caption font-semibold">{t('user.label')}</Label>
                         <div className="flex flex-wrap items-start gap-2">
                             {/* MyInput caps itself at sm:w-60; the wrapper plus sm:w-full lets it
                                 fill the row instead of collapsing to that cap. */}
@@ -297,7 +310,7 @@ export function RecipientCard(props: RecipientCardProps) {
                                             addUserTokens();
                                         }
                                     }}
-                                    inputPlaceholder="Paste ids or emails, separated by commas"
+                                    inputPlaceholder={t('user.placeholder')}
                                     className="sm:w-full"
                                     size="medium"
                                 />
@@ -308,7 +321,7 @@ export function RecipientCard(props: RecipientCardProps) {
                                 onClick={addUserTokens}
                                 disable={!userDraft.trim()}
                             >
-                                Add
+                                {t('user.add')}
                             </MyButton>
                         </div>
                         {rule.userIds.length > 0 && (
@@ -320,7 +333,7 @@ export function RecipientCard(props: RecipientCardProps) {
                                             <span className="max-w-xs truncate">{id}</span>
                                             <button
                                                 type="button"
-                                                aria-label={`Remove ${id}`}
+                                                aria-label={t('user.remove', { id })}
                                                 onClick={() =>
                                                     onChange({
                                                         userIds: rule.userIds.filter(
@@ -344,7 +357,7 @@ export function RecipientCard(props: RecipientCardProps) {
                 {rule.type === 'TAG' && (
                     <div className="space-y-2">
                         <div className="flex flex-wrap items-end justify-between gap-2">
-                            <Label className="text-caption font-semibold">Tags</Label>
+                            <Label className="text-caption font-semibold">{t('tag.label')}</Label>
                             <Select
                                 value={rule.tagScope}
                                 onValueChange={(value) =>
@@ -357,9 +370,11 @@ export function RecipientCard(props: RecipientCardProps) {
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="ALL">All tags</SelectItem>
-                                    <SelectItem value="DEFAULT">Default tags</SelectItem>
-                                    <SelectItem value="INSTITUTE">Institute tags</SelectItem>
+                                    <SelectItem value="ALL">{t('tag.scopeAll')}</SelectItem>
+                                    <SelectItem value="DEFAULT">{t('tag.scopeDefault')}</SelectItem>
+                                    <SelectItem value="INSTITUTE">
+                                        {t('tag.scopeInstitute')}
+                                    </SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
@@ -370,15 +385,15 @@ export function RecipientCard(props: RecipientCardProps) {
                                 options={tagOptions}
                                 selected={rule.tagIds}
                                 onChange={(ids) => onChange({ tagIds: ids })}
-                                placeholder={
-                                    tagsLoading ? 'Loading tags…' : 'Select one or more tags'
-                                }
+                                checkboxes
+                                placeholder={tagsLoading ? t('tag.loading') : t('tag.placeholder')}
                                 disabled={tagsLoading}
                             />
                         )}
                         <FieldHint>
-                            Anyone carrying <span className="font-semibold">any</span> of the
-                            selected tags receives this.
+                            {t('tag.hintPrefix')}{' '}
+                            <span className="font-semibold">{t('tag.hintAny')}</span>{' '}
+                            {t('tag.hintSuffix')}
                         </FieldHint>
                         <FieldError message={err('tags')} />
                     </div>
@@ -386,44 +401,51 @@ export function RecipientCard(props: RecipientCardProps) {
 
                 {rule.type === 'AUDIENCE' && (
                     <div className="space-y-1">
-                        <Label className="text-caption font-semibold">Campaign</Label>
+                        <Label className="text-caption font-semibold">{t('audience.label')}</Label>
                         {campaignsError ? (
                             <LoadFailure message={campaignsError} onRetry={onReloadCampaigns} />
                         ) : (
-                            <SearchableSelect
-                                value={rule.campaignId}
-                                onChange={(value) => {
-                                    const campaign = campaigns.find(
-                                        (c) => (c.id || c.campaign_id) === value
-                                    );
-                                    onChange({
-                                        campaignId: value,
-                                        campaignName: campaign?.campaign_name ?? '',
-                                    });
-                                }}
+                            <MultiSelect
                                 options={campaigns
                                     .filter((c) => !!(c.id || c.campaign_id))
                                     .map((c) => ({
                                         value: (c.id || c.campaign_id) as string,
                                         label: `${c.campaign_name} · ${c.status}`,
                                     }))}
+                                selected={rule.campaignIds}
+                                checkboxes
+                                onChange={(ids) => {
+                                    // Keep a name for every picked id so the payload and summary
+                                    // can label it even before (or without) the campaign list.
+                                    const campaignNames: Record<string, string> = {};
+                                    ids.forEach((id) => {
+                                        const campaign = campaigns.find(
+                                            (c) => (c.id || c.campaign_id) === id
+                                        );
+                                        campaignNames[id] =
+                                            campaign?.campaign_name ?? rule.campaignNames[id] ?? '';
+                                    });
+                                    onChange({ campaignIds: ids, campaignNames });
+                                }}
                                 placeholder={
-                                    campaignsLoading ? 'Loading campaigns…' : 'Select a campaign'
+                                    campaignsLoading
+                                        ? t('audience.loading')
+                                        : t('audience.placeholder')
                                 }
-                                searchPlaceholder="Search campaigns…"
-                                emptyText="No campaigns found."
                                 disabled={campaignsLoading}
-                                triggerClassName={cn(err('campaign') && 'border-danger-400')}
+                                className={cn(err('campaign') && 'border-danger-400')}
                             />
                         )}
+                        <FieldHint>{t('audience.hint')}</FieldHint>
                         <FieldError message={err('campaign')} />
                     </div>
                 )}
 
                 {rule.type === 'CUSTOM_FIELD_FILTER' && (
                     <FieldHint>
-                        Everyone whose profile matches the filters below receives this. Add them
-                        under <span className="font-semibold">Refine</span>.
+                        {t('customFieldFilter.hintPrefix')}{' '}
+                        <span className="font-semibold">{t('customFieldFilter.hintRefine')}</span>
+                        .
                     </FieldHint>
                 )}
                 {rule.type === 'CUSTOM_FIELD_FILTER' && <FieldError message={err('filters')} />}
@@ -439,7 +461,7 @@ export function RecipientCard(props: RecipientCardProps) {
                 >
                     <span className="flex items-center gap-2">
                         <Funnel className="size-4" />
-                        Refine — field filters and exclusions
+                        {t('refine.toggle')}
                         {(rule.fieldFilters.length > 0 || rule.exclusions.length > 0) && (
                             <span className="rounded-full bg-primary-50 px-2 py-0.5 text-primary-600">
                                 {rule.fieldFilters.length + rule.exclusions.length}
@@ -456,7 +478,9 @@ export function RecipientCard(props: RecipientCardProps) {
                         {/* field filters */}
                         <div className="space-y-2">
                             <div className="flex flex-wrap items-center justify-between gap-2">
-                                <span className="text-caption font-semibold">Field filters</span>
+                                <span className="text-caption font-semibold">
+                                    {t('refine.fieldFiltersLabel')}
+                                </span>
                                 <MyButton
                                     buttonType="secondary"
                                     scale="small"
@@ -477,15 +501,13 @@ export function RecipientCard(props: RecipientCardProps) {
                                         })
                                     }
                                 >
-                                    Add filter
+                                    {t('refine.addFilter')}
                                 </MyButton>
                             </div>
                             {customFields.length === 0 ? (
-                                <FieldHint>
-                                    No custom fields are configured for this institute.
-                                </FieldHint>
+                                <FieldHint>{t('refine.noCustomFields')}</FieldHint>
                             ) : rule.fieldFilters.length === 0 ? (
-                                <FieldHint>No filters — everyone above is included.</FieldHint>
+                                <FieldHint>{t('refine.noFilters')}</FieldHint>
                             ) : (
                                 rule.fieldFilters.map((filter) => {
                                     const field = customFields.find((f) => f.id === filter.fieldId);
@@ -517,7 +539,9 @@ export function RecipientCard(props: RecipientCardProps) {
                                                     }}
                                                 >
                                                     <SelectTrigger className="flex-1">
-                                                        <SelectValue placeholder="Choose a field" />
+                                                        <SelectValue
+                                                            placeholder={t('refine.chooseField')}
+                                                        />
                                                     </SelectTrigger>
                                                     <SelectContent>
                                                         {customFields.map((f) => (
@@ -531,7 +555,7 @@ export function RecipientCard(props: RecipientCardProps) {
                                                     buttonType="secondary"
                                                     scale="small"
                                                     layoutVariant="icon"
-                                                    aria-label="Remove filter"
+                                                    aria-label={t('refine.removeFilter')}
                                                     onClick={() =>
                                                         onChange({
                                                             fieldFilters: rule.fieldFilters.filter(
@@ -560,7 +584,7 @@ export function RecipientCard(props: RecipientCardProps) {
                                                             filterValue: values,
                                                         })
                                                     }
-                                                    placeholder="Select values"
+                                                    placeholder={t('refine.selectValues')}
                                                 />
                                             ) : field?.type === 'number' ? (
                                                 <Input
@@ -575,7 +599,7 @@ export function RecipientCard(props: RecipientCardProps) {
                                                             filterValue: e.target.value,
                                                         })
                                                     }
-                                                    placeholder="Enter a number"
+                                                    placeholder={t('refine.enterNumber')}
                                                 />
                                             ) : (
                                                 <div className="grid gap-2 sm:grid-cols-[10rem_1fr]">
@@ -593,16 +617,16 @@ export function RecipientCard(props: RecipientCardProps) {
                                                         </SelectTrigger>
                                                         <SelectContent>
                                                             <SelectItem value="equals">
-                                                                Equals
+                                                                {t('refine.operatorEquals')}
                                                             </SelectItem>
                                                             <SelectItem value="contains">
-                                                                Contains
+                                                                {t('refine.operatorContains')}
                                                             </SelectItem>
                                                             <SelectItem value="starts_with">
-                                                                Starts with
+                                                                {t('refine.operatorStartsWith')}
                                                             </SelectItem>
                                                             <SelectItem value="ends_with">
-                                                                Ends with
+                                                                {t('refine.operatorEndsWith')}
                                                             </SelectItem>
                                                         </SelectContent>
                                                     </Select>
@@ -617,7 +641,7 @@ export function RecipientCard(props: RecipientCardProps) {
                                                                 filterValue: e.target.value,
                                                             })
                                                         }
-                                                        placeholder="Value to match"
+                                                        placeholder={t('refine.valueToMatch')}
                                                     />
                                                 </div>
                                             )}
@@ -632,7 +656,7 @@ export function RecipientCard(props: RecipientCardProps) {
                             <div className="flex flex-wrap items-center justify-between gap-2">
                                 <span className="flex items-center gap-1.5 text-caption font-semibold">
                                     <Prohibit className="size-4" />
-                                    Exclusions
+                                    {t('refine.exclusionsLabel')}
                                 </span>
                                 <MyButton
                                     buttonType="secondary"
@@ -650,11 +674,11 @@ export function RecipientCard(props: RecipientCardProps) {
                                         })
                                     }
                                 >
-                                    Add exclusion
+                                    {t('refine.addExclusion')}
                                 </MyButton>
                             </div>
                             {rule.exclusions.length === 0 ? (
-                                <FieldHint>Nobody is excluded from this audience.</FieldHint>
+                                <FieldHint>{t('refine.noExclusions')}</FieldHint>
                             ) : (
                                 rule.exclusions.map((exclusion) => (
                                     <div
@@ -675,13 +699,19 @@ export function RecipientCard(props: RecipientCardProps) {
                                                 <SelectValue />
                                             </SelectTrigger>
                                             <SelectContent>
-                                                <SelectItem value="ROLE">Role</SelectItem>
+                                                <SelectItem value="ROLE">
+                                                    {t('refine.exclusionRole')}
+                                                </SelectItem>
                                                 <SelectItem value="PACKAGE_SESSION">
                                                     {batchNoun.charAt(0).toUpperCase() +
                                                         batchNoun.slice(1)}
                                                 </SelectItem>
-                                                <SelectItem value="TAG">Tag</SelectItem>
-                                                <SelectItem value="USER">User</SelectItem>
+                                                <SelectItem value="TAG">
+                                                    {t('refine.exclusionTag')}
+                                                </SelectItem>
+                                                <SelectItem value="USER">
+                                                    {t('refine.exclusionUser')}
+                                                </SelectItem>
                                             </SelectContent>
                                         </Select>
 
@@ -697,7 +727,9 @@ export function RecipientCard(props: RecipientCardProps) {
                                                     }
                                                 >
                                                     <SelectTrigger>
-                                                        <SelectValue placeholder="Select a role" />
+                                                        <SelectValue
+                                                            placeholder={t('refine.selectRole')}
+                                                        />
                                                     </SelectTrigger>
                                                     <SelectContent>
                                                         <SelectItem value="STUDENT">
@@ -707,7 +739,7 @@ export function RecipientCard(props: RecipientCardProps) {
                                                             {teacherNounPlural}
                                                         </SelectItem>
                                                         <SelectItem value="ADMIN">
-                                                            Admins
+                                                            {t('role.admins')}
                                                         </SelectItem>
                                                     </SelectContent>
                                                 </Select>
@@ -726,9 +758,15 @@ export function RecipientCard(props: RecipientCardProps) {
                                                         value: b.id,
                                                         label: b.label,
                                                     }))}
-                                                    placeholder={`Select a ${batchNoun}`}
-                                                    searchPlaceholder={`Search ${batchNounPlural}…`}
-                                                    emptyText={`No ${batchNounPlural} found.`}
+                                                    placeholder={t('refine.selectBatch', {
+                                                        batchNoun,
+                                                    })}
+                                                    searchPlaceholder={t('refine.searchBatches', {
+                                                        batchNounPlural,
+                                                    })}
+                                                    emptyText={t('refine.noBatchesFound', {
+                                                        batchNounPlural,
+                                                    })}
                                                 />
                                             ) : exclusion.exclusionType === 'TAG' ? (
                                                 <SearchableSelect
@@ -737,17 +775,17 @@ export function RecipientCard(props: RecipientCardProps) {
                                                         updateExclusion(exclusion.key, {
                                                             exclusionId: value,
                                                             exclusionName:
-                                                                tags.find((t) => t.id === value)
+                                                                tags.find((tg) => tg.id === value)
                                                                     ?.tagName ?? '',
                                                         })
                                                     }
-                                                    options={tags.map((t) => ({
-                                                        value: t.id,
-                                                        label: t.tagName,
+                                                    options={tags.map((tg) => ({
+                                                        value: tg.id,
+                                                        label: tg.tagName,
                                                     }))}
-                                                    placeholder="Select a tag"
-                                                    searchPlaceholder="Search tags…"
-                                                    emptyText="No tags found."
+                                                    placeholder={t('refine.selectTag')}
+                                                    searchPlaceholder={t('refine.searchTags')}
+                                                    emptyText={t('refine.noTagsFound')}
                                                 />
                                             ) : (
                                                 <Input
@@ -757,7 +795,7 @@ export function RecipientCard(props: RecipientCardProps) {
                                                             exclusionId: e.target.value,
                                                         })
                                                     }
-                                                    placeholder="User id or email"
+                                                    placeholder={t('refine.userIdOrEmail')}
                                                 />
                                             )}
                                         </div>
@@ -766,7 +804,7 @@ export function RecipientCard(props: RecipientCardProps) {
                                             buttonType="secondary"
                                             scale="small"
                                             layoutVariant="icon"
-                                            aria-label="Remove exclusion"
+                                            aria-label={t('refine.removeExclusion')}
                                             onClick={() =>
                                                 onChange({
                                                     exclusions: rule.exclusions.filter(
@@ -789,10 +827,13 @@ export function RecipientCard(props: RecipientCardProps) {
                 <p className="mt-3 flex items-center gap-1.5 text-caption text-muted-foreground">
                     <UsersThree className="size-4" />
                     {props.tagReachLoading
-                        ? 'Estimating reach…'
+                        ? t('reach.estimating')
                         : props.tagReach !== null
-                          ? `About ${props.tagReach.toLocaleString()} people carry the tags selected across this announcement.`
-                          : 'Reach estimate unavailable.'}
+                          ? t('reach.summary', {
+                                count: props.tagReach,
+                                formattedCount: props.tagReach.toLocaleString(i18n.language),
+                            })
+                          : t('reach.unavailable')}
                 </p>
             )}
         </div>

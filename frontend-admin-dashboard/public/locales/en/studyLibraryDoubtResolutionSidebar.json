@@ -1,0 +1,9 @@
+{
+    "errorFetchingDoubts": "Error fetching doubts",
+    "doubtResolution": "Doubt Resolution",
+    "tabs": {
+        "all": "All",
+        "resolved": "Resolved",
+        "unresolved": "Unresolved"
+    }
+}

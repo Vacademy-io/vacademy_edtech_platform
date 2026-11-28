@@ -1,0 +1,68 @@
+{
+    "formats": {
+        "csv": {
+            "label": "CSV",
+            "note": "Fichier générique séparé par des virgules — pour un tableur, ou tout portail acceptant un import personnalisé."
+        },
+        "xlsx": {
+            "label": "Excel (XLSX)",
+            "note": "Les mêmes colonnes que le CSV dans un classeur mis en forme — le plus simple à vérifier avant l'envoi."
+        },
+        "hdfc": {
+            "label": "HDFC NEFT",
+            "note": "Modèle texte NEFT de première version. Vérifiez un fichier sur le portail HDFC avant un envoi réel."
+        },
+        "icici": {
+            "label": "ICICI NEFT",
+            "note": "Modèle texte NEFT de première version. Vérifiez un fichier sur le portail ICICI avant un envoi réel."
+        },
+        "sbi": {
+            "label": "SBI NEFT",
+            "note": "Modèle texte NEFT de première version. Vérifiez un fichier sur le portail SBI avant un envoi réel."
+        }
+    },
+    "toast": {
+        "readyWithExcluded": "Fichier bancaire prêt : {{records}} payés, {{excluded}} exclus.",
+        "ready_one": "Fichier bancaire prêt avec {{count}} enregistrement.",
+        "ready_many": "Fichier bancaire prêt avec {{count}} d'enregistrements.",
+        "ready_other": "Fichier bancaire prêt avec {{count}} enregistrements."
+    },
+    "columns": {
+        "employee": "Employé",
+        "whyExcluded": "Motif de l'exclusion",
+        "file": "Fichier",
+        "records": "Enregistrements",
+        "total": "Total",
+        "generated": "Généré"
+    },
+    "preparing": "Préparation…",
+    "download": "Télécharger",
+    "downloadFile": "Télécharger le fichier",
+    "noBankFileYet": "Aucun fichier bancaire pour ce cycle pour l'instant",
+    "bankFileInfo": "Le fichier bancaire liste, pour ce cycle, le numéro de compte, l'IFSC et le salaire net de chaque employé — c'est ce que vous transmettez à la banque pour effectuer réellement le virement. Il contient des coordonnées bancaires en clair, seuls les administrateurs RH peuvent donc le générer ou le télécharger.",
+    "chooseFormat": "Choisissez un format",
+    "chooseFormatHint": "Choisissez ce qu'accepte le portail de votre banque. Les montants sont identiques dans tous les formats — seule la mise en page diffère.",
+    "generating": "Génération…",
+    "generateBankFile": "Générer le fichier bancaire",
+    "heldEmployeesNote": "Les employés en attente ne sont jamais inclus — leur paiement est volontairement suspendu.",
+    "adminOnlyNote": "La génération et le téléchargement des fichiers bancaires sont réservés aux administrateurs RH. Vous pouvez voir ci-dessous les fichiers déjà produits.",
+    "bankFileFallback": "Fichier bancaire",
+    "justNow": "à l'instant",
+    "employeesPaid": "Employés payés",
+    "totalAmount": "Montant total",
+    "excluded": "Exclus",
+    "excludedCount_one": "{{count}} employé exclu — corrigez ses coordonnées bancaires et régénérez",
+    "excludedCount_many": "{{count}} d'employés exclus — corrigez leurs coordonnées bancaires et régénérez",
+    "excludedCount_other": "{{count}} employés exclus — corrigez leurs coordonnées bancaires et régénérez",
+    "excludedHint": "Ils ne figurent pas dans ce fichier ; le téléverser tel quel paie tous les autres et les laisse impayés. Ajoutez les coordonnées bancaires manquantes sous ERP → People, puis régénérez le fichier.",
+    "noneExcluded": "Tout le monde sur ce cycle figure dans le fichier — personne n'a été exclu pour coordonnées bancaires manquantes.",
+    "filesGeneratedTitle": "Fichiers générés pour ce cycle",
+    "filesGeneratedHint": "Chaque fichier bancaire créé pour {{scope}} est conservé, afin que vous puissiez prouver plus tard exactement ce qui a été envoyé. La liste des exclus n'est affichée que pour le fichier que vous venez de générer — régénérez pour la revoir.",
+    "scopeMonth": "ce mois",
+    "scopeRun": "ce cycle",
+    "errors": {
+        "loadHistory": "Impossible de charger les fichiers bancaires générés pour ce cycle."
+    },
+    "noBankFileGenerated": "Aucun fichier bancaire généré pour l'instant",
+    "noBankFileGeneratedDescription": "Une fois généré, il est listé ici avec son nombre d'enregistrements et son total, et peut être téléchargé à nouveau."
+}

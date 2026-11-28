@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import lombok.Data;
 import vacademy.io.common.common.dto.CustomFieldValueDTO;
+import vacademy.io.common.payment.dto.AdminDiscountRequestDTO;
 import vacademy.io.common.payment.dto.PaymentInitiationRequestDTO;
 
 import java.util.Date;
@@ -26,6 +27,19 @@ public class LearnerPackageSessionsEnrollDTO {
      * decrements usage_limit at UserPlan creation. Null/blank = no coupon.
      */
     private String couponCode;
+    /**
+     * Rent checkout only: the books the learner picked (rent-level package session ids).
+     * They are not enrolled by this request; the server holds 1 of each until an admin
+     * assigns them. Null/empty for every other checkout.
+     */
+    private java.util.List<String> requestedBookPackageSessionIds;
+
+    /**
+     * Optional. Discount an admin applies on the manual-enroll path
+     * (AdminDirectEnrollService only). Learner enroll paths never read it, so a
+     * learner cannot grant themselves a discount by sending this field.
+     */
+    private AdminDiscountRequestDTO adminDiscount;
 
     /**
      * Optional. Days of course access this enrollment grants, counted from

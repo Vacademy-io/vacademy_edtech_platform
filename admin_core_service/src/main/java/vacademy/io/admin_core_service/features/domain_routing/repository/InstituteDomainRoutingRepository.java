@@ -14,6 +14,20 @@ public interface InstituteDomainRoutingRepository extends CrudRepository<Institu
 
   List<InstituteDomainRouting> findByInstituteId(String instituteId);
 
+  /**
+   * Every institute that has at least one white-label host configured — i.e. the
+   * only institutes whose {@code <role>_portal_base_url} columns a reconcile pass
+   * could ever change. Ordered so a sweep that is cut short by its lock timeout
+   * resumes over the same sequence rather than a random one.
+   */
+  @Query(value = """
+      SELECT DISTINCT institute_id
+      FROM institute_domain_routing
+      WHERE institute_id IS NOT NULL
+      ORDER BY institute_id
+      """, nativeQuery = true)
+  List<String> findDistinctInstituteIds();
+
   @Query(value = """
       SELECT *
       FROM institute_domain_routing
@@ -25,6 +39,34 @@ public interface InstituteDomainRoutingRepository extends CrudRepository<Institu
   Optional<InstituteDomainRouting> resolveMapping(@Param("domain") String domain,
       @Param("subdomain") String subdomain);
 
+  /**
+   * Like resolveMapping, but an exact-subdomain row of the asked role wins over
+   * the wildcard. resolveMapping prefers the wildcard row, so an admin host such
+   * as admin.example.com read the learner wildcard row (its signup flag, theme,
+   * redirect) instead of its own ADMIN row. Falls back to resolveMapping order.
+   * The role column is a comma-separated list of roles allowed to log in, so the
+   * asked role is matched as one of its entries rather than the whole value.
+   * Two such rows on one host would otherwise tie; the one that is exactly the
+   * asked role, then the oldest, wins, so a host never flips between them.
+   */
+  @Query(value = """
+      SELECT *
+      FROM institute_domain_routing
+      WHERE LOWER(domain) = LOWER(:domain)
+        AND (LOWER(subdomain) = LOWER(:subdomain) OR subdomain = '*')
+      ORDER BY CASE WHEN LOWER(subdomain) = LOWER(:subdomain)
+                     AND EXISTS (SELECT 1 FROM unnest(string_to_array(role, ',')) AS t(token)
+                                 WHERE UPPER(BTRIM(t.token)) = UPPER(:role))
+                THEN 0 ELSE 1 END,
+               CASE WHEN subdomain = '*' THEN 1 ELSE 0 END DESC,
+               CASE WHEN UPPER(role) = UPPER(:role) THEN 0 ELSE 1 END,
+               created_at, id
+      LIMIT 1
+      """, nativeQuery = true)
+  Optional<InstituteDomainRouting> resolveMappingForRole(@Param("domain") String domain,
+      @Param("subdomain") String subdomain,
+      @Param("role") String role);
+
   @Query(value = """
       SELECT *
       FROM institute_domain_routing
@@ -35,18 +77,50 @@ public interface InstituteDomainRoutingRepository extends CrudRepository<Institu
   Optional<InstituteDomainRouting> findByInstituteIdAndRole(@Param("instituteId") String instituteId,
       @Param("role") String role);
 
+  /**
+   * The institute's admin-portal row, for links that open the admin app. Its role
+   * list may admit other roles too ("ADMIN,COUNSELLOR"), so ADMIN is matched as
+   * one entry. A row that is exactly ADMIN wins, as it did when only those
+   * matched; then the starred one; then the oldest.
+   */
+  @Query(value = """
+      SELECT *
+      FROM institute_domain_routing
+      WHERE institute_id = :instituteId
+        AND EXISTS (SELECT 1 FROM unnest(string_to_array(role, ',')) AS t(token)
+                    WHERE UPPER(BTRIM(t.token)) = 'ADMIN')
+        AND NOT EXISTS (SELECT 1 FROM unnest(string_to_array(role, ',')) AS t(token)
+                        WHERE UPPER(BTRIM(t.token)) = 'LEARNER')
+      ORDER BY CASE WHEN UPPER(role) = 'ADMIN' THEN 0 ELSE 1 END,
+               CASE WHEN is_primary THEN 0 ELSE 1 END,
+               created_at, id
+      LIMIT 1
+      """, nativeQuery = true)
+  Optional<InstituteDomainRouting> findAdminPortalRow(@Param("instituteId") String instituteId);
+
+  /** Every row on one domain, any subdomain, oldest first. */
+  @Query(value = """
+      SELECT *
+      FROM institute_domain_routing
+      WHERE LOWER(domain) = LOWER(:domain)
+      ORDER BY created_at, id
+      """, nativeQuery = true)
+  List<InstituteDomainRouting> findByDomain(@Param("domain") String domain);
+
+  /**
+   * Every row for one host of an institute, oldest first. Normally one: the
+   * white-label setup keys a row by its host and edits the role list in place.
+   */
   @Query(value = """
       SELECT *
       FROM institute_domain_routing
       WHERE institute_id = :instituteId
         AND LOWER(domain) = LOWER(:domain)
         AND LOWER(subdomain) = LOWER(:subdomain)
-        AND role = :role
-      LIMIT 1
+      ORDER BY created_at, id
       """, nativeQuery = true)
-  Optional<InstituteDomainRouting> findByInstituteIdAndDomainAndSubdomainAndRole(
+  List<InstituteDomainRouting> findByInstituteIdAndDomainAndSubdomain(
       @Param("instituteId") String instituteId,
       @Param("domain") String domain,
-      @Param("subdomain") String subdomain,
-      @Param("role") String role);
+      @Param("subdomain") String subdomain);
 }

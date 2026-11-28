@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -37,6 +38,7 @@ interface CourseForApproval {
 }
 
 export const AdminApprovalDashboard: React.FC = () => {
+    const { t } = useTranslation('studyLibraryAdminApprovalDashboard');
     const navigate = useNavigate();
     const [selectedCourse, setSelectedCourse] = useState<CourseForApproval | null>(null);
     const [rejectReason, setRejectReason] = useState('');
@@ -64,11 +66,11 @@ export const AdminApprovalDashboard: React.FC = () => {
             originalCourseId?: string;
         }) => approveCourse(courseId, originalCourseId),
         onSuccess: () => {
-            toast.success('Course approved successfully');
+            toast.success(t('approveSuccess'));
             refetch();
         },
         onError: (error: Error) => {
-            toast.error(error.message || 'Failed to approve course');
+            toast.error(error.message || t('approveError'));
         },
     });
 
@@ -77,14 +79,14 @@ export const AdminApprovalDashboard: React.FC = () => {
         mutationFn: ({ courseId, reason }: { courseId: string; reason: string }) =>
             rejectCourse(courseId, reason),
         onSuccess: () => {
-            toast.success('Course rejected successfully');
+            toast.success(t('rejectSuccess'));
             setIsRejectDialogOpen(false);
             setRejectReason('');
             setSelectedCourse(null);
             refetch();
         },
         onError: (error: Error) => {
-            toast.error(error.message || 'Failed to reject course');
+            toast.error(error.message || t('rejectError'));
         },
     });
 
@@ -123,9 +125,9 @@ export const AdminApprovalDashboard: React.FC = () => {
     if (error) {
         return (
             <div className="flex h-40 flex-col items-center justify-center text-red-500">
-                <p>Error loading approval dashboard</p>
+                <p>{t('loadError')}</p>
                 <MyButton onClick={() => refetch()} buttonType="secondary" className="mt-2">
-                    Retry
+                    {t('retry')}
                 </MyButton>
             </div>
         );
@@ -138,13 +140,11 @@ export const AdminApprovalDashboard: React.FC = () => {
             {/* Summary Header */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h2 className="text-2xl font-semibold">Course Approval Dashboard</h2>
-                    <p className="text-gray-600">
-                        Review and approve courses submitted by teachers
-                    </p>
+                    <h2 className="text-2xl font-semibold">{t('dashboardTitle')}</h2>
+                    <p className="text-gray-600">{t('dashboardSubtitle')}</p>
                 </div>
                 <Badge variant="secondary" className="px-3 py-1 text-lg">
-                    {coursesArray.length} Pending
+                    {t('pendingCount', { count: coursesArray.length })}
                 </Badge>
             </div>
 
@@ -153,8 +153,8 @@ export const AdminApprovalDashboard: React.FC = () => {
                 <Card>
                     <CardContent className="flex flex-col items-center justify-center py-12">
                         <CheckCircle size={48} className="mb-4 text-green-500" />
-                        <h3 className="mb-2 text-lg font-semibold">All caught up!</h3>
-                        <p className="text-gray-600">No courses pending approval at the moment.</p>
+                        <h3 className="mb-2 text-lg font-semibold">{t('allCaughtUpTitle')}</h3>
+                        <p className="text-gray-600">{t('noPendingCourses')}</p>
                     </CardContent>
                 </Card>
             ) : (
@@ -171,7 +171,7 @@ export const AdminApprovalDashboard: React.FC = () => {
                                             <div className="flex items-center gap-4">
                                                 <span className="flex items-center gap-1">
                                                     <Clock size={14} />
-                                                    Updated{' '}
+                                                    {t('updatedPrefix')}{' '}
                                                     {formatDistanceToNow(
                                                         new Date(course.updatedAt),
                                                         {
@@ -191,11 +191,11 @@ export const AdminApprovalDashboard: React.FC = () => {
                                             }
                                         >
                                             {course.status === 'IN_REVIEW'
-                                                ? 'In Review'
+                                                ? t('statusInReview')
                                                 : course.status}
                                         </Badge>
                                         {course.originalCourseId && (
-                                            <Badge variant="outline">Update</Badge>
+                                            <Badge variant="outline">{t('updateBadge')}</Badge>
                                         )}
                                         <Badge variant="outline" className="text-xs">
                                             v{course.versionNumber}
@@ -220,13 +220,13 @@ export const AdminApprovalDashboard: React.FC = () => {
                                     <div className="grid grid-cols-2 gap-2">
                                         <div>
                                             <span className="font-medium text-gray-600">
-                                                Depth:
+                                                {t('depthLabel')}
                                             </span>
                                             <span className="ml-1">{course.courseDepth}</span>
                                         </div>
                                         <div>
                                             <span className="font-medium text-gray-600">
-                                                Created:
+                                                {t('createdLabel')}
                                             </span>
                                             <span className="ml-1">
                                                 {formatDistanceToNow(new Date(course.createdAt), {
@@ -243,7 +243,7 @@ export const AdminApprovalDashboard: React.FC = () => {
                                         buttonType="secondary"
                                     >
                                         <Eye size={16} className="mr-1" />
-                                        Review
+                                        {t('review')}
                                     </MyButton>
                                     <MyButton
                                         onClick={() => handleApproveCourse(course)}
@@ -251,7 +251,9 @@ export const AdminApprovalDashboard: React.FC = () => {
                                         disabled={approveMutation.isPending}
                                     >
                                         <CheckCircle size={16} className="mr-1" />
-                                        {approveMutation.isPending ? 'Approving...' : 'Approve'}
+                                        {approveMutation.isPending
+                                            ? t('approvingEllipsis')
+                                            : t('approve')}
                                     </MyButton>
                                     <MyButton
                                         onClick={() => handleRejectCourse(course)}
@@ -260,7 +262,7 @@ export const AdminApprovalDashboard: React.FC = () => {
                                         disabled={rejectMutation.isPending}
                                     >
                                         <XCircle size={16} className="mr-1" />
-                                        Reject
+                                        {t('reject')}
                                     </MyButton>
                                 </div>
                             </CardContent>
@@ -274,17 +276,18 @@ export const AdminApprovalDashboard: React.FC = () => {
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
                     <Card className="w-full max-w-md">
                         <CardHeader>
-                            <CardTitle>Reject Course</CardTitle>
+                            <CardTitle>{t('rejectDialogTitle')}</CardTitle>
                             <CardDescription>
-                                Please provide a reason for rejecting &quot;
-                                {selectedCourse.packageName}&quot;
+                                {t('rejectDialogDescription', {
+                                    courseName: selectedCourse.packageName,
+                                })}
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
                             <textarea
                                 value={rejectReason}
                                 onChange={(e) => setRejectReason(e.target.value)}
-                                placeholder="Enter rejection reason..."
+                                placeholder={t('rejectReasonPlaceholder')}
                                 className="h-24 w-full resize-none rounded-md border p-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 autoFocus
                             />
@@ -298,7 +301,7 @@ export const AdminApprovalDashboard: React.FC = () => {
                                     buttonType="secondary"
                                     className="flex-1"
                                 >
-                                    Cancel
+                                    {t('cancel')}
                                 </MyButton>
                                 <MyButton
                                     onClick={submitRejection}
@@ -306,7 +309,9 @@ export const AdminApprovalDashboard: React.FC = () => {
                                     className="flex-1 border-red-600 text-red-600 hover:bg-red-50"
                                     disabled={!rejectReason.trim() || rejectMutation.isPending}
                                 >
-                                    {rejectMutation.isPending ? 'Rejecting...' : 'Reject Course'}
+                                    {rejectMutation.isPending
+                                        ? t('rejectingEllipsis')
+                                        : t('rejectCourseButton')}
                                 </MyButton>
                             </div>
                         </CardContent>

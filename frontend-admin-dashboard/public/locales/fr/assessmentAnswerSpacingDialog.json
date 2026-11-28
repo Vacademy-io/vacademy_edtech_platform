@@ -1,0 +1,29 @@
+{
+    "dialog": {
+        "title": "Gérer l'espacement des réponses"
+    },
+    "info": {
+        "description": "Spécifiez l'espace (en mm) à prévoir après chaque question pour les réponses. La plage valide se situe entre",
+        "and": "et",
+        "value": "{{value}}mm"
+    },
+    "table": {
+        "headers": {
+            "qNo": "N° Q.",
+            "section": "Section",
+            "question": "Question",
+            "type": "Type",
+            "space": "Espace (mm)"
+        },
+        "emptyState": "Aucune question éligible trouvée. Seules les questions à réponse longue et à un mot peuvent avoir un espacement personnalisé.",
+        "type": {
+            "longAnswer": "Réponse longue",
+            "oneWord": "Un mot"
+        },
+        "spaceUnit": "mm"
+    },
+    "actions": {
+        "cancel": "Annuler",
+        "save": "Enregistrer les paramètres"
+    }
+}

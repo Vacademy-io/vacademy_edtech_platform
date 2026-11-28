@@ -30,7 +30,7 @@ import {
 } from '../-utils/helper';
 import { FormProvider, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { sectionsEditQuestionFormSchema } from '../-utils/sections-edit-question-form-schema';
+import { buildSectionsEditQuestionFormSchema } from '../-utils/sections-edit-question-form-schema';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Sortable, SortableDragHandle, SortableItem } from '@/components/ui/sortable';
@@ -48,6 +48,7 @@ import { AssessmentDetailQuestions } from '../-utils/assessment-details-interfac
 import { transformResponseDataToMyQuestionsSchema } from '@/routes/assessment/question-papers/-utils/helper';
 import { MyQuestion } from '@/types/assessments/question-paper-form';
 import { getAssessmentJoinUrl } from '@/lib/learner-portal-url';
+import { useTranslation } from 'react-i18next';
 
 interface Announcement {
     id: string;
@@ -55,8 +56,15 @@ interface Announcement {
     instructions: string | undefined;
 }
 
-export type sectionsEditQuestionFormType = z.infer<typeof sectionsEditQuestionFormSchema>;
+export type sectionsEditQuestionFormType = z.infer<
+    ReturnType<typeof buildSectionsEditQuestionFormSchema>
+>;
 const AssessmentPreview = ({ handleCloseDialog }: { handleCloseDialog: () => void }) => {
+    const { t } = useTranslation([
+        'homeworkCreationAssessmentPreview',
+        'homeworkCreationSectionsEditQuestionFormSchema',
+    ]);
+    const sectionsEditQuestionFormSchema = buildSectionsEditQuestionFormSchema(t);
     const queryClient = useQueryClient();
     const { assessmentId, examType } = Route.useParams();
     const { data: instituteDetails } = useSuspenseQuery(useInstituteQuery());
@@ -286,7 +294,7 @@ const AssessmentPreview = ({ handleCloseDialog }: { handleCloseDialog: () => voi
 
     const onInvalid = (err: unknown) => {
         console.error(err);
-        toast.error('some of your questions are incomplete or needs attentions!', {
+        toast.error(t('errors.incompleteQuestions'), {
             className: 'error-toast',
             duration: 2000,
         });
@@ -375,7 +383,7 @@ const AssessmentPreview = ({ handleCloseDialog }: { handleCloseDialog: () => voi
         <div className="flex flex-col">
             <div className="flex h-20 items-center justify-between bg-primary-100 p-6">
                 <div className="flex items-center">
-                    <h1 className="text-sm font-semibold">Join Link:</h1>
+                    <h1 className="text-sm font-semibold">{t('joinLink.label')}</h1>
                     <div className="flex items-center gap-8">
                         <div className="flex items-center gap-4">
                             <span className="px-3 py-2 text-sm underline">{joinUrl}</span>
@@ -410,9 +418,9 @@ const AssessmentPreview = ({ handleCloseDialog }: { handleCloseDialog: () => voi
                         <DialogTrigger className="cursor-pointer rounded-full border p-2">
                             <SpeakerLow size={20} />
                         </DialogTrigger>
-                        <DialogContent className="no-scrollbar !m-0 flex h-[80vh] !w-full !max-w-[80vw] flex-col gap-4 overflow-y-auto !p-0">
+                        <DialogContent className="no-scrollbar !m-0 flex h-[80vh] !w-full !max-w-[80vw] flex-col gap-4 overflow-y-auto !p-0">{/* design-lint-ignore: vh/vw dialog sizing matches MyDialog primitive */}
                             <h1 className="h-14 bg-primary-50 p-4 font-semibold text-primary-500">
-                                Live Homework Announcement
+                                {t('announcement.dialogTitle')}
                             </h1>
                             <AnnouncementComponent
                                 announcementList={announcementList}
@@ -420,7 +428,7 @@ const AssessmentPreview = ({ handleCloseDialog }: { handleCloseDialog: () => voi
                             />
                             <div className="flex max-h-screen flex-col gap-4 overflow-y-auto p-4 pt-0">
                                 {announcementList.length === 0 ? (
-                                    <p className="text-center">No Announcement Exists</p>
+                                    <p className="text-center">{t('announcement.empty')}</p>
                                 ) : (
                                     announcementList?.map((announcement: Announcement) => (
                                         <Card
@@ -444,7 +452,7 @@ const AssessmentPreview = ({ handleCloseDialog }: { handleCloseDialog: () => voi
                                                     className="text-neutral-400"
                                                 />
                                                 <span className="text-sm text-neutral-600">
-                                                    Today, 11:28 AM
+                                                    {t('announcement.postedTodayAt')}
                                                 </span>
                                             </p>
                                         </Card>
@@ -461,7 +469,7 @@ const AssessmentPreview = ({ handleCloseDialog }: { handleCloseDialog: () => voi
                         className="text-sm"
                         onClick={form.handleSubmit(onSubmit, onInvalid)}
                     >
-                        Save
+                        {t('actions.save')}
                     </MyButton>
                     <MyButton
                         type="submit"
@@ -471,7 +479,7 @@ const AssessmentPreview = ({ handleCloseDialog }: { handleCloseDialog: () => voi
                         className="text-sm"
                         onClick={handleCloseDialog}
                     >
-                        Exit
+                        {t('actions.exit')}
                     </MyButton>
                 </div>
                 <div className="bg-neutral-50 p-4">
@@ -501,9 +509,9 @@ const AssessmentPreview = ({ handleCloseDialog }: { handleCloseDialog: () => voi
                                         className="max-w-sm bg-primary-500 text-xs text-white shadow-none"
                                         onClick={addQuestionToSelectedSection}
                                     >
-                                        Add Question
+                                        {t('actions.addQuestion')}
                                     </Button>
-                                    <div className="flex h-[325vh] w-40 flex-col items-start justify-between gap-4 overflow-x-hidden overflow-y-scroll p-2">
+                                    <div className="flex h-[325vh] w-40 flex-col items-start justify-between gap-4 overflow-x-hidden overflow-y-scroll p-2">{/* design-lint-ignore: viewport-relative sizing has no spacing token */}
                                         <Sortable
                                             value={
                                                 form.getValues(
@@ -567,12 +575,12 @@ const AssessmentPreview = ({ handleCloseDialog }: { handleCloseDialog: () => voi
                                                                                 {getValues(
                                                                                     `sections.${selectedSectionIndex}.questions.${index}.questionType`
                                                                                 ) === 'MCQS'
-                                                                                    ? 'MCQ (Single Correct)'
-                                                                                    : getValues(
-                                                                                            `sections.${selectedSectionIndex}.questions.${index}.questionType`
-                                                                                        ) === 'MCQM'
-                                                                                      ? 'MCQ (Multiple Correct)'
-                                                                                      : 'MCQ (Multiple Correct)'}
+                                                                                    ? t(
+                                                                                          'questionType.MCQS'
+                                                                                      )
+                                                                                    : t(
+                                                                                          'questionType.MCQM'
+                                                                                      )}
                                                                             </h1>
                                                                             <SortableDragHandle
                                                                                 variant="outline"

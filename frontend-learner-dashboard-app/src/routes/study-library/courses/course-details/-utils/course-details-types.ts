@@ -69,9 +69,24 @@ export type SlideCountType = {
 // enrolled-session matching logic on the course-details page.
 export type PackageSessionSummary = {
   id: string;
-  session?: { id: string };
-  level?: { id: string };
-  package_dto?: { id?: string };
+  start_time?: string | null;
+  session?: {
+    id: string;
+    session_name?: string;
+    status?: string;
+    start_date?: string;
+  };
+  level?: {
+    id: string;
+    level_name?: string;
+    duration_in_days?: number | null;
+    thumbnail_id?: string | null;
+  };
+  package_dto?: {
+    id?: string;
+    package_name?: string;
+    thumbnail_file_id?: string | null;
+  };
 };
 
 export type SelectOption = { _id: string; value: string; label: string };

@@ -1,0 +1,22 @@
+{
+    "intro": "Every double-entry posting made for the month, newest first. Entries are written by the module they come from — approving a payroll run posts its salary journal — and each one must balance: total debits equal total credits.",
+    "periodLabel": "Period",
+    "exportCsv": "Export CSV",
+    "preparingCsv": "Preparing CSV…",
+    "exportHint": "Imports into Zoho Books or Tally as a journal voucher batch.",
+    "totalDebits": "Total debits",
+    "totalCredits": "Total credits",
+    "entriesPosted_one": "{{count}} entry posted in {{period}}",
+    "entriesPosted_other": "{{count}} entries posted in {{period}}",
+    "emptyState": {
+        "title": "No journal entries for {{period}}",
+        "description": "Journals are posted automatically — a payroll run writes its salary journal the moment it is APPROVED. If you expected entries here, check whether that month's run has been approved yet."
+    },
+    "toasts": {
+        "downloaded": "Journal for {{period}} downloaded"
+    },
+    "errors": {
+        "loadFailed": "Couldn't load the journal for {{period}}.",
+        "exportFailed": "Could not export the journal for this month."
+    }
+}

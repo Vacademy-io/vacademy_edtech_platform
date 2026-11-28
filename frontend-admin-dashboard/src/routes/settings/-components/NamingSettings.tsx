@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { Trans, useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -65,6 +66,10 @@ export enum OtherTerms {
     Invite = 'Invite',
     Inventory = 'Inventory',
     SubOrg = 'SubOrg',
+    /** Role label on a learner enrolled through a Sub-Org (org role LEARNER). */
+    SubOrgMember = 'SubOrgMember',
+    /** Role label on a Sub-Org's admin (org role ADMIN / ROOT_ADMIN). */
+    SubOrgAdmin = 'SubOrgAdmin',
 }
 
 export enum SystemTerms {
@@ -89,6 +94,8 @@ export enum SystemTerms {
     Invite = 'Invite',
     Inventory = 'Inventory',
     SubOrg = 'Sub-Org',
+    SubOrgMember = 'Sub-Org Member',
+    SubOrgAdmin = 'Sub-Org Admin',
     /** @deprecated Use SystemTerms.Subject instead */
     Subjects = 'Subject',
     /** @deprecated Use SystemTerms.Module instead */
@@ -142,6 +149,7 @@ const mergeWithDefaults = (
     });
 
 export default function NamingSettings() {
+    const { t } = useTranslation('settingsNaming');
     const [settings, setSettings] = useState<NamingSettingsType[] | null>(null);
     const { getValue: getNamingSettingsStorage, setValue: setNamingSettingsStorage } = useLocalStorage<
         NamingSettingsType[]
@@ -222,9 +230,7 @@ export default function NamingSettings() {
                 if (!savedSettings || savedSettings.length === 0) {
                     setSettings(defaultNamingSettings);
                 }
-                toast.error(
-                    'Failed to sync settings with server.'
-                );
+                toast.error(t('toasts.syncFailed'));
             }
         };
 
@@ -289,17 +295,17 @@ export default function NamingSettings() {
             setNamingSettingsStorage(settings);
             notifyNamingSettingsUpdated();
             setHasChanges(false);
-            toast.success('Settings saved');
+            toast.success(t('toasts.settingsSaved'));
         } catch (error) {
             console.error('Failed to save settings:', error);
-            toast.error('Failed to save settings. Please try again.');
+            toast.error(t('toasts.saveFailed'));
         } finally {
             setIsLoading(false);
         }
     };
 
     if (!settings) {
-        return <div className="flex items-center justify-center p-8">Loading...</div>;
+        return <div className="flex items-center justify-center p-8">{t('loading')}</div>;
     }
 
     const terminologyData = settings;
@@ -321,20 +327,20 @@ export default function NamingSettings() {
                 <div className="space-y-1">
                     <h1 className="flex items-center gap-2 text-lg font-bold">
                         <GearSix className="size-6" />
-                        Naming Settings
+                        {t('header.title')}
                     </h1>
                     <p className="text-sm text-muted-foreground">
-                        Customize the naming conventions used throughout your institute
+                        {t('header.description')}
                         <br />
                         <span className="text-xs  text-primary-500">
-                            Please enter singular form of the term
+                            {t('header.singularHint')}
                         </span>
                     </p>
                 </div>
                 <div className="flex items-center gap-2">
                     <Button variant="outline" onClick={resetAllToDefault} disabled={isLoading}>
                         <ArrowCounterClockwise className="mr-2 size-4" />
-                        Reset All
+                        {t('actions.resetAll')}
                     </Button>
                     <MyButton
                         onClick={saveSettings}
@@ -342,25 +348,35 @@ export default function NamingSettings() {
                         className="bg-primary-500"
                     >
                         <FloppyDisk className="mr-2 size-4" />
-                        {isLoading ? 'Saving...' : 'Save Changes'}
+                        {isLoading ? t('actions.saving') : t('actions.saveChanges')}
                     </MyButton>
                 </div>
             </div>
 
             {hasChanges && (
                 <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
-                    <p className="text-sm text-amber-800">
-                        You have unsaved changes. Don&apos;t forget to save your updates.
-                    </p>
+                    <p className="text-sm text-amber-800">{t('unsavedChangesBanner')}</p>
                 </div>
             )}
 
             <div className="grid gap-6">
                 {/* Reusable term row renderer */}
                 {[
-                    { title: 'Content & Structure', description: 'Customize terms related to course content and structure', terms: contentTerms },
-                    { title: 'User Roles', description: 'Customize terms for different user roles in your institute', terms: roleTerms },
-                    { title: 'Other', description: 'Customize terms for other features', terms: otherTerms },
+                    {
+                        title: t('sections.contentStructure.title'),
+                        description: t('sections.contentStructure.description'),
+                        terms: contentTerms,
+                    },
+                    {
+                        title: t('sections.userRoles.title'),
+                        description: t('sections.userRoles.description'),
+                        terms: roleTerms,
+                    },
+                    {
+                        title: t('sections.other.title'),
+                        description: t('sections.other.description'),
+                        terms: otherTerms,
+                    },
                 ].map((section) => (
                     <Card key={section.title}>
                         <CardHeader>
@@ -392,7 +408,7 @@ export default function NamingSettings() {
                                     </div>
                                     <div className="space-y-2">
                                         <Label htmlFor={`custom-${item.key}`} className="text-sm">
-                                            Singular
+                                            {t('row.singular')}
                                         </Label>
                                         <Input
                                             id={`custom-${item.key}`}
@@ -405,7 +421,7 @@ export default function NamingSettings() {
                                     </div>
                                     <div className="space-y-2">
                                         <Label htmlFor={`plural-${item.key}`} className="text-sm">
-                                            Plural
+                                            {t('row.plural')}
                                         </Label>
                                         <Input
                                             id={`plural-${item.key}`}
@@ -427,7 +443,7 @@ export default function NamingSettings() {
                                             }
                                         >
                                             <ArrowCounterClockwise className="mr-1 size-3" />
-                                            Reset
+                                            {t('row.reset')}
                                         </Button>
                                     </div>
                                 </div>
@@ -441,8 +457,10 @@ export default function NamingSettings() {
 
             <div className="text-sm text-muted-foreground">
                 <p>
-                    <strong>Note:</strong> Changes will be applied across your entire institute once
-                    saved. All users will see the updated terminology in their interface.
+                    <Trans i18nKey="settingsNaming:footerNote">
+                        <strong>Note:</strong> Changes will be applied across your entire institute
+                        once saved. All users will see the updated terminology in their interface.
+                    </Trans>
                 </p>
             </div>
         </div>

@@ -1,0 +1,22 @@
+{
+    "dropzoneHint": "यहां दस्तावेज़ खींचें और छोड़ें, या चुनने के लिए क्लिक करें",
+    "dropzoneFormats": "DOC या DOCX, 25 MB तक",
+    "invalidFileType": "कृपया केवल दस्तावेज़ फ़ाइलें अपलोड करें (DOC, DOCX)",
+    "fileTooLarge": "फ़ाइल {{sizeMb}} MB की है। अधिकतम आकार 25 MB है।",
+    "fileSelected": "दस्तावेज़ सफलतापूर्वक चुना गया",
+    "selectFileFirst": "कृपया पहले एक फ़ाइल चुनें",
+    "titleRequired": "कृपया दस्तावेज़ के लिए एक शीर्षक दर्ज करें",
+    "stageStarting": "शुरू हो रहा है…",
+    "stageConverting": "दस्तावेज़ रूपांतरित हो रहा है…",
+    "stageProcessingImages": "छवियां संसाधित हो रही हैं…",
+    "stageGeneratingPreview": "पूर्वावलोकन तैयार हो रहा है…",
+    "stageSaving": "स्लाइड सहेजी जा रही है…",
+    "stageFinalizing": "अंतिम रूप दिया जा रहा है…",
+    "stageDone": "पूर्ण",
+    "uploadSuccess": "दस्तावेज़ सफलतापूर्वक अपलोड हुआ!",
+    "conversionFailed": "रूपांतरण विफल रहा। कृपया पुनः प्रयास करें।",
+    "reorderFailed": "स्लाइड बन गई लेकिन क्रम बदलना विफल रहा",
+    "processingHint": "इसमें कुछ क्षण लग सकते हैं…",
+    "uploading": "अपलोड हो रहा है…",
+    "uploadDocument": "दस्तावेज़ अपलोड करें"
+}

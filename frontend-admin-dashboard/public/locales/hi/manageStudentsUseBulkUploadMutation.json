@@ -1,0 +1,7 @@
+{
+    "toast": {
+        "uploadSuccess": "CSV सफलतापूर्वक अपलोड हुई",
+        "uploadFailed": "छात्रों को अपलोड करने में विफल",
+        "unexpectedError": "एक अनपेक्षित त्रुटि हुई"
+    }
+}

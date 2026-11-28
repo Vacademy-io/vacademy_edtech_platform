@@ -1,0 +1,17 @@
+{
+    "validation": {
+        "titleRequired": "Title is required",
+        "startDateRequired": "Start date is required",
+        "startTimeRequired": "Start time is required",
+        "durationGreaterThanZero": "Duration must be greater than zero",
+        "linkRequired": "Link is required",
+        "invalidUrl": "Invalid URL",
+        "fieldLabelRequired": "Field label is required",
+        "fieldLabelTooLong": "Field label too long",
+        "timeZoneRequired": "Time zone is required",
+        "addAtLeastOneSession": "Add at least one session",
+        "selectTime": "Select time",
+        "assignAtLeastOneBatch": "Assign at least one batch to this private class.",
+        "emailOrPhoneRequired": "Keep either Email or Phone Number required — a registration needs one of them to identify the learner."
+    }
+}

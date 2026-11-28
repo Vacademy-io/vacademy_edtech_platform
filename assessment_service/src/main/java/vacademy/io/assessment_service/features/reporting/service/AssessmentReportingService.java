@@ -123,6 +123,7 @@ public class AssessmentReportingService {
                 LEFT JOIN max_marks m ON m.assessment_id = r.assessment_id
                 WHERE r.institute_id = ?
                   AND sa.created_at >= ? AND sa.created_at < ?
+                  AND r.source IS DISTINCT FROM 'COPY_CHECK_ONLY'
             )
             """;
 

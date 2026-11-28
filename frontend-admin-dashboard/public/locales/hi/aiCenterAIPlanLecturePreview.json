@@ -1,0 +1,10 @@
+{
+    "failedDialog": {
+        "title": "प्रश्न लोड करने में विफल",
+        "message": "फिर से प्रयास करने के लिए <retryLink>यहाँ</retryLink> क्लिक करें"
+    },
+    "retryButton": "पुनः प्रयास करें",
+    "viewPlanButton": "योजना देखें",
+    "loading": "लोड हो रहा है…",
+    "noDataToast": "कोई डेटा मौजूद नहीं है!"
+}

@@ -1,0 +1,562 @@
+---
+title: "Quickstart: Next.js App Router"
+sidebarTitle: "Quickstart"
+description: "A server-rendered course grid, an optional course page with metadata and JSON-LD, and a sitemap."
+---
+
+This builds, in a Next.js 15 App Router project:
+
+1. a typed fetch helper, `lib/vacademy.ts`;
+2. a server-rendered course grid with stream tabs, linking each course to its hosted page;
+3. optionally, your own course page with `generateMetadata` and schema.org JSON-LD;
+4. `app/sitemap.ts`.
+
+Every fetch runs on your server, so pages are fully rendered HTML for search engines and the key is never needed in the browser.
+
+## 1. Add the key
+
+Create a publishable key in the Vacademy dashboard under **Settings → Integrations → Catalogue API & websites** ([details](/keys-and-websites)). Put it in `.env.local`, and in your host's environment variables (for example Vercel → Project → Settings → Environment Variables):
+
+```bash .env.local
+VACADEMY_CATALOG_KEY=vak_pub_…
+```
+
+Check it:
+
+```bash
+curl https://api.vacademy.ai/catalog/v1/site -H "X-API-Key: $VACADEMY_CATALOG_KEY"
+```
+
+<Note>
+Server-side requests (no `Origin` header) work without verifying a website. You only need a [verified website](/keys-and-websites#verify-your-website) for requests made from browser JavaScript.
+</Note>
+
+## 2. The fetch helper
+
+```ts lib/vacademy.ts
+const BASE = 'https://api.vacademy.ai/catalog/v1';
+
+export type Language = { code: string; label: string; chip: string };
+export type Format = { key: string; label: string };
+export type Place = { slug: string; label: string };
+export type Availability = 'available' | 'coming_soon' | 'not_started' | 'closed';
+export type VariantPrice = {
+  amount: number;
+  compare_at_amount: number | null;
+  currency: string | null;
+  is_free: boolean;
+};
+export type Price = VariantPrice & { varies: boolean; min_amount: number; max_amount: number };
+export type Sort = 'newest' | 'oldest' | 'price_asc' | 'price_desc' | 'rating' | 'title' | 'title_desc' | 'popular';
+export type Badge = 'bestseller' | 'popular' | 'new' | 'free';
+
+export type Variant = {
+  package_session_id: string;
+  enroll_invite_id: string | null;
+  title: string | null;
+  level: string | null;
+  session_id: string | null;
+  session_name: string | null;
+  language: Language | null;
+  url: string | null;
+  availability: Availability;
+  price: VariantPrice | null;
+};
+
+export type CourseSummary = {
+  id: string;
+  title: string;
+  subtitle: string | null;
+  image_url: string | null;
+  images: { preview_url: string | null; banner_url: string | null; thumbnail_url: string | null };
+  url: string | null;
+  formats: Format[];
+  stream: Place | null;
+  category: Place | null;
+  languages: Language[];
+  tags: string[];
+  level: string | null;
+  availability: Availability;
+  price_visible: boolean;
+  price: Price | null;
+  instructors: { name: string; image_url: string | null }[];
+  rating: number | null;
+  created_at: string | null;
+  badges: Badge[];
+  popularity_rank: number | null;
+  duration_minutes: number | null;
+  available_slots: number | null;
+  max_seats: number | null;
+  package_type: string | null;
+  coming_soon: {
+    launch_date: string | null;
+    button_text: string | null;
+    ribbon_text: string | null;
+    notify_campaign_id: string | null;
+  } | null;
+  variants: Variant[];
+};
+
+export type CourseDetail = CourseSummary & {
+  description_html: string | null;
+  description_text: string | null;
+  about_html: string | null;
+  about_text: string | null;
+  why_learn_html: string | null;
+  who_should_learn_html: string | null;
+  mode: 'self_paced' | 'live' | null;
+  faqs: { question: string; answer_html: string | null }[];
+  preview_video:
+    | { kind: 'youtube' | 'vimeo'; id: string; embed_url: string }
+    | { kind: 'url'; url: string; embed_url: null }
+    | null;
+  authors: { name: string; subtitle: string | null; bio_html: string | null; image_url: string | null }[];
+  series: {
+    name: string;
+    steps: { course_id: string; title: string; url: string | null; current: boolean }[];
+  } | null;
+  seo: { title: string; description: string | null; image_url: string | null; canonical_url: string | null };
+  structured_data: Record<string, unknown>;
+};
+
+export type Page<T> = { data: T[]; page: number; page_size: number; total: number; has_more: boolean };
+
+type Count<K extends string> = { [k in K]: string } & { label: string; count: number };
+export type Facets = {
+  streams: Count<'slug'>[];
+  categories: Count<'slug'>[];
+  formats: Count<'key'>[];
+  languages: Count<'code'>[];
+  levels: Count<'key'>[];
+  sessions: Count<'id'>[];
+  instructors: Count<'key'>[];
+  tags: Count<'key'>[];
+  badges: Count<'key'>[];
+  price: { free: number; paid: number; under: { max: number; count: number }[] };
+  custom: Record<string, Record<string, number>>;
+};
+export type CourseList = Page<CourseSummary> & { facets?: Facets };
+
+export type Catalog = {
+  default_sort: Sort;
+  sort_options: Sort[];
+  show_filter_counts: boolean;
+  quick_filters: {
+    id: string;
+    label: string;
+    kind: 'popular' | 'new' | 'bestseller' | 'free' | 'language' | 'price_max';
+    value: string | number | null;
+    params: Record<string, string | number>;
+  }[];
+  price_filter: { enabled: boolean; label: string | null; show_free: boolean; max_options: number[] };
+  language_filter: { enabled: boolean; label: string | null };
+  category_filter: {
+    enabled: boolean;
+    label: string | null;
+    scope: 'stream' | 'all';
+    label_mode: 'title' | 'subtitle' | 'both';
+    sort: 'folder' | 'count';
+    hide_coming_soon: boolean;
+    visible_count: number | null;
+    show_all_label: string | null;
+  };
+  badges: { enabled: boolean; types: Badge[]; new_days: number; bestseller_top: number; max: number };
+  custom_filters: {
+    id: string;
+    label: string | null;
+    source: 'course_formats' | null;
+    options: { id: string; label: string }[];
+    show_counts: boolean;
+    show_empty: boolean;
+    visible_count: number | null;
+  }[];
+  popular_searches: {
+    label: string;
+    kind: 'search' | 'stream' | 'quick_filter' | 'route';
+    search: string | null;
+    stream: string | null;
+    category: string | null;
+    quick_filter: string | null;
+    route: string | null;
+  }[];
+};
+
+export type Site = {
+  institute: { id: string; name: string | null; logo_url: string | null };
+  course_base_url: string | null;
+  languages: Language[];
+  formats: Format[];
+  currency: string | null;
+  price_visible: boolean;
+  catalog: Catalog;
+};
+
+export type Category = {
+  slug: string;
+  label: string;
+  subtitle: string | null;
+  image_url: string | null;
+  coming_soon: boolean;
+  course_count: number;
+  accent_color: string | null;
+  notify_campaign_id: string | null;
+};
+export type Stream = Category & { tag: string | null; categories: Category[] };
+
+export type LearningPathSummary = {
+  code: string;
+  name: string;
+  stream_slug: string | null;
+  image_url: string | null;
+  step_count: number;
+};
+export type LearningPath = {
+  code: string;
+  name: string;
+  description_html: string | null;
+  steps: { position: number; course: CourseSummary }[];
+};
+
+export type CourseQuery = {
+  q?: string;
+  // comma lists: OR within a parameter, AND across parameters
+  stream?: string;
+  category?: string;
+  format?: string;
+  language?: string;
+  tag?: string;
+  level?: string;
+  instructor?: string;
+  session?: string;
+  badge?: string;
+  custom?: string; // "<group id>:<option id>,…"
+  price?: 'free' | 'paid';
+  price_min?: number;
+  price_max?: number;
+  availability?: Availability;
+  page?: number;
+  page_size?: number;
+  sort?: Sort;
+  facets?: boolean;
+};
+
+export class VacademyError extends Error {
+  constructor(
+    public status: number,
+    public code: string,
+    message: string,
+    public requestId?: string,
+  ) {
+    super(message);
+  }
+}
+
+type Query = Record<string, string | number | boolean | undefined>;
+
+async function api<T>(path: string, query: Query = {}): Promise<T> {
+  const url = new URL(BASE + path);
+  for (const [k, v] of Object.entries(query)) {
+    if (v !== undefined && v !== '') url.searchParams.set(k, String(v));
+  }
+  const res = await fetch(url, {
+    headers: { 'X-API-Key': process.env.VACADEMY_CATALOG_KEY! },
+    next: { revalidate: 60 },
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => null);
+    throw new VacademyError(
+      res.status,
+      body?.error?.code ?? 'http_error',
+      body?.error?.message ?? res.statusText,
+      body?.error?.request_id,
+    );
+  }
+  return res.json() as Promise<T>;
+}
+
+export const vacademy = {
+  site: () => api<Site>('/site'),
+  courses: (q: CourseQuery = {}) => api<CourseList>('/courses', q),
+  course: (id: string, language?: string) =>
+    api<CourseDetail>(`/courses/${encodeURIComponent(id)}`, { language }),
+  streams: () => api<{ source: 'folder_library' | 'tags' | null; streams: Stream[] }>('/streams'),
+  learningPaths: (stream?: string) => api<{ data: LearningPathSummary[] }>('/learning-paths', { stream }),
+  learningPath: (code: string) => api<LearningPath>(`/learning-paths/${encodeURIComponent(code)}`),
+  sitemap: () =>
+    api<{ data: { url: string; type: 'course'; id: string; lastmod: string | null }[] }>('/sitemap'),
+};
+
+/** The price line of a course card, as the hosted catalogue shows it. */
+export function priceLabel(c: CourseSummary): string | null {
+  if (c.availability === 'coming_soon') return 'Coming soon';
+  if (c.availability === 'not_started') return 'Enrolment opens soon';
+  if (c.availability === 'closed') return 'Enrolment closed';
+  if (!c.price) return 'See price'; // the institute hides prices
+  if (c.price.is_free) return 'Free';
+  const amount = c.price.varies ? c.price.min_amount : c.price.amount;
+  const money = new Intl.NumberFormat('en-IN', {
+    style: 'currency',
+    currency: c.price.currency ?? 'INR',
+    maximumFractionDigits: 0,
+  }).format(amount);
+  return c.price.varies ? `From ${money}` : money;
+}
+```
+
+`next: { revalidate: 60 }` matches the API's own 60-second cache: Next.js serves the cached response and refreshes it in the background at most once a minute, whatever your traffic.
+
+## 3. A course grid
+
+```tsx app/courses/page.tsx
+import Link from 'next/link';
+import { vacademy, priceLabel, type CourseSummary } from '@/lib/vacademy';
+
+type Props = { searchParams: Promise<{ stream?: string; page?: string }> };
+
+export default async function CoursesPage({ searchParams }: Props) {
+  const { stream, page } = await searchParams;
+  const pageNo = Math.max(1, Number(page) || 1);
+  const [{ streams }, courses] = await Promise.all([
+    vacademy.streams(),
+    vacademy.courses({ stream, page: pageNo, page_size: 24 }),
+  ]);
+
+  return (
+    <main>
+      <h1>Courses</h1>
+      <nav>
+        <Link href="/courses">All</Link>
+        {streams
+          .filter((s) => !s.coming_soon)
+          .map((s) => (
+            <Link key={s.slug} href={`/courses?stream=${s.slug}`} aria-current={s.slug === stream ? 'page' : undefined}>
+              {s.subtitle ?? s.label}
+            </Link>
+          ))}
+      </nav>
+
+      <ul className="course-grid">
+        {courses.data.map((c) => (
+          <li key={c.id}>
+            <CourseCard course={c} />
+          </li>
+        ))}
+      </ul>
+
+      {courses.has_more && (
+        <Link href={`/courses?${new URLSearchParams({ ...(stream ? { stream } : {}), page: String(pageNo + 1) })}`}>
+          Next page
+        </Link>
+      )}
+    </main>
+  );
+}
+
+function CourseCard({ course: c }: { course: CourseSummary }) {
+  if (!c.url) return null; // the institute has not set its course page address yet
+  return (
+    <a href={c.url}>
+      {c.image_url && <img src={c.image_url} alt="" width={400} height={225} loading="lazy" />}
+      <h2>{c.title}</h2>
+      {c.subtitle && <p>{c.subtitle}</p>}
+      <p>{c.formats.map((f) => f.label).join(' · ')}</p>
+      <p>{priceLabel(c)}</p>
+    </a>
+  );
+}
+```
+
+Each card links to `course.url`, the course's page on the hosted catalogue site, where the visitor picks a version, adds it to the cart and pays.
+
+<Tip>
+To use `next/image` instead of `<img>`, allow the image host in `next.config.ts` under `images.remotePatterns`. Read the host from a real `image_url`.
+</Tip>
+
+### Filters, sorting and facets
+
+`GET /courses` takes the hosted catalogue's filters as comma lists, eight sorts, and `facets=true` for live counts per option. A filter bar with language chips, a "Free" toggle and the site's own sort menu, all as plain links:
+
+```tsx app/courses/filters.tsx
+import Link from 'next/link';
+import { vacademy, type Sort } from '@/lib/vacademy';
+
+type Params = { stream?: string; language?: string; price?: 'free'; sort?: Sort };
+
+const SORT_LABELS: Record<Sort, string> = {
+  newest: 'Newest', oldest: 'Oldest', price_asc: 'Price: low to high', price_desc: 'Price: high to low',
+  rating: 'Rating', title: 'Name A–Z', title_desc: 'Name Z–A', popular: 'Popular',
+};
+
+export async function FilteredCourses({ params }: { params: Params }) {
+  const { catalog, languages } = await vacademy.site();
+  const sort = params.sort ?? catalog.default_sort; // the API itself defaults to newest
+  const courses = await vacademy.courses({ ...params, sort, facets: true, page_size: 24 });
+  const href = (p: Partial<Params>) => `/courses?${new URLSearchParams({ ...params, ...p } as Record<string, string>)}`;
+  const counts = courses.facets!;
+
+  return (
+    <>
+      <nav aria-label="Language">
+        {counts.languages.map((l) => (
+          <Link key={l.code} href={href({ language: l.code })} aria-current={params.language === l.code || undefined}>
+            {languages.find((x) => x.code === l.code)?.chip ?? l.label} ({l.count})
+          </Link>
+        ))}
+        {counts.price.free > 0 && <Link href={href({ price: 'free' })}>Free ({counts.price.free})</Link>}
+      </nav>
+      <nav aria-label="Sort">
+        {catalog.sort_options.map((s) => (
+          <Link key={s} href={href({ sort: s })} aria-current={s === sort || undefined}>
+            {SORT_LABELS[s]}
+          </Link>
+        ))}
+      </nav>
+      <p>{courses.total} courses</p>
+      {/* render courses.data with <CourseCard> as above */}
+    </>
+  );
+}
+```
+
+- Each facet group is counted against the visitor's **other** filters, so the language chips keep their counts after one is picked.
+- `language=hi&price=free` means a free **Hindi** version: version-level filters must all hold on the same version.
+- `catalog` mirrors the hosted site's Courses settings (sort menu, quick filters, badges, custom filter groups). See [Courses](/concepts/courses#listing-filtering-and-sorting) for every parameter.
+
+## 4. Choose where course pages live
+
+<Tabs>
+  <Tab title="Link to hosted pages (recommended)">
+    Your site lists courses; each card links to `course.url` on the hosted catalogue site. The hosted page already has its own metadata, structured data and checkout. You do not build a course page.
+
+    **Example: Brahm Varchas.** The main site `brahmvarchas.org` is a custom Next.js site. It renders stream tabs and course grids from this API on the server. Every card links to the course's page on `learning.brahmvarchas.org/store/…`, where enrolment, cart and payment happen. Enquiry forms on the main site post to [`POST /leads`](/guides/enquiries).
+
+    In this setup, **do not** put course URLs in your own sitemap: they are on another host (`learning.brahmvarchas.org`), and a sitemap may only list URLs of its own host. Your sitemap lists your own pages (home, the course grid, stream pages).
+  </Tab>
+  <Tab title="Host your own course pages">
+    Build `app/courses/[id]/page.tsx` from `GET /courses/{id}` (below) and send the visitor to `course.url` (or a version's `variants[].url`) only for enrolment. Then your page is the one you want indexed, so its canonical URL and sitemap entry are **yours**, not the hosted page's. See [Course pages and SEO](/concepts/course-pages-and-seo).
+  </Tab>
+</Tabs>
+
+### Your own course page (optional)
+
+```tsx app/courses/[id]/page.tsx
+import type { Metadata } from 'next';
+import { notFound } from 'next/navigation';
+import { vacademy, VacademyError, priceLabel } from '@/lib/vacademy';
+
+const SITE = 'https://www.example.org'; // your site
+
+type Props = { params: Promise<{ id: string }> };
+
+async function load(id: string) {
+  try {
+    return await vacademy.course(id);
+  } catch (e) {
+    if (e instanceof VacademyError && e.status === 404) notFound();
+    throw e;
+  }
+}
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { id } = await params;
+  const { seo, id: courseId } = await load(id);
+  const url = `${SITE}/courses/${courseId}`;
+  return {
+    title: seo.title,
+    description: seo.description ?? undefined,
+    alternates: { canonical: url }, // your page; seo.canonical_url is the hosted page
+    openGraph: {
+      title: seo.title,
+      description: seo.description ?? undefined,
+      url,
+      images: seo.image_url ? [seo.image_url] : undefined,
+    },
+  };
+}
+
+export async function generateStaticParams() {
+  const { data } = await vacademy.sitemap();
+  return data.map((entry) => ({ id: entry.id }));
+}
+
+export default async function CoursePage({ params }: Props) {
+  const { id } = await params;
+  const course = await load(id);
+  const jsonLd = { ...course.structured_data, url: `${SITE}/courses/${course.id}` };
+
+  return (
+    <main>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, '\\u003c') }}
+      />
+      <h1>{course.title}</h1>
+      {course.image_url && <img src={course.image_url} alt="" />}
+      <p>{priceLabel(course)}</p>
+      {course.url && <a href={course.url}>Enrol now</a>}
+
+      {course.languages.length > 1 && (
+        <p>
+          Also in:{' '}
+          {course.variants
+            .filter((v) => v.language && v.url)
+            .map((v) => (
+              <a key={v.package_session_id} href={v.url!}>
+                {v.language!.label}
+              </a>
+            ))}
+        </p>
+      )}
+
+      {course.description_html && <div dangerouslySetInnerHTML={{ __html: course.description_html }} />}
+      {course.about_html && <div dangerouslySetInnerHTML={{ __html: course.about_html }} />}
+
+      {course.faqs.length > 0 && (
+        <section>
+          <h2>FAQs</h2>
+          {course.faqs.map((f) => (
+            <details key={f.question}>
+              <summary>{f.question}</summary>
+              {f.answer_html && <div dangerouslySetInnerHTML={{ __html: f.answer_html }} />}
+            </details>
+          ))}
+        </section>
+      )}
+    </main>
+  );
+}
+```
+
+- `generateMetadata` and the page both call `load(id)`; Next.js runs that fetch once per request.
+- Every `*_html` field is sanitised by the API (jsoup relaxed safelist; images only from `http(s)` URLs), so it is safe to render as HTML.
+- `generateStaticParams` pre-renders every course at build time. Courses published later render on their first visit.
+- `structured_data` describes the course for search engines. Its `offers[].url` stays the hosted page, where the course is bought; the snippet sets the top-level `url` to your page.
+
+## 5. Sitemap
+
+```ts app/sitemap.ts
+import type { MetadataRoute } from 'next';
+import { vacademy } from '@/lib/vacademy';
+
+const SITE = 'https://www.example.org';
+
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  const pages: MetadataRoute.Sitemap = [{ url: `${SITE}/` }, { url: `${SITE}/courses` }];
+
+  // Only when you host your own course pages (step 4, second tab).
+  // GET /sitemap returns the HOSTED pages' URLs; map each id to your own route.
+  const { data } = await vacademy.sitemap();
+  for (const entry of data) {
+    pages.push({ url: `${SITE}/courses/${entry.id}`, lastModified: entry.lastmod ?? undefined });
+  }
+  return pages;
+}
+```
+
+If you link to hosted pages instead, drop the loop: course pages belong to the hosted site's host, not yours.
+
+## Next
+
+- [Send enquiries](/guides/enquiries) from a server action.
+- [Courses](/concepts/courses): versions, languages, prices and availability.
+- [Going live](/guides/going-live): the checklist.

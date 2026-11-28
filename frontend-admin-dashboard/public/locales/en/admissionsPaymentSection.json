@@ -1,0 +1,130 @@
+{
+    "common": {
+        "notAvailable": "N/A",
+        "remove": "Remove",
+        "generateButton": "Generate",
+        "confirmPaymentButton": "Confirm Payment",
+        "recordingEllipsis": "Recording…",
+        "optionalLabel": "(optional)"
+    },
+    "defaults": {
+        "feeName": "Application / Registration Fee",
+        "recipientName": "Parent"
+    },
+    "paymentMethodLabel": {
+        "online": "Online payment",
+        "upi": "UPI payment"
+    },
+    "paymentModeLabels": {
+        "upi": "UPI",
+        "cash": "Cash",
+        "card": "Card",
+        "cheque": "Cheque",
+        "online": "Online",
+        "sendLink": "Payment Link",
+        "manual": "Manual"
+    },
+    "upiDeepLink": {
+        "paymentNote": "{{feeName}} payment"
+    },
+    "toast": {
+        "linkRequiresApplication": "Please submit the application first to generate a payment link.",
+        "paymentOptionNotConfigured": "Payment option not configured.",
+        "linkCopied": "{{method}} link copied to clipboard!",
+        "upiNotConfigured": "UPI ID not configured for this payment stage.",
+        "upiLinkCopied": "UPI deep link copied! Send to parent to open in any UPI app.",
+        "linkEmailSent": "Payment link sent to email successfully",
+        "linkEmailFailed": "Failed to send email. Please try again.",
+        "proofUploaded": "Proof uploaded",
+        "proofUploadFailed": "Failed to upload proof",
+        "applicationNotSubmitted": "Application not submitted yet. Please submit the form first.",
+        "enterTransactionId": "Please enter or generate a transaction ID",
+        "paymentRecorded": "Payment recorded successfully!",
+        "paymentRecordFailed": "Failed to record payment. Please try again."
+    },
+    "paid": {
+        "title": "Payment Received",
+        "summaryLine": "{{amount}} • Mode: {{mode}} • Date: {{date}}",
+        "todayFallback": "Today",
+        "refLabel": "Ref: {{transactionId}}",
+        "undoButton": "↩ Undo — Mark as Unpaid"
+    },
+    "receipt": {
+        "receiptNoLabel": "Receipt No.",
+        "dateLabel": "Date",
+        "studentLabel": "Student",
+        "feeDescriptionLabel": "Fee Description",
+        "paymentModeLabel": "Payment Mode",
+        "transactionIdLabel": "Transaction ID",
+        "amountPaidLabel": "Amount Paid",
+        "downloadButton": "Download Receipt"
+    },
+    "header": {
+        "title": "Complete Your Payment",
+        "subtitle": "One-time fee to submit application"
+    },
+    "invoice": {
+        "title": "Fee Payment",
+        "gstLabel": "GST / Taxes",
+        "processingChargeLabel": "Processing Charge",
+        "waivedLabel": "Waived",
+        "totalDueLabel": "Total Amount Due"
+    },
+    "tabs": {
+        "payNow": "Pay Now",
+        "generateLink": "Generate Link"
+    },
+    "methods": {
+        "sectionTitle": "Pay Now",
+        "upi": {
+            "label": "UPI / QR Code",
+            "desc": "Scan & pay instantly"
+        },
+        "cash": {
+            "label": "Cash Received",
+            "desc": "Record cash payment"
+        }
+    },
+    "cashPanel": {
+        "title": "Cash Payment",
+        "amountToReceiveLabel": "Amount to Receive",
+        "proofLabel": "Payment Proof",
+        "proofHintCheque": "cheque image",
+        "proofHintReceipt": "receipt / screenshot",
+        "uploadProofButton": "📎 Upload receipt / screenshot",
+        "txnLabelCheque": "Cheque / DD Number",
+        "txnLabelReceipt": "Transaction / Receipt ID",
+        "placeholderCheque": "Cheque / DD number",
+        "placeholderCash": "Auto-generate or enter a receipt ID",
+        "placeholderDefault": "Enter transaction ID"
+    },
+    "upiPanel": {
+        "title": "UPI Payment",
+        "clickToEnlargeTitle": "Click to enlarge",
+        "openHoverLabel": "Open",
+        "openLargeQrTitle": "Open large QR",
+        "qrCodeLabel": "QR Code",
+        "notConfiguredLabel": "Not configured",
+        "proofLabel": "Payment Image",
+        "uploadImageButton": "Upload image",
+        "transactionIdLabel": "Transaction ID",
+        "transactionIdPlaceholder": "e.g. 312345678901"
+    },
+    "linkTab": {
+        "title": "Generate Payment Link for Payment",
+        "subtitle": "Share a link with parents to complete payment on their device",
+        "onlineLinkButton": "Online Link",
+        "upiAppLinkButton": "UPI App Link",
+        "configureUpiTitle": "Configure UPI ID in stage settings",
+        "scanQrLabel": "Scan QR to open payment link",
+        "sendViaEmailButton": "Send link via Email",
+        "emailPlaceholder": "parent@example.com",
+        "sendingEllipsis": "Sending...",
+        "sendButton": "Send"
+    },
+    "qrDialog": {
+        "scanToPayLabel": "Scan to Pay — {{amount}}",
+        "upiIdLabel": "UPI ID: {{upiId}}",
+        "closeHint": "Click outside or press Escape to close"
+    }
+}

@@ -2,13 +2,14 @@ import { EXPORT_ACCOUNT_DETAILS } from '@/constants/urls';
 import authenticatedAxiosInstance from '@/lib/auth/axiosInstance';
 import { StudentFilterRequest } from '@/types/student-table-types';
 import { toast } from 'sonner';
+import type { TFunction } from 'i18next';
 
 interface ExportParams {
     filters: StudentFilterRequest;
     pageNo?: number;
     pageSize?: number;
 }
-export const exportAccountDetails = async ({
+export const buildExportAccountDetails = (t: TFunction) => async ({
     filters,
     pageNo = 0,
     pageSize = 10,
@@ -34,6 +35,6 @@ export const exportAccountDetails = async ({
         link.parentNode?.removeChild(link);
         window.URL.revokeObjectURL(url);
     } catch {
-        toast.error('Error exporting account details');
+        toast.error(t('manageStudentsExportAccountDetailsService:errors.exportFailed'));
     }
 };

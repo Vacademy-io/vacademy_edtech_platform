@@ -1,0 +1,97 @@
+{
+    "menu": {
+        "viewDetails": "Voir les détails de l'évaluation",
+        "deleteAssessment": "Supprimer l'évaluation",
+        "duplicateAssessment": "Dupliquer l'évaluation"
+    },
+    "common": {
+        "open": "Ouvrir",
+        "attention": "Attention"
+    },
+    "reminderMessage": {
+        "prefix": "Un rappel d'évaluation sera envoyé à tous les",
+        "participantsCount_one": "{{count}} participant",
+        "participantsCount_many": "{{count}} participants",
+        "participantsCount_other": "{{count}} participants",
+        "suffix": "qui ne se sont pas encore présentés parmi les lots assignés."
+    },
+    "dialogs": {
+        "reminder": {
+            "title": "Envoyer un rappel",
+            "send": "Envoyer"
+        },
+        "delete": {
+            "title": "Supprimer l'évaluation",
+            "confirmPrefix": "Êtes-vous sûr de vouloir supprimer",
+            "confirmSuffix": " ?",
+            "delete": "Supprimer"
+        },
+        "pause": {
+            "title": "Suspendre le statut en direct",
+            "dateLabel": "Date",
+            "datePlaceholder": "Date",
+            "pauseUntilLabel": "Suspendre jusqu'à",
+            "timePlaceholder": "Heure",
+            "pause": "Suspendre"
+        },
+        "resume": {
+            "title": "Reprendre le statut en direct",
+            "confirmPrefix": "Voulez-vous reprendre votre évaluation en direct",
+            "sampleAssessmentName": "The Human Eye and The Colourful World",
+            "confirmSuffix": " ?",
+            "resume": "Reprendre"
+        },
+        "reopen": {
+            "title": "Rouvrir l'évaluation",
+            "selectDateTime": "Sélectionnez la date et l'heure de réouverture de l'évaluation",
+            "startDateTimeLabel": "Date et heure de début",
+            "endDateTimeLabel": "Date et heure de fin",
+            "datePlaceholder": "Date",
+            "timePlaceholder": "Heure",
+            "reopen": "Rouvrir"
+        }
+    },
+    "toasts": {
+        "deleteSuccess": "L'évaluation a été supprimée avec succès !",
+        "slidesDeleteFailed": "L'évaluation a été supprimée, mais ses diapositives de cours n'ont pas pu être retirées."
+    },
+    "duplicate": {
+        "title": "Dupliquer l'évaluation",
+        "defaultName": "Copie de {{name}}",
+        "intro": "Une copie de « {{name}} » sera enregistrée comme brouillon. Les apprenants ne la verront pas avant sa publication. L'original n'est pas modifié.",
+        "nameLabel": "Nom de la copie",
+        "whatToCopy": "Éléments à copier",
+        "questions": "Questions",
+        "questionsHint": "Toutes les sections et questions. Si désactivé, la copie commence sans questions.",
+        "marking": "Barème",
+        "markingHint": "Points et points négatifs de chaque question. Si désactivé, chaque question vaut 1 point.",
+        "schedule": "Planning",
+        "scheduleHint": "Repris de l'original. Choisissez les dates du nouveau test.",
+        "scheduleOptional": "Laissez vide pour garder les dates de l'original.",
+        "startLabel": "Date et heure de début",
+        "endLabel": "Date et heure de fin",
+        "pastWarning": "Cette date est déjà passée.",
+        "registration": "Période d'inscription",
+        "registrationOpenLabel": "Ouverture des inscriptions",
+        "registrationCloseLabel": "Clôture des inscriptions",
+        "participants": "Participants",
+        "batchesHint": "La copie est attribuée à ces {{term}}. Vous pouvez les modifier ici ou plus tard dans l'évaluation.",
+        "noBatches": "Aucun(e) {{term}} sélectionné(e). Vous pourrez ajouter des participants plus tard.",
+        "individuals": "Ajouter aussi les apprenants ajoutés un par un",
+        "individualsHint": "Apprenants ajoutés individuellement à l'original, pas via un(e) {{term}}.",
+        "cancel": "Annuler",
+        "create": "Créer la copie",
+        "creating": "Création de la copie...",
+        "errors": {
+            "nameRequired": "Saisissez un nom pour la copie",
+            "startRequired": "Choisissez une date et une heure de début",
+            "endRequired": "Choisissez une date et une heure de fin",
+            "endBeforeStart": "La fin doit être après le début",
+            "registrationCloseBeforeOpen": "La clôture des inscriptions doit être après leur ouverture"
+        },
+        "toasts": {
+            "success": "« {{name}} » créé comme brouillon",
+            "failed": "Impossible de dupliquer l'évaluation. Veuillez réessayer."
+        }
+    }
+}

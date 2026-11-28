@@ -12,6 +12,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import vacademy.io.assessment_service.features.learner_assessment.dto.internal.BatchAssessmentHistoryRequest;
 import vacademy.io.assessment_service.features.learner_assessment.dto.internal.BatchAssessmentHistoryResponse;
+import vacademy.io.assessment_service.features.learner_assessment.dto.internal.CohortAssessmentRequest;
+import vacademy.io.assessment_service.features.learner_assessment.dto.internal.CohortAssessmentResponse;
 import vacademy.io.assessment_service.features.learner_assessment.dto.internal.StudentAssessmentHistoryResponse;
 import vacademy.io.assessment_service.features.learner_assessment.service.StudentAnalysisInternalService;
 
@@ -61,13 +63,14 @@ public class StudentAnalysisInternalController {
             @RequestParam(name = "startDate", required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) Date startDate,
             @RequestParam(name = "endDate", required = false)
-            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) Date endDate) {
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) Date endDate,
+            @RequestParam(name = "batchId", required = false) String batchId) {
 
         log.info("internal/student-analysis/assessment-history: userId={} instituteId={} " +
-                 "startDate={} endDate={}", userId, instituteId, startDate, endDate);
+                 "startDate={} endDate={} batchId={}", userId, instituteId, startDate, endDate, batchId);
 
         StudentAssessmentHistoryResponse response =
-                studentAnalysisInternalService.fetchAssessmentHistory(userId, instituteId, startDate, endDate);
+                studentAnalysisInternalService.fetchAssessmentHistory(userId, instituteId, startDate, endDate, batchId);
 
         return ResponseEntity.ok(response);
     }
@@ -97,5 +100,15 @@ public class StudentAnalysisInternalController {
                 studentAnalysisInternalService.fetchAssessmentHistoryBatch(request);
 
         return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Cohort attempts for the admin batch report: body with instituteId, userIds (max 500),
+     * startDate and endDate (yyyy-MM-dd). Returns the latest ENDED attempt per learner and
+     * assessment in the window.
+     */
+    @PostMapping("/assessment-history/cohort")
+    public ResponseEntity<CohortAssessmentResponse> getCohortAttempts(@RequestBody CohortAssessmentRequest request) {
+        return ResponseEntity.ok(studentAnalysisInternalService.fetchCohortAttempts(request));
     }
 }

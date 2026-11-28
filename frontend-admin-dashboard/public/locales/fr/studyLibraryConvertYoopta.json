@@ -1,0 +1,10 @@
+{
+    "conversionFailed": "(échec de la conversion — le document n’a pas pu être analysé)",
+    "formatting": {
+        "textColour": "couleur du texte",
+        "backgroundColour": "couleur de fond / surlignage",
+        "textAlignment": "alignement du texte",
+        "customFontSizes": "tailles de police personnalisées",
+        "highlightUnderlineStrikethrough": "surlignage / soulignement / barré"
+    }
+}

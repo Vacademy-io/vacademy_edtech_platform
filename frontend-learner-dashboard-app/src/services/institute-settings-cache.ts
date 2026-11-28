@@ -27,7 +27,12 @@ export const upsertInstituteDetails = async (
         prev = {};
       }
     }
-    const next = { ...prev, ...partial };
+    // Merging is for writers sharing one institute. Fields saved for another
+    // institute (its name, logo links, app links) must not carry over.
+    const next =
+      prev.id && partial.id && prev.id !== partial.id
+        ? partial
+        : { ...prev, ...partial };
     await Preferences.set({
       key: INSTITUTE_DETAILS_KEY,
       value: JSON.stringify(next),

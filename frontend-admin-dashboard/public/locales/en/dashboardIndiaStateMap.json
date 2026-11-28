@@ -1,0 +1,16 @@
+{
+    "legend": {
+        "title": "India distribution",
+        "hoverPrompt": "Hover a state"
+    },
+    "actions": {
+        "enlargeMap": "Enlarge map"
+    },
+    "map": {
+        "ariaLabel": "{{subOrgPlural}} by Indian state",
+        "tooltip": "{{name}}: {{count}}"
+    },
+    "dialog": {
+        "heading": "{{subOrgPlural}} by state"
+    }
+}

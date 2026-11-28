@@ -1,0 +1,61 @@
+{
+    "installmentStatus": {
+        "paid": "Payé",
+        "partial": "Partiel",
+        "overdue": "En retard",
+        "pending": "En attente",
+        "waived": "Exonéré"
+    },
+    "legend": {
+        "installmentStatus": "Statut des échéances :"
+    },
+    "expandedRow": {
+        "loadFailed": "Échec du chargement des détails des échéances.",
+        "noInstallments": "Aucune échéance trouvée.",
+        "columns": {
+            "feeType": "Type de frais",
+            "expected": "Attendu",
+            "paid": "Payé",
+            "due": "Dû",
+            "overdue": "En retard",
+            "installments": "Échéances"
+        }
+    },
+    "installmentTooltip": "#{{number}} : {{label}}",
+    "columns": {
+        "package": "Cours / Forfait",
+        "cpoName": "CPO / Plan",
+        "expected": "Attendu",
+        "paid": "Payé",
+        "due": "Dû",
+        "overdue": "En retard",
+        "status": "Statut",
+        "progress": "Progression"
+    },
+    "actions": {
+        "viewInstallments": "Voir les échéances"
+    },
+    "error": {
+        "title": "Impossible de charger les données de paiement",
+        "genericMessage": "Veuillez réessayer."
+    },
+    "empty": {
+        "title": "Aucun enregistrement de paiement trouvé.",
+        "subtitle": "Essayez d'ajuster vos filtres pour voir plus de résultats."
+    },
+    "pagination": {
+        "showingRange_one": "Affichage de <b>{{start}}</b> – <b>{{end}}</b> sur <b>{{count}}</b> enregistrement",
+        "showingRange_many": "Affichage de <b>{{start}}</b> – <b>{{end}}</b> sur <b>{{count}}</b> d'enregistrements",
+        "showingRange_other": "Affichage de <b>{{start}}</b> – <b>{{end}}</b> sur <b>{{count}}</b> enregistrements"
+    },
+    "progressBar": {
+        "paidTooltip": "Payé : {{percent}} %",
+        "overdueTooltip": "En retard : {{percent}} %",
+        "dueTooltip": "Dû : {{percent}} %",
+        "paidLabel": "{{percent}} % payé"
+    },
+    "redesign": {
+        "rosterTitle": "Fee roster",
+        "rosterHint": "· click a row for the fee-type breakdown, the eye icon for every installment"
+    }
+}

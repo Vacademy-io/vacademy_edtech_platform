@@ -1,0 +1,18 @@
+{
+    "empty": "لا يوجد مستشارون في هذا الفريق.",
+    "toast": {
+        "reactivated": "تمت إعادة تفعيل المستشار",
+        "markedInactive": "تم وضع علامة غير نشط على المستشار",
+        "updateFailed": "فشل تحديث الحالة"
+    },
+    "assignedCount_zero": "{{count}} مُسندة",
+    "assignedCount_one": "مُسندة واحدة",
+    "assignedCount_two": "مُسندتان",
+    "assignedCount_few": "{{count}} مُسندة",
+    "assignedCount_many": "{{count}} مُسندة",
+    "assignedCount_other": "{{count}} مُسندة",
+    "markInactive": "وضع علامة غير نشط",
+    "markActive": "وضع علامة نشط",
+    "active": "نشط",
+    "inactive": "غير نشط"
+}

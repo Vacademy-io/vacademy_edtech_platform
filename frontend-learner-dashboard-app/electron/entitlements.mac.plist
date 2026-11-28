@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <!-- Hardened-runtime entitlements for the Developer ID / notarized DMG builds (NOT the
+       Mac App Store build — that uses entitlements.mas.plist). Used for the app AND its
+       helpers (mac.entitlements + mac.entitlementsInherit in every electron-builder*.json):
+       Chromium captures audio/video in helper processes, so they need the device keys too.
+
+       Naming a file here REPLACES electron-builder's built-in default, so the first three
+       keys repeat that default (V8 JIT + Electron's helper frameworks). -->
+  <key>com.apple.security.cs.allow-jit</key>
+  <true/>
+  <key>com.apple.security.cs.allow-unsigned-executable-memory</key>
+  <true/>
+  <key>com.apple.security.cs.disable-library-validation</key>
+  <true/>
+  <!-- Live classes (BBB inside the app) and the AI assistant's voice input. Without these,
+       the hardened runtime denies camera/microphone with no prompt at all. -->
+  <key>com.apple.security.device.audio-input</key>
+  <true/>
+  <key>com.apple.security.device.camera</key>
+  <true/>
+</dict>
+</plist>

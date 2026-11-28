@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
-import { Loader2 } from 'lucide-react';
+import { CircleNotch } from '@phosphor-icons/react';
 import {
     getAllRoles,
     type CustomRole,
@@ -19,6 +20,7 @@ interface Props {
 }
 
 export function TeamRoleVisibilityCard({ selfRoleName, visibleRoles, onChange }: Props) {
+    const { t } = useTranslation('settingsTeamRoleVisibilityCard');
     const [roles, setRoles] = useState<CustomRole[] | null>(null);
     const [error, setError] = useState<string | null>(null);
     const selfKey = selfRoleName.toUpperCase();
@@ -30,11 +32,12 @@ export function TeamRoleVisibilityCard({ selfRoleName, visibleRoles, onChange }:
                 if (!cancelled) setRoles(r || []);
             })
             .catch(() => {
-                if (!cancelled) setError('Failed to load roles');
+                if (!cancelled) setError(t('error.loadRoles'));
             });
         return () => {
             cancelled = true;
         };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const teamRoles = (roles || []).filter((r) => r.name.toUpperCase() !== 'STUDENT');
@@ -42,23 +45,19 @@ export function TeamRoleVisibilityCard({ selfRoleName, visibleRoles, onChange }:
     return (
         <Card>
             <CardHeader>
-                <CardTitle>Team Tab — Role Visibility</CardTitle>
-                <CardDescription>
-                    Choose which roles appear in the Team tab&apos;s role filter and the Invite
-                    User &quot;Role Type&quot; dropdown for this role. Hidden roles cannot be
-                    selected when inviting or filtering team members.
-                </CardDescription>
+                <CardTitle>{t('title')}</CardTitle>
+                <CardDescription>{t('description')}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-2">
                 {error ? (
                     <div className="text-sm text-destructive">{error}</div>
                 ) : roles === null ? (
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        Loading roles…
+                        <CircleNotch className="h-4 w-4 animate-spin" />
+                        {t('loading')}
                     </div>
                 ) : teamRoles.length === 0 ? (
-                    <div className="text-sm text-muted-foreground">No roles available.</div>
+                    <div className="text-sm text-muted-foreground">{t('empty')}</div>
                 ) : (
                     teamRoles.map((r) => {
                         const key = r.name.toUpperCase();
@@ -75,7 +74,7 @@ export function TeamRoleVisibilityCard({ selfRoleName, visibleRoles, onChange }:
                                     </div>
                                     {isSelf && (
                                         <div className="mt-0.5 text-xs text-muted-foreground">
-                                            Locked on — you can&apos;t hide your own role.
+                                            {t('selfLocked')}
                                         </div>
                                     )}
                                 </div>

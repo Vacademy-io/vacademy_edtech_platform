@@ -1,0 +1,16 @@
+{
+    "moreBatches_one": "+{{count}} more",
+    "moreBatches_other": "+{{count}} more",
+    "assessmentBatches": "Assessment Batches",
+    "createdOn": "Created on: {{date}}",
+    "subject": "Subject: {{name}}",
+    "notAvailable": "N/A",
+    "startDateAndTime": "Start Date and Time: {{date}}",
+    "endDateAndTime": "End Date and Time: {{date}}",
+    "durationMinutes_one": "Duration: {{count}} minute",
+    "durationMinutes_other": "Duration: {{count}} minutes",
+    "totalParticipants_one": "Total Participants: {{count}}",
+    "totalParticipants_other": "Total Participants: {{count}}",
+    "attemptedByLabel": "Attempted by: ",
+    "pendingLabel": "Pending: "
+}

@@ -1,0 +1,29 @@
+{
+    "header": {
+        "title": "प्लान पर छूट लागू करें",
+        "subtitle": "प्रत्येक प्लान अंतराल या मूल्य स्तर के लिए छूट निर्धारित करें"
+    },
+    "table": {
+        "headers": {
+            "subscriptionInterval": "सब्सक्रिप्शन अंतराल",
+            "planType": "प्लान प्रकार",
+            "originalPrice": "मूल मूल्य",
+            "discountType": "छूट प्रकार",
+            "discountAmount": "छूट राशि",
+            "finalPrice": "अंतिम मूल्य"
+        },
+        "intervalPlanFallback": "{{value}} {{unit}} प्लान",
+        "oneTimePayment": "एकमुश्त भुगतान",
+        "savePrefix": "बचत करें"
+    },
+    "discountOptions": {
+        "none": "कोई छूट नहीं",
+        "percentage": "% छूट",
+        "fixed": "फ्लैट छूट"
+    },
+    "placeholders": {
+        "percentage": "10",
+        "fixed": "50"
+    },
+    "emptyState": "इस प्लान प्रकार के लिए कोई मूल्य जानकारी उपलब्ध नहीं है।"
+}

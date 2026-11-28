@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useListPlanningLogs } from '@/routes/planning/-services/listPlanningLogs';
 import PlanningLogsTimeline from '@/routes/planning/-components/PlanningLogsTimeline';
 import CreateActivityDialog from '@/routes/planning/-components/CreateActivityDialog';
@@ -15,6 +16,7 @@ interface ActivityProps {
 }
 
 export default function Activity({ packageSessionId }: ActivityProps) {
+    const { t } = useTranslation('studyLibraryActivity');
     const [createDialogOpen, setCreateDialogOpen] = useState(false);
     const [viewDialogOpen, setViewDialogOpen] = useState(false);
     const [selectedLog, setSelectedLog] = useState<PlanningLog | null>(null);
@@ -57,11 +59,11 @@ export default function Activity({ packageSessionId }: ActivityProps) {
     return (
         <div className="space-y-4">
             <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold">Activity Logs</h3>
+                <h3 className="text-lg font-semibold">{t('activityLogs')}</h3>
                 <div className="flex items-center space-x-2">
                     <MyButton scale="small" onClick={() => setCreateDialogOpen(true)} size="sm">
                         <Plus className="h-4 w-4" />
-                        Create
+                        {t('create')}
                     </MyButton>
                     <MyButton
                         buttonType="secondary"
@@ -74,14 +76,14 @@ export default function Activity({ packageSessionId }: ActivityProps) {
                         }
                         size="sm"
                     >
-                        View all
+                        {t('viewAll')}
                     </MyButton>
                 </div>
             </div>
 
             {isLoading ? (
                 <div className="py-8 text-center">
-                    <p className="text-muted-foreground">Loading activity logs...</p>
+                    <p className="text-muted-foreground">{t('loadingActivityLogs')}</p>
                 </div>
             ) : (
                 <PlanningLogsTimeline

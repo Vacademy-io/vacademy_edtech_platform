@@ -1,0 +1,69 @@
+{
+    "header": {
+        "title": "Connect your LMS",
+        "subtitle": "Add the learning systems your institute uses — you can connect more than one (e.g. a LearnDash site and a Moodle site). Apply a connection to a specific course from that course's Settings tab."
+    },
+    "loading": "Loading LMS settings…",
+    "banner": {
+        "courseSourceInfo": "We found an LMS connection already configured on one of your courses and listed it below. Review it and click <1>Save</1> to keep it as an institute connection."
+    },
+    "emptyState": {
+        "title": "No external LMS connected",
+        "description": "Your learners use the built-in Vacademy LMS. Connect a LearnDash or Moodle site below to sync enrolments to it."
+    },
+    "connectionCard": {
+        "defaultBadge": "Default",
+        "makeDefault": "Make default",
+        "editAriaLabel": "Edit",
+        "removeAriaLabel": "Remove"
+    },
+    "addProvider": "Add {{name}}",
+    "editor": {
+        "addHeading": "Add {{name}} connection",
+        "editHeading": "Edit {{name}} connection",
+        "docsLink": "How to find these details",
+        "connectionName": {
+            "label": "Connection name",
+            "placeholder": "e.g. Main Moodle, CA-program LearnDash",
+            "hint": "A label to recognise this connection when you apply it to a course."
+        },
+        "optional": "(optional)",
+        "secretField": {
+            "show": "Show",
+            "hide": "Hide"
+        },
+        "customFields": {
+            "label": "Custom fields (optional)",
+            "keyPlaceholder": "key (e.g. region)",
+            "valuePlaceholder": "value",
+            "removeAriaLabel": "Remove field",
+            "addField": "Add field",
+            "hint": "Add any other connection details your LMS needs as key–value pairs."
+        },
+        "cancel": "Cancel",
+        "testConnection": "Test connection",
+        "testing": "Testing…",
+        "addSubmit": "Add connection",
+        "updateSubmit": "Update connection"
+    },
+    "validation": {
+        "required": "Required",
+        "invalidUrl": "Must start with http:// or https://"
+    },
+    "testResult": {
+        "genericFailure": "Could not run the test. Try again."
+    },
+    "save": "Save",
+    "saving": "Saving…",
+    "confirmSaveDialog": {
+        "title": "Save LMS connection changes?",
+        "description": "Changes to an <1>existing</1> connection (URL, credentials, token) apply to every course already using it — so an incorrect edit can break enrolment sync for those courses. New connections won't affect anything until you apply them to a course. Double-check before saving.",
+        "cancel": "Cancel",
+        "confirm": "Yes, save"
+    },
+    "toasts": {
+        "loadFailed": "Failed to load LMS settings",
+        "saveFailed": "Failed to save LMS settings",
+        "saveSuccess": "LMS connections saved"
+    }
+}

@@ -1,6 +1,7 @@
 package vacademy.io.admin_core_service.features.user_subscription.service;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import vacademy.io.admin_core_service.features.auth_service.service.AuthService;
 import vacademy.io.admin_core_service.features.common.enums.StatusEnum;
@@ -19,6 +20,7 @@ import vacademy.io.common.exceptions.VacademyException;
 import java.util.*;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ReferralMappingService {
@@ -29,6 +31,10 @@ public class ReferralMappingService {
     private final ReferralBenefitLogService referralBenefitLogService;
 
     private final AuthService authService;
+
+    private final ReferralRewardService referralRewardService;
+
+    private final vacademy.io.admin_core_service.features.user_subscription.repository.UserPlanRepository userPlanRepository;
 
     public ReferralMapping createMapping(String referrerUserId,
                                          String refereeUserId,
@@ -79,13 +85,46 @@ public class ReferralMappingService {
         referralMappingRepository.deleteById(id);
     }
 
+    /**
+     * Activates the referral once the referee's plan is paid for. A plan still in its free
+     * trial has only paid the Rs 1 mandate authorisation, which is not a conversion: its
+     * referral activates at the first real charge, via {@link #activateOnTrialConversion}.
+     */
     public void processReferralBenefitsIfApplicable(UserPlan userPlan){
+        if (userPlan == null) {
+            return;
+        }
+        if (Boolean.TRUE.equals(userPlan.getIsTrial())) {
+            log.debug("Referral: plan {} is in its trial — activation waits for the first paid charge", userPlan.getId());
+            return;
+        }
+        activatePendingReferral(userPlan);
+    }
+
+    /**
+     * The referee's trial converted: its first real charge was confirmed PAID. Runs after the
+     * renewal commits, so it needs its own transaction: work joining the finished one there
+     * would never be committed.
+     */
+    @org.springframework.transaction.annotation.Transactional(
+            propagation = org.springframework.transaction.annotation.Propagation.REQUIRES_NEW)
+    public void activateOnTrialConversion(UserPlan userPlan) {
+        if (userPlan == null) {
+            return;
+        }
+        // Reloaded: the caller's entity belongs to the finished transaction, and activation
+        // reads its lazy enroll invite.
+        userPlanRepository.findById(userPlan.getId()).ifPresent(this::activatePendingReferral);
+    }
+
+    private void activatePendingReferral(UserPlan userPlan) {
         Optional<ReferralMapping>optionalReferralMapping = referralMappingRepository.findByUserPlanIdAndStatusIn(userPlan.getId(),List.of(ReferralStatusEnum.PENDING.name()));
         if (optionalReferralMapping.isPresent()){
             ReferralMapping referralMapping = optionalReferralMapping.get();
             referralBenefitLogService.updateStatusAndProcessBenefits(userPlan,optionalReferralMapping.get());
             referralMapping.setStatus(ReferralStatusEnum.ACTIVE.name());
             referralMappingRepository.save(referralMapping);
+            referralRewardService.releaseReferrerCredit(referralMapping.getId());
         }
     }
 

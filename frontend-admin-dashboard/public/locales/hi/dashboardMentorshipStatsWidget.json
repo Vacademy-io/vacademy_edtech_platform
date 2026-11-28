@@ -1,0 +1,30 @@
+{
+    "header": {
+        "eyebrow": "मेंटरशिप",
+        "title": "मेंटर और मेंटी"
+    },
+    "actions": {
+        "manage": "प्रबंधित करें",
+        "pendingTooltip": "मेंटर से जोड़े जाने की प्रतीक्षा कर रहे शिक्षार्थी",
+        "pendingReview_one": "{{count}} की समीक्षा बाकी है",
+        "pendingReview_other": "{{count}} की समीक्षा बाकी है"
+    },
+    "tiles": {
+        "mentors": {
+            "label": "मेंटर",
+            "subtitle": "सक्रिय मेंटर"
+        },
+        "mentees": {
+            "label": "मेंटी",
+            "subtitle": "मार्गदर्शन प्राप्त छात्र"
+        },
+        "today": {
+            "label": "आज",
+            "subtitle": "आज के सत्र"
+        },
+        "upcoming": {
+            "label": "आगामी",
+            "subtitle": "अगले 7 दिन"
+        }
+    }
+}

@@ -7,6 +7,8 @@ import {
     Student,
     BookOpen,
 } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { MyDialog } from '@/components/design-system/dialog';
 import { cn } from '@/lib/utils';
 import {
@@ -58,7 +60,7 @@ const mdComponents: Components = {
 };
 
 /** Tool traffic is noise for an admin — collapse it to one line, no raw payload. */
-function toolLabel(message: ChatTranscriptMessage): string {
+function toolLabel(message: ChatTranscriptMessage, t: TFunction): string {
     let toolName: string | null = null;
     if (message.metadata) {
         try {
@@ -69,17 +71,20 @@ function toolLabel(message: ChatTranscriptMessage): string {
         }
     }
     const pretty = toolName ? prettifyLabel(toolName) : null;
-    if (message.type === 'tool_call') return pretty ? `Used tool: ${pretty}` : 'AI used a tool';
-    return pretty ? `${pretty} result` : 'Tool result';
+    if (message.type === 'tool_call') {
+        return pretty ? t('usedTool', { tool: pretty }) : t('aiUsedTool');
+    }
+    return pretty ? t('toolResultNamed', { tool: pretty }) : t('toolResult');
 }
 
 function MessageBubble({ message }: { message: ChatTranscriptMessage }) {
+    const { t } = useTranslation('studyLibraryChatTranscriptDialog');
     if (message.type === 'tool_call' || message.type === 'tool_result') {
         return (
             <div className="flex justify-center">
                 <span className="inline-flex items-center gap-1 rounded-full bg-neutral-100 px-2.5 py-1 text-caption text-neutral-400">
                     <PuzzlePiece className="size-3.5" />
-                    {toolLabel(message)}
+                    {toolLabel(message, t)}
                 </span>
             </div>
         );
@@ -94,7 +99,7 @@ function MessageBubble({ message }: { message: ChatTranscriptMessage }) {
             >
                 {isQuiz && (
                     <span className="px-1 text-caption font-medium text-info-600">
-                        {message.type === 'quiz' ? 'Practice quiz' : 'Quiz result'}
+                        {message.type === 'quiz' ? t('practiceQuiz') : t('quizResult')}
                     </span>
                 )}
                 <div
@@ -138,13 +143,16 @@ interface Props {
 
 /** Full transcript of one Student AI chat, opened from the recent-chats table. */
 export const ChatTranscriptDialog = ({ session, onClose }: Props) => {
+    const { t } = useTranslation('studyLibraryChatTranscriptDialog');
     const transcriptQuery = useChatTranscriptQuery(session?.sessionId ?? null);
     const messages = transcriptQuery.data ?? [];
     const ContextIcon = contextIcon(session?.contextType ?? null);
 
     return (
         <MyDialog
-            heading={session ? `Chat with ${session.studentName}` : 'Chat'}
+            heading={
+                session ? t('chatWith', { name: session.studentName }) : t('chatHeading')
+            }
             open={!!session}
             onOpenChange={(open) => {
                 if (!open) onClose();
@@ -171,25 +179,25 @@ export const ChatTranscriptDialog = ({ session, onClose }: Props) => {
                                 prettifyLabel(session.sessionMode)}
                         </span>
                         <span className="rounded-md bg-neutral-100 px-2 py-1 text-caption text-neutral-600">
-                            Started {formatDateTime(session.createdAt)}
+                            {t('started', { time: formatDateTime(session.createdAt) })}
                         </span>
                     </div>
 
                     {transcriptQuery.isLoading && (
                         <p className="animate-pulse py-8 text-center text-body text-neutral-400">
-                            Loading transcript…
+                            {t('loadingTranscript')}
                         </p>
                     )}
                     {transcriptQuery.error && (
                         <p className="py-8 text-center text-body text-danger-600">
-                            Could not load this transcript. Please try again.
+                            {t('loadFailed')}
                         </p>
                     )}
                     {!transcriptQuery.isLoading &&
                         !transcriptQuery.error &&
                         messages.length === 0 && (
                             <p className="py-8 text-center text-body text-neutral-400">
-                                This chat has no messages.
+                                {t('noMessages')}
                             </p>
                         )}
 

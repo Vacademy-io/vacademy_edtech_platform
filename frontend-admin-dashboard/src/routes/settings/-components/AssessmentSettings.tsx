@@ -1,28 +1,41 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { MyButton } from '@/components/design-system/button';
-import { Save } from 'lucide-react';
+import { FloppyDisk } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 import {
     AssessmentSettingsData,
     DEFAULT_ASSESSMENT_SETTINGS,
     DEFAULT_REPORT_BRANDING,
+    normalizeRemarksLanguage,
+    normalizeStudentMapping,
     ReportBrandingSettings,
 } from '@/types/assessment-settings';
 import { getAssessmentSettings, saveAssessmentSettings } from '@/services/assessment-settings';
 import { useInstituteDetailsStore } from '@/stores/students/students-list/useInstituteDetailsStore';
 import ReportBrandingSettingsSection from './ReportBrandingSettings';
 import ResultNotificationRecipientsCard from './ResultNotificationRecipientsCard';
+import ResultNotificationTemplatesCard from './ResultNotificationTemplatesCard';
+import LearnerRequestNotificationCard from './LearnerRequestNotificationCard';
 import ExamExperienceSettingsCard from './ExamExperienceSettingsCard';
+import { CommentPlacementPicker } from '@/components/common/ai-copy-check/CommentPlacementPicker';
+import { RemarksLanguagePicker } from '@/components/common/ai-copy-check/RemarksLanguagePicker';
+import { StudentMappingPicker } from '@/components/common/ai-copy-check/StudentMappingPicker';
+import {
+    PenStylePicker,
+    normalizePenStyle,
+} from '@/components/common/ai-copy-check/PenStylePicker';
 
 const DEFAULT_HEADER_HTML = `<div style="text-align:center; font-size:16px; font-weight:bold;">{{assessment_name}}</div>
-<div style="text-align:center; font-size:11px; color:#666;">Student Performance Analysis</div>`;
+<div style="text-align:center; font-size:11px; color:rgb(102,102,102);">Student Performance Analysis</div>`;
 
-const DEFAULT_FOOTER_HTML = `<div style="text-align:center; font-size:10px; color:#999;">This report is auto-generated. For queries, contact your institute administrator.</div>`;
+const DEFAULT_FOOTER_HTML = `<div style="text-align:center; font-size:10px; color:rgb(153,153,153);">This report is auto-generated. For queries, contact your institute administrator.</div>`;
 
 const AssessmentSettings = () => {
+    const { t } = useTranslation('settingsAssessmentSettings');
     const [settings, setSettings] = useState<AssessmentSettingsData>(DEFAULT_ASSESSMENT_SETTINGS);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -62,13 +75,13 @@ const AssessmentSettings = () => {
                     setSettings(data);
                 }
             } catch {
-                toast.error('Failed to load assessment settings');
+                toast.error(t('errors.loadSettings'));
             } finally {
                 setLoading(false);
             }
         };
         load();
-    }, [instituteDetails]);
+    }, [instituteDetails, t]);
 
     const handleToggle = (key: keyof AssessmentSettingsData, field: string, value: boolean) => {
         setSettings((prev) => ({
@@ -83,9 +96,9 @@ const AssessmentSettings = () => {
         try {
             await saveAssessmentSettings(settings);
             setHasChanges(false);
-            toast.success('Assessment settings saved successfully');
+            toast.success(t('toasts.settingsSaved'));
         } catch {
-            toast.error('Failed to save assessment settings');
+            toast.error(t('errors.saveSettings'));
         } finally {
             setSaving(false);
         }
@@ -94,7 +107,7 @@ const AssessmentSettings = () => {
     if (loading) {
         return (
             <div className="flex items-center justify-center p-12">
-                <p className="text-sm text-gray-500">Loading assessment settings...</p>
+                <p className="text-sm text-gray-500">{t('loading')}</p>
             </div>
         );
     }
@@ -103,9 +116,9 @@ const AssessmentSettings = () => {
         <div className="flex flex-col gap-6 p-4">
             <div className="flex items-center justify-between">
                 <div>
-                    <h2 className="text-lg font-semibold">Assessment Settings</h2>
+                    <h2 className="text-lg font-semibold">{t('header.title')}</h2>
                     <p className="text-sm text-gray-500">
-                        Configure assessment features for your institute
+                        {t('header.subtitle')}
                     </p>
                 </div>
                 <MyButton
@@ -116,36 +129,85 @@ const AssessmentSettings = () => {
                     disabled={!hasChanges || saving}
                     className="flex items-center gap-2 font-medium"
                 >
-                    <Save size={16} />
-                    {saving ? 'Saving...' : 'Save Changes'}
+                    <FloppyDisk size={16} />
+                    {saving ? t('header.saving') : t('header.saveChanges')}
                 </MyButton>
             </div>
 
             {/* Offline Data Entry */}
             <Card>
                 <CardHeader>
-                    <CardTitle className="text-base">Offline Data Entry</CardTitle>
+                    <CardTitle className="text-base">{t('offlineEntry.title')}</CardTitle>
                     <CardDescription>
-                        Allow data entry users to manually input student responses from
-                        paper-based tests. This enables analytics for both online and offline
-                        exams.
+                        {t('offlineEntry.description')}
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
                     <div className="flex items-center justify-between rounded-lg border p-4">
                         <div className="flex flex-col gap-1">
                             <Label className="text-sm font-medium">
-                                Enable Offline Entry
+                                {t('offlineEntry.enableLabel')}
                             </Label>
                             <p className="text-xs text-gray-500">
-                                Shows the &quot;Offline Entry&quot; button on the assessment
-                                submissions page
+                                {t('offlineEntry.enableHint')}
                             </p>
                         </div>
                         <Switch
                             checked={settings.offlineEntry.enabled}
                             onCheckedChange={(checked) =>
                                 handleToggle('offlineEntry', 'enabled', checked)
+                            }
+                        />
+                    </div>
+                </CardContent>
+            </Card>
+
+            {/* Assessment folders (admin rail + learner folder cards) */}
+            <Card>
+                <CardHeader>
+                    <CardTitle className="text-base">{t('assessmentFolders.title')}</CardTitle>
+                    <CardDescription>{t('assessmentFolders.description')}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <div className="flex items-center justify-between rounded-lg border p-4">
+                        <div className="flex flex-col gap-1">
+                            <Label className="text-sm font-medium">
+                                {t('assessmentFolders.enableLabel')}
+                            </Label>
+                            <p className="text-xs text-gray-500">
+                                {t('assessmentFolders.enableHint')}
+                            </p>
+                        </div>
+                        <Switch
+                            checked={settings.assessmentFolders?.enabled === true}
+                            onCheckedChange={(checked) =>
+                                handleToggle('assessmentFolders', 'enabled', checked)
+                            }
+                        />
+                    </div>
+                </CardContent>
+            </Card>
+
+            {/* Question paper folders (Question Banks and Papers page) */}
+            <Card>
+                <CardHeader>
+                    <CardTitle className="text-base">{t('questionPaperFolders.title')}</CardTitle>
+                    <CardDescription>{t('questionPaperFolders.description')}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <div className="flex items-center justify-between rounded-lg border p-4">
+                        <div className="flex flex-col gap-1">
+                            <Label className="text-sm font-medium">
+                                {t('questionPaperFolders.enableLabel')}
+                            </Label>
+                            <p className="text-xs text-gray-500">
+                                {t('questionPaperFolders.enableHint')}
+                            </p>
+                        </div>
+                        <Switch
+                            checked={settings.questionPaperFolders?.enabled === true}
+                            onCheckedChange={(checked) =>
+                                handleToggle('questionPaperFolders', 'enabled', checked)
                             }
                         />
                     </div>
@@ -160,6 +222,77 @@ const AssessmentSettings = () => {
                     setHasChanges(true);
                 }}
             />
+
+            {/* AI copy checking template (preselected in the bulk / submitted check dialogs) */}
+            <Card>
+                <CardHeader>
+                    <CardTitle className="text-base">{t('aiCopyCheck.title')}</CardTitle>
+                    <CardDescription>{t('aiCopyCheck.description')}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <div className="flex flex-col gap-4">
+                        <CommentPlacementPicker
+                            value={settings.aiCopyCheck?.commentPlacement ?? 'INSIDE'}
+                            onChange={(commentPlacement) => {
+                                setSettings((prev) => ({
+                                    ...prev,
+                                    aiCopyCheck: { ...prev.aiCopyCheck, commentPlacement },
+                                }));
+                                setHasChanges(true);
+                            }}
+                        />
+                        {/* Bulk AI check (web + Evalezy): match copies to students, ask, or only check */}
+                        <StudentMappingPicker
+                            value={normalizeStudentMapping(settings.aiCopyCheck?.studentMapping)}
+                            onChange={(studentMapping) => {
+                                setSettings((prev) => ({
+                                    ...prev,
+                                    aiCopyCheck: {
+                                        ...prev.aiCopyCheck,
+                                        commentPlacement:
+                                            prev.aiCopyCheck?.commentPlacement ?? 'INSIDE',
+                                        studentMapping,
+                                    },
+                                }));
+                                setHasChanges(true);
+                            }}
+                        />
+                        {/* The pen every checked copy is drawn with */}
+                        <PenStylePicker
+                            saveHint
+                            value={normalizePenStyle(settings.aiCopyCheck?.penStyle)}
+                            onChange={(penStyle) => {
+                                setSettings((prev) => ({
+                                    ...prev,
+                                    aiCopyCheck: {
+                                        ...prev.aiCopyCheck,
+                                        commentPlacement:
+                                            prev.aiCopyCheck?.commentPlacement ?? 'INSIDE',
+                                        penStyle,
+                                    },
+                                }));
+                                setHasChanges(true);
+                            }}
+                        />
+                        {/* The language the AI writes its remarks in (Hindi for Hindi/Sanskrit copies, or always English) */}
+                        <RemarksLanguagePicker
+                            value={normalizeRemarksLanguage(settings.aiCopyCheck?.remarksLanguage)}
+                            onChange={(remarksLanguage) => {
+                                setSettings((prev) => ({
+                                    ...prev,
+                                    aiCopyCheck: {
+                                        ...prev.aiCopyCheck,
+                                        commentPlacement:
+                                            prev.aiCopyCheck?.commentPlacement ?? 'INSIDE',
+                                        remarksLanguage,
+                                    },
+                                }));
+                                setHasChanges(true);
+                            }}
+                        />
+                    </div>
+                </CardContent>
+            </Card>
 
             {/* Result Notification Recipients (role-wise) */}
             <ResultNotificationRecipientsCard
@@ -176,12 +309,29 @@ const AssessmentSettings = () => {
                 }}
             />
 
+            {/* Result email / WhatsApp templates (saved on change, not with the form) */}
+            <ResultNotificationTemplatesCard />
+
+            {/* Learner requests from inside a test (role-wise staff notifications) */}
+            <LearnerRequestNotificationCard
+                value={
+                    settings.learnerRequestNotifications ?? {
+                        version: 1,
+                        roles: {},
+                        channels: { inApp: true, email: true },
+                    }
+                }
+                onChange={(learnerRequestNotifications) => {
+                    setSettings((prev) => ({ ...prev, learnerRequestNotifications }));
+                    setHasChanges(true);
+                }}
+            />
+
             {/* Report Branding Section */}
             <div>
-                <h3 className="mb-3 text-base font-semibold">Assessment Report Branding</h3>
+                <h3 className="mb-3 text-base font-semibold">{t('reportBranding.title')}</h3>
                 <p className="mb-4 text-sm text-gray-500">
-                    Customize the look and feel of PDF reports generated for students. These
-                    settings apply to all assessment reports across your institute.
+                    {t('reportBranding.description')}
                 </p>
                 <ReportBrandingSettingsSection
                     settings={settings.reportBranding}

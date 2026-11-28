@@ -1,0 +1,8 @@
+{
+    "title": "Result Notification Recipients",
+    "description": "Choose which roles receive assessment result and re-evaluation notifications (result-release emails, and learner report emails). By default only learners are notified; admins and other roles are off.",
+    "roles": {
+        "admin": "Admin",
+        "learner": "Learner"
+    }
+}

@@ -1,0 +1,10 @@
+{
+    "dialog": {
+        "heading": "Publier le résultat",
+        "confirmMessage": "Voulez-vous vraiment publier le résultat pour le(s) élève(s) sélectionné(s) <highlight>{{name}}</highlight> ?"
+    },
+    "doneButton": "Terminé",
+    "toasts": {
+        "releaseSuccess": "Le résultat de cette évaluation a été publié pour les élèves sélectionnés. Veuillez vérifier votre e-mail !"
+    }
+}

@@ -1,0 +1,12 @@
+{
+    "loading": "Chargement des appels…",
+    "error": "Impossible de charger les appels. Réessayez.",
+    "empty": "Aucun appel pour ce conseiller pour le moment.",
+    "unknownLead": "Prospect inconnu",
+    "inbound": "Entrant",
+    "outbound": "Sortant",
+    "pagination": {
+        "pageOf": "Page {{page}} sur {{total}}",
+        "loadingSuffix": " · chargement…"
+    }
+}

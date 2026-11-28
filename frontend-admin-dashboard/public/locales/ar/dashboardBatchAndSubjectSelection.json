@@ -1,0 +1,18 @@
+{
+    "header": {
+        "title": "اختر الدفعة و{{subjectPlural}}"
+    },
+    "search": {
+        "placeholder": "البحث عن الدفعات..."
+    },
+    "subjects": {
+        "selectLabel": "اختر المواد",
+        "selectPlaceholder": "اختر المواد",
+        "description": "يمكنك اختيار عدة مواد لهذه الدفعة",
+        "requiredError": "مطلوب مادة واحدة على الأقل"
+    },
+    "emptyState": {
+        "noMatchingBatches": "لا توجد دفعات مطابقة",
+        "noBatchesAvailable": "لا توجد دفعات متاحة"
+    }
+}

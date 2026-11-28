@@ -6,21 +6,24 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { markSlideCompletion } from "@/services/study-library/tracking-api/mark-slide-completion";
 import { getSlideCompletionThreshold } from "@/constants/study-library";
+import { announceSlideCompleted } from "@/services/slide-engagement";
 
 /**
  * Slide types a learner may complete by hand.
  *
  * Consumption content only. Quizzes, questions, assignments and assessments
- * complete by submission and SCORM reports its own status — declaring those
- * done would claim a score that was never earned, and the backend refuses them
- * anyway. Mainstream players draw the same line: Udemy and Coursera let you
- * tick a lecture or a reading, never a graded item.
+ * complete by submission — declaring those done would claim a score that was
+ * never earned, and the backend refuses them anyway. Mainstream players draw
+ * the same line: Udemy and Coursera let you tick a lecture or a reading, never
+ * a graded item. SCORM is included because many packages are reading screens
+ * that never report completion; the package's own report still counts too.
  */
 export const MANUALLY_COMPLETABLE_SLIDE_TYPES: ReadonlySet<string> = new Set([
   "VIDEO",
   "HTML_VIDEO",
   "AUDIO",
   "DOCUMENT",
+  "SCORM",
 ]);
 
 export interface CompletionContext {
@@ -81,6 +84,8 @@ export const MarkCompleteButton = ({
         completed: next,
         ...context,
       });
+      // "Count as engagement" slides collect their points now.
+      if (next) announceSlideCompleted(slideId);
       // Refresh the slide list so ticks, chapter progress and any drip unlock
       // this completion satisfies all pick the change up.
       if (context.chapterId) {

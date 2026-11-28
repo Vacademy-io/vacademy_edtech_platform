@@ -1,0 +1,29 @@
+{
+    "header": {
+        "title": "Activité horaire",
+        "subtitle": "Répartition de l'activité tout au long de la journée"
+    },
+    "peakHour": {
+        "label": "Heure de pointe"
+    },
+    "error": {
+        "message": "Échec du chargement des données horaires"
+    },
+    "empty": {
+        "message": "Aucune donnée horaire disponible"
+    },
+    "tooltip": {
+        "activity": "Activité : {{value}}",
+        "users": "Utilisateurs : {{value}}"
+    },
+    "period": {
+        "night": "Nuit",
+        "morning": "Matin",
+        "afternoon": "Après-midi",
+        "evening": "Soir"
+    },
+    "time": {
+        "am": "{{hour}} h (matin)",
+        "pm": "{{hour}} h (après-midi)"
+    }
+}

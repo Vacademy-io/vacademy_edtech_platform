@@ -84,6 +84,25 @@ public class TelephonyAsyncConfig {
      * multiple executor beans). Dropping on saturation is SAFE: unbilled rows carry
      * no credits_billed_at stamp and the reconciliation sweep re-attempts them.
      */
+    /**
+     * Post-call work that must run AFTER the outcome transaction commits: the auto-booked
+     * meeting and the send rules (AiCallOutcomeProcessor). It cannot run inside
+     * afterCommit() on the committing thread: that transaction's resources are still bound
+     * there, so every PROPAGATION_REQUIRED call joins a transaction that has already
+     * committed. Bookings then failed with "no transaction is in progress" and the
+     * send-rule actions were logged as created but never written.
+     */
+    @Bean(name = "aiCallPostCallExecutor")
+    public Executor aiCallPostCallExecutor() {
+        ThreadPoolTaskExecutor ex = new ThreadPoolTaskExecutor();
+        ex.setCorePoolSize(2);
+        ex.setMaxPoolSize(4);
+        ex.setQueueCapacity(500);
+        ex.setThreadNamePrefix("ai-call-postcall-");
+        ex.initialize();
+        return ex;
+    }
+
     @Bean(name = "callBillingExecutor")
     public Executor callBillingExecutor() {
         ThreadPoolTaskExecutor ex = new ThreadPoolTaskExecutor();

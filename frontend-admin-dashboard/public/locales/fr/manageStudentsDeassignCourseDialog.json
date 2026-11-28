@@ -1,0 +1,92 @@
+{
+    "dialogTitle": "Retirer de {{term}}",
+    "config": {
+        "removePrompt": "Retirer <strong>{{name}}</strong> des cours sélectionnés.",
+        "noCourses": "Aucun cours à désassigner",
+        "unnamedCourse": "Cours sans nom",
+        "removalMode": "Mode de suppression",
+        "softCancel": {
+            "label": "Annulation en douceur",
+            "description": "— L'accès continue jusqu'à l'expiration du plan. Statut → ANNULÉ"
+        },
+        "lastAccessDate": {
+            "label": "Date de dernier accès",
+            "ariaLabel": "Date de dernier accès",
+            "pickAriaLabel": "Choisir la date de dernier accès dans le calendrier",
+            "hintSelected": "L'accès se termine à la date sélectionnée.",
+            "hintDefaultWithDate": "Laissez vide pour conserver l'accès jusqu'à l'expiration propre du plan — {{date}}.",
+            "hintDefaultNoDate": "Laissez vide pour conserver l'accès jusqu'à l'expiration propre du plan.",
+            "reset": "Réinitialiser à l'expiration du plan"
+        },
+        "hardTerminate": {
+            "label": "Résiliation immédiate",
+            "description": "— Révocation immédiate de l'accès. Statut → RÉSILIÉ",
+            "cannotUndo": "⚠ Action irréversible"
+        },
+        "reason": {
+            "label": "Motif de la résiliation",
+            "optional": "(facultatif)",
+            "placeholder": "Pourquoi cet apprenant est-il résilié ?"
+        },
+        "deletePaymentHistory": {
+            "label": "Supprimer aussi l'historique des paiements",
+            "description": "Supprime définitivement les paiements, échéances, factures et le plan tarifaire de ce cours : ils n'apparaissent plus dans l'historique des paiements, la gestion des paiements ni les rapports. Les paiements en ligne (passerelle) ne peuvent pas être supprimés.",
+            "warning": "Les montants encaissés des rapports passés vont baisser. Action irréversible."
+        },
+        "notifyLearners": "Notifier l'apprenant du retrait"
+    },
+    "preview": {
+        "title": "Aperçu — Résultats de l'essai à blanc",
+        "reason": "Motif :",
+        "willBeRemoved_one": "{{count}} sera retiré",
+        "willBeRemoved_many": "{{count}} seront retirés",
+        "willBeRemoved_other": "{{count}} seront retirés",
+        "skipped_one": "{{count}} ignoré",
+        "skipped_many": "{{count}} ignorés",
+        "skipped_other": "{{count}} ignorés",
+        "failed_one": "{{count}} échoué",
+        "failed_many": "{{count}} échoués",
+        "failed_other": "{{count}} échoués",
+        "tableHeaders": {
+            "course": "Cours",
+            "action": "Action",
+            "status": "Statut"
+        }
+    },
+    "results": {
+        "title": "Désassignation terminée",
+        "removed_one": "{{count}} retiré",
+        "removed_many": "{{count}} retirés",
+        "removed_other": "{{count}} retirés",
+        "skipped_one": "{{count}} ignoré",
+        "skipped_many": "{{count}} ignorés",
+        "skipped_other": "{{count}} ignorés",
+        "failed_one": "{{count}} échoué",
+        "failed_many": "{{count}} échoués",
+        "failed_other": "{{count}} échoués",
+        "tableHeaders": {
+            "course": "Cours",
+            "status": "Statut",
+            "message": "Message"
+        }
+    },
+    "footer": {
+        "cancel": "Annuler",
+        "loading": "Chargement...",
+        "previewButton_one": "Aperçu ({{count}} cours)",
+        "previewButton_many": "Aperçu ({{count}} cours)",
+        "previewButton_other": "Aperçu ({{count}} cours)",
+        "back": "← Retour",
+        "removing": "Suppression...",
+        "confirmRemoval": "✓ Confirmer le retrait",
+        "done": "Terminé"
+    },
+    "toasts": {
+        "previewFailed": "Échec de l'aperçu",
+        "deassignFailed": "Échec du retrait",
+        "deassignSuccess_one": "{{count}} cours retiré avec succès !",
+        "deassignSuccess_many": "{{count}} cours retirés avec succès !",
+        "deassignSuccess_other": "{{count}} cours retirés avec succès !",
+        "deassignPartial": "{{successful}} retiré(s), {{failed}} échoué(s)."
+    }
+}

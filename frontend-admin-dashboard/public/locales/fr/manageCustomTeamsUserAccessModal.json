@@ -1,0 +1,21 @@
+{
+    "title": "Détails d'accès",
+    "description": "Consultez les mappages d'accès et les autorisations attribués à {{userName}}.",
+    "noAccess": "Aucun accès particulier mappé pour cet utilisateur.",
+    "columns": {
+        "type": "Type",
+        "name": "Nom",
+        "permissions": "Autorisations",
+        "linkage": "Liaison"
+    },
+    "accessType": {
+        "course": "Cours",
+        "session": "Session",
+        "invite": "Invitation",
+        "global": "Global"
+    },
+    "linkageType": {
+        "direct": "DIRECT"
+    },
+    "notAvailable": "N/A"
+}

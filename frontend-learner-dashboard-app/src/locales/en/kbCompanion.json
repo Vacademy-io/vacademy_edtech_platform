@@ -1,0 +1,152 @@
+{
+  "shelf": {
+    "title": "Your study companions",
+    "stats": "{{done}} of {{total}} topics · {{mastery}}% mastered",
+    "statsEmpty": "Topics are on their way",
+    "continueTopic": "Continue: {{title}}",
+    "nextTopic": "Next: {{title}}",
+    "startTopic": "Start: {{title}}",
+    "start": "Start learning",
+    "review": "Review your topics",
+    "openAria": "Open {{name}}"
+  },
+  "modes": {
+    "learn": "Learn",
+    "practice": "Practice",
+    "ask": "Ask"
+  },
+  "room": {
+    "navHeading": "Study companion",
+    "modes": "Study modes",
+    "masteredShort": "mastered",
+    "greeting": "Hi {{name}}! 👋",
+    "greetingNoName": "Hi there! 👋",
+    "pickToLearn": "Pick a topic from {{kb}} and learn it with pictures, tables and examples.",
+    "pickToPractise": "Pick a topic to practise. You'll get instant feedback on every question.",
+    "pickFromMap": "Choose a topic from the map to begin.",
+    "breadcrumb": "Current topic",
+    "closeTopic": "Close this topic",
+    "backHome": "Back to home"
+  },
+  "map": {
+    "title": "Topics",
+    "open": "Show topics",
+    "empty": "No topics yet. Check back soon.",
+    "topicDone": "{{done}}/{{total}} done",
+    "page": "p. {{page}}",
+    "pages": "p. {{start}}-{{end}}",
+    "readyHint": "Lesson ready — opens instantly",
+    "status": {
+      "notStarted": "Not started",
+      "inProgress": "{{percent}}% through",
+      "mastery": "Done · {{mastery}}% mastery"
+    }
+  },
+  "continue": {
+    "title": "Continue where you left off",
+    "upNext": "Up next",
+    "cta": "Continue",
+    "startCta": "Start",
+    "allDoneTitle": "You've finished every topic!",
+    "allDoneBody": "Review any topic from the map, or practise to raise your mastery."
+  },
+  "kinds": {
+    "hook": "Warm-up",
+    "concept": "Big idea",
+    "figure": "Look closely",
+    "compare": "Compare",
+    "process": "Step by step",
+    "example": "Worked example",
+    "flashcards": "Flashcards",
+    "check": "Quick check",
+    "recap": "Recap"
+  },
+  "lesson": {
+    "preparing": "Preparing your lesson",
+    "cardPreparing": "This card is still being prepared",
+    "buildingCard": "Building card {{current}} of {{total}}",
+    "firstTimeHint": "The first time anyone opens a topic it takes a minute or two to prepare. After that it opens instantly.",
+    "cardOf": "Card {{current}} of {{total}}",
+    "prev": "Back",
+    "next": "Next",
+    "finish": "Finish",
+    "goToCard": "Go to card {{number}}",
+    "askAboutCard": "Ask about this card",
+    "completeTitle": "Topic complete!",
+    "mastery": "Mastery",
+    "checksScore": "You got {{right}} of {{total}} quick checks right",
+    "practiceThis": "Practice this topic",
+    "nextTopic": "Next topic: {{title}}",
+    "allTopicsDone": "That was the last topic — well done!",
+    "reviewAgain": "Review from the start"
+  },
+  "check": {
+    "correct": "Correct! 🎉",
+    "incorrect": "Not quite — the answer is {{letter}}."
+  },
+  "practice": {
+    "preparing": "Preparing practice questions",
+    "questionOf": "Question {{current}} of {{total}}",
+    "runningScore": "{{correct}} correct",
+    "nextQuestion": "Next question",
+    "seeScore": "See my score",
+    "score": "You got {{correct}} of {{total}} right",
+    "tryAgain": "Try again",
+    "backToLesson": "Back to the lesson",
+    "difficulty": {
+      "easy": "Easy",
+      "medium": "Medium",
+      "hard": "Hard"
+    },
+    "tier": {
+      "great": "Brilliant work!",
+      "good": "Good going!",
+      "keepGoing": "Keep practising!"
+    }
+  },
+  "ask": {
+    "emptyTitle": "Ask {{name}} anything",
+    "emptyBody": "Answers come straight from {{kb}}, with the pages and pictures they're based on.",
+    "placeholder": "Type your question…",
+    "capReached": "You've used today's questions. Come back tomorrow!",
+    "send": "Send",
+    "thinking": "Looking in your book…",
+    "quota": "{{used}} of {{cap}} questions today",
+    "aboutTopic": "About: {{title}}",
+    "clearContext": "Ask about anything instead",
+    "aboutCardPrefill": "Can you explain \"{{title}}\" in a simpler way?",
+    "figure": "Figure from your book",
+    "enlarge": "Enlarge picture",
+    "page": "page {{page}}",
+    "pageShort": "p.",
+    "starters": {
+      "explain": "Explain {{topic}} simply",
+      "example": "Give me an example of {{topic}}",
+      "keyPoints": "What are the key points of {{topic}}?"
+    },
+    "errors": {
+      "limit": "You've asked a lot for now. Try again a little later.",
+      "failed": "I couldn't answer just now. Please try again.",
+      "thread": "We couldn't load your questions. Please try again."
+    }
+  },
+  "voice": {
+    "readAloud": "Read aloud",
+    "stop": "Stop"
+  },
+  "actions": {
+    "retry": "Try again",
+    "dismiss": "Dismiss"
+  },
+  "errors": {
+    "generic": "Something went wrong. Please try again.",
+    "credits": "Your institute has run out of AI credits. Please let your teacher know.",
+    "forbidden": "This isn't available right now.",
+    "notFound": "We couldn't find that topic.",
+    "lesson": "We couldn't prepare this lesson. Please try again in a minute.",
+    "emptyLesson": "There isn't enough material in the book to make a lesson for this topic yet.",
+    "practice": "We couldn't prepare practice questions. Please try again in a minute.",
+    "emptyPractice": "There are no practice questions for this topic yet.",
+    "companionUnavailable": "This study companion isn't available to you right now."
+  }
+}

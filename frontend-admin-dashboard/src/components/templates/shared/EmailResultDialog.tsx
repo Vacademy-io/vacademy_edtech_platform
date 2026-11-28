@@ -11,6 +11,7 @@ interface EmailResultDialogProps {
         totalStudents: number;
         processedStudents: number;
         failedStudents: number;
+        inProgress?: boolean;
         errors?: Array<{ studentId: string; error: string }>;
     };
 }
@@ -20,10 +21,19 @@ export const EmailResultDialog: React.FC<EmailResultDialogProps> = ({
     onClose,
     result
 }) => {
-    const { success, totalStudents, processedStudents, failedStudents, errors } = result;
+    const { success, totalStudents, processedStudents, failedStudents, errors, inProgress } = result;
     const successCount = processedStudents - failedStudents;
 
     const getDialogContent = () => {
+        if (inProgress) {
+            return {
+                icon: <CheckCircle className="h-12 w-12 text-green-500" />,
+                title: "Sending in the Background",
+                message: `Your email to ${totalStudents} student(s) is going out at a paced rate. This continues even if you close this page, so please do not send it again.`,
+                buttonText: "Close",
+                buttonVariant: "default" as const
+            };
+        }
         if (success && failedStudents === 0) {
             return {
                 icon: <CheckCircle className="h-12 w-12 text-green-500" />,
@@ -44,8 +54,8 @@ export const EmailResultDialog: React.FC<EmailResultDialogProps> = ({
             return {
                 icon: <XCircle className="h-12 w-12 text-red-500" />,
                 title: "Failed to Send Emails",
-                message: `Failed to send all ${failedStudents} email(s). Please check the details and try again.`,
-                buttonText: "Try Again",
+                message: `Could not complete this send to ${failedStudents} student(s). Please check the details before sending again.`,
+                buttonText: "Close",
                 buttonVariant: "destructive" as const
             };
         }

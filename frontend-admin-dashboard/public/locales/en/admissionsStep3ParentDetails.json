@@ -1,0 +1,65 @@
+{
+    "father": {
+        "sectionLabel": "Father",
+        "sectionHeading": "Details",
+        "name": {
+            "label": "Father Name",
+            "placeholder": "Enter Father's Name"
+        },
+        "mobile": {
+            "label": "Mobile Number"
+        },
+        "email": {
+            "label": "Email Address",
+            "placeholder": "Enter Email"
+        },
+        "aadhaar": {
+            "label": "Aadhaar No"
+        },
+        "qualification": {
+            "label": "Qualification",
+            "placeholder": "Enter Qualification"
+        },
+        "occupation": {
+            "label": "Occupation",
+            "placeholder": "Enter Occupation"
+        }
+    },
+    "mother": {
+        "sectionLabel": "Mother",
+        "sectionHeading": "Details",
+        "name": {
+            "label": "Mother Name",
+            "placeholder": "Enter Mother's Name"
+        },
+        "mobile": {
+            "label": "Mobile Number"
+        },
+        "email": {
+            "label": "Email Address",
+            "placeholder": "Enter Email"
+        },
+        "aadhaar": {
+            "label": "Aadhaar No"
+        },
+        "qualification": {
+            "label": "Qualification",
+            "placeholder": "Enter Qualification"
+        },
+        "occupation": {
+            "label": "Occupation",
+            "placeholder": "Enter Occupation"
+        }
+    },
+    "guardian": {
+        "sectionLabel": "Guardian",
+        "sectionHeading": "Details",
+        "name": {
+            "label": "Guardian Name",
+            "placeholder": "Enter Guardian's Name"
+        },
+        "mobile": {
+            "label": "Guardian Mobile"
+        }
+    }
+}

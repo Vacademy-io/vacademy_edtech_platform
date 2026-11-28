@@ -1,0 +1,27 @@
+{
+    "stages": {
+        "salaryStructure": "Structure salariale",
+        "attendance": "Présence",
+        "components": "Composants",
+        "tax": "Impôt",
+        "statutory": "Obligations légales",
+        "loans": "Prêts",
+        "reimbursements": "Remboursements",
+        "adjustments": "Ajustements",
+        "persist": "Enregistrement de l'entrée"
+    },
+    "table": {
+        "headers": {
+            "employeeId": "ID employé",
+            "failedAt": "Échec à",
+            "whatWentWrong": "Ce qui n'a pas fonctionné"
+        },
+        "noMessage": "Aucun message enregistré."
+    },
+    "loadError": "Impossible de charger les erreurs de cette exécution.",
+    "empty": {
+        "title": "Tous les employés ont été traités sans problème.",
+        "description": "Rien n'a échoué dans cette exécution — le registre couvre tous ceux qu'il devait couvrir."
+    },
+    "banner": "Ces employés sont simplement <0>absents</0> de cette exécution — aucun bulletin de paie, rien de payé. Corrigez les données sous-jacentes (généralement une structure salariale manquante), puis rejetez l'exécution et retraitez-la pour les inclure."
+}

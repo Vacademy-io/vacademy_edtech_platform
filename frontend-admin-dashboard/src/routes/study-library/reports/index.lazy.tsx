@@ -3,20 +3,22 @@ import { createLazyFileRoute } from '@tanstack/react-router';
 import { Helmet } from 'react-helmet';
 import { useNavHeadingStore } from '@/stores/layout-container/useNavHeadingStore';
 import { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import HeaderTabs from './-components/headerTabs';
 
 export const Route = createLazyFileRoute('/study-library/reports/')({
     component: RouteComponent,
 });
 
-const heading = (
-    <div className="flex items-center gap-4">
-        <div>Reports</div>
-    </div>
-);
-
 function RouteComponent() {
+    const { t } = useTranslation('studyLibraryReportsIndex');
     const { setNavHeading } = useNavHeadingStore();
+
+    const heading = (
+        <div className="flex items-center gap-4">
+            <div>{t('pageTitle')}</div>
+        </div>
+    );
 
     useEffect(() => {
         setNavHeading(heading);
@@ -24,11 +26,8 @@ function RouteComponent() {
     return (
         <LayoutContainer>
             <Helmet>
-                <title>Reports</title>
-                <meta
-                    name="description"
-                    content="This page shows the study library of the institute."
-                />
+                <title>{t('pageTitle')}</title>
+                <meta name="description" content={t('pageDescription')} />
             </Helmet>
             <HeaderTabs />
         </LayoutContainer>

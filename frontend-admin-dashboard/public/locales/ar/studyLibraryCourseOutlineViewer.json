@@ -1,0 +1,102 @@
+{
+    "meta": {
+        "title": "عارض محتوى الدورة",
+        "description": "استعرض محتوى الدورة الذي أنشأته"
+    },
+    "header": {
+        "backToLibrary": "العودة إلى مكتبة الدورات",
+        "create": "إنشاء",
+        "heading": "الخطوة الأخيرة: تأكيد دورتك",
+        "subheading": "راجع محتوى الدورة الكامل بعناية. أجرِ أي تعديلات أخيرة قبل إنشاء دورتك."
+    },
+    "empty": {
+        "noContent": "لا يوجد محتوى دورة متاح.",
+        "generateFirst": "يرجى إنشاء محتوى الدورة أولاً من صفحة الإنشاء."
+    },
+    "ordinal": {
+        "first": "الأولى",
+        "second": "الثانية"
+    },
+    "session": {
+        "untitled": "جلسة بدون عنوان",
+        "edit": "تعديل",
+        "delete": "حذف",
+        "save": "حفظ",
+        "cancel": "إلغاء",
+        "pagesProgress_zero": "{{completed}}/{{count}} صفحة",
+        "pagesProgress_one": "{{completed}}/صفحة واحدة",
+        "pagesProgress_two": "{{completed}}/صفحتان",
+        "pagesProgress_few": "{{completed}}/{{count}} صفحات",
+        "pagesProgress_many": "{{completed}}/{{count}} صفحة",
+        "pagesProgress_other": "{{completed}}/{{count}} صفحة",
+        "confirmDelete": "هل أنت متأكد من رغبتك في حذف هذه الجلسة؟"
+    },
+    "slide": {
+        "edit": "تعديل",
+        "delete": "حذف",
+        "save": "حفظ",
+        "cancel": "إلغاء",
+        "confirmDelete": "هل أنت متأكد من رغبتك في حذف هذا الـ {{term}}؟",
+        "noContent": "لا يوجد محتوى متاح",
+        "regenerate": "إعادة الإنشاء",
+        "regenerateCode": "إعادة إنشاء الكود",
+        "regenerateVideo": "إعادة إنشاء الفيديو",
+        "regenerateVideoScript": "إعادة إنشاء نص الفيديو",
+        "regenerateQuiz": "إعادة إنشاء الاختبار",
+        "regenerateSolution": "إعادة إنشاء الحل",
+        "regenerateAssignment": "إعادة إنشاء الواجب",
+        "codeEditor": "محرر الكود",
+        "videoPlayer": "مشغل الفيديو",
+        "videoWillBeDisplayed": "سيتم عرض الفيديو هنا",
+        "uploadOrUrlHint": "انقر على أيقونة الرفع أو الرابط لإضافة فيديو",
+        "uploadVideoFromDevice": "رفع فيديو من الجهاز",
+        "addVideoUrl": "إضافة رابط فيديو",
+        "videoUrlLabel": "رابط الفيديو",
+        "videoUrlPlaceholder": "https://www.youtube.com/watch?v=...",
+        "selectVideoFileAlert": "يرجى اختيار ملف فيديو",
+        "learningObjectives": "أهداف التعلم",
+        "document": "مستند",
+        "videoScript": "نص الفيديو",
+        "solutionCode": "كود الحل",
+        "homework": "الواجب المنزلي",
+        "assignment": "الواجب"
+    },
+    "quiz": {
+        "content": "محتوى الاختبار",
+        "addQuestion": "إضافة سؤال",
+        "noQuestions": "لا توجد أسئلة بعد. انقر على \"إضافة سؤال\" للبدء.",
+        "questionLabel": "السؤال {{number}}",
+        "delete": "حذف",
+        "questionText": "نص السؤال",
+        "questionPlaceholder": "اكتب سؤالك هنا...",
+        "options": "الخيارات",
+        "optionPlaceholder": "الخيار {{number}}",
+        "removeOption": "إزالة الخيار",
+        "addOption": "+ إضافة خيار"
+    },
+    "regenerateWarningDialog": {
+        "title": "تحذير حد إعادة الإنشاء",
+        "description": "يمكنك إعادة إنشاء هذا المحتوى مرتين فقط. هذه هي المرة {{ordinal}}.",
+        "body": "يرجى مراجعة المحتوى بعناية قبل المتابعة. بعد مرتين من إعادة الإنشاء، لن تتمكن من إعادة إنشاء هذا المحتوى مرة أخرى.",
+        "cancel": "إلغاء",
+        "proceed": "متابعة"
+    },
+    "regenerateDialog": {
+        "title": "إعادة إنشاء الصفحة",
+        "warningTitle": "تحذير حد إعادة الإنشاء",
+        "warningBody": "يمكنك إعادة إنشاء هذا المحتوى مرتين فقط. هذه هي المرة {{ordinal}}. بعد مرتين من إعادة الإنشاء، لن تتمكن من إعادة إنشاء هذا المحتوى مرة أخرى.",
+        "promptPlaceholder": "صف الطريقة التي تريد بها إعادة إنشاء هذه الصفحة... (اختياري - اتركه فارغاً لإعادة إنشاء بسيطة)",
+        "regenerate": "إعادة الإنشاء"
+    },
+    "regenerationLimitAlert": {
+        "video": "لقد أعدت إنشاء محتوى الفيديو هذا مرتين بالفعل. لا يُسمح بمزيد من إعادة الإنشاء.",
+        "generic": "لقد أعدت إنشاء هذا المحتوى مرتين بالفعل. لا يُسمح بمزيد من إعادة الإنشاء."
+    },
+    "backToLibraryDialog": {
+        "title": "هل تريد العودة إلى مكتبة الدورات؟",
+        "description": "هل أنت متأكد من رغبتك في العودة إلى مكتبة الدورات؟ يمكنك إما تجاهل دورتك الحالية أو حفظها في المسودات.",
+        "cancel": "إلغاء",
+        "discard": "تجاهل الدورة",
+        "saveToDrafts": "حفظ في المسودات"
+    }
+}

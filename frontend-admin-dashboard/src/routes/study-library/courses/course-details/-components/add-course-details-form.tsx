@@ -4,6 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
 import { Dispatch, SetStateAction, useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Form, FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form';
 import { useRouter } from '@tanstack/react-router';
 import { useSelectedSessionStore } from '@/stores/study-library/selected-session-store';
@@ -65,6 +66,7 @@ export const AddCourseDetailsForm = ({
     submitForm,
     packageId,
 }: AddLevelFormProps) => {
+    const { t } = useTranslation('studyLibraryAddCourseDetailsForm');
     const [newSessionName, setNewSessionName] = useState('');
     const { instituteDetails, getAllSessions } = useInstituteDetailsStore();
     const [sessionList, setSessionList] = useState<Session[]>(getAllSessions);
@@ -149,7 +151,12 @@ export const AddCourseDetailsForm = ({
                                     label={getTerminology(ContentTerms.Level, SystemTerms.Level)}
                                     required={true}
                                     inputType="text"
-                                    inputPlaceholder={`Enter ${getTerminology(ContentTerms.Level, SystemTerms.Level).toLowerCase()} name`}
+                                    inputPlaceholder={t('enterName', {
+                                        label: getTerminology(
+                                            ContentTerms.Level,
+                                            SystemTerms.Level
+                                        ).toLowerCase(),
+                                    })}
                                     className="w-[352px]"
                                     input={field.value}
                                     onChangeFunction={(e) => field.onChange(e.target.value)}
@@ -166,10 +173,10 @@ export const AddCourseDetailsForm = ({
                         <FormItem>
                             <FormControl>
                                 <MyInput
-                                    label="Duration (days)"
+                                    label={t('durationDays')}
                                     required={true}
                                     inputType="number"
-                                    inputPlaceholder="Enter duration in days"
+                                    inputPlaceholder={t('enterDurationInDays')}
                                     className="w-[352px]"
                                     input={field.value?.toString() || ''}
                                     onChangeFunction={(e) =>
@@ -191,8 +198,8 @@ export const AddCourseDetailsForm = ({
                                 render={({ field }) => (
                                     <FormItem className="w-full">
                                         <FormControl>
-                                            <div className="mr-4 flex flex-col gap-2 rounded-lg border border-neutral-200 p-4">
-                                                Sessions
+                                            <div className="me-4 flex flex-col gap-2 rounded-lg border border-neutral-200 p-4">
+                                                {t('sessions')}
                                                 {sessionList.map((session) => (
                                                     <div
                                                         key={session.id}
@@ -233,7 +240,9 @@ export const AddCourseDetailsForm = ({
                                                                 {session.session_name}
                                                             </p>
                                                             <p className="text-caption text-neutral-400">
-                                                                Start date: {session.start_date}
+                                                                {t('startDate', {
+                                                                    date: session.start_date,
+                                                                })}
                                                             </p>
                                                         </div>
                                                     </div>

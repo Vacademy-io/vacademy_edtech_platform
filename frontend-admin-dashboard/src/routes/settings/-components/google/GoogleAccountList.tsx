@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { Trans, useTranslation } from 'react-i18next';
+import i18next from 'i18next';
 import {
     CheckCircle,
     WarningCircle,
@@ -47,6 +49,7 @@ interface Props {
  * Test connection · Set default · Toggle auto-recording · Join access (Open/Trusted) · Disconnect.
  */
 export function GoogleAccountList({ accounts, onChanged }: Props) {
+    const { t } = useTranslation('settingsGoogleAccountList');
     const [pendingDisconnect, setPendingDisconnect] = useState<GoogleAccountSummary | null>(null);
     const [pendingOpenAccess, setPendingOpenAccess] = useState<GoogleAccountSummary | null>(null);
     const [busyId, setBusyId] = useState<string | null>(null);
@@ -54,8 +57,7 @@ export function GoogleAccountList({ accounts, onChanged }: Props) {
     if (accounts.length === 0) {
         return (
             <div className="rounded-md border border-dashed border-neutral-200 p-6 text-center text-sm text-neutral-500">
-                No Google Workspace account connected yet. Click “Connect Google Workspace” to enable
-                Google Meet for this institute.
+                {t('emptyState')}
             </div>
         );
     }
@@ -67,7 +69,7 @@ export function GoogleAccountList({ accounts, onChanged }: Props) {
             toast.success(ok);
             onChanged();
         } catch {
-            toast.error('Could not update the account');
+            toast.error(t('toasts.updateFailed'));
         } finally {
             setBusyId(null);
         }
@@ -78,13 +80,13 @@ export function GoogleAccountList({ accounts, onChanged }: Props) {
         try {
             const r = await testGoogleConnection(a.id);
             if (r.ok) {
-                toast.success(`Connected as ${r.accountEmail ?? a.organizerEmail}`);
+                toast.success(t('toasts.connectedAs', { email: r.accountEmail ?? a.organizerEmail }));
                 onChanged();
             } else {
-                toast.error(r.error ?? 'Connection failed');
+                toast.error(r.error ?? t('toasts.connectionFailed'));
             }
         } catch {
-            toast.error('Connection test failed');
+            toast.error(t('toasts.connectionTestFailed'));
         } finally {
             setBusyId(null);
         }
@@ -96,10 +98,10 @@ export function GoogleAccountList({ accounts, onChanged }: Props) {
         setBusyId(a.id);
         try {
             await disconnectGoogleAccount(a.id);
-            toast.success(`Disconnected ${a.organizerEmail}`);
+            toast.success(t('toasts.disconnected', { email: a.organizerEmail }));
             onChanged();
         } catch {
-            toast.error('Failed to disconnect');
+            toast.error(t('toasts.disconnectFailed'));
         } finally {
             setBusyId(null);
             setPendingDisconnect(null);
@@ -113,7 +115,7 @@ export function GoogleAccountList({ accounts, onChanged }: Props) {
         await runUpdate(
             a,
             () => updateGoogleAccountSettings(a.id, { defaultAccessType: 'OPEN' }),
-            'New meetings will use open join (anyone with the link)'
+            t('toasts.openJoinEnabled')
         );
     };
 
@@ -134,12 +136,12 @@ export function GoogleAccountList({ accounts, onChanged }: Props) {
                                 </span>
                                 {a.isDefault && (
                                     <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700">
-                                        <Star size={12} weight="fill" /> Default
+                                        <Star size={12} weight="fill" /> {t('badges.default')}
                                     </span>
                                 )}
                                 {a.recordingEnabled && (
                                     <span className="inline-flex items-center gap-1 rounded-full bg-primary-50 px-2 py-0.5 text-xs font-medium text-primary-600">
-                                        <VideoCamera size={12} /> Auto-record
+                                        <VideoCamera size={12} /> {t('badges.autoRecord')}
                                     </span>
                                 )}
                                 <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-xs text-neutral-600">
@@ -147,13 +149,15 @@ export function GoogleAccountList({ accounts, onChanged }: Props) {
                                 </span>
                                 {a.status === 'RECONNECT_NEEDED' && (
                                     <span className="rounded-full bg-red-50 px-2 py-0.5 text-xs font-medium text-red-600">
-                                        Reconnect needed
+                                        {t('badges.reconnectNeeded')}
                                     </span>
                                 )}
                             </div>
                             <div className="mt-0.5 text-xs text-neutral-500">
                                 {a.label}
-                                {a.lastVerifiedAt && <> · last verified {formatDate(a.lastVerifiedAt)}</>}
+                                {a.lastVerifiedAt && (
+                                    <> {t('row.lastVerified', { date: formatDate(a.lastVerifiedAt) })}</>
+                                )}
                             </div>
                         </div>
 
@@ -164,14 +168,14 @@ export function GoogleAccountList({ accounts, onChanged }: Props) {
                                     size="icon"
                                     className="size-8"
                                     disabled={busyId === a.id}
-                                    aria-label="Account actions"
+                                    aria-label={t('row.actionsAriaLabel')}
                                 >
                                     <DotsThreeVertical size={18} />
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="w-56">
                                 <DropdownMenuItem onSelect={() => onTest(a)}>
-                                    <Lightning size={14} className="mr-2" /> Test connection
+                                    <Lightning size={14} className="me-2" /> {t('menu.testConnection')}
                                 </DropdownMenuItem>
                                 {!a.isDefault && (
                                     <DropdownMenuItem
@@ -179,11 +183,11 @@ export function GoogleAccountList({ accounts, onChanged }: Props) {
                                             runUpdate(
                                                 a,
                                                 () => setDefaultGoogleAccount(a.id),
-                                                `${a.organizerEmail} is now the default`
+                                                t('toasts.setDefault', { email: a.organizerEmail })
                                             )
                                         }
                                     >
-                                        <Star size={14} className="mr-2" /> Set as default
+                                        <Star size={14} className="me-2" /> {t('menu.setAsDefault')}
                                     </DropdownMenuItem>
                                 )}
                                 <DropdownMenuItem
@@ -195,13 +199,13 @@ export function GoogleAccountList({ accounts, onChanged }: Props) {
                                                     recordingEnabled: !a.recordingEnabled,
                                                 }),
                                             a.recordingEnabled
-                                                ? 'Auto-recording disabled'
-                                                : 'Auto-recording enabled (needs a recording-capable Workspace edition)'
+                                                ? t('toasts.autoRecordingDisabled')
+                                                : t('toasts.autoRecordingEnabled')
                                         )
                                     }
                                 >
                                     <VideoCamera size={14} className="mr-2" />
-                                    {a.recordingEnabled ? 'Disable auto-recording' : 'Enable auto-recording'}
+                                    {a.recordingEnabled ? t('menu.disableAutoRecording') : t('menu.enableAutoRecording')}
                                 </DropdownMenuItem>
                                 {a.defaultAccessType === 'OPEN' ? (
                                     <DropdownMenuItem
@@ -212,22 +216,22 @@ export function GoogleAccountList({ accounts, onChanged }: Props) {
                                                     updateGoogleAccountSettings(a.id, {
                                                         defaultAccessType: 'TRUSTED',
                                                     }),
-                                                'New meetings will require guests to knock'
+                                                t('toasts.requireKnockEnabled')
                                             )
                                         }
                                     >
-                                        <Lock size={14} className="mr-2" /> Require knock (Trusted)
+                                        <Lock size={14} className="me-2" /> {t('menu.requireKnock')}
                                     </DropdownMenuItem>
                                 ) : (
                                     <DropdownMenuItem onSelect={() => setPendingOpenAccess(a)}>
-                                        <LockOpen size={14} className="mr-2" /> Allow open join…
+                                        <LockOpen size={14} className="me-2" /> {t('menu.allowOpenJoin')}
                                     </DropdownMenuItem>
                                 )}
                                 <DropdownMenuItem
                                     onSelect={() => setPendingDisconnect(a)}
                                     className="text-red-600 focus:text-red-700"
                                 >
-                                    <LinkBreak size={14} className="mr-2" /> Disconnect
+                                    <LinkBreak size={14} className="me-2" /> {t('menu.disconnect')}
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>
@@ -241,20 +245,20 @@ export function GoogleAccountList({ accounts, onChanged }: Props) {
             >
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>Disconnect Google Workspace?</AlertDialogTitle>
+                        <AlertDialogTitle>{t('dialogs.disconnect.title')}</AlertDialogTitle>
                         <AlertDialogDescription>
-                            {pendingDisconnect?.organizerEmail} will be disconnected and its access
-                            revoked. Existing live sessions remain unaffected, but you won’t be able to
-                            create new Google Meet sessions until you reconnect.
+                            {t('dialogs.disconnect.description', {
+                                email: pendingDisconnect?.organizerEmail ?? '',
+                            })}
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogCancel>{t('actions.cancel')}</AlertDialogCancel>
                         <AlertDialogAction
                             onClick={confirmDisconnect}
                             className="bg-red-600 hover:bg-red-700"
                         >
-                            Disconnect
+                            {t('dialogs.disconnect.confirm')}
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
@@ -266,18 +270,20 @@ export function GoogleAccountList({ accounts, onChanged }: Props) {
             >
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>Allow open join?</AlertDialogTitle>
+                        <AlertDialogTitle>{t('dialogs.openAccess.title')}</AlertDialogTitle>
                         <AlertDialogDescription>
-                            With open join, <strong>anyone who has the meeting link can join without
-                            knocking</strong> — a Google Meet link is a plain URL with no passcode. Use
-                            this only if you’re comfortable that the link is shared solely with enrolled
-                            learners through Vacademy. You can switch back to “require knock” anytime.
+                            <Trans i18nKey="settingsGoogleAccountList:dialogs.openAccess.description">
+                                With open join, <strong>anyone who has the meeting link can join without
+                                knocking</strong> — a Google Meet link is a plain URL with no passcode. Use
+                                this only if you’re comfortable that the link is shared solely with enrolled
+                                learners through Vacademy. You can switch back to “require knock” anytime.
+                            </Trans>
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogCancel>{t('actions.cancel')}</AlertDialogCancel>
                         <AlertDialogAction onClick={confirmOpenAccess}>
-                            Allow open join
+                            {t('dialogs.openAccess.confirm')}
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
@@ -289,11 +295,11 @@ export function GoogleAccountList({ accounts, onChanged }: Props) {
 function accessLabel(accessType: string): string {
     switch (accessType) {
         case 'OPEN':
-            return 'Open join';
+            return i18next.t('settingsGoogleAccountList:accessLabel.open');
         case 'RESTRICTED':
-            return 'Restricted';
+            return i18next.t('settingsGoogleAccountList:accessLabel.restricted');
         default:
-            return 'Knock to join';
+            return i18next.t('settingsGoogleAccountList:accessLabel.knock');
     }
 }
 

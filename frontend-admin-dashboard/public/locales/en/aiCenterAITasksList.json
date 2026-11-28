@@ -1,0 +1,39 @@
+{
+    "statusFilters": {
+        "all": "All",
+        "ready": "Ready",
+        "inProgress": "In progress",
+        "failed": "Failed"
+    },
+    "dateBuckets": {
+        "today": "Today",
+        "yesterday": "Yesterday",
+        "earlierThisWeek": "Earlier this week",
+        "older": "Older"
+    },
+    "taskCard": {
+        "download": "Download"
+    },
+    "dialog": {
+        "viewAll": "View all",
+        "refresh": "Refresh",
+        "close": "Close",
+        "searchPlaceholder": "Search by name or filename…",
+        "clearSearch": "Clear search",
+        "itemCount_one": "{{count}} item",
+        "itemCount_other": "{{count}} items"
+    },
+    "emptyState": {
+        "nothingHereYet": "Nothing here yet",
+        "nothingHereYetDescription": "Anything you draft with this tool will show up here.",
+        "noMatches": "No matches",
+        "noMatchesDescription": "Try a different search term or filter.",
+        "clearFilters": "Clear filters"
+    },
+    "pagination": {
+        "showingRange": "Showing {{start}}–{{end}} of {{total}}",
+        "prev": "Prev",
+        "next": "Next",
+        "pageOf": "Page {{current}} of {{total}}"
+    }
+}

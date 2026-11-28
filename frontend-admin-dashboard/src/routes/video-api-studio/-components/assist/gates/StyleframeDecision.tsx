@@ -1,4 +1,6 @@
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
@@ -37,10 +39,15 @@ const smallChipCls = (active: boolean) =>
     );
 
 /** "Space Grotesk + Inter" → "Space Grotesk for headlines · Inter for body". */
-function describePairing(label: string): string {
+function describePairing(label: string, t: TFunction): string {
     const [display, body] = label.split(' + ');
-    if (display && body) return `${display} for headlines · ${body} for body`;
+    if (display && body) return t('typography.pairingCaption', { display, body });
     return label;
+}
+
+/** Raw finishing values ('none' | 'soft' | 'film' | 'medium' | 'glow') → translated chip label. */
+function buildFinishingOptionLabel(t: TFunction) {
+    return (value: string): string => t(`finishing.options.${value}`, { defaultValue: value });
 }
 
 /**
@@ -51,6 +58,8 @@ function describePairing(label: string): string {
  * signature. Only fields the user actually changed are sent back.
  */
 export function StyleframeDecision({ decision, isSubmitting, onSubmit }: StyleframeDecisionProps) {
+    const { t } = useTranslation('videoApiStudioStyleframeDecision');
+    const finishingOptionLabel = useMemo(() => buildFinishingOptionLabel(t), [t]);
     const identity = useMemo<DesignIdentity | null>(
         () => decision.payload?.identity ?? null,
         [decision.payload]
@@ -79,9 +88,12 @@ export function StyleframeDecision({ decision, isSubmitting, onSubmit }: Stylefr
 
     const activePairingOption = pairingOptions.find((o) => o.key === activePairing);
     const pairingCaption = activePairingOption
-        ? describePairing(activePairingOption.label)
+        ? describePairing(activePairingOption.label, t)
         : identity
-          ? `${identity.typography.display} for headlines · ${identity.typography.body} for body`
+          ? t('typography.pairingCaption', {
+                display: identity.typography.display,
+                body: identity.typography.body,
+            })
           : '';
 
     // Only fields that differ from the drafted identity go into the edit.
@@ -125,7 +137,7 @@ export function StyleframeDecision({ decision, isSubmitting, onSubmit }: Stylefr
                     <span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-violet-100 dark:bg-violet-900/30">
                         <Palette className="size-4 text-violet-600" />
                     </span>
-                    Design identity
+                    {t('header.title')}
                     {identity?.identity_name ? (
                         <span className="truncate rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
                             {identity.identity_name}
@@ -144,7 +156,7 @@ export function StyleframeDecision({ decision, isSubmitting, onSubmit }: Stylefr
 
             {!identity ? (
                 <div className="px-4 py-6 text-center text-sm text-muted-foreground">
-                    No design identity was attached to this decision.
+                    {t('emptyState.noIdentity')}
                 </div>
             ) : (
                 <>
@@ -152,27 +164,31 @@ export function StyleframeDecision({ decision, isSubmitting, onSubmit }: Stylefr
                         <div className="border-b px-4 py-3">
                             <img
                                 src={identity.styleframe_url}
-                                alt={`Styleframe — ${identity.identity_name}`}
+                                alt={t('styleframe.altText', { name: identity.identity_name })}
                                 loading="lazy"
                                 className="max-h-64 w-full rounded-lg border object-cover"
                             />
                             <p className="mt-1.5 text-xs text-muted-foreground">
-                                Styleframe — the look every shot follows
+                                {t('styleframe.caption')}
                             </p>
                         </div>
                     ) : (
                         <div className="border-b px-4 py-2.5 text-xs text-muted-foreground">
-                            No styleframe rendered for this run
+                            {t('styleframe.notRendered')}
                         </div>
                     )}
 
                     <div className="space-y-1.5 border-b px-4 py-3">
-                        <p className="text-xs font-medium text-muted-foreground">Typography</p>
+                        <p className="text-xs font-medium text-muted-foreground">
+                            {t('typography.label')}
+                        </p>
                         {identity.typography.locked_by_brand ? (
                             <p className="flex items-center gap-1.5 text-sm text-foreground">
                                 <Lock className="size-3.5 shrink-0 text-muted-foreground" />
-                                Locked by your brand kit: {identity.typography.display} /{' '}
-                                {identity.typography.body}
+                                {t('typography.lockedByBrand', {
+                                    display: identity.typography.display,
+                                    body: identity.typography.body,
+                                })}
                             </p>
                         ) : (
                             <>
@@ -202,7 +218,7 @@ export function StyleframeDecision({ decision, isSubmitting, onSubmit }: Stylefr
                     {motionOptions.length > 0 && (
                         <div className="space-y-1.5 border-b px-4 py-3">
                             <p className="text-xs font-medium text-muted-foreground">
-                                Motion personality
+                                {t('motion.label')}
                             </p>
                             <div className="flex flex-wrap gap-1.5">
                                 {motionOptions.map((o) => (
@@ -224,13 +240,15 @@ export function StyleframeDecision({ decision, isSubmitting, onSubmit }: Stylefr
                     <div className="flex flex-wrap gap-x-6 gap-y-2 border-b px-4 py-3">
                         {(
                             [
-                                ['Grain', GRAIN_OPTIONS, activeGrain, setGrainPick],
-                                ['Vignette', VIGNETTE_OPTIONS, activeVignette, setVignettePick],
-                                ['Light', LIGHT_OPTIONS, activeLight, setLightPick],
+                                ['grain', GRAIN_OPTIONS, activeGrain, setGrainPick],
+                                ['vignette', VIGNETTE_OPTIONS, activeVignette, setVignettePick],
+                                ['light', LIGHT_OPTIONS, activeLight, setLightPick],
                             ] as const
-                        ).map(([label, options, active, set]) => (
-                            <div key={label} className="space-y-1.5">
-                                <p className="text-xs font-medium text-muted-foreground">{label}</p>
+                        ).map(([groupKey, options, active, set]) => (
+                            <div key={groupKey} className="space-y-1.5">
+                                <p className="text-xs font-medium text-muted-foreground">
+                                    {t(`finishing.groups.${groupKey}`)}
+                                </p>
                                 <div className="flex flex-wrap gap-1.5">
                                     {options.map((v) => (
                                         <button
@@ -240,7 +258,7 @@ export function StyleframeDecision({ decision, isSubmitting, onSubmit }: Stylefr
                                             onClick={() => set(v)}
                                             className={smallChipCls(active === v)}
                                         >
-                                            {v}
+                                            {finishingOptionLabel(v)}
                                         </button>
                                     ))}
                                 </div>
@@ -260,13 +278,13 @@ export function StyleframeDecision({ decision, isSubmitting, onSubmit }: Stylefr
                             ) : (
                                 <CaretRight className="size-3" />
                             )}
-                            Advanced
+                            {t('advanced.toggle')}
                         </button>
                         {advancedOpen && (
                             <div className="space-y-2">
                                 <div className="space-y-1">
                                     <p className="text-xs font-medium text-muted-foreground">
-                                        Color arc
+                                        {t('advanced.colorArc')}
                                     </p>
                                     <Textarea
                                         value={colorArc}
@@ -274,12 +292,12 @@ export function StyleframeDecision({ decision, isSubmitting, onSubmit }: Stylefr
                                         onChange={(e) => setColorArc(e.target.value)}
                                         rows={2}
                                         className="min-h-0 resize-y text-sm leading-relaxed"
-                                        placeholder="How color evolves across the video"
+                                        placeholder={t('advanced.colorArcPlaceholder')}
                                     />
                                 </div>
                                 <div className="space-y-1">
                                     <p className="text-xs font-medium text-muted-foreground">
-                                        Image art direction
+                                        {t('advanced.imageArtDirection')}
                                     </p>
                                     <Textarea
                                         value={imageArt}
@@ -287,7 +305,7 @@ export function StyleframeDecision({ decision, isSubmitting, onSubmit }: Stylefr
                                         onChange={(e) => setImageArt(e.target.value)}
                                         rows={2}
                                         className="min-h-0 resize-y text-sm leading-relaxed"
-                                        placeholder="How generated images should look"
+                                        placeholder={t('advanced.imageArtPlaceholder')}
                                     />
                                 </div>
                             </div>
@@ -305,7 +323,7 @@ export function StyleframeDecision({ decision, isSubmitting, onSubmit }: Stylefr
                     className="gap-1.5 text-muted-foreground"
                 >
                     <Sparkle className="size-3.5" />
-                    Let AI decide
+                    {t('actions.letAiDecide')}
                 </Button>
                 <Button
                     size="sm"
@@ -314,7 +332,7 @@ export function StyleframeDecision({ decision, isSubmitting, onSubmit }: Stylefr
                     className="gap-1.5 bg-gradient-to-r from-violet-600 to-indigo-600 text-white hover:from-violet-700 hover:to-indigo-700"
                 >
                     <Check className="size-4" />
-                    {dirty ? 'Save & continue' : 'Approve & continue'}
+                    {dirty ? t('actions.saveAndContinue') : t('actions.approveAndContinue')}
                 </Button>
             </div>
         </div>

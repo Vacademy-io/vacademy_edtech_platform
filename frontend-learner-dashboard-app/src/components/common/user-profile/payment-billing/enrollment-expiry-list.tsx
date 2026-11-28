@@ -1,9 +1,16 @@
 ﻿import { useQuery } from "@tanstack/react-query";
 import { format, differenceInCalendarDays } from "date-fns";
 import { CalendarBlank, SpinnerGap, WarningCircle } from "@phosphor-icons/react";
+import { useTranslation } from "react-i18next";
+import i18n from "@/i18n";
 import { cn } from "@/lib/utils";
 import { fetchStudentDetails } from "@/services/studentDetails";
 import type { Student } from "@/types/user/user-detail";
+import {
+  getTerminology,
+  getTerminologyPlural,
+} from "@/components/common/layout-container/sidebar/utils";
+import { ContentTerms, SystemTerms } from "@/types/naming-settings";
 
 interface EnrollmentExpiryListProps {
   instituteId: string;
@@ -18,15 +25,29 @@ interface EnrollmentRow {
   remainingDays: number | null;
 }
 
+/**
+ * The "Invited" placeholder batch every course carries (level and session ids
+ * both INVITED). A learner sits in it while an invite is pending; it is not
+ * access, so it has no place in a list of memberships. The details API returns
+ * names only, so match the seeded names, both of them, so a real batch that
+ * happens to be called "Invited" still shows.
+ */
+const isInvitedPlaceholder = (s: Student): boolean =>
+  s.level_name?.trim().toLowerCase() === "invited level" &&
+  s.session_name?.trim().toLowerCase() === "invited";
+
 const buildRows = (students: Student[]): EnrollmentRow[] => {
+  const course = getTerminology(ContentTerms.Course, SystemTerms.Course);
   return students
-    .filter((s) => s.package_session_id)
+    .filter((s) => s.package_session_id && !isInvitedPlaceholder(s))
     .map((s) => {
       const expiry = s.expiry_date ? new Date(s.expiry_date) : null;
       const validExpiry = expiry && !isNaN(expiry.getTime()) ? expiry : null;
       return {
         packageSessionId: s.package_session_id,
-        title: s.package_name || "Enrolled Course",
+        title:
+          s.package_name ||
+          i18n.t("userProfileExtra:enrollmentExpiry.enrolledFallbackTitle", { course }),
         subtitle: [s.level_name, s.session_name].filter(Boolean).join(" - "),
         expiryDate: validExpiry ? format(validExpiry, "dd MMM yyyy") : null,
         remainingDays: validExpiry
@@ -45,6 +66,7 @@ export const EnrollmentExpiryList = ({
   instituteId,
   userId,
 }: EnrollmentExpiryListProps) => {
+  const { t } = useTranslation("userProfileExtra");
   const { data, isLoading, isError } = useQuery({
     queryKey: ["LEARNER_ENROLLMENT_EXPIRY", instituteId, userId],
     queryFn: async () => {
@@ -62,7 +84,7 @@ export const EnrollmentExpiryList = ({
     return (
       <div className="flex items-center gap-2 py-4 text-sm text-gray-500">
         <SpinnerGap className="size-4 animate-spin" />
-        Loading your enrollments...
+        {t("enrollmentExpiry.loading")}
       </div>
     );
   }
@@ -71,15 +93,19 @@ export const EnrollmentExpiryList = ({
     return (
       <div className="flex items-center gap-2 py-4 text-sm text-danger-600">
         <WarningCircle className="size-4" />
-        Could not load enrollment expiry details.
+        {t("enrollmentExpiry.error")}
       </div>
     );
   }
 
   if (!data || data.length === 0) {
+    const courses = getTerminologyPlural(
+      ContentTerms.Course,
+      SystemTerms.Course
+    ).toLocaleLowerCase();
     return (
       <p className="py-4 text-sm text-gray-500">
-        You are not enrolled in any courses yet.
+        {t("enrollmentExpiry.empty", { courses })}
       </p>
     );
   }
@@ -125,14 +151,14 @@ export const EnrollmentExpiryList = ({
                   </p>
                   <p className="text-xs text-gray-500">
                     {expired
-                      ? "Expired"
+                      ? t("enrollmentExpiry.expired")
                       : row.remainingDays === 0
-                        ? "Expires today"
-                        : `${row.remainingDays} days left`}
+                        ? t("enrollmentExpiry.expiresToday")
+                        : t("enrollmentExpiry.daysLeft", { count: row.remainingDays ?? 0 })}
                   </p>
                 </div>
               ) : (
-                <p className="text-sm text-gray-500">No expiry</p>
+                <p className="text-sm text-gray-500">{t("enrollmentExpiry.noExpiry")}</p>
               )}
             </div>
           </li>

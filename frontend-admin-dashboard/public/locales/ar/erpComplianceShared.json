@@ -1,0 +1,19 @@
+{
+    "warnings": {
+        "title": "تحقق قبل التقديم"
+    },
+    "skipped": {
+        "defaultNoun": "موظف",
+        "excludedCount_zero": "لا يوجد {{noun}} مستبعدون من هذا الملف",
+        "excludedCount_one": "{{noun}} واحد مستبعد من هذا الملف",
+        "excludedCount_two": "{{noun}}ان مستبعدان من هذا الملف",
+        "excludedCount_few": "{{count}} {{noun}} مستبعدون من هذا الملف",
+        "excludedCount_many": "{{count}} {{noun}} مستبعدًا من هذا الملف",
+        "excludedCount_other": "{{count}} {{noun}} مستبعد من هذا الملف",
+        "fixHint": "صحّح السبب أدناه ثم أعد الإنشاء — الملف كما هو لا يشملهم.",
+        "table": {
+            "employee": "الموظف",
+            "reason": "السبب"
+        }
+    }
+}

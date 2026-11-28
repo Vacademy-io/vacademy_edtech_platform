@@ -11,8 +11,8 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
 import { FilterOption, FilterProps } from '@/types/assessments/question-paper-filter';
-import { Check } from 'lucide-react';
-import { PlusCircle } from '@phosphor-icons/react';
+import { Check, PlusCircle } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
 
 export const QuestionPapersFilter = ({
     label,
@@ -20,6 +20,7 @@ export const QuestionPapersFilter = ({
     selectedItems,
     onSelectionChange,
 }: FilterProps) => {
+    const { t } = useTranslation('assessmentQuestionPapersFilter');
     const toggleSelection = (option: FilterOption) => {
         const updatedItems = selectedItems.some((item) => item.id === option.id)
             ? selectedItems.filter((item) => item.id !== option.id)
@@ -43,17 +44,17 @@ export const QuestionPapersFilter = ({
                         <>
                             <Separator orientation="vertical" className="mx-2 bg-black" />
                             <span className="rounded-md bg-primary-200 px-3 py-1 text-xs">
-                                {selectedItems.length} selected
+                                {t('selectedCount', { count: selectedItems.length })}
                             </span>
                         </>
                     )}
                 </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-[200px] p-0" align="start">
+            <PopoverContent className="w-56 p-0" align="start">
                 <Command>
-                    <CommandInput placeholder={`Search ${label}...`} />
+                    <CommandInput placeholder={t('searchPlaceholder', { label })} />
                     <CommandList>
-                        <CommandEmpty>No results found.</CommandEmpty>
+                        <CommandEmpty>{t('noResults')}</CommandEmpty>
                         <CommandGroup heading={label}>
                             {data?.map((option, index) => {
                                 const isSelected = selectedItems.some(

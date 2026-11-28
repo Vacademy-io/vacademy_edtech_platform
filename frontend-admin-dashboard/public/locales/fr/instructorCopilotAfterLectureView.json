@@ -1,0 +1,15 @@
+{
+    "backButton": "Retour aux modes de cours",
+    "heading": "Après le cours",
+    "subtitle": "Révision et analyse",
+    "cards": {
+        "logs": {
+            "title": "Journaux des cours précédents",
+            "description": "Consultez l'historique de vos sessions enregistrées et transcrites."
+        },
+        "analyse": {
+            "title": "Analysez votre cours",
+            "description": "Obtenez des informations approfondies et des retours sur votre style d'enseignement."
+        }
+    }
+}

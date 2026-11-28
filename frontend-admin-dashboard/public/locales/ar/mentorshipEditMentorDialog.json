@@ -1,0 +1,22 @@
+{
+    "editMentorHeading": "تعديل {{name}}",
+    "defaultMentorName": "المرشد",
+    "description": "كيف يظهر هذا المرشد للمتعلمين. يبقى حسابه ودوره دون تغيير.",
+    "mentorAlt": "المرشد",
+    "uploading": "جارٍ الرفع…",
+    "changePhoto": "تغيير الصورة",
+    "uploadPhoto": "رفع صورة",
+    "photoHelp": "تظهر على بطاقته في الدليل وفي مرشديّ.",
+    "displayNameLabel": "الاسم المعروض",
+    "displayNamePlaceholder": "الاسم المعروض",
+    "titleLabel": "المسمى الوظيفي",
+    "titlePlaceholder": "مثال: مرشد مسار مهني أول",
+    "bioLabel": "السيرة الذاتية",
+    "bioPlaceholder": "سيرة موجزة تُعرض للمتعلمين",
+    "cancel": "إلغاء",
+    "saving": "جارٍ الحفظ…",
+    "saveChanges": "حفظ التغييرات",
+    "mentorUpdated": "تم تحديث المرشد",
+    "photoUploadFailed": "فشل رفع الصورة",
+    "updateFailed": "فشل تحديث المرشد"
+}

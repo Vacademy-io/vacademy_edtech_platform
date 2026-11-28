@@ -1,0 +1,52 @@
+{
+    "eyebrow": "Admission Application",
+    "status": {
+        "admitted": "Admitted",
+        "approved": "Approved",
+        "rejected": "Rejected",
+        "pending": "Pending",
+        "underReview": "Under Review",
+        "submitted": "Submitted"
+    },
+    "stageSteps": {
+        "submitted": "Submitted",
+        "review": "Under Review",
+        "decision": "Decision"
+    },
+    "hero": {
+        "trackingId": "Tracking ID: {{id}}",
+        "stage": "Stage: {{stage}}"
+    },
+    "empty": {
+        "title": "No application found",
+        "hint": "No application is linked to this learner yet."
+    },
+    "error": {
+        "title": "Couldn't load application details",
+        "hint": "Something went wrong while fetching the application. Please try again."
+    },
+    "sections": {
+        "studentInformation": "Student Information",
+        "parentInformation": "Parent Information",
+        "applicationTimeline": "Application Timeline"
+    },
+    "fields": {
+        "fullName": "Full Name",
+        "dateOfBirth": "Date of Birth",
+        "gender": "Gender",
+        "classAppliedFor": "Class Applied For",
+        "fatherName": "Father Name",
+        "motherName": "Mother Name",
+        "applyingForClass": "Applying For Class",
+        "academicYear": "Academic Year",
+        "email": "Email",
+        "mobileNumber": "Mobile Number",
+        "address": "Address",
+        "trackingId": "Tracking ID",
+        "currentStage": "Current Stage",
+        "stageStatus": "Stage Status",
+        "createdAt": "Created At",
+        "lastUpdated": "Last Updated"
+    },
+    "notAvailable": "N/A"
+}

@@ -1,0 +1,60 @@
+{
+    "dialog": {
+        "headingEdit": "Edit Evaluation Criteria",
+        "headingAdd": "Add Evaluation Criteria"
+    },
+    "footer": {
+        "cancel": "Cancel",
+        "save": "Save Criteria"
+    },
+    "questionInfo": {
+        "typeLabel": "Question Type:",
+        "maxMarksLabel": "Max Marks:"
+    },
+    "tabs": {
+        "manual": "Manual",
+        "ai": "AI Generate",
+        "template": "Use Template"
+    },
+    "manual": {
+        "criteriaHeading": "Criteria {{index}}",
+        "nameLabel": "Criteria Name",
+        "namePlaceholder": "e.g., Content Quality",
+        "descriptionLabel": "Description",
+        "descriptionPlaceholder": "e.g., Depth and accuracy of content",
+        "maxMarksLabel": "Max Marks",
+        "maxMarksPlaceholder": "0",
+        "addCriteria": "Add Criteria",
+        "saveAsTemplateLabel_one": "Save as template for reuse ({{questionType}} - {{count}} mark)",
+        "saveAsTemplateLabel_other": "Save as template for reuse ({{questionType}} - {{count}} marks)",
+        "totalMarks_one": "Total: {{achieved}} / {{count}} mark",
+        "totalMarks_other": "Total: {{achieved}} / {{count}} marks",
+        "totalMarksValidSuffix": " ✓",
+        "totalMarksInvalidSuffix": " (must match question marks)"
+    },
+    "ai": {
+        "generatedBanner": "✓ Criteria generated successfully!",
+        "marksBadge_one": "{{count}} mark",
+        "marksBadge_other": "{{count}} marks",
+        "regenerate": "Regenerate",
+        "emptyPrompt": "Let AI generate evaluation criteria for this question",
+        "generateButton": "Generate with AI"
+    },
+    "template": {
+        "selectPrompt": "Select a template to use:",
+        "emptyState": "No templates found for this question type",
+        "criteriaCount_one": "{{count}} criteria",
+        "criteriaCount_other": "{{count}} criteria",
+        "marksCount_one": "{{count}} mark",
+        "marksCount_other": "{{count}} marks"
+    },
+    "toasts": {
+        "criteriaGenerated": "Criteria generated successfully!",
+        "generateFailed": "Failed to generate criteria. Please try again.",
+        "templateSaved": "Criteria saved as template!",
+        "templateSaveFailed": "Failed to save template",
+        "invalidMarksDistribution": "Invalid marks distribution",
+        "criteriaSaved": "Criteria saved successfully!",
+        "incompleteCriteria": "Please complete the criteria before saving"
+    }
+}

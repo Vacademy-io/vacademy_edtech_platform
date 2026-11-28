@@ -1,0 +1,14 @@
+{
+    "heading": "الجلسات القادمة",
+    "loading": "جارٍ التحميل…",
+    "learnerFallback": "طالب",
+    "todayBadge": "اليوم",
+    "joinButton": "انضمام",
+    "linkPendingTitle": "لا يزال يتم إنشاء رابط الاجتماع. إذا لم يظهر، اطلب من المسؤول التحقق من اتصال جوجل.",
+    "linkPendingLabel": "الرابط قيد الإنشاء",
+    "rescheduleAriaLabel": "إعادة جدولة الجلسة مع {{name}}",
+    "rescheduleTitle": "نقل هذه الجلسة إلى موعد آخر",
+    "cancelAriaLabel": "إلغاء الجلسة مع {{name}}",
+    "cancelTitle": "إلغاء هذه الجلسة",
+    "thisLearnerFallback": "هذا الطالب"
+}

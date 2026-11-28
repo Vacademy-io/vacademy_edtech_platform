@@ -2,6 +2,7 @@ package vacademy.io.admin_core_service.features.live_session.provider.scheduler;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -34,6 +35,7 @@ public class ZoomRecordingS3SyncProcessor {
     private int rescueWithinDays;
 
     /** Runs every 6 hours (offset to minute :37). */
+    @SchedulerLock(name = "ZoomRecordingS3Rescue", lockAtMostFor = "PT5H", lockAtLeastFor = "PT1M")
     @Scheduled(cron = "${zoom.recording.s3.rescue.cron:0 37 */6 * * ?}")
     public void rescueExpiringRecordings() {
         if (!enabled) {

@@ -1,0 +1,5 @@
+{
+    "assessmentNameRequired": "Le nom de l'évaluation est requis",
+    "endDateAfterStartDate": "La date de fin doit être postérieure à la date de début",
+    "reattemptCountPositive": "Le nombre de tentatives doit être supérieur à 0"
+}

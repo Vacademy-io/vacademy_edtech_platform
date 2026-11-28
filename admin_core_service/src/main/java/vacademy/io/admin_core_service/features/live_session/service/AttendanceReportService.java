@@ -4,12 +4,20 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import vacademy.io.admin_core_service.features.common.dto.CustomFieldDTO;
+import vacademy.io.admin_core_service.features.common.enums.CustomFieldValueSourceTypeEnum;
+import vacademy.io.admin_core_service.features.common.repository.CustomFieldValuesRepository;
+import vacademy.io.admin_core_service.features.institute_learner.entity.Student;
+import vacademy.io.admin_core_service.features.institute_learner.repository.InstituteStudentRepository;
 import vacademy.io.admin_core_service.features.institute_learner.repository.StudentSessionInstituteGroupMappingRepository;
 import vacademy.io.admin_core_service.features.live_session.dto.*;
+import vacademy.io.admin_core_service.features.live_session.entity.LiveSession;
 import vacademy.io.admin_core_service.features.live_session.repository.LiveSessionParticipantRepository;
+import vacademy.io.admin_core_service.features.live_session.repository.LiveSessionRepository;
 import vacademy.io.admin_core_service.features.live_session.repository.SessionGuestRegistrationRepository;
+import vacademy.io.common.exceptions.VacademyException;
 
 import java.time.LocalDate;
 import java.util.*;
@@ -17,11 +25,155 @@ import java.util.stream.Collectors;
 
 @Service
 public class AttendanceReportService {
+    /** A class report never lists more learners than this; anything beyond is ignored. */
+    private static final int LEARNER_CUSTOM_FIELDS_MAX_IDS = 5000;
+    /** Ids per IN (...) query, so one big class doesn't become one huge bind list. */
+    private static final int LEARNER_CUSTOM_FIELDS_CHUNK = 500;
+
     @Autowired
     private LiveSessionParticipantRepository liveSessionParticipantRepository;
 
     @Autowired
     private SessionGuestRegistrationRepository sessionGuestRegistrationRepository;
+
+    @Autowired
+    private LiveSessionRepository liveSessionRepository;
+
+    @Autowired
+    private CustomFieldValuesRepository customFieldValuesRepository;
+
+    @Autowired
+    private StudentSessionInstituteGroupMappingRepository studentSessionInstituteGroupMappingRepository;
+
+    @Autowired
+    private InstituteStudentRepository instituteStudentRepository;
+
+    /**
+     * Extra columns for the admin attendance table: each learner's institute custom-field answers
+     * and profile (system) fields. Everything is limited to the class's own institute, which is
+     * resolved from the session, never from the caller: custom fields to that institute's fields,
+     * profile fields to learners who have a mapping row in that institute.
+     */
+    public LearnerReportFieldsDTO getLearnerReportFields(String sessionId, List<String> userIds) {
+        LearnerReportFieldsDTO empty = new LearnerReportFieldsDTO(Collections.emptyMap(), Collections.emptyMap());
+        if (sessionId == null || sessionId.isBlank() || userIds == null || userIds.isEmpty()) {
+            return empty;
+        }
+        String instituteId = liveSessionRepository.findById(sessionId)
+                .map(LiveSession::getInstituteId)
+                .orElse(null);
+        if (instituteId == null || instituteId.isBlank()) {
+            return empty;
+        }
+
+        List<String> ids = userIds.stream()
+                .filter(Objects::nonNull)
+                .map(String::trim)
+                .filter(id -> !id.isEmpty())
+                .distinct()
+                .limit(LEARNER_CUSTOM_FIELDS_MAX_IDS)
+                .collect(Collectors.toList());
+
+        return new LearnerReportFieldsDTO(
+                getLearnerWiseCustomFields(sessionId, instituteId, ids),
+                getLearnerWiseSystemFields(instituteId, ids));
+    }
+
+    /**
+     * Latest custom-field answer per field for each learner, limited to the custom fields of the
+     * institute. Blank answers are left out, so a column only shows a value when the learner has one.
+     */
+    private Map<String, List<CustomFieldDTO>> getLearnerWiseCustomFields(String sessionId, String instituteId,
+                                                                         List<String> ids) {
+        Map<String, Map<String, CustomFieldDTO>> byUser = new LinkedHashMap<>();
+        for (int from = 0; from < ids.size(); from += LEARNER_CUSTOM_FIELDS_CHUNK) {
+            List<String> chunk = ids.subList(from, Math.min(from + LEARNER_CUSTOM_FIELDS_CHUNK, ids.size()));
+            // Row: [sourceId, customFieldId, fieldKey, fieldName, fieldType, value, sourceType],
+            // newest first per learner — so the first row seen for a field key is the current answer.
+            List<Object[]> rows = customFieldValuesRepository.findActiveInstituteCustomFieldsByUserIds(
+                    CustomFieldValueSourceTypeEnum.USER.name(), chunk, instituteId);
+            for (Object[] row : rows) {
+                String userId = (String) row[0];
+                String fieldKey = (String) row[2];
+                if (userId == null || fieldKey == null) {
+                    continue;
+                }
+                Map<String, CustomFieldDTO> fields = byUser.computeIfAbsent(userId, k -> new LinkedHashMap<>());
+                if (fields.containsKey(fieldKey)) {
+                    continue;
+                }
+                CustomFieldDTO dto = new CustomFieldDTO();
+                dto.setId((String) row[1]);
+                dto.setFieldKey(fieldKey);
+                dto.setFieldName((String) row[3]);
+                dto.setFieldType((String) row[4]);
+                dto.setCustomFieldValue((String) row[5]);
+                dto.setSessionId(sessionId);
+                dto.setLiveSessionId(sessionId);
+                fields.put(fieldKey, dto);
+            }
+        }
+
+        Map<String, List<CustomFieldDTO>> result = new LinkedHashMap<>();
+        byUser.forEach((userId, fields) -> {
+            List<CustomFieldDTO> answered = fields.values().stream()
+                    .filter(f -> f.getCustomFieldValue() != null && !f.getCustomFieldValue().isBlank())
+                    .collect(Collectors.toList());
+            if (!answered.isEmpty()) {
+                result.put(userId, answered);
+            }
+        });
+        return result;
+    }
+
+    /**
+     * Profile fields from the learner's student row, keyed by the institute system-field keys
+     * (the ones Settings → Custom Fields renames/hides), so the admin table can label them the
+     * institute's way. Only learners with a mapping row in the institute are returned.
+     */
+    private Map<String, Map<String, String>> getLearnerWiseSystemFields(String instituteId, List<String> ids) {
+        Map<String, Map<String, String>> result = new LinkedHashMap<>();
+        for (int from = 0; from < ids.size(); from += LEARNER_CUSTOM_FIELDS_CHUNK) {
+            List<String> chunk = ids.subList(from, Math.min(from + LEARNER_CUSTOM_FIELDS_CHUNK, ids.size()));
+            List<String> inInstitute = studentSessionInstituteGroupMappingRepository
+                    .findUserIdsInInstitute(instituteId, chunk);
+            if (inInstitute.isEmpty()) {
+                continue;
+            }
+            // A user can have more than one student row; the most recently updated one wins,
+            // and an older row only fills a field the newer one left blank.
+            List<Student> students = new ArrayList<>(instituteStudentRepository.findByUserIdIn(inInstitute));
+            students.sort(Comparator.comparing(Student::getUpdatedAt,
+                    Comparator.nullsLast(Comparator.reverseOrder())));
+            for (Student st : students) {
+                if (st.getUserId() == null) {
+                    continue;
+                }
+                Map<String, String> fields = result.computeIfAbsent(st.getUserId(), k -> new LinkedHashMap<>());
+                putIfPresent(fields, "USERNAME", st.getUsername());
+                putIfPresent(fields, "FATHER_NAME", st.getFatherName());
+                putIfPresent(fields, "MOTHER_NAME", st.getMotherName());
+                putIfPresent(fields, "PARENTS_MOBILE_NUMBER", st.getParentsMobileNumber());
+                putIfPresent(fields, "PARENTS_EMAIL", st.getParentsEmail());
+                putIfPresent(fields, "PARENTS_TO_MOTHER_MOBILE_NUMBER", st.getParentToMotherMobileNumber());
+                putIfPresent(fields, "PARENTS_TO_MOTHER_EMAIL", st.getParentsToMotherEmail());
+                putIfPresent(fields, "ADDRESS_LINE", st.getAddressLine());
+                putIfPresent(fields, "CITY", st.getCity());
+                putIfPresent(fields, "REGION", st.getRegion());
+                putIfPresent(fields, "PIN_CODE", st.getPinCode());
+                putIfPresent(fields, "COUNTRY", st.getCountry());
+                putIfPresent(fields, "LINKED_INSTITUTE_NAME", st.getLinkedInstituteName());
+            }
+        }
+        result.values().removeIf(Map::isEmpty);
+        return result;
+    }
+
+    private static void putIfPresent(Map<String, String> fields, String key, String value) {
+        if (value != null && !value.isBlank()) {
+            fields.putIfAbsent(key, value.trim());
+        }
+    }
 
     public Map<String, List<CustomFieldDTO>> getGuestWiseCustomFields(String sessionId) {
         List<GuestSessionCustomFieldDTO> projections = sessionGuestRegistrationRepository.findGuestCustomFieldsBySessionId(sessionId);
@@ -120,6 +272,14 @@ public class AttendanceReportService {
         }
     }
     public Page<StudentAttendanceDTO> getAllByAttendanceFilterRequest(AttendanceFilterRequest filter, Pageable pageable) {
+        // Fail closed: batch_ids/live_session_ids are both optional ("all"), so instituteId is
+        // the only thing keeping this report inside one institute. Without it the query used to
+        // return every learner on the platform.
+        String instituteId = filter.getInstituteId() != null ? filter.getInstituteId().trim() : null;
+        if (instituteId == null || instituteId.isEmpty()) {
+            throw new VacademyException(HttpStatus.BAD_REQUEST, "institute_id is required");
+        }
+
         String name = (filter.getName() != null && !filter.getName().trim().isEmpty())
                 ? filter.getName().trim()
                 : null;
@@ -127,6 +287,7 @@ public class AttendanceReportService {
         List<String> batchIds = filter.getBatchIds() != null ? filter.getBatchIds() : Collections.emptyList();
         List<String> liveSessionIds = filter.getLiveSessionIds() != null ? filter.getLiveSessionIds() : Collections.emptyList();
         Page<String> studentIdsPage = liveSessionParticipantRepository.findDistinctStudentIdsWithFilters(
+                instituteId,
                 name,
                 filter.getStartDate(),
                 filter.getEndDate(),
@@ -140,6 +301,7 @@ public class AttendanceReportService {
             return new PageImpl<>(Collections.emptyList(), pageable, 0);
         }
         List<AttendanceReportProjection> attendanceRecords = liveSessionParticipantRepository.getAttendanceReportForStudentIds(
+                instituteId,
                 studentIdsPage.getContent(),
                 filter.getStartDate(),
                 filter.getEndDate(),
@@ -205,6 +367,10 @@ public class AttendanceReportService {
         String search = (request.getSearchQuery() != null && !request.getSearchQuery().trim().isEmpty())
                 ? request.getSearchQuery().trim()
                 : null;
+        // Flag + value pair (not a nullable numeric) — Postgres cannot infer the
+        // type of a null bind in ":param IS NULL", so the query would fail with 42P18.
+        boolean hasRatingBelow = request.getRatingBelow() != null;
+        double ratingBelow = hasRatingBelow ? request.getRatingBelow() : 0d;
 
         return liveSessionParticipantRepository.searchFeedback(
                 request.getInstituteId(),
@@ -215,6 +381,8 @@ public class AttendanceReportService {
                 subjects,
                 subjects.size(),
                 search,
+                hasRatingBelow ? 1 : 0,
+                ratingBelow,
                 pageable
         );
     }
@@ -298,7 +466,10 @@ public class AttendanceReportService {
                     .statusType(guestDto.getStatusType())
                     .engagementData(guestDto.getEngagementData())
                     .providerTotalDurationMinutes(guestDto.getProviderTotalDurationMinutes())
+                    .providerTotalDurationSeconds(guestDto.getProviderTotalDurationSeconds())
                     .feedbackDetails(null)
+                    .batchName(null)
+                    .registeredAt(guestDto.getRegisteredAt())
                     .build();
         }
     }

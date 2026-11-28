@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { CaretDown, Info } from "@phosphor-icons/react";
+import { useTranslation } from "react-i18next";
 import { extractTextFromHTML } from "@/components/common/helper";
 import { getTerminology } from "@/components/common/layout-container/sidebar/utils";
 import { ContentTerms, SystemTerms } from "@/types/naming-settings";
@@ -25,6 +26,8 @@ export const CourseDetailsCollapsible = ({
   courseData: CourseDetailsForSections;
   showInstructors?: boolean;
 }) => {
+  const { t } = useTranslation("courseDetailsA");
+  const course = getTerminology(ContentTerms.Course, SystemTerms.Course);
   const [open, setOpen] = useState<boolean>(false);
   const hasWhatYoullLearn = !!extractTextFromHTML(courseData?.whatYoullLearn);
   const hasAboutTheCourse = !!extractTextFromHTML(courseData?.aboutTheCourse);
@@ -51,7 +54,7 @@ export const CourseDetailsCollapsible = ({
         <span className="flex items-center gap-2 min-w-0">
           <Info className="w-4 h-4 text-primary flex-shrink-0" weight="bold" />
           <span className="text-sm font-semibold truncate">
-            {getTerminology(ContentTerms.Course, SystemTerms.Course)} Highlights
+            {t("detailsCollapsible.highlights", { course })}
           </span>
         </span>
         <CaretDown

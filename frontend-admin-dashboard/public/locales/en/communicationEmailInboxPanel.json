@@ -1,0 +1,14 @@
+{
+    "title": "Email Inbox",
+    "refresh": "Refresh",
+    "inboxFor": "Inbox for",
+    "noSendersConfigured": "No senders configured",
+    "allSenders": "All senders ({{count}})",
+    "direction": {
+        "all": "All",
+        "sent": "Sent",
+        "received": "Received"
+    },
+    "searchPlaceholder": "Search mail by email or subject",
+    "clearSearch": "Clear search"
+}

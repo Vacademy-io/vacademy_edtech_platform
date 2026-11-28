@@ -1,15 +1,33 @@
 import base64
 import logging
+import threading
+import time
 from typing import Optional, Annotated
 
 from fastapi import Depends, HTTPException, status, Request, Header
-from jose import jwt, JWTError
+from jose import jwt, JWTError, ExpiredSignatureError
 import httpx
 
 from ..config import get_settings, Settings
 from ..schemas.auth import CustomUserDetails, AuthError, PinnedPrincipal
+from . import demo_read_only
 
 logger = logging.getLogger(__name__)
+
+
+class AuthServiceUnavailable(Exception):
+    """auth-service could not answer, which says nothing about the token."""
+
+
+def _auth_service_could_not_answer(response: httpx.Response) -> bool:
+    """
+    True for a 5xx, except auth-service's answer for an unknown username. That
+    one comes out of its catch-all as 511 and is a real rejection, which a
+    refresh can still recover from when the username has changed.
+    """
+    if response.status_code < 500:
+        return False
+    return not (response.status_code == 511 and "could not found user" in response.text)
 
 
 def _extract_bearer(auth_header: Optional[str]) -> Optional[str]:
@@ -19,29 +37,156 @@ def _extract_bearer(auth_header: Optional[str]) -> Optional[str]:
     return auth_header[len("Bearer "):]
 
 
+def _key_bytes(secret: str) -> bytes:
+    """
+    Mirrors the Java side (common_service JwtService.keyFor): the secret STRING
+    is BASE64-decoded to bytes before use. We pad to a valid base64 length first.
+    """
+    missing_padding = len(secret) % 4
+    if missing_padding:
+        secret = secret + "=" * (4 - missing_padding)
+    return base64.b64decode(secret)
+
+
+def _decode_with(token: str, secret: str, settings: Settings) -> dict:
+    return jwt.decode(
+        token,
+        _key_bytes(secret),
+        algorithms=[settings.jwt_algorithm],
+        options={"verify_aud": False, "verify_iss": False},
+    )
+
+
+# One INFO line per user per hour when a token verifies only with the previous key,
+# so the sessions still on it can be counted before that key is removed.
+_PREVIOUS_KEY_LOG_INTERVAL_S = 3600
+_PREVIOUS_KEY_LOG_MAX_ENTRIES = 50_000
+_previous_key_logged_at: dict = {}
+_previous_key_log_lock = threading.Lock()
+
+
+def _note_previous_key_use(claims: dict) -> None:
+    user_id = str(claims.get("user") or "-")
+    now = time.monotonic()
+    with _previous_key_log_lock:
+        last = _previous_key_logged_at.get(user_id)
+        if last is not None and now - last < _PREVIOUS_KEY_LOG_INTERVAL_S:
+            return
+        if len(_previous_key_logged_at) >= _PREVIOUS_KEY_LOG_MAX_ENTRIES:
+            _previous_key_logged_at.clear()
+        _previous_key_logged_at[user_id] = now
+    logger.info("Token verified with JWT_SECRET_KEY_PREVIOUS (user=%s)", user_id)
+
+
 def _decode_jwt_token(token: str, settings: Settings) -> Optional[dict]:
     """
     Verify the HS256 signature and return the JWT claims, or None if invalid.
 
-    Mirrors the Java side (common_service JwtService.getSignInKey): the secret
-    STRING is BASE64-decoded to bytes before use. We pad to a valid base64
-    length first. This does not mutate the cached settings object.
+    Accepts JWT_SECRET_KEY and, when set, JWT_SECRET_KEY_PREVIOUS (verification
+    only), like common_service JwtService. This does not mutate the cached
+    settings object.
     """
     try:
-        secret = settings.jwt_secret_key
-        missing_padding = len(secret) % 4
-        if missing_padding:
-            secret = secret + "=" * (4 - missing_padding)
-        secret_bytes = base64.b64decode(secret)
-        return jwt.decode(
-            token,
-            secret_bytes,
-            algorithms=[settings.jwt_algorithm],
-            options={"verify_aud": False, "verify_iss": False},
-        )
+        return _decode_with(token, settings.jwt_secret_key, settings)
     except Exception as e:
+        previous = (getattr(settings, "jwt_secret_key_previous", "") or "").strip()
+        # Only a signature mismatch can be fixed by the other key; an expired or
+        # malformed token stays rejected.
+        if previous and previous != settings.jwt_secret_key and isinstance(e, JWTError) \
+                and not isinstance(e, ExpiredSignatureError):
+            try:
+                claims = _decode_with(token, previous, settings)
+            except Exception:
+                claims = None
+            if claims is not None:
+                _note_previous_key_use(claims)
+                return claims
         logger.error(f"JWT Validation failed: {e}")
         return None
+
+def decode_access_token(token: str) -> Optional[dict]:
+    """
+    Verify an access token outside the HTTP dependency chain and return its
+    claims, or None if it is missing/invalid.
+
+    WebSockets cannot carry an Authorization header from a browser, so the voice
+    socket verifies the token it is handed as its first message with this.
+    """
+    if not token:
+        return None
+    # No HTTP request to judge here (sockets spend on speech and models), so the
+    # read-only demo user is refused outright.
+    if demo_read_only.token_holds_role(token):
+        return None
+    return _decode_jwt_token(token, get_settings())
+
+
+def is_platform_staff(user) -> bool:
+    """
+    True only for a caller whose auth user id is on SUPER_ADMIN_USER_IDS: the
+    gate for global writes (super-admin endpoints, credit rate, credit grants,
+    model registry). Exact id match: ids are immutable, unlike usernames, which
+    their owner can rename or case-vary. is_root_user and the ADMIN / ROOT_ADMIN
+    roles are deliberately NOT staff signals (ordinary admins and learners carry
+    them). Unset = nobody passes.
+    """
+    if not user:
+        return False
+    raw = get_settings().super_admin_user_ids or ""
+    allowed = {uid.strip() for uid in raw.split(",") if uid.strip()}
+    user_id = user.get("user_id") if isinstance(user, dict) else getattr(user, "user_id", None)
+    return bool(user_id) and str(user_id).strip() in allowed
+
+
+def jwt_institute_roles(authorization: Optional[str], institute_id: Optional[str]) -> Optional[set]:
+    """
+    The caller's roles in ONE institute, read from the verified JWT's
+    per-institute authorities map, or None when the token is missing/invalid or
+    names no such institute. Roles are uppercased with spaces/hyphens as '_'.
+
+    No root bypass: is_root_user is set for ordinary admins and learners, so it
+    says nothing about membership of a particular institute.
+    """
+    token = _extract_bearer(authorization)
+    if not token or not institute_id:
+        return None
+    payload = _decode_jwt_token(token, get_settings())
+    if payload is None:
+        return None
+    authorities = payload.get("authorities")
+    entry = authorities.get(str(institute_id)) if isinstance(authorities, dict) else None
+    if not isinstance(entry, dict):
+        return None
+    return {
+        str(r).strip().upper().replace("-", "_").replace(" ", "_")
+        for r in (entry.get("roles") or []) if r
+    }
+
+
+def require_institute_member(
+    authorization: Optional[str],
+    institute_id: Optional[str],
+    *,
+    admin: bool = False,
+) -> None:
+    """
+    403 unless the bearer token is a member of `institute_id` (and, with
+    admin=True, holds the ADMIN role there). Call it after get_current_user /
+    get_optional_user has authenticated the caller; it adds the tenant check
+    those do not make (they trust the clientId header verbatim).
+    """
+    roles = jwt_institute_roles(authorization, institute_id)
+    if roles is None:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You are not a member of this institute.",
+        )
+    if admin and "ADMIN" not in roles:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only institute admins can do this.",
+        )
+
 
 async def get_optional_user(
     request: Request,
@@ -55,9 +200,11 @@ async def get_optional_user(
     """
     if not authorization:
         return None
-        
+
+    demo_read_only.enforce_request(request, authorization)
+
     try:
-        return await _verify_and_fetch_user(authorization, request, settings)
+        return await _verify_and_fetch_user(authorization, _client_id_from_request(request), settings)
     except Exception as e:
         logger.warning(f"Optional auth failed: {e}")
         return None
@@ -76,9 +223,11 @@ async def get_current_user(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Missing Authorization header"
         )
-        
+
+    demo_read_only.enforce_request(request, authorization)
+
     try:
-        user = await _verify_and_fetch_user(authorization, request, settings)
+        user = await _verify_and_fetch_user(authorization, _client_id_from_request(request), settings)
         if not user:
              raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
@@ -95,9 +244,26 @@ async def get_current_user(
         )
 
 
-async def _verify_and_fetch_user(auth_header: str, request: Request, settings: Settings) -> Optional[CustomUserDetails]:
+def _client_id_from_request(request: Request) -> Optional[str]:
+    """The institute this request declares, via the `clientId` header."""
+    return request.headers.get("clientId") or request.headers.get("client_id")
+
+
+async def _verify_and_fetch_user(
+    auth_header: str,
+    client_id: Optional[str],
+    settings: Settings,
+    raise_on_unavailable: bool = False,
+) -> Optional[CustomUserDetails]:
     """
     Internal logic to decode JWT and call Auth Service.
+
+    Takes the institute id explicitly rather than a Request, so callers without
+    an HTTP request in hand (the MCP server, which replays a stored token) reuse
+    exactly this verification path.
+
+    With raise_on_unavailable, an unreachable or failing auth-service raises
+    AuthServiceUnavailable instead of returning None like a rejected token.
     """
     if not auth_header.startswith("Bearer "):
         # Log to debug
@@ -120,11 +286,9 @@ async def _verify_and_fetch_user(auth_header: str, request: Request, settings: S
         logger.warning("CLIENT_SECRET not configured. Skipping Auth Service call. Returning JWT claims.")
         return _create_user_from_jwt_payload(payload)
         
-    # Extract 'clientId' (Institute ID) from headers, as required by Auth Service
+    # 'clientId' (Institute ID) is required by Auth Service:
     # Java: final String instituteId = request.getHeader("clientId");
     # Java: final String usernameWithInstituteId = instituteId + "@" + jwtService.extractUsername(jwt);
-    client_id = request.headers.get("clientId") or request.headers.get("client_id")
-    
     if not client_id:
          # Fallback: if no institute ID header, we can't construct the full username expected by Auth Service
          # But maybe Auth Service accepts just username if institute is implicit? 
@@ -169,10 +333,14 @@ async def _verify_and_fetch_user(auth_header: str, request: Request, settings: S
                  logger.warning(f"Auth Service returned {response.status_code} for user {full_username}: {response.text}")
                  # Fallback to JWT if Auth Service fails? 
                  # User said "verify via auth service". If verification fails, we should fail.
+                 if raise_on_unavailable and _auth_service_could_not_answer(response):
+                     raise AuthServiceUnavailable(f"auth-service answered {response.status_code}")
                  return None
                  
     except httpx.RequestError as e:
         logger.error(f"Failed to connect to Auth Service: {e}")
+        if raise_on_unavailable:
+            raise AuthServiceUnavailable(type(e).__name__) from e
         return None
 
 def _create_user_from_jwt_payload(payload: dict) -> CustomUserDetails:
@@ -215,13 +383,52 @@ async def get_pinned_principal(
         401 — missing/invalid token (via get_current_user).
         403 — no `clientId` header, or the user is not a member of that institute.
     """
+    demo_read_only.enforce_request(request, authorization)
+    return await resolve_pinned_principal(
+        token=_extract_bearer(authorization),
+        client_id=_client_id_from_request(request),
+        settings=settings,
+    )
+
+
+async def resolve_pinned_principal(
+    token: Optional[str],
+    client_id: Optional[str],
+    settings: Settings,
+    raise_on_unavailable: bool = False,
+) -> PinnedPrincipal:
+    """
+    The body of the Assistant trust boundary, without an HTTP request.
+
+    Callers that hold a platform token and an institute id directly — the MCP
+    server replays a stored token on every tool call — go through this so the
+    verification, pinning and authorities-map rules stay in exactly one place.
+
+    Raises the same HTTPExceptions as get_pinned_principal (401/403). With
+    raise_on_unavailable, also AuthServiceUnavailable.
+    """
     # 1. Enforce authentication (and liveness/enabled checks when CLIENT_SECRET
     #    is configured). Reuses the existing, audited verification path.
-    current_user = await get_current_user(request, authorization, settings)
+    if not token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Missing Authorization header",
+        )
 
-    # 2. Pin the institute from the clientId header. There is no implicit
-    #    institute — the caller must declare which one this session is for.
-    client_id = request.headers.get("clientId") or request.headers.get("client_id")
+    verify_options = {"raise_on_unavailable": True} if raise_on_unavailable else {}
+    try:
+        current_user = await _verify_and_fetch_user(f"Bearer {token}", client_id, settings, **verify_options)
+    except AuthError as ae:
+        raise HTTPException(status_code=ae.status_code, detail=ae.message)
+
+    if not current_user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate credentials",
+        )
+
+    # 2. Pin the institute. There is no implicit institute — the caller must
+    #    declare which one this session is for.
     if not client_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -231,8 +438,7 @@ async def get_pinned_principal(
     # 3. Decode the JWT to read the per-institute authorities map. The map shape
     #    is {instituteId: {"roles": [...], "permissions": [...]}} — built by Java
     #    common_service UserRoleService.createInstituteRoleMap.
-    token = _extract_bearer(authorization)
-    payload = _decode_jwt_token(token, settings) if token else None
+    payload = _decode_jwt_token(token, settings)
     if payload is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

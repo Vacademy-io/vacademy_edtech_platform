@@ -13,7 +13,8 @@ http://notification-service:8076/notification-service/v1/institute-settings
 ### 1. Create or Update Institute Settings
 Configure announcement permissions and limitations for an institute.
 
-**Endpoint:** `POST /institute-settings`
+**Endpoint:** `POST /institute-settings`  
+**Auth:** JWT + `clientId` header; caller must be an ADMIN of the institute. Responses never include the Firebase key.
 
 **Request Body:**
 ```json
@@ -125,17 +126,17 @@ GET /institute-settings/institute/institute_123/permissions?userRole=TEACHER&act
 }
 ```
 
-### 4. Get All Institute Settings (Admin)
-Retrieve settings for all institutes.
+### 4. Get All Institute Settings (closed)
+Closed: always returns `403 NOT_AVAILABLE`. There is no platform-staff role to gate a cross-institute
+listing on, and nothing calls it. Read one institute at a time with endpoint 2.
 
 **Endpoint:** `GET /institute-settings/all`
-
-**Response:** Array of institute settings objects.
 
 ### 5. Delete Institute Settings
 Remove settings for an institute (reverts to defaults).
 
 **Endpoint:** `DELETE /institute-settings/institute/{instituteId}`
+**Auth:** JWT + `clientId` header; caller must be an ADMIN of that institute.
 
 **Response:** `204 No Content`
 
@@ -324,7 +325,11 @@ const settings = {
 
 const response = await fetch('/notification-service/v1/institute-settings', {
   method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
+  headers: {
+    'Content-Type': 'application/json',
+    Authorization: `Bearer ${accessToken}`, // caller must be an ADMIN of the institute
+    clientId: instituteId,
+  },
   body: JSON.stringify(settings)
 });
 ```
@@ -346,16 +351,8 @@ if (!permissions.canPerform) {
 ```
 
 ### Bulk Settings Management
-```javascript
-// Get all institute settings for admin dashboard
-const allSettings = await fetch('/notification-service/v1/institute-settings/all');
-const institutes = await allSettings.json();
-
-// Display settings for each institute
-institutes.forEach(institute => {
-  console.log(`Institute ${institute.instituteId}:`, institute.settings);
-});
-```
+`GET /institute-settings/all` is closed (403). Read settings per institute with
+`GET /institute-settings/institute/{instituteId}`.
 
 ## Best Practices
 

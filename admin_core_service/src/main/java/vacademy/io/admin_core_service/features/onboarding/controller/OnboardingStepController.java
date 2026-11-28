@@ -10,16 +10,23 @@ import vacademy.io.admin_core_service.features.onboarding.dto.ReorderStepsReques
 import vacademy.io.admin_core_service.features.onboarding.entity.OnboardingFlow;
 import vacademy.io.admin_core_service.features.onboarding.entity.OnboardingStep;
 import vacademy.io.admin_core_service.features.onboarding.service.OnboardingFlowService;
+import vacademy.io.admin_core_service.features.onboarding.service.OnboardingRoleAccessResolutionService;
 import vacademy.io.admin_core_service.features.onboarding.service.OnboardingStepService;
 import vacademy.io.admin_core_service.features.onboarding.service.OnboardingStepWorkflowTriggerService;
 import vacademy.io.common.auth.model.CustomUserDetails;
+import vacademy.io.common.exceptions.ForbiddenException;
 import vacademy.io.common.exceptions.InvalidRequestException;
 
 import java.util.List;
 import java.util.Map;
 
 /**
- * Every endpoint here is institute-admin-only. Institute is always resolved from the FLOW
+ * Editing steps is institute-admin-only; LISTING them is not -- the student side-view reads a
+ * flow's step definitions to know which steps are optional and which assign a course, and a
+ * staff role granted a step has to be able to load that. So {@link #listSteps} requires staff
+ * plus a grant in the flow, and everything else stays admin-only.
+ *
+ * <p>Institute is always resolved from the FLOW
  * entity itself (via {@code flowId}, which every route under this controller carries in its
  * path) rather than trusted from any client-supplied instituteId param -- a caller who is a
  * genuine admin of their OWN institute could otherwise pass someone else's flowId/stepId
@@ -33,6 +40,7 @@ public class OnboardingStepController {
     private final OnboardingStepService onboardingStepService;
     private final OnboardingFlowService onboardingFlowService;
     private final OnboardingStepWorkflowTriggerService onboardingStepWorkflowTriggerService;
+    private final OnboardingRoleAccessResolutionService roleAccessResolutionService;
     private final InstituteAccessValidator instituteAccessValidator;
 
     @PostMapping
@@ -49,7 +57,11 @@ public class OnboardingStepController {
     public ResponseEntity<List<OnboardingStepDTO>> listSteps(
             @RequestAttribute("user") CustomUserDetails userDetails,
             @PathVariable("flowId") String flowId) {
-        requireAdminForFlow(userDetails, flowId);
+        OnboardingFlow flow = onboardingFlowService.getFlow(flowId);
+        instituteAccessValidator.requireStaffAccess(userDetails, flow.getInstituteId());
+        if (!roleAccessResolutionService.hasAnyGrantInFlow(userDetails, flow.getInstituteId(), flowId)) {
+            throw new ForbiddenException("Access denied: your role has no access to this onboarding flow");
+        }
         List<OnboardingStepDTO> steps = onboardingStepService.listSteps(flowId).stream()
                 .map(OnboardingStepDTO::fromEntity).toList();
         return ResponseEntity.ok(steps);

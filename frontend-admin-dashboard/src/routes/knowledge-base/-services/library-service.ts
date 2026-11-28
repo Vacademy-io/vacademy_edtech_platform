@@ -6,6 +6,7 @@ import type {
     FacetValues,
     LibraryListing,
     LibraryListingDetail,
+    LibraryTaxonomy,
     ListingDraft,
     ListingStatus,
     PublisherListingRow,
@@ -27,6 +28,17 @@ export const getCatalogue = async (filters: CatalogueFilters = {}): Promise<Cata
             ),
         }
     );
+    return data;
+};
+
+/**
+ * Every board, exam, class and subject the picker offers, each counted.
+ * Counts are per medium when one is given, across all mediums otherwise.
+ */
+export const getTaxonomy = async (language?: string): Promise<LibraryTaxonomy> => {
+    const { data } = await authenticatedAxiosInstance.get<LibraryTaxonomy>(`${BASE}/taxonomy`, {
+        params: language ? { language } : {},
+    });
     return data;
 };
 

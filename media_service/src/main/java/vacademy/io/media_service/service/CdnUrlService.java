@@ -7,6 +7,7 @@ import org.springframework.util.StringUtils;
 import java.io.ByteArrayOutputStream;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 
 /**
  * Single choke point for building permanent URLs to PUBLIC-bucket objects.
@@ -19,6 +20,13 @@ import java.nio.charset.StandardCharsets;
  *
  * <p>Only public, permanent URLs belong here. Private-bucket content (call
  * recordings, PII) keeps using S3 presigned GETs in {@link FileServiceImpl}.
+ *
+ * <p>The distribution serves the public bucket only, except for the path
+ * prefixes in {@code cdn.private-routed-prefixes}, which have their own cache
+ * behaviors pointing at the private bucket. There is no fallback from the
+ * public bucket to the private one (CloudFront's flat-rate plans don't support
+ * origin failover), so a CDN URL works only for an object that is in the public
+ * bucket or under one of those prefixes.
  */
 @Service
 public class CdnUrlService {
@@ -29,8 +37,25 @@ public class CdnUrlService {
     @Value("${aws.s3.public-bucket}")
     private String publicBucket;
 
+    /**
+     * Key prefixes the distribution routes to the PRIVATE bucket, one cache
+     * behavior each (PRIVATE_UPLOAD and ADMIN_UPLOAD also require a signature).
+     * Must match the distribution's behaviors.
+     */
+    @Value("${cdn.private-routed-prefixes:PRIVATE_UPLOAD/,ADMIN_UPLOAD/,BBB_RECORDING/,AI_CALL_RECORDING/}")
+    private List<String> privateRoutedPrefixes;
+
     public boolean isCdnEnabled() {
         return StringUtils.hasText(publicBaseUrl);
+    }
+
+    /** True when the distribution serves this key from the private bucket. */
+    public boolean isRoutedToPrivateOrigin(String objectKey) {
+        if (!StringUtils.hasText(objectKey)) {
+            return false;
+        }
+        String key = objectKey.trim();
+        return privateRoutedPrefixes.stream().anyMatch(p -> StringUtils.hasText(p) && key.startsWith(p.trim()));
     }
 
     /**

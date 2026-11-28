@@ -1,0 +1,31 @@
+{
+    "header": {
+        "title": "Review uploaded questions",
+        "summary_one": "{{grouped}} of {{count}} question need attention",
+        "summary_other": "{{grouped}} of {{count}} questions need attention",
+        "errorsCount_one": "— {{count}} with errors",
+        "errorsCount_other": "— {{count}} with errors",
+        "warningsCount_one": ", {{count}} with warnings",
+        "warningsCount_other": ", {{count}} with warnings"
+    },
+    "actionsBar": {
+        "summary": "{{skipCount}} marked to skip · {{proceedCount}} will be added to the form",
+        "skipAll": "Skip all",
+        "skipNone": "Skip none"
+    },
+    "listItem": {
+        "questionNumber": "Q{{number}}",
+        "errorBadge": "Error",
+        "warningBadge": "Warning"
+    },
+    "footer": {
+        "copyDiagnostics": "Copy diagnostic JSON",
+        "cancel": "Cancel",
+        "keepAllAndEdit": "Keep all & edit",
+        "skipAndProceed": "Skip & proceed ({{count}})"
+    },
+    "toasts": {
+        "copySuccess": "Diagnostic info copied to clipboard",
+        "copyFailed": "Could not copy to clipboard"
+    }
+}

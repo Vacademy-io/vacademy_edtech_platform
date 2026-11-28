@@ -5,8 +5,11 @@ import {
   EnvelopeSimple,
   SpinnerGap,
 } from "@phosphor-icons/react";
+import { useTranslation } from "react-i18next";
 import { ModernCard } from "@/components/design-system/modern-card";
 import { MyButton } from "@/components/design-system/button";
+import { getTerminology } from "@/components/common/layout-container/sidebar/utils";
+import { RoleTerms, SystemTerms } from "@/types/naming-settings";
 import { renderSafeLinkText } from "../-utils/safe-link-text";
 
 /** Redirect delay — long enough to read the confirmation, short enough to feel instant. */
@@ -54,6 +57,8 @@ const CompletionPanel = ({
   completionButtonUrl,
   completionRedirectUrl,
 }: CompletionPanelProps) => {
+  const { t } = useTranslation("registrationB");
+  const admin = getTerminology(RoleTerms.Admin, SystemTerms.Admin);
   const redirectUrl = asHttpsUrl(completionRedirectUrl);
   const buttonUrl = asHttpsUrl(completionButtonUrl);
   const buttonLabel = completionButtonLabel?.trim() || null;
@@ -84,8 +89,8 @@ const CompletionPanel = ({
           </div>
           <p className="text-lg font-semibold text-neutral-700">
             {paid
-              ? "Payment confirmed — taking you onward..."
-              : "Registration confirmed — taking you onward..."}
+              ? t("subOrgRegistration.completion.redirectingPaid")
+              : t("subOrgRegistration.completion.redirectingFree")}
           </p>
           <SpinnerGap className="mx-auto size-6 animate-spin text-primary-500" />
         </div>
@@ -108,12 +113,13 @@ const CompletionPanel = ({
         <div className="space-y-3">
           <h2 className="text-2xl font-bold text-neutral-700 sm:text-3xl">
             {paid
-              ? "Payment received — your organization is registered."
-              : "Your organization has been registered!"}
+              ? t("subOrgRegistration.completion.paidTitle")
+              : t("subOrgRegistration.completion.freeTitle")}
           </h2>
           {orgName && (
             <p className="text-lg text-neutral-600">
-              <span className="font-semibold">{orgName}</span> is all set.
+              <span className="font-semibold">{orgName}</span>{" "}
+              {t("subOrgRegistration.completion.orgReadySuffix")}
             </p>
           )}
 
@@ -129,7 +135,7 @@ const CompletionPanel = ({
                 <div className="mx-auto flex max-w-md items-start justify-center gap-2 rounded-lg border border-neutral-200 bg-neutral-50 p-4 text-start">
                   <EnvelopeSimple className="mt-0.5 size-5 flex-shrink-0 text-primary-500" />
                   <p className="text-sm text-neutral-600">
-                    Login credentials have been sent to{" "}
+                    {t("subOrgRegistration.completion.credentialsSentPrefix")}{" "}
                     <span className="font-semibold text-neutral-700">
                       {adminEmail}
                     </span>
@@ -143,8 +149,7 @@ const CompletionPanel = ({
             <div className="mx-auto flex max-w-md items-start justify-center gap-2 rounded-lg border border-neutral-200 bg-neutral-50 p-4 text-start">
               <EnvelopeSimple className="mt-0.5 size-5 flex-shrink-0 text-primary-500" />
               <p className="text-sm text-neutral-600">
-                Your organization is registered. Login credentials have been
-                sent to{" "}
+                {t("subOrgRegistration.completion.defaultPrefix")}{" "}
                 <span className="font-semibold text-neutral-700">
                   {adminEmail}
                 </span>
@@ -179,7 +184,7 @@ const CompletionPanel = ({
             }}
             className="min-w-32"
           >
-            Go to Admin Portal
+            {t("subOrgRegistration.completion.goToAdminPortal", { admin })}
             <ArrowSquareOut className="ms-2 size-4" />
           </MyButton>
         )}

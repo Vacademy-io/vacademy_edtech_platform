@@ -1,0 +1,38 @@
+{
+    "emptyState": "لم يتم تسجيل أي حسابات Zoom بعد. أضف حسابًا لتفعيل اجتماعات Zoom لهذه المؤسسة.",
+    "badges": {
+        "default": "افتراضي",
+        "webhookNotSet": "لم يتم تعيين Webhook"
+    },
+    "row": {
+        "accountLabel": "الحساب",
+        "s2sLabel": "S2S",
+        "sdkLabel": "SDK",
+        "sdkPlatform": "المنصة",
+        "lastVerified": "آخر تحقق"
+    },
+    "menu": {
+        "ariaLabel": "إجراءات الحساب",
+        "testConnection": "اختبار الاتصال",
+        "setAsDefault": "تعيين كافتراضي",
+        "edit": "تعديل",
+        "delete": "حذف"
+    },
+    "toasts": {
+        "defaultSet": "أصبح \"{{label}}\" الآن حساب Zoom الافتراضي",
+        "defaultSetFailed": "تعذر تعيين الحساب الافتراضي",
+        "connected": "متصل باسم {{email}}",
+        "connectedWithPlan": "متصل باسم {{email}} ({{planType}})",
+        "unknownEmail": "غير معروف",
+        "connectionFailed": "فشل الاتصال",
+        "connectionTestFailed": "فشل اختبار الاتصال",
+        "removed": "تمت إزالة \"{{label}}\"",
+        "deleteFailed": "فشل حذف الحساب"
+    },
+    "dialog": {
+        "title": "هل تريد حذف حساب Zoom هذا؟",
+        "description": "سيتم إزالة \"{{label}}\". لن تتأثر الجلسات المباشرة الحالية التي تم إنشاؤها بهذا الحساب، ولكن لن تتمكن من إنشاء اجتماعات جديدة به حتى تعيد إضافة بيانات الاعتماد.",
+        "cancel": "إلغاء",
+        "confirmDelete": "حذف"
+    }
+}

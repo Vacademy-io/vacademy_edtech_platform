@@ -29,6 +29,11 @@ public class AddLevelWithSessionDTO {
     /** Optional: parent batch id if this is a child batch. */
     private String parentId;
     /**
+     * Optional: name for the batch created here. Not sent or blank = no name, and
+     * the batch is shown as level + course name, as before.
+     */
+    private String batchName;
+    /**
      * Optional list of subgroups for this level within the session.
      * When present, child package sessions will be created under the
      * parent batch corresponding to this (session, level) combination.

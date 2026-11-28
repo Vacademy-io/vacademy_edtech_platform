@@ -1,0 +1,20 @@
+{
+    "emptyState": "Please add a question to show question details",
+    "header": {
+        "questionsSettings": "Questions Settings",
+        "questionTypeLabel": "Question Type"
+    },
+    "comprehensionText": "Comprehension Text",
+    "question": {
+        "label": "Question"
+    },
+    "answer": {
+        "label": "Answer:"
+    },
+    "explanation": {
+        "label": "Explanation:"
+    },
+    "optionLabelFormat": "({{letter}}.)",
+    "addOption": "Add Option",
+    "removeOption": "Remove option"
+}

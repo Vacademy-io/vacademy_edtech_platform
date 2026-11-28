@@ -18,9 +18,11 @@ import {
     AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { QuestionPaperUpload } from './QuestionPaperUpload';
-import { Code, X } from '@phosphor-icons/react';
+import { Code, Table, X } from '@phosphor-icons/react';
+import { useRouterState } from '@tanstack/react-router';
 import useDialogStore from '../-global-states/question-paper-dialogue-close';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { QuestionType as QuestionTypeList } from '@/constants/dummy-data';
 import {
     QuestionTypeProps,
@@ -32,13 +34,24 @@ export function QuestionTypeSelection({
     setCurrentQuestionIndex,
     isDirectAdd = true,
     handleSelect,
+    examType,
 }: QuestionPaperHeadingInterface) {
+    const { t } = useTranslation('assessmentQuestionTypeSelection');
+    // Spreadsheet & Written Response (CBE) is graded by AI against a solution: not
+    // offered in surveys, nor in homework (its editors only handle MCQs).
+    const pathname = useRouterState({ select: (state) => state.location.pathname });
+    const offerCbe = examType !== 'SURVEY' && !pathname.startsWith('/homework-creation');
     const { setIsManualQuestionPaperDialogOpen } = useDialogStore();
     const [questionType, setQuestionType] = useState<QuestionTypeList>(QuestionTypeList.MCQS);
     console.log(questionType);
     const CodingIcon = (
         <div className="flex size-10 items-center justify-center rounded-md bg-orange-100">
             <Code size={22} className="text-orange-500" weight="bold" />
+        </div>
+    );
+    const CbeIcon = (
+        <div className="flex size-10 items-center justify-center rounded-md bg-success-50">
+            <Table size={22} className="text-success-600" weight="bold" />
         </div>
     );
     const QuestionType: React.FC<QuestionTypeProps> = ({
@@ -77,53 +90,66 @@ export function QuestionTypeSelection({
         <div className="flex flex-col gap-6 p-6">
             <>
                 <div className="flex flex-col gap-4">
-                    <div className="text-subtitle font-semibold">Quick Access</div>
+                    <div className="text-subtitle font-semibold">{t('sections.quickAccess')}</div>
                     <QuestionType
                         icon={<MCQS />}
-                        text="Multiple Choice Questions (Single correct)"
+                        text={t('questionTypes.mcqSingle')}
                         type={QuestionTypeList.MCQS}
                     ></QuestionType>
                     <QuestionType
                         icon={<MCQM />}
-                        text="Multiple Choice Questions (Multiple correct)"
+                        text={t('questionTypes.mcqMultiple')}
                         type={QuestionTypeList.MCQM}
                     ></QuestionType>
                     <QuestionType
                         icon={<Numerical />}
-                        text="Numerical"
+                        text={t('questionTypes.numerical')}
                         type={QuestionTypeList.NUMERIC}
                     ></QuestionType>
                     <QuestionType
                         type={QuestionTypeList.TRUE_FALSE}
                         icon={<TrueFalse />}
-                        text="True False"
+                        text={t('questionTypes.trueFalse')}
                     ></QuestionType>
                     <QuestionType
                         type={QuestionTypeList.CODING}
                         icon={CodingIcon}
-                        text="Coding Question"
+                        text={t('questionTypes.coding')}
                     ></QuestionType>
                 </div>
                 <div className="border"></div>
                 <div className="flex flex-col gap-4">
-                    <div className="text-subtitle font-semibold">Programming</div>
+                    <div className="text-subtitle font-semibold">{t('sections.programming')}</div>
                     <QuestionType
                         type={QuestionTypeList.CODING}
                         icon={CodingIcon}
-                        text="Coding Question"
+                        text={t('questionTypes.coding')}
                     ></QuestionType>
                 </div>
+                {offerCbe && (
+                    <>
+                        <div className="border"></div>
+                        <div className="flex flex-col gap-4">
+                            <div className="text-subtitle font-semibold">{t('sections.cbe')}</div>
+                            <QuestionType
+                                type={QuestionTypeList.CBE_RESPONSE}
+                                icon={CbeIcon}
+                                text={t('questionTypes.cbeResponse')}
+                            ></QuestionType>
+                        </div>
+                    </>
+                )}
                 <div className="border"></div>
                 <div className="flex flex-col gap-4">
-                    <div className="text-subtitle font-semibold">Option Based</div>
+                    <div className="text-subtitle font-semibold">{t('sections.optionBased')}</div>
                     <QuestionType
                         icon={<MCQS />}
-                        text="Multiple Choice Questions (Single correct)"
+                        text={t('questionTypes.mcqSingle')}
                         type={QuestionTypeList.MCQS}
                     ></QuestionType>
                     <QuestionType
                         icon={<MCQM />}
-                        text="Multiple Choice Questions (Multiple correct)"
+                        text={t('questionTypes.mcqMultiple')}
                         type={QuestionTypeList.MCQM}
                     ></QuestionType>
                     {/* <QuestionType icon={<TrueFalse />} text="True False"></QuestionType> */}
@@ -131,39 +157,43 @@ export function QuestionTypeSelection({
                 </div>
                 <div className="border"></div>
                 <div className="flex flex-col gap-4">
-                    <div className="text-subtitle font-semibold">Math Based</div>
-                    <QuestionType icon={<Numerical />} text="Numerical"></QuestionType>
+                    <div className="text-subtitle font-semibold">{t('sections.mathBased')}</div>
+                    <QuestionType
+                        icon={<Numerical />}
+                        text={t('questionTypes.numerical')}
+                        type={QuestionTypeList.NUMERIC}
+                    ></QuestionType>
                 </div>
                 <div className="border"></div>
                 <div className="flex flex-col gap-4">
-                    <div className="text-subtitle font-semibold">Writing Skills</div>
+                    <div className="text-subtitle font-semibold">{t('sections.writingSkills')}</div>
                     <QuestionType
                         icon={<LongAnswer />}
                         type={QuestionTypeList.LONG_ANSWER}
-                        text="Long Answer"
+                        text={t('questionTypes.longAnswer')}
                     ></QuestionType>
                     <QuestionType
                         icon={<SingleWord />}
                         type={QuestionTypeList.ONE_WORD}
-                        text="Single Word"
+                        text={t('questionTypes.singleWord')}
                     ></QuestionType>
                 </div>
                 <div className="border"></div>
                 <div className="flex flex-col gap-4">
-                    <div className="text-subtitle font-semibold">Reading Skills</div>
+                    <div className="text-subtitle font-semibold">{t('sections.readingSkills')}</div>
                     <QuestionType
                         icon={<CMCQS />}
-                        text="Comprehension Multiple Choice Questions (Single correct)"
+                        text={t('questionTypes.comprehensionMcqSingle')}
                         type={QuestionTypeList.CMCQS}
                     ></QuestionType>
                     <QuestionType
                         icon={<CMCQM />}
-                        text="Comprehension Multiple Choice Questions (Multiple correct)"
+                        text={t('questionTypes.comprehensionMcqMultiple')}
                         type={QuestionTypeList.CMCQM}
                     ></QuestionType>
                     <QuestionType
                         icon={<CMCQM />}
-                        text="Comprehension Numeric"
+                        text={t('questionTypes.comprehensionNumeric')}
                         type={QuestionTypeList.CNUMERIC}
                     ></QuestionType>
                     {/* <QuestionType
@@ -184,7 +214,7 @@ export function QuestionTypeSelection({
                 <AlertDialogContent className="p-0">
                     <div className="flex items-center justify-between rounded-md bg-primary-50">
                         <h1 className="rounded-sm p-4 font-bold text-primary-500">
-                            Create Question Paper Manually
+                            {t('dialog.title')}
                         </h1>
                         <AlertDialogCancel
                             onClick={() => setIsManualQuestionPaperDialogOpen(false)}

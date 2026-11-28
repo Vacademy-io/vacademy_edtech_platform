@@ -17,6 +17,8 @@ from .slide_text_service import (
     looks_like_file_id,
     schedule_slide_text_extraction,
 )
+from .lesson_text_service import Lesson, cached_text, find_lesson, schedule_read
+from .lesson_text_service import apply as apply_lesson_text
 
 logger = logging.getLogger(__name__)
 
@@ -51,6 +53,9 @@ class ContextResolverService:
     
     def __init__(self, db_session: Session):
         self.db = db_session
+        # Set by resolve_context when the open lesson's text is still being
+        # read; the chat turn waits for it once its DB block is closed.
+        self.pending_lesson: Optional[Lesson] = None
     
     async def resolve_context(
         self,
@@ -80,13 +85,35 @@ class ContextResolverService:
         # Clean HTML from content fields before passing to LLM
         cleaned_meta = dict(context_meta) if context_meta else {}
 
+        # Lessons whose text the app never has (video, SCORM, AI video, audio,
+        # decks, drawings) are read server-side; see lesson_text_service. Only
+        # real text changes anything below: without it (not read yet, nothing
+        # readable) the context is built exactly as before. On a cache miss the
+        # read starts now and `pending_lesson` lets a caller wait for it once
+        # its DB session is released.
+        self.pending_lesson = None
+        lesson, lesson_text = None, ""
+        if context_type == "slide":
+            try:
+                lesson = find_lesson(
+                    self.db, cleaned_meta.get("slide_id"), institute_id, cleaned_meta.get("name")
+                )
+                if lesson is not None:
+                    known, lesson_text = cached_text(self.db, lesson)
+                    if not known:
+                        schedule_read(lesson)
+                        self.pending_lesson = lesson
+            except Exception as exc:  # noqa: BLE001 - lesson text is optional
+                logger.warning("lesson text skipped for slide %s: %s", cleaned_meta.get("slide_id"), exc)
+                lesson, lesson_text, self.pending_lesson = None, "", None
+
         # A PDF slide arrives with `content` set to a media fileId rather than
         # the document text (see slide_text_service for the why). Swap in the
         # real text when we have it cached, and otherwise tell the model
         # explicitly that it has not been shown the slide — anything else and it
         # describes a slide it has never seen.
         raw_content = cleaned_meta.get("content")
-        if looks_like_file_id(raw_content):
+        if not lesson_text and looks_like_file_id(raw_content):
             file_id = str(raw_content).strip()
             # context_meta is client-supplied and /chat-agent has no auth, so the
             # fileId is attacker-controllable. Only resolve files that really do
@@ -113,6 +140,14 @@ class ContextResolverService:
 
         if "content" in cleaned_meta and cleaned_meta["content"]:
             cleaned_meta["content"] = strip_html(cleaned_meta["content"])
+
+        # Real lesson text replaces what the app sent; a video's own
+        # description is kept above its transcript (for the other kinds the app
+        # sent nothing usable: empty, a deck URL or a drawing fileId).
+        if lesson is not None:
+            if lesson.keeps_description:
+                lesson.description = str(cleaned_meta.get("content") or "")
+            apply_lesson_text(cleaned_meta, lesson, lesson_text)
         if "about" in cleaned_meta and cleaned_meta["about"]:
             cleaned_meta["about"] = strip_html(cleaned_meta["about"])
         if "why_learn" in cleaned_meta and cleaned_meta["why_learn"]:

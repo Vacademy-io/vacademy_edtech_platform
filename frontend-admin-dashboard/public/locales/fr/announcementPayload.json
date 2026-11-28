@@ -1,0 +1,8 @@
+{
+    "error": {
+        "fixFieldsBeforeCreate": "Certains champs doivent être corrigés avant de pouvoir créer ceci.",
+        "noPermission": "Vous n'avez pas la permission d'envoyer cette annonce.",
+        "serviceUnavailable": "Le service d'annonces est actuellement indisponible.",
+        "genericCreateFailure": "Impossible de créer l'annonce. Veuillez réessayer."
+    }
+}

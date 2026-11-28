@@ -1,6 +1,8 @@
 import { createLazyFileRoute } from '@tanstack/react-router';
 import { LayoutContainer } from '@/components/common/layout-container/layout-container';
 import { Helmet } from 'react-helmet';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import {
     getSelectedSubOrgId,
     isCallerSubOrgAdmin,
@@ -13,6 +15,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { DashboardLoader } from '@/components/core/dashboard-loader';
 import { MyDropdown } from '@/components/design-system/dropdown';
 import { SubOrgAnalyticsPanel } from './-components/sub-org-analytics-panel';
+import { SubOrgStatCards } from './-components/sub-org-stat-cards';
 import { getTerminology } from '@/components/common/layout-container/sidebar/utils';
 import { OtherTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
 
@@ -25,7 +28,7 @@ interface SubOrgItem {
     name: string;
 }
 
-function normaliseSubOrg(org: any): SubOrgItem | null {
+function normaliseSubOrg(org: any, t: TFunction): SubOrgItem | null {
     const id =
         org?.sub_org_id || org?.suborgId || org?.subOrgId || org?.suborg_id || org?.id;
     const name =
@@ -35,7 +38,7 @@ function normaliseSubOrg(org: any): SubOrgItem | null {
         id,
         name:
             name ||
-            `Untitled ${getTerminology(OtherTerms.SubOrg, SystemTerms.SubOrg)}`,
+            t('untitledTerm', { term: getTerminology(OtherTerms.SubOrg, SystemTerms.SubOrg) }),
     };
 }
 
@@ -54,6 +57,7 @@ function normaliseSubOrg(org: any): SubOrgItem | null {
  *     accessible sub-org.
  */
 function ManageSubOrgTeams() {
+    const { t } = useTranslation('manageSuborgTeamsIndexLazy');
     const instituteId = getCurrentInstituteId();
     // Institutes rename this concept via Settings → Naming (Channel Partner,
     // Branch, Franchise, VLE …); user-facing labels must follow that.
@@ -69,8 +73,8 @@ function ManageSubOrgTeams() {
         const list = Array.isArray(rawSubOrgs)
             ? rawSubOrgs
             : (rawSubOrgs as any)?.content || [];
-        return list.map(normaliseSubOrg).filter(Boolean) as SubOrgItem[];
-    }, [rawSubOrgs]);
+        return list.map((org: unknown) => normaliseSubOrg(org, t)).filter(Boolean) as SubOrgItem[];
+    }, [rawSubOrgs, t]);
 
     const [selectedId, setSelectedId] = useState<string | null>(null);
 
@@ -116,44 +120,50 @@ function ManageSubOrgTeams() {
                     {selectedSubOrg ? `${selectedSubOrg.name} — ${subOrgTerm}` : subOrgTerm}
                 </title>
             </Helmet>
-            <div className="p-6">
-                <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                    <div>
-                        <h1 className="text-h2 font-bold text-neutral-900">
+            <div className="p-5">
+                {/* Same header shape as the Manage <SubOrgs> list: title and subtitle on
+                    the left, the headline figures on the right. Stacking the cards
+                    full-width below pushed the tabs off a laptop screen there, and this
+                    page carries the same amount of chrome. */}
+                <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
+                    <div className="max-w-md">
+                        <h1 className="text-3xl font-bold text-neutral-900">
                             {selectedSubOrg?.name || subOrgTerm}
                         </h1>
-                        <p className="text-caption text-neutral-500">
-                            Your {subOrgTerm.toLowerCase()}&apos;s payments, learners and team.
-                            The ledger is read-only — the parent institute admin manages
-                            installments and discounts.
+                        <p className="mt-1 text-sm text-neutral-500">
+                            {t('pageDescription', { term: subOrgTerm.toLowerCase() })}
                         </p>
                     </div>
-                    {subOrgs.length > 1 && (
-                        <div className="flex flex-col gap-1">
-                            <span className="text-caption text-neutral-500">
-                                Switch {subOrgTerm.toLowerCase()}
-                            </span>
-                            <MyDropdown
-                                dropdownList={dropdownList}
-                                currentValue={selectedSubOrg?.name || ''}
-                                placeholder={`Select ${subOrgTerm.toLowerCase()}`}
-                                handleChange={(value: string) => setSelectedId(value)}
-                                className="min-w-[220px]"
-                            />
-                        </div>
-                    )}
+                    {selectedSubOrg && <SubOrgStatCards subOrgId={selectedSubOrg.id} />}
                 </div>
+
+                {/* The switcher gets its own row rather than the header's right slot,
+                    which now belongs to the cards. Only rendered when the caller actually
+                    holds more than one sub-org. */}
+                {subOrgs.length > 1 && (
+                    <div className="mb-4 flex flex-wrap items-center justify-end gap-2">
+                        <span className="text-xs font-medium text-neutral-600">
+                            {t('switchTerm', { term: subOrgTerm.toLowerCase() })}
+                        </span>
+                        <MyDropdown
+                            dropdownList={dropdownList}
+                            currentValue={selectedSubOrg?.name || ''}
+                            placeholder={t('selectTermPlaceholder', { term: subOrgTerm.toLowerCase() })}
+                            handleChange={(value: string) => setSelectedId(value)}
+                            className="min-w-56"
+                        />
+                    </div>
+                )}
 
                 {isLoading ? (
                     <DashboardLoader />
                 ) : !selectedSubOrg ? (
                     <div className="rounded-lg border border-warning-200 bg-warning-50 p-6 text-warning-800">
                         <p className="font-medium">
-                            No {subOrgTerm.toLowerCase()} access.
+                            {t('noAccessTitle', { term: subOrgTerm.toLowerCase() })}
                         </p>
                         <p className="text-caption">
-                            Ask your institute admin to grant you {subOrgTerm.toLowerCase()} admin
-                            access.
+                            {t('noAccessBody', { term: subOrgTerm.toLowerCase() })}
                         </p>
                     </div>
                 ) : (
@@ -162,6 +172,7 @@ function ManageSubOrgTeams() {
                         subOrgId={selectedSubOrg.id}
                         subOrgName={selectedSubOrg.name}
                         restrictedView
+                        variant="page"
                     />
                 )}
             </div>

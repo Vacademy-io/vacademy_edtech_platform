@@ -1,0 +1,17 @@
+{
+    "heading": "Remarks",
+    "callButton": "Call",
+    "placeholder": "Add a remark about this learner…",
+    "addButton": "Add remark",
+    "adding": "Adding…",
+    "noteTitle": "Note",
+    "loadError": "Could not load remarks.",
+    "empty": {
+        "title": "No remarks yet",
+        "hint": "Calls and remarks added here also appear in the learner's activity history."
+    },
+    "toast": {
+        "added": "Remark added.",
+        "failed": "Could not add the remark. Please try again."
+    }
+}

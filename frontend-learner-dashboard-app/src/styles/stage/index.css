@@ -1,0 +1,6 @@
+/* Stage (dance and art academies) skin stylesheets, imported once from src/index.css AFTER the Fun
+   sheets: it rides on ui-fun and repaints it, so on a specificity tie the
+   later sheet must win. Every selector starts with html.ui-stage. */
+@import './base.css';
+@import './home.css';
+@import './course.css';

@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { Bar, BarChart, XAxis, YAxis } from 'recharts';
 import {
     ChartConfig,
@@ -30,18 +32,23 @@ import { getAssessmentDetails } from '@/routes/assessment/create-assessment/$ass
 import { QuestionInsightResponse } from '../-utils/assessment-details-interface';
 import { useTheme } from '@/providers/theme/theme-provider';
 
-const chartConfig = {
-    correct: { label: 'Correct', color: '#97D4B4' },
-    partiallyCorrect: { label: 'Partially Correct', color: '#FFDD82' },
-    wrongResponses: { label: 'Wrong Responses', color: '#F49898' },
-    skip: { label: 'Skip', color: '#EEE' },
-} satisfies ChartConfig;
+function buildChartConfig(t: TFunction) {
+    return {
+        correct: { label: t('legend.correct'), color: 'hsl(var(--success-300))' },
+        partiallyCorrect: { label: t('legend.partiallyCorrect'), color: 'hsl(var(--warning-300))' },
+        wrongResponses: { label: t('legend.wrongResponses'), color: 'hsl(var(--danger-400))' },
+        skip: { label: t('legend.skip'), color: 'hsl(var(--muted))' },
+    } satisfies ChartConfig;
+}
 
 export function AssessmentDetailsQuestionAnalysisChart({
     selectedSectionData,
 }: {
     selectedSectionData: QuestionInsightResponse;
 }) {
+    const { t } = useTranslation('homeworkCreationQuestionAnalysisChart');
+    const chartConfig = buildChartConfig(t);
+
     const [visibleKeys, setVisibleKeys] = useState<string[]>([
         'correct',
         'partiallyCorrect',
@@ -99,12 +106,12 @@ export function AssessmentDetailsQuestionAnalysisChart({
                             style={{
                                 color: visibleKeys.includes(key)
                                     ? chartConfig[key as keyof typeof chartConfig].color
-                                    : '#D1D5DB',
+                                    : 'hsl(var(--border))',
                                 marginRight: '-1.5rem',
                             }}
                         />
                         <p
-                            className={`text-[14px] ${
+                            className={`text-body ${
                                 visibleKeys.includes(key) ? '' : 'line-through'
                             }`}
                         >
@@ -120,12 +127,12 @@ export function AssessmentDetailsQuestionAnalysisChart({
                             buttonType="secondary"
                             className="ml-6 font-medium"
                         >
-                            Check Question Insights
+                            {t('actions.checkQuestionInsights')}
                         </MyButton>
                     </DialogTrigger>
-                    <DialogContent className="no-scrollbar !m-0 flex h-[90vh] !w-full !max-w-[90vw] flex-col !gap-0 overflow-y-auto !p-0">
+                    <DialogContent className="no-scrollbar !m-0 flex h-[90vh] !w-full !max-w-[90vw] flex-col !gap-0 overflow-y-auto !p-0">{/* design-lint-ignore: vh/vw dialog sizing matches MyDialog primitive */}
                         <h1 className="bg-primary-50 p-4 font-semibold text-primary-500">
-                            Question Insights
+                            {t('dialog.questionInsightsTitle')}
                         </h1>
                         <QuestionInsightsComponent />
                     </DialogContent>
@@ -141,7 +148,7 @@ export function AssessmentDetailsQuestionAnalysisChart({
                         tickMargin={10}
                         axisLine={true}
                         label={{
-                            value: 'Question',
+                            value: t('chart.xAxisLabel'),
                             position: 'left',
                             dx: 60,
                             dy: 30,
@@ -154,7 +161,7 @@ export function AssessmentDetailsQuestionAnalysisChart({
                         axisLine={true}
                         tickMargin={8}
                         label={{
-                            value: 'Number of Participants',
+                            value: t('chart.yAxisLabel'),
                             angle: -90,
                             position: 'left',
                             dx: 10,
@@ -194,6 +201,7 @@ export function AssessmentDetailsQuestionAnalysisChart({
 }
 
 export function QuestionAnalysisChart() {
+    const { t } = useTranslation('homeworkCreationQuestionAnalysisChart');
     const instituteId = getInstituteId();
     const { assessmentId, examType } = Route.useParams();
     const { data: assessmentDetails } = useSuspenseQuery(
@@ -249,11 +257,11 @@ export function QuestionAnalysisChart() {
     return (
         <div className="flex flex-col">
             <div className="flex items-center justify-between">
-                <h1>Question Analysis</h1>
+                <h1>{t('title')}</h1>
                 <div className="flex items-center gap-6">
                     <Select value={selectedSection} onValueChange={setSelectedSection}>
-                        <SelectTrigger className="w-[180px]">
-                            <SelectValue placeholder="Select Section" />
+                        <SelectTrigger className="w-44">
+                            <SelectValue placeholder={t('actions.selectSectionPlaceholder')} />
                         </SelectTrigger>
                         <SelectContent>
                             {sectionsInfo?.map((section) => (
@@ -270,7 +278,7 @@ export function QuestionAnalysisChart() {
                         className="font-medium"
                     >
                         <Export size={32} />
-                        Export
+                        {t('actions.export')}
                     </MyButton>
                     <MyButton
                         type="button"

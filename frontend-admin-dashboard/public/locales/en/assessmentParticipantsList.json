@@ -1,0 +1,20 @@
+{
+    "trigger": {
+        "viewList": "View List"
+    },
+    "dialog": {
+        "title": "Participants List"
+    },
+    "filters": {
+        "genderLabel": "Gender"
+    },
+    "filterButtons": {
+        "filter": "Filter",
+        "reset": "Reset"
+    },
+    "empty": {
+        "title": "No learners in this batch yet",
+        "noMatch": "No learners match this search or filter",
+        "openTestHint": "Learners who register through the open test link are not added to a batch. They are listed as External participants on the Participants tab."
+    }
+}

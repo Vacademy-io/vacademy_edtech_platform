@@ -1,5 +1,4 @@
 import React, { useEffect, useRef, useState } from 'react';
-import mermaid from 'mermaid';
 import { sanitizeMermaidCode } from '@/utils/mermaidSanitizer';
 import { initializeMermaid } from '@/utils/initializeMermaid';
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
@@ -102,9 +101,9 @@ export const MermaidDiagram: React.FC<MermaidDiagramProps> = ({
     // dialog, i.e. whether the learner needs to scroll to see the rest of it.
     const [naturalHeight, setNaturalHeight] = useState(0);
 
-    // Initialize mermaid once
+    // Start loading mermaid (lazy chunk) as soon as a diagram mounts
     useEffect(() => {
-        initializeMermaid();
+        initializeMermaid().catch(() => undefined);
     }, []);
 
     // Render diagram when code changes
@@ -132,7 +131,8 @@ export const MermaidDiagram: React.FC<MermaidDiagramProps> = ({
                 // Generate unique render ID - keeping format from valid HTML ID safe
                 const renderId = `mermaid-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
-                // Render diagram
+                // Render diagram (mermaid is a lazy chunk; this resolves once loaded + initialized)
+                const mermaid = await initializeMermaid();
                 const result = await mermaid.render(renderId, cleanCode);
 
                 if (result && result.svg) {

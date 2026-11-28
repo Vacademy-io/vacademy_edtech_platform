@@ -1,0 +1,43 @@
+{
+    "batchPicker": {
+        "openPortalForLabel": "Open portal for"
+    },
+    "credentials": {
+        "title": "Account Credentials",
+        "edit": "Edit",
+        "share": "Share",
+        "usernameLabel": "Username:",
+        "passwordLabel": "Password:",
+        "usernameFieldName": "Username",
+        "passwordFieldName": "Password",
+        "usernameNotFound": "N/A",
+        "loadingPlaceholder": "Loading...",
+        "notFoundPlaceholder": "password not found"
+    },
+    "actions": {
+        "learnerPortal": {
+            "title": "Learner Portal",
+            "description": "Access learner portal directly",
+            "button": "Access Learner Portal"
+        },
+        "resetPassword": {
+            "title": "Reset Password",
+            "description": "Send password reset email",
+            "button": "Send Reset Password Email"
+        }
+    },
+    "emptyState": {
+        "title": "No portal access features enabled",
+        "description": "Contact admin to enable portal access settings"
+    },
+    "toast": {
+        "copiedToClipboard": "{{field}} copied to clipboard!",
+        "copyFailed": "Failed to copy {{field}}",
+        "studentUserIdNotFound": "Student user ID not found",
+        "studentPackageIdNotFound": "Student package ID not found",
+        "accessingPortal": "Accessing learner portal...",
+        "portalOpened": "Learner portal opened in new tab",
+        "noRedirectUrl": "No redirect URL received",
+        "accessPortalFailed": "Failed to access learner portal. Please try again."
+    }
+}

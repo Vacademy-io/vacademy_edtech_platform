@@ -1,4 +1,5 @@
 import { Heart } from "@phosphor-icons/react";
+import { useTranslation } from "react-i18next";
 import { useDomainRouting } from "@/hooks/use-domain-routing";
 import { InstituteBrandingComponent } from "@/components/common/institute-branding";
 
@@ -7,6 +8,7 @@ interface DonationHeaderProps {
 }
 
 export const DonationHeader = ({ step }: DonationHeaderProps) => {
+  const { t } = useTranslation("coursesRouteA");
   const {
     instituteId,
     instituteName,
@@ -39,12 +41,12 @@ export const DonationHeader = ({ step }: DonationHeaderProps) => {
       <div className="flex items-center justify-center gap-2 mb-3">
         <Heart className="w-6 h-6 text-red-500" />
         <h2 className="text-xl font-bold text-gray-900">
-          Support Free Learning
+          {t("donation.header.title")}
         </h2>
       </div>
       {step === 'select' && (
         <p className="text-sm text-gray-600 text-center mb-4">
-          Choose an amount to donate
+          {t("donation.header.subtitle")}
         </p>
       )}
     </div>

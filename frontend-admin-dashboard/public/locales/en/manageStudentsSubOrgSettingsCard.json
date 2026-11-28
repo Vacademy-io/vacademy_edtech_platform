@@ -1,0 +1,31 @@
+{
+    "title": "Sub-organization Settings",
+    "toggle": {
+        "label": "Sub-org invite",
+        "description": "Enrolling via this invite into a sub-org-associated batch creates a sub-organization. Configure its admin roles, permissions and seat limit below."
+    },
+    "authRoles": {
+        "label": "Admin roles (auth service)",
+        "description": "Roles assigned to the user who joins via this invite."
+    },
+    "allowedTeamRoles": {
+        "label": "Allowed team roles",
+        "description": "Roles the sub-org admin can assign to their own team. Leave empty to allow any custom role."
+    },
+    "adminPermissions": {
+        "label": "Admin permissions",
+        "description": "What the sub-org admin can do. Leave empty to grant FULL access.",
+        "options": {
+            "FULL": "Full access",
+            "CREATE_COURSE": "Create course"
+        }
+    },
+    "seatLimit": {
+        "label": "Seat limit",
+        "placeholder": "e.g. 10",
+        "description": "Maximum members in the sub-org. Leave blank for no explicit cap."
+    },
+    "common": {
+        "noRolesFound": "No roles found"
+    }
+}

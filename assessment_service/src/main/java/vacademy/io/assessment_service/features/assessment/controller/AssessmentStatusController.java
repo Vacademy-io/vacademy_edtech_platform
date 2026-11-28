@@ -2,6 +2,7 @@ package vacademy.io.assessment_service.features.assessment.controller;
 
 
 import org.springframework.beans.factory.annotation.Autowired;
+import vacademy.io.assessment_service.features.assessment.audit.AssessmentAuditClient;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import vacademy.io.assessment_service.features.assessment.dto.StepResponseDto;
@@ -37,6 +38,9 @@ public class AssessmentStatusController {
     @Autowired
     AssessmentService assessmentService;
 
+    @Autowired
+    AssessmentAuditClient auditClient;
+
 
     @GetMapping("/status")
     public List<StepResponseDto> createAssessment(@RequestAttribute("user") CustomUserDetails user, @RequestParam(name = "assessmentId", required = false) String assessmentId, @RequestParam(name = "instituteId", required = false) String instituteId, @RequestParam String type) {
@@ -56,6 +60,10 @@ public class AssessmentStatusController {
     public ResponseEntity<String> deleteAssessment(@RequestAttribute("user") CustomUserDetails user,
                                                    @RequestParam(name = "assessmentId") String assessmentId,
                                                    @RequestParam(name = "instituteId") String instituteId) {
-        return assessmentService.deleteAssessment(user, assessmentId, instituteId);
+        String name = assessmentService.getAssessmentFromId(assessmentId).map(Assessment::getName).orElse(assessmentId);
+        ResponseEntity<String> response = assessmentService.deleteAssessment(user, assessmentId, instituteId);
+        auditClient.record(user, instituteId, AssessmentAuditClient.ACTION_DELETE, assessmentId,
+                "deleted assessment " + name, null);
+        return response;
     }
 }

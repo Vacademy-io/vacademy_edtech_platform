@@ -19,6 +19,7 @@ import {
     CustomField,
 } from '@/services/custom-field-settings';
 import { getCachedInstituteBranding } from '@/services/domain-routing';
+import { isOptionFieldType } from '@/routes/audience-manager/list/-utils/parseFieldOptions';
 import PhoneInputField from '@/components/design-system/phone-input-field';
 
 interface SystemFieldConfig {
@@ -548,7 +549,15 @@ export const StepTwoForm = ({
                                         </h3>
                                     </div>
                                     {customFieldsConfig.map((customField: CustomField) => {
-                                        if (customField.type === 'dropdown') {
+                                        // field_type arrives as dropdown / DROPDOWN / select / radio,
+                                        // so match any single-choice type that has options.
+                                        const fieldType = (customField.type ?? '').toLowerCase().trim();
+                                        if (
+                                            isOptionFieldType(fieldType) &&
+                                            fieldType !== 'multi_select' &&
+                                            fieldType !== 'multiselect' &&
+                                            (customField.options?.length ?? 0) > 0
+                                        ) {
                                             // Convert options to dropdown format
                                             const dropdownOptions =
                                                 customField.options?.map((option) => ({

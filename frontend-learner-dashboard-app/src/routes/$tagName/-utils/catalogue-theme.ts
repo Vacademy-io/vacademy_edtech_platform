@@ -1,3 +1,6 @@
+import { resolveThemeHex } from "@/services/domain-routing";
+import { buildPrimaryScaleVars } from "./style-utils";
+
 /**
  * Scope a catalogue's `theme.primaryColor` onto one element as CSS custom
  * properties, so everything inside it (including shadcn `bg-primary`) paints
@@ -48,4 +51,30 @@ export const applyCataloguePrimaryColor = (
   el.style.setProperty("--primary-400", `${H} ${S}% ${Math.min(L + 10, 90)}%`);
   el.style.setProperty("--primary-200", `${H} ${Math.max(S - 15, 10)}% ${Math.min(L + 28, 95)}%`);
   el.style.setProperty("--primary-50", `${H} ${Math.max(S - 30, 5)}% ${Math.min(L + 43, 98)}%`);
+};
+
+/** The theme every institute without one of its own is shown in. */
+const DEFAULT_THEME_CODE = "primary";
+
+/**
+ * The primary scale a site's wrapper carries as inline variables.
+ *
+ * A signed-in learner of another institute keeps their own colours on the
+ * document, so nothing may fall through to it: they get every stop, `--primary`
+ * included, from the site's colour or else its institute's theme. Everyone else
+ * has the institute's theme on the document, and only a site colour to add.
+ */
+export const siteScaleVars = (
+  primaryColor?: string | null,
+  isVisitor?: boolean,
+  instituteThemeCode?: string | null,
+): Record<string, string> => {
+  const siteScale = buildPrimaryScaleVars(primaryColor);
+  if (!isVisitor) return siteScale;
+  const scale = siteScale["--primary-500"]
+    ? siteScale
+    : buildPrimaryScaleVars(
+        resolveThemeHex(instituteThemeCode) ?? resolveThemeHex(DEFAULT_THEME_CODE),
+      );
+  return scale["--primary-500"] ? { ...scale, "--primary": scale["--primary-500"] } : scale;
 };

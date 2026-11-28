@@ -17,6 +17,7 @@ import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.web.cors.CorsConfigurationSource;
 import vacademy.io.common.auth.filter.HmacAuthFilter;
 import vacademy.io.common.auth.filter.JwtAuthFilter;
+import vacademy.io.common.auth.config.JsonAuthEntryPoint;
 import vacademy.io.common.auth.provider.ServiceAuthProvider;
 
 @EnableWebSecurity
@@ -34,6 +35,11 @@ public class WebSecurityConfig {
             "/s/**" }; // Added /s/** for public short URL redirects
     @Autowired
     private JwtAuthFilter jwtAuthFilter; // Inject JwtAuthFilter dependency
+
+    // Replaces the default bodyless 403 (re-dispatched to a secured /error and
+    // returned empty) with a JSON body naming the actual reason.
+    @Autowired
+    private JsonAuthEntryPoint jsonAuthEntryPoint;
     @Autowired
     private HmacAuthFilter hmacAuthFilter;
     @Autowired
@@ -56,7 +62,10 @@ public class WebSecurityConfig {
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authenticationProvider(authenticationProvider())
-                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint(jsonAuthEntryPoint)
+                        .accessDeniedHandler(jsonAuthEntryPoint));
 
         return http.build();
     }

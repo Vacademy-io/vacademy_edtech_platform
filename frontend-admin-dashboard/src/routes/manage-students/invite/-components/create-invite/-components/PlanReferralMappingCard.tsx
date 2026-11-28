@@ -1,4 +1,5 @@
 import { UseFormReturn } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import { InviteLinkFormValues } from '../GenerateInviteLinkSchema';
 import { MyButton } from '@/components/design-system/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
@@ -11,6 +12,7 @@ interface PlanReferralMappingCardProps {
 }
 
 const PlanReferralMappingCard = ({ form }: PlanReferralMappingCardProps) => {
+    const { t } = useTranslation('manageStudentsPlanReferralMappingCard');
     const selectedPlan = form.watch('selectedPlan');
     const planReferralMappings = form.watch('planReferralMappings');
     const referralPrograms = form.watch('referralPrograms');
@@ -21,7 +23,7 @@ const PlanReferralMappingCard = ({ form }: PlanReferralMappingCardProps) => {
     // Helper function to get referral name by ID
     const getReferralNameById = (referralId: string) => {
         const referral = referralPrograms?.find((r) => r.id === referralId);
-        return referral?.name || 'Unknown Referral';
+        return referral?.name || t('planList.unknownReferral');
     };
 
     // Helper function to check if all plans have referral configured
@@ -57,10 +59,8 @@ const PlanReferralMappingCard = ({ form }: PlanReferralMappingCardProps) => {
         <>
             <div className="flex flex-col">
                 <div className="flex flex-col">
-                    <span className="font-medium">Referral Settings</span>
-                    <span className="text-sm">
-                        Configure referral programs for each payment plan in your invite link
-                    </span>
+                    <span className="font-medium">{t('header.title')}</span>
+                    <span className="text-sm">{t('header.description')}</span>
                 </div>
             </div>
 
@@ -69,13 +69,13 @@ const PlanReferralMappingCard = ({ form }: PlanReferralMappingCardProps) => {
                     <div className="flex items-center gap-2">
                         <span className="flex items-center gap-2 text-lg font-semibold">
                             <TrendUp size={20} />
-                            <span>Plan Referral Configuration</span>
+                            <span>{t('card.title')}</span>
                         </span>
                         <Badge
                             variant={configured === total && total > 0 ? 'default' : 'secondary'}
                             className="ml-2"
                         >
-                            {configured}/{total} Configured
+                            {t('card.configuredBadge', { configured, total })}
                         </Badge>
                     </div>
                     <div className="flex gap-2">
@@ -88,7 +88,7 @@ const PlanReferralMappingCard = ({ form }: PlanReferralMappingCardProps) => {
                                 onClick={handleApplyToAllPlans}
                                 disable={planIds.length === 0}
                             >
-                                Apply to all
+                                {t('card.applyToAll')}
                             </MyButton>
                         )}
                         <MyButton
@@ -99,7 +99,7 @@ const PlanReferralMappingCard = ({ form }: PlanReferralMappingCardProps) => {
                             onClick={() => form.setValue('showPlanReferralDialog', true)}
                             disable={!selectedPlan}
                         >
-                            Configure Referrals
+                            {t('card.configureReferrals')}
                         </MyButton>
                     </div>
                 </CardHeader>
@@ -109,19 +109,21 @@ const PlanReferralMappingCard = ({ form }: PlanReferralMappingCardProps) => {
                         <div className="flex items-center justify-center py-8 text-gray-500">
                             <div className="text-center">
                                 <Gear size={32} className="mx-auto mb-2 opacity-50" />
-                                <p>Please select a payment plan first</p>
+                                <p>{t('emptyStates.noPlanSelected')}</p>
                             </div>
                         </div>
                     ) : planIds.length === 0 ? (
                         <div className="flex items-center justify-center py-8 text-gray-500">
                             <div className="text-center">
                                 <Gear size={32} className="mx-auto mb-2 opacity-50" />
-                                <p>No payment options available for configuration</p>
+                                <p>{t('emptyStates.noPaymentOptions')}</p>
                             </div>
                         </div>
                     ) : (
                         <div className="space-y-3">
-                            <div className="text-sm font-medium text-gray-700">Payment Plans:</div>
+                            <div className="text-sm font-medium text-gray-700">
+                                {t('planList.heading')}
+                            </div>
                             {planIds.map((planId) => {
                                 const planName = getPlanDisplayName(selectedPlan, planId);
                                 const referralId = planReferralMappings[planId];
@@ -147,11 +149,13 @@ const PlanReferralMappingCard = ({ form }: PlanReferralMappingCardProps) => {
                                                 <div className="font-medium">{planName}</div>
                                                 {isConfigured ? (
                                                     <div className="text-sm text-gray-600">
-                                                        Referral: {getReferralNameById(referralId)}
+                                                        {t('planList.referralLabel', {
+                                                            name: getReferralNameById(referralId),
+                                                        })}
                                                     </div>
                                                 ) : (
                                                     <div className="text-sm text-gray-400">
-                                                        No referral configured
+                                                        {t('planList.noReferralConfigured')}
                                                     </div>
                                                 )}
                                             </div>

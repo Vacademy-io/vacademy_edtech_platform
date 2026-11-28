@@ -1,0 +1,10 @@
+{
+    "dialog": {
+        "editTitle": "Edit Payment Plan",
+        "createTitle": "Create Payment Plan"
+    },
+    "step2": {
+        "planCurrencyLabel": "Plan Currency",
+        "defaultCurrencyHint": "Default: {{currency}} ({{symbol}})"
+    }
+}

@@ -6,6 +6,7 @@ import { useDeleteSession } from '@/services/study-library/session-management/de
 import { SessionData } from '@/types/study-library/session-types';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
 export const DeleteSessionDialog = ({
     triggerButton,
@@ -14,6 +15,7 @@ export const DeleteSessionDialog = ({
     triggerButton: JSX.Element;
     session: SessionData;
 }) => {
+    const { t } = useTranslation('manageInstituteDeleteSessionDialog');
     const [open, setOpen] = useState(false);
 
     const handleOpenChange = () => {
@@ -28,20 +30,21 @@ export const DeleteSessionDialog = ({
             {
                 onSuccess: () => {
                     toast.success(
-                        ` ${getTerminology(
-                            ContentTerms.Session,
-                            SystemTerms.Session
-                        )} deleted successfully!`
+                        t('toast.deleted', {
+                            session: getTerminology(ContentTerms.Session, SystemTerms.Session),
+                        })
                     );
                     setOpen(false);
                 },
                 onError: (error) => {
                     toast.error(
                         error.message ||
-                            `Failed to delete ${getTerminology(
-                                ContentTerms.Session,
-                                SystemTerms.Session
-                            ).toLocaleLowerCase()}`
+                            t('toast.deleteFailed', {
+                                session: getTerminology(
+                                    ContentTerms.Session,
+                                    SystemTerms.Session
+                                ).toLocaleLowerCase(),
+                            })
                     );
                 },
             }
@@ -50,7 +53,9 @@ export const DeleteSessionDialog = ({
 
     return (
         <MyDialog
-            heading={`Delete ${getTerminology(ContentTerms.Session, SystemTerms.Session)}`}
+            heading={t('heading', {
+                session: getTerminology(ContentTerms.Session, SystemTerms.Session),
+            })}
             trigger={triggerButton}
             open={open}
             onOpenChange={handleOpenChange}
@@ -58,18 +63,14 @@ export const DeleteSessionDialog = ({
         >
             <div className="flex flex-col gap-6 p-4">
                 <div>
-                    <p className="text-danger-600">Attention</p>
+                    <p className="text-danger-600">{t('attention')}</p>
                     <p>
-                        All the data in the{' '}
-                        {getTerminology(
-                            ContentTerms.Session,
-                            SystemTerms.Session
-                        ).toLocaleLowerCase()}{' '}
-                        will be deleted. Are you sure you want to delete the{' '}
-                        {getTerminology(
-                            ContentTerms.Session,
-                            SystemTerms.Session
-                        ).toLocaleLowerCase()}{' '}
+                        {t('confirmMessage', {
+                            session: getTerminology(
+                                ContentTerms.Session,
+                                SystemTerms.Session
+                            ).toLocaleLowerCase(),
+                        })}{' '}
                         <span className="text-primary-500">{session.session.session_name}</span>?
                     </p>
                 </div>
@@ -80,7 +81,7 @@ export const DeleteSessionDialog = ({
                             setOpen(false);
                         }}
                     >
-                        No
+                        {t('no')}
                     </MyButton>
                     <MyButton
                         buttonType="primary"
@@ -88,7 +89,7 @@ export const DeleteSessionDialog = ({
                             handleDeleteSession(session);
                         }}
                     >
-                        Yes
+                        {t('yes')}
                     </MyButton>
                 </div>
             </div>

@@ -1,0 +1,19 @@
+{
+    "removedFrom": "Removed from {{chapterName}}",
+    "couldNotRemove": "Could not remove the link. Please try again.",
+    "addedTo": "Added to",
+    "removeFromAriaLabel": "Remove from {{chapterName}}",
+    "remove": "Remove",
+    "removeThisSlideTitle": "Remove this slide?",
+    "removeThisSlideDescription": "This will also remove the slide from the chapter.",
+    "cancel": "Cancel",
+    "removingEllipsis": "Removing…",
+    "rename": "Rename",
+    "renameAriaLabel": "Rename slide in {{chapterName}}",
+    "renameTitle": "Rename slide",
+    "nameLabel": "Name",
+    "save": "Save",
+    "savingEllipsis": "Saving…",
+    "renamed": "Name updated",
+    "couldNotRename": "Could not rename. Please try again."
+}

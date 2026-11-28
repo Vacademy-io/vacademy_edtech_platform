@@ -1,0 +1,26 @@
+{
+    "heading": "Nouvelle note de frais",
+    "cancel": "Annuler",
+    "submit": "Soumettre la note",
+    "submitting": "Envoi en cours…",
+    "pendingNotice": "Votre note de frais est envoyée aux RH avec le statut En attente. Une fois approuvée, elle est réglée avec le salaire d'un mois à venir. Conservez le reçu — il pourra vous être demandé.",
+    "fields": {
+        "typeLabel": "À quoi cela correspondait-il ?",
+        "amountLabel": "Montant dépensé",
+        "dateLabel": "Date de la dépense",
+        "descriptionLabel": "De quoi s'agissait-il ?",
+        "descriptionPlaceholder": "Taxi de l'aéroport jusqu'au campus",
+        "descriptionHelp": "Facultatif, mais cela évite à votre équipe RH de vous poser la question."
+    },
+    "toasts": {
+        "submitted": "Note de frais soumise"
+    },
+    "errors": {
+        "type": "Choisissez à quoi correspondait cette dépense",
+        "amountRequired": "Saisissez le montant dépensé",
+        "amountPositive": "Saisissez un montant supérieur à zéro",
+        "date": "Quand avez-vous dépensé ce montant ?",
+        "descriptionLength": "Limitez-vous à 500 caractères",
+        "submitFailed": "Impossible de soumettre votre note de frais."
+    }
+}

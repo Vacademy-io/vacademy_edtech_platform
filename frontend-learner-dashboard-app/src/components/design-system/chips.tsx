@@ -1,4 +1,5 @@
 import { Check } from "@phosphor-icons/react";
+import { useTranslation } from "react-i18next";
 export const StatusCheck = () => (
   <div className="flex items-center justify-center rounded-full bg-green-500 p-1">
     <Check className="h-3 w-3 text-white" />
@@ -31,9 +32,10 @@ export const StatusChip = ({ playMode, className }: StatusChipProps) => {
 };
 
 export const MarkBadge = ({ marks }: { marks: number }) => {
+  const { t } = useTranslation("uiAtomsA");
   return (
     <div className="inline-block px-2 py-1 bg-green-500 text-white text-sm font-semibold rounded-md">
-      {marks} Marks
+      {t("markBadge.marks", { marks })}
     </div>
   );
 };

@@ -1,8 +1,9 @@
 """
 Service for processing reference files (images/PDFs) for AI video generation.
 
-Downloads files from S3, extracts text from PDFs, describes images via
-Gemini Flash Lite, and produces a ReferenceContext used by the pipeline.
+Downloads files from S3, extracts text from PDFs, describes images via the
+'video' default model (GLM, retried once on Gemini Flash), and produces a
+ReferenceContext used by the pipeline.
 """
 from __future__ import annotations
 
@@ -10,14 +11,28 @@ import base64
 import json
 import logging
 import mimetypes
+import time
 import urllib.request
 from dataclasses import dataclass, field, asdict
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from ..constants.models import DEFAULT_MODEL as _VISION_MODEL
+from ..constants.model_defaults import NON_GLM_FALLBACK
+from ..constants.models import get_use_case_model_chain
 
 logger = logging.getLogger(__name__)
+
+# Image description: the ai_model_defaults 'video' default (GLM), then ONE
+# retry on NON_GLM_FALLBACK. Both legs share _VISION_TIMEOUT_S; the primary
+# gets at most _VISION_PRIMARY_TIMEOUT_S of it.
+_VISION_TIMEOUT_S = 60.0
+_VISION_PRIMARY_TIMEOUT_S = 40.0
+# The description is up to ~1000 tokens; GLM's reasoning counts against
+# max_tokens, so the cap carries thinking headroom (only output is paid for).
+_VISION_MAX_TOKENS = 3000
+# Sent explicitly: on the OpenRouter failover leg a payload with no reasoning
+# object runs GLM at its heavy default.
+_VISION_REASONING = {"effort": "low"}
 
 # Image extensions we accept as embeddable visuals AND that the OpenRouter
 # vision models (Gemini family) can ingest. SVG was historically here but the
@@ -261,58 +276,73 @@ class ReferenceFileService:
         return "\n\n".join(text_parts), page_images
 
     def _describe_image(self, image_path: Path, filename: str) -> str:
-        """Send an image to Gemini Flash Lite via OpenRouter for description."""
+        """Describe an image with the 'video' default vision model, retrying
+        once on NON_GLM_FALLBACK. A placeholder string when both fail."""
         if not self._openrouter_key:
             return f"[Image: {filename} — no API key for description]"
 
         try:
             image_bytes = image_path.read_bytes()
-            mime = mimetypes.guess_type(filename)[0] or "image/png"
-            b64 = base64.b64encode(image_bytes).decode("utf-8")
-            data_url = f"data:{mime};base64,{b64}"
-
-            payload = {
-                "model": _VISION_MODEL,
-                "messages": [
+        except Exception as e:
+            logger.error(f"[RefFileService] Could not read {filename}: {e}")
+            return f"[Image: {filename} — description unavailable]"
+        mime = mimetypes.guess_type(filename)[0] or "image/png"
+        b64 = base64.b64encode(image_bytes).decode("utf-8")
+        data_url = f"data:{mime};base64,{b64}"
+        messages = [
+            {
+                "role": "user",
+                "content": [
                     {
-                        "role": "user",
-                        "content": [
-                            {
-                                "type": "text",
-                                "text": (
-                                    "Describe this image for use in educational video generation. "
-                                    "First, classify the image type in brackets: [LOGO], [SCREENSHOT], [PHOTO], [DIAGRAM], [ILLUSTRATION], or [OTHER]. "
-                                    "Then describe: what it shows, key text/labels visible, colors, and suggested usage "
-                                    "(e.g., 'use as corner watermark' for logos, 'use as hero background' for photos)."
-                                ),
-                            },
-                            {
-                                "type": "image_url",
-                                "image_url": {"url": data_url},
-                            },
-                        ],
-                    }
+                        "type": "text",
+                        "text": (
+                            "Describe this image for use in educational video generation. "
+                            "First, classify the image type in brackets: [LOGO], [SCREENSHOT], [PHOTO], [DIAGRAM], [ILLUSTRATION], or [OTHER]. "
+                            "Then describe: what it shows, key text/labels visible, colors, and suggested usage "
+                            "(e.g., 'use as corner watermark' for logos, 'use as hero background' for photos)."
+                        ),
+                    },
+                    {
+                        "type": "image_url",
+                        "image_url": {"url": data_url},
+                    },
                 ],
-                "max_tokens": 1000,
+            }
+        ]
+
+        from .llm_router import post_chat_sync
+
+        chain = get_use_case_model_chain("video")
+        deadline = time.monotonic() + _VISION_TIMEOUT_S
+        for i, model in enumerate(chain):
+            budget = deadline - time.monotonic()
+            if i == 0 and len(chain) > 1:
+                budget = min(budget, _VISION_PRIMARY_TIMEOUT_S)
+            if budget <= 0:
+                break
+            payload: Dict[str, Any] = {
+                "model": model,
+                "messages": messages,
+                "max_tokens": _VISION_MAX_TOKENS,
                 "temperature": 0.3,
             }
-
-            headers = {
-                "Authorization": f"Bearer {self._openrouter_key}",
-                "Content-Type": "application/json",
-            }
-            req = urllib.request.Request(
-                _OPENROUTER_URL,
-                data=json.dumps(payload).encode("utf-8"),
-                headers=headers,
-                method="POST",
-            )
-            with urllib.request.urlopen(req, timeout=60) as resp:
-                result = json.loads(resp.read().decode("utf-8"))
+            if model != NON_GLM_FALLBACK:
+                # The Gemini Flash fallback leg sends none, as before.
+                payload["reasoning"] = dict(_VISION_REASONING)
+            try:
+                resp = post_chat_sync(payload, self._openrouter_key, timeout=budget)
+                resp.raise_for_status()
+                result = resp.json()
                 description = result["choices"][0]["message"]["content"]
-                logger.info(f"[RefFileService] Described {filename}: {description[:80]}...")
-                return description
+                if not isinstance(description, str) or not description.strip():
+                    raise ValueError(
+                        f"empty content (finish={result['choices'][0].get('finish_reason')})"
+                    )
+            except Exception as e:
+                logger.warning(f"[RefFileService] Image description on {model} failed for {filename}: {e}")
+                continue
+            logger.info(f"[RefFileService] Described {filename} ({model}): {description[:80]}...")
+            return description
 
-        except Exception as e:
-            logger.error(f"[RefFileService] Image description failed for {filename}: {e}")
-            return f"[Image: {filename} — description unavailable]"
+        logger.error(f"[RefFileService] Image description failed for {filename} on {chain}")
+        return f"[Image: {filename} — description unavailable]"

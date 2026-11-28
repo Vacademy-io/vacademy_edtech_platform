@@ -10,6 +10,7 @@ import vacademy.io.admin_core_service.features.institute_learner.dto.StudentStat
 import vacademy.io.admin_core_service.features.learner_access.enums.LearnerAccessSourceEnum;
 import vacademy.io.admin_core_service.features.learner_access.service.LearnerAccessService;
 import vacademy.io.admin_core_service.features.institute_learner.repository.StudentSessionRepository;
+import vacademy.io.admin_core_service.features.suborg.service.SubOrgExitService;
 import vacademy.io.common.auth.model.CustomUserDetails;
 import vacademy.io.common.exceptions.VacademyException;
 
@@ -31,6 +32,9 @@ public class StudentSessionManager {
     @Autowired
     private LearnerAccessService learnerAccessService;
 
+    @Autowired
+    private SubOrgExitService subOrgExitService;
+
     @Transactional
     public void updateStudentStatus(List<StudentStatusUpdateRequest> requests, String operation,
                                     CustomUserDetails adminDetails) {
@@ -39,6 +43,8 @@ public class StudentSessionManager {
         // MAKE_INACTIVE terminations to fire workflows for, collected during the
         // loop and fired only AFTER the transaction commits (see below).
         List<TerminationFiring> terminations = new ArrayList<>();
+        // Sub-org memberships these operations are about to end, read before the UPDATE.
+        List<SubOrgExit> subOrgExits = new ArrayList<>();
         List<String> failures = new ArrayList<>();
 
         for (StudentStatusUpdateRequest request : requests) {
@@ -63,6 +69,7 @@ public class StudentSessionManager {
                         recordExpiryChanges(beforeExpiryChange, expiryDate, request.getInstituteId(), adminDetails);
                         break;
                     case "MAKE_INACTIVE":
+                        captureSubOrgExits(request, subOrgExits);
                         handleMakeInactive(request, terminations);
                         break;
                     case "MAKE_ACTIVE":
@@ -72,6 +79,7 @@ public class StudentSessionManager {
                         studentSessionRepository.updateStatus(request.getUserId(), request.getCurrentPackageSessionId(), request.getInstituteId(), request.getNewState());
                         break;
                     case "TERMINATE":
+                        captureSubOrgExits(request, subOrgExits);
                         studentSessionRepository.updateStatus(request.getUserId(), request.getCurrentPackageSessionId(), request.getInstituteId(), "TERMINATED");
                         break;
                     default:
@@ -93,7 +101,7 @@ public class StudentSessionManager {
                     + " learner(s): " + String.join("; ", failures));
         }
 
-        fireTerminationWorkflowsAfterCommit(terminations, adminUserId);
+        fireTerminationWorkflowsAfterCommit(terminations, subOrgExits, adminUserId);
     }
 
     /**
@@ -155,8 +163,9 @@ public class StudentSessionManager {
      * {@code @Async}, so firing also runs off the request thread. Falls back to a
      * direct (still async) call when there's no active transaction.
      */
-    private void fireTerminationWorkflowsAfterCommit(List<TerminationFiring> terminations, String adminUserId) {
-        if (terminations.isEmpty()) {
+    private void fireTerminationWorkflowsAfterCommit(List<TerminationFiring> terminations,
+                                                     List<SubOrgExit> subOrgExits, String adminUserId) {
+        if (terminations.isEmpty() && subOrgExits.isEmpty()) {
             return;
         }
         if (TransactionSynchronizationManager.isSynchronizationActive()) {
@@ -167,6 +176,7 @@ public class StudentSessionManager {
                         learnerTerminationWorkflowHelper.fireTerminationWorkflows(
                                 t.userId(), t.packageSessionIds(), t.instituteId(), adminUserId);
                     }
+                    fireSubOrgExits(subOrgExits, adminUserId);
                 }
             });
         } else {
@@ -174,9 +184,35 @@ public class StudentSessionManager {
                 learnerTerminationWorkflowHelper.fireTerminationWorkflows(
                         t.userId(), t.packageSessionIds(), t.instituteId(), adminUserId);
             }
+            fireSubOrgExits(subOrgExits, adminUserId);
+        }
+    }
+
+    private void captureSubOrgExits(StudentStatusUpdateRequest request, List<SubOrgExit> subOrgExits) {
+        List<String> packageSessionIds = request.getPackageSessionIds() != null
+                && !request.getPackageSessionIds().isEmpty()
+                ? request.getPackageSessionIds()
+                : request.getCurrentPackageSessionId() != null
+                        ? List.of(request.getCurrentPackageSessionId())
+                        : List.of();
+        for (String packageSessionId : packageSessionIds) {
+            subOrgExitService.captureMembership(request.getUserId(), packageSessionId, request.getInstituteId())
+                    .ifPresent(membership -> subOrgExits.add(new SubOrgExit(request.getUserId(), packageSessionId,
+                            request.getInstituteId(), membership)));
+        }
+    }
+
+    private void fireSubOrgExits(List<SubOrgExit> subOrgExits, String adminUserId) {
+        for (SubOrgExit exit : subOrgExits) {
+            subOrgExitService.onHardExit(exit.userId(), exit.packageSessionId(), exit.instituteId(), adminUserId,
+                    exit.membership());
         }
     }
 
     private record TerminationFiring(String userId, List<String> packageSessionIds, String instituteId) {
+    }
+
+    private record SubOrgExit(String userId, String packageSessionId, String instituteId,
+                              SubOrgExitService.Membership membership) {
     }
 }

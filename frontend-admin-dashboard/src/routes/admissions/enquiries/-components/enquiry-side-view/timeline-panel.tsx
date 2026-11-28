@@ -1,4 +1,6 @@
 import { useState, type ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
     handleFetchTimelineEvents,
@@ -35,6 +37,8 @@ import {
     PushPin,
     CalendarCheck,
     GitMerge,
+    WhatsappLogo,
+    Repeat,
 } from '@phosphor-icons/react';
 
 // ─── Action Type Icons & Colors ──────────────────────────────────────────────
@@ -112,6 +116,18 @@ const ACTION_CONFIG: Record<string, { icon: ReactNode; color: string; bgColor: s
         color: 'text-neutral-600',
         bgColor: 'bg-neutral-100',
     },
+    // An existing lead contacted us again through a WhatsApp chatbot flow — no new lead created.
+    RE_ENQUIRY: {
+        icon: <WhatsappLogo weight="fill" className="size-4" />,
+        color: 'text-info-600',
+        bgColor: 'bg-info-100',
+    },
+    // An existing lead enquired again through a form, ad or list (repeat-lead handling).
+    REATTEMPT: {
+        icon: <Repeat weight="fill" className="size-4" />,
+        color: 'text-warning-600',
+        bgColor: 'bg-warning-100',
+    },
     DEFAULT: {
         icon: <PushPin weight="fill" className="size-4" />,
         color: 'text-neutral-600',
@@ -130,17 +146,25 @@ const getActionConfig = (actionType: string): { icon: ReactNode; color: string; 
 
 // ─── Note Action Types ───────────────────────────────────────────────────────
 
-const NOTE_ACTION_TYPES = [
-    { value: 'NOTE', label: 'Note', icon: <NotePencil weight="fill" className="size-3.5" /> },
-    { value: 'CALL_LOG', label: 'Call Log', icon: <Phone weight="fill" className="size-3.5" /> },
+const buildNoteActionTypes = (t: TFunction) => [
+    {
+        value: 'NOTE',
+        label: t('addNote.actionTypes.note'),
+        icon: <NotePencil weight="fill" className="size-3.5" />,
+    },
+    {
+        value: 'CALL_LOG',
+        label: t('addNote.actionTypes.callLog'),
+        icon: <Phone weight="fill" className="size-3.5" />,
+    },
     {
         value: 'FOLLOW_UP',
-        label: 'Follow Up',
+        label: t('addNote.actionTypes.followUp'),
         icon: <CalendarCheck weight="fill" className="size-3.5" />,
     },
     {
         value: 'MEETING',
-        label: 'Meeting',
+        label: t('addNote.actionTypes.meeting'),
         icon: <Buildings weight="fill" className="size-3.5" />,
     },
 ];
@@ -148,6 +172,7 @@ const NOTE_ACTION_TYPES = [
 // ─── Timeline Event Item ─────────────────────────────────────────────────────
 
 export const TimelineEventItem = ({ event }: { event: TimelineEvent }) => {
+    const { t } = useTranslation('admissionsTimelinePanel');
     const config = getActionConfig(event.action_type);
     const [isTextExpanded, setIsTextExpanded] = useState(false);
 
@@ -162,7 +187,7 @@ export const TimelineEventItem = ({ event }: { event: TimelineEvent }) => {
     return (
         <div className="group relative flex gap-3 pb-6 last:pb-0">
             {/* Vertical line connector */}
-            <div className="absolute -bottom-0 left-[17px] top-[36px] w-px bg-neutral-200 group-last:hidden" />
+            <div className="absolute -bottom-0 start-4 top-9 w-px bg-neutral-200 group-last:hidden" />
 
             {/* Icon circle */}
             <div
@@ -177,7 +202,7 @@ export const TimelineEventItem = ({ event }: { event: TimelineEvent }) => {
                     <h4 className="text-sm font-medium leading-tight text-neutral-800">
                         {event.title}
                     </h4>
-                    <span className="shrink-0 text-[10px] font-medium tabular-nums text-neutral-400">
+                    <span className="shrink-0 text-caption font-medium tabular-nums text-neutral-400">
                         {formatTime(event.created_at)}
                     </span>
                 </div>
@@ -212,7 +237,7 @@ export const TimelineEventItem = ({ event }: { event: TimelineEvent }) => {
                                         onClick={() => setIsTextExpanded(!isTextExpanded)}
                                         className="mt-1 text-xs font-medium text-primary-600 transition-colors hover:text-primary-700 hover:underline"
                                     >
-                                        {isTextExpanded ? 'View less' : 'View more'}
+                                        {isTextExpanded ? t('event.viewLess') : t('event.viewMore')}
                                     </button>
                                 )}
                             </div>
@@ -221,8 +246,9 @@ export const TimelineEventItem = ({ event }: { event: TimelineEvent }) => {
 
                 {/* Actor info */}
                 {event.actor_name && (
-                    <p className="mt-1.5 text-[11px] text-neutral-400">
-                        by <span className="font-medium text-neutral-500">{event.actor_name}</span>
+                    <p className="mt-1.5 text-caption text-neutral-400">
+                        {t('event.actorPrefix')}{' '}
+                        <span className="font-medium text-neutral-500">{event.actor_name}</span>
                     </p>
                 )}
 
@@ -242,7 +268,7 @@ export const TimelineEventItem = ({ event }: { event: TimelineEvent }) => {
                             {entries.map(([key, value]) => (
                                 <span
                                     key={key}
-                                    className="inline-flex items-center gap-1 rounded-md border border-neutral-100 bg-neutral-50 px-2 py-0.5 text-[10px] text-neutral-500"
+                                    className="inline-flex items-center gap-1 rounded-md border border-neutral-100 bg-neutral-50 px-2 py-0.5 text-caption text-neutral-500"
                                 >
                                     <span className="font-medium text-neutral-600">
                                         {key.replace(/_/g, ' ')}:
@@ -266,16 +292,19 @@ interface AddNoteFormProps {
 }
 
 const AddNoteForm = ({ entityType, entityId }: AddNoteFormProps) => {
+    const { t } = useTranslation('admissionsTimelinePanel');
     const [noteText, setNoteText] = useState('');
     const [actionType, setActionType] = useState('NOTE');
     const [isExpanded, setIsExpanded] = useState(false);
     const [callActivity, setCallActivity] = useState<CallActivity | null>(null);
     const queryClient = useQueryClient();
 
+    const noteActionTypes = buildNoteActionTypes(t);
+
     const createMutation = useMutation({
         mutationFn: createTimelineEvent,
         onSuccess: () => {
-            toast.success('Note added successfully');
+            toast.success(t('addNote.toast.success'));
             setNoteText('');
             setCallActivity(null);
             setIsExpanded(false);
@@ -284,7 +313,7 @@ const AddNoteForm = ({ entityType, entityId }: AddNoteFormProps) => {
             });
         },
         onError: () => {
-            toast.error('Failed to add note. Please try again.');
+            toast.error(t('addNote.toast.error'));
         },
     });
 
@@ -301,11 +330,13 @@ const AddNoteForm = ({ entityType, entityId }: AddNoteFormProps) => {
 
     const handleSubmit = () => {
         if (!canSubmit) {
-            toast.warning('Please enter a note or add a recording');
+            toast.warning(t('addNote.toast.emptyWarning'));
             return;
         }
 
-        const actionLabel = NOTE_ACTION_TYPES.find((t) => t.value === actionType)?.label || 'Note';
+        const actionLabel =
+            noteActionTypes.find((noteType) => noteType.value === actionType)?.label ||
+            t('addNote.actionTypes.note');
 
         const payload: CreateTimelineEventPayload = {
             type: entityType,
@@ -334,7 +365,7 @@ const AddNoteForm = ({ entityType, entityId }: AddNoteFormProps) => {
                 >
                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
                 </svg>
-                Add a note or log activity…
+                {t('addNote.collapsedPlaceholder')}
             </button>
         );
     }
@@ -343,7 +374,7 @@ const AddNoteForm = ({ entityType, entityId }: AddNoteFormProps) => {
         <div className="rounded-xl border border-neutral-200 bg-white p-3 shadow-sm">
             {/* Action type selector */}
             <div className="mb-2 flex items-center gap-1.5">
-                {NOTE_ACTION_TYPES.map((type) => (
+                {noteActionTypes.map((type) => (
                     <button
                         key={type.value}
                         onClick={() => setActionType(type.value)}
@@ -373,7 +404,7 @@ const AddNoteForm = ({ entityType, entityId }: AddNoteFormProps) => {
                 <RichTextEditor
                     value={noteText}
                     onChange={setNoteText}
-                    placeholder="Type your note here…"
+                    placeholder={t('addNote.notePlaceholder')}
                     minHeight={64}
                     minimalToolbar
                 />
@@ -386,7 +417,7 @@ const AddNoteForm = ({ entityType, entityId }: AddNoteFormProps) => {
 
             {/* Actions */}
             <div className="mt-2 flex items-center justify-between">
-                <span className="text-[10px] text-neutral-400">Ctrl+Enter to submit</span>
+                <span className="text-caption text-neutral-400">{t('addNote.submitHint')}</span>
                 <div className="flex items-center gap-2">
                     <Button
                         variant="ghost"
@@ -398,7 +429,7 @@ const AddNoteForm = ({ entityType, entityId }: AddNoteFormProps) => {
                             setCallActivity(null);
                         }}
                     >
-                        Cancel
+                        {t('addNote.cancel')}
                     </Button>
                     <Button
                         size="sm"
@@ -406,7 +437,7 @@ const AddNoteForm = ({ entityType, entityId }: AddNoteFormProps) => {
                         onClick={handleSubmit}
                         disabled={createMutation.isPending || !canSubmit}
                     >
-                        {createMutation.isPending ? 'Saving…' : 'Add Note'}
+                        {createMutation.isPending ? t('addNote.submitting') : t('addNote.submit')}
                     </Button>
                 </div>
             </div>
@@ -422,6 +453,7 @@ interface TimelinePanelProps {
 }
 
 export const TimelinePanel = ({ entityType, entityId }: TimelinePanelProps) => {
+    const { t } = useTranslation('admissionsTimelinePanel');
     const [page, setPage] = useState(0);
     const pageSize = 5;
 
@@ -433,9 +465,9 @@ export const TimelinePanel = ({ entityType, entityId }: TimelinePanelProps) => {
             {/* Section Header */}
             <div className="flex items-center gap-2">
                 <div className="h-3.5 w-1 rounded-full bg-primary-500" />
-                <h4 className="text-sm font-semibold text-neutral-700">Activity & Notes</h4>
+                <h4 className="text-sm font-semibold text-neutral-700">{t('header.title')}</h4>
                 {data?.totalElements !== undefined && (
-                    <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-[10px] font-semibold text-neutral-500">
+                    <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-caption font-semibold text-neutral-500">
                         {data.totalElements}
                     </span>
                 )}
@@ -449,7 +481,7 @@ export const TimelinePanel = ({ entityType, entityId }: TimelinePanelProps) => {
                 <div className="flex items-center justify-center py-8">
                     <div className="flex items-center gap-2 text-sm text-neutral-500">
                         <div className="size-4 animate-spin rounded-full border-2 border-primary-500 border-t-transparent" />
-                        Loading activity…
+                        {t('loading')}
                     </div>
                 </div>
             )}
@@ -457,7 +489,7 @@ export const TimelinePanel = ({ entityType, entityId }: TimelinePanelProps) => {
             {/* Error State */}
             {error && (
                 <div className="rounded-lg border border-red-100 bg-red-50 p-3 text-sm text-red-600">
-                    Failed to load activity timeline.
+                    {t('error')}
                 </div>
             )}
 
@@ -471,29 +503,32 @@ export const TimelinePanel = ({ entityType, entityId }: TimelinePanelProps) => {
                     {/* Pagination */}
                     {data.totalPages > 1 && (
                         <div className="mt-4 flex items-center justify-between border-t border-neutral-100 pt-3">
-                            <span className="text-[11px] text-neutral-400">
-                                Page {page + 1} of {data.totalPages}
+                            <span className="text-caption text-neutral-400">
+                                {t('pagination.pageInfo', {
+                                    current: page + 1,
+                                    total: data.totalPages,
+                                })}
                             </span>
                             <div className="flex gap-1.5">
                                 <Button
                                     variant="outline"
                                     size="sm"
-                                    className="h-6 px-2 text-[11px]"
+                                    className="h-6 px-2 text-caption"
                                     onClick={() => setPage((p) => Math.max(0, p - 1))}
                                     disabled={page === 0}
                                 >
-                                    Previous
+                                    {t('pagination.previous')}
                                 </Button>
                                 <Button
                                     variant="outline"
                                     size="sm"
-                                    className="h-6 px-2 text-[11px]"
+                                    className="h-6 px-2 text-caption"
                                     onClick={() =>
                                         setPage((p) => Math.min(data.totalPages - 1, p + 1))
                                     }
                                     disabled={page >= data.totalPages - 1}
                                 >
-                                    Next
+                                    {t('pagination.next')}
                                 </Button>
                             </div>
                         </div>
@@ -505,10 +540,8 @@ export const TimelinePanel = ({ entityType, entityId }: TimelinePanelProps) => {
             {data && data.content.length === 0 && (
                 <div className="flex flex-col items-center gap-2 rounded-xl border-2 border-dashed border-neutral-200 bg-neutral-50/50 py-8 text-center">
                     <ClipboardText weight="fill" className="size-8 text-neutral-400" />
-                    <p className="text-sm font-medium text-neutral-500">No activity yet</p>
-                    <p className="text-xs text-neutral-400">
-                        Notes, status changes, and other events will appear here
-                    </p>
+                    <p className="text-sm font-medium text-neutral-500">{t('empty.title')}</p>
+                    <p className="text-xs text-neutral-400">{t('empty.description')}</p>
                 </div>
             )}
         </div>

@@ -1,0 +1,30 @@
+{
+    "summary": {
+        "prefix": "Default destination:",
+        "fallback": "Destination selected"
+    },
+    "button": {
+        "change": "Change"
+    },
+    "cascadeField": {
+        "labels": {
+            "course": "Course",
+            "session": "Session",
+            "level": "Level",
+            "subject": "Subject",
+            "module": "Module",
+            "chapter": "Chapter"
+        },
+        "placeholders": {
+            "course": "Select course",
+            "session": "Select session",
+            "level": "Select level",
+            "subject": "Select subject",
+            "module": "Select module",
+            "chapter": "Select chapter"
+        },
+        "searchPlaceholder": "Search {{label}}…",
+        "emptyText": "No matches"
+    },
+    "noDefaultSet": "No default set — only sessions with their own destination will auto-upload."
+}

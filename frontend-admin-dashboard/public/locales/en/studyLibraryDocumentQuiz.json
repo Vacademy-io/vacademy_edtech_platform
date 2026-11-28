@@ -1,0 +1,37 @@
+{
+    "dialog": {
+        "intro": "Upload the document learners read while they answer. Then add the questions on the right, just like a quiz.",
+        "replaceHeading": "Replace document",
+        "fileSize": "{{size}} MB"
+    },
+    "dropzone": {
+        "title": "Drop a PDF or PowerPoint file here, or click to choose",
+        "subtitle": "PDF, PPT or PPTX. PowerPoint files are turned into a PDF."
+    },
+    "status": {
+        "working": "Working…",
+        "converting": "Converting the presentation to PDF…",
+        "uploading": "Uploading the document…",
+        "creating": "Creating the slide…"
+    },
+    "actions": {
+        "create": "Create slide",
+        "replace": "Use this document"
+    },
+    "errors": {
+        "unsupportedType": "Choose a PDF, PPT or PPTX file.",
+        "uploadFailed": "Couldn’t upload the document. Please try again.",
+        "createFailed": "Couldn’t create the slide. Please try again."
+    },
+    "toast": {
+        "created": "Document + Quiz slide created. Add your questions on the right.",
+        "replaced": "Document replaced. Save or publish the slide to keep the change."
+    },
+    "preview": {
+        "documentHeading": "Document",
+        "hint": "Learners see this beside the questions",
+        "replace": "Replace",
+        "loading": "Loading document…",
+        "loadFailed": "Couldn’t load the document."
+    }
+}

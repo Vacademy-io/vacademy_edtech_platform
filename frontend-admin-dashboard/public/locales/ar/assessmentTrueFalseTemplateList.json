@@ -1,0 +1,20 @@
+{
+    "settingsPopover": {
+        "title": "إعدادات الأسئلة",
+        "questionTypeLabel": "نوع السؤال"
+    },
+    "questionHeader": {
+        "questionLabel": "سؤال"
+    },
+    "trueFalseOptions": {
+        "answerLabel": "الإجابة:"
+    },
+    "trueFalseOption": {
+        "markerFallback": "({{label}}.)",
+        "trueLabel": "صحيح",
+        "falseLabel": "خطأ"
+    },
+    "explanationSection": {
+        "label": "الشرح:"
+    }
+}

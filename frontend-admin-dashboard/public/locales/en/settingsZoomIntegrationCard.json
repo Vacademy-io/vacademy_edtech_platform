@@ -1,0 +1,18 @@
+{
+    "title": "Zoom Integration",
+    "description": "Connect one or more Zoom accounts so admins can create Zoom meetings directly from the live-class wizard, with learners joining seamlessly via the embedded Meeting SDK.",
+    "connectButton": "Connect with Zoom",
+    "addManuallyButton": "Add manually",
+    "retry": "Retry",
+    "errors": {
+        "loadAccounts": "Failed to load Zoom accounts.",
+        "connectionFailed": "Zoom connection failed ({{reason}}). Please try again.",
+        "connectionStartFailed": "Could not start the Zoom connection. Please try again."
+    },
+    "toasts": {
+        "connected": "Zoom connected successfully."
+    },
+    "retentionNotice": {
+        "text": "Zoom cloud recordings expire by default after <strong>30 days</strong> (then 30 days in trash before permanent deletion). To preserve recordings beyond that window, use \"Sync to Vacademy S3\" on each recording from the session view — coming in a future release. For now, the default Zoom retention applies; you can extend it from your Zoom account settings."
+    }
+}

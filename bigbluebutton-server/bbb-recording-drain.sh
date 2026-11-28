@@ -61,25 +61,44 @@ processed=0
 failed=0
 CURRENT_FILE="/var/spool/bbb-recording-uploading"
 recid=""
+idx=-1
+
+# Read the claimed batch into an array instead of feeding the work file into
+# the loop's stdin. Two separate silent-loss bugs come from doing it that way:
+#   1. The hook runs ffmpeg, which reads stdin looking for keypresses. Fed from
+#      the work file, it swallowed every remaining recordId and the loop saw
+#      EOF — the log read "draining 17" then "processed=1", and the other 16
+#      were gone, because the queue file was truncated when we claimed it.
+#   2. The cleanup trap cannot re-queue the ids it has not reached yet while
+#      they exist only as unread bytes behind a file descriptor.
+mapfile -t IDS < "$WORK_FILE"
 
 # Cleanup trap: runs on every exit (normal, error, or SIGTERM from systemctl stop).
 # Two responsibilities:
 #   1. Remove the "currently processing" marker so the dashboard reflects truth.
-#   2. If we were mid-hook for a recid when killed, re-enqueue it so the next
-#      drain run retries. Without this, sigterm during ffmpeg silently loses
-#      the recording — exactly what the queue model was meant to prevent.
+#   2. Re-enqueue everything this run still owes — the recid in hand plus the
+#      ids we never reached — so the next drain retries them. Without this, a
+#      SIGTERM during ffmpeg (every nightly shutdown lands mid-batch) silently
+#      loses them: the queue was truncated at claim time, so this array is the
+#      only place they exist.
 cleanup() {
     rm -f "$CURRENT_FILE" 2>/dev/null
-    if [ -n "${recid:-}" ]; then
-        log "interrupted while processing $recid — re-queuing"
-        (flock 8; echo "$recid" >> "$QUEUE_FILE") 8>>"$QUEUE_FILE.lock" 2>/dev/null
+    local pending=()
+    [ -n "${recid:-}" ] && pending+=("$recid")
+    if [ "$idx" -ge 0 ] && [ "$((idx + 1))" -lt "${#IDS[@]}" ]; then
+        pending+=("${IDS[@]:$((idx + 1))}")
+    fi
+    if [ "${#pending[@]}" -gt 0 ]; then
+        log "interrupted — re-queuing ${#pending[@]} recordId(s): ${pending[*]}"
+        (flock 8; printf '%s\n' "${pending[@]}" >> "$QUEUE_FILE") 8>>"$QUEUE_FILE.lock" 2>/dev/null
     fi
     rm -f "$WORK_FILE" 2>/dev/null
 }
 trap cleanup EXIT
 trap 'exit 143' TERM  # so EXIT trap fires on SIGTERM
 
-while IFS= read -r recid; do
+for idx in "${!IDS[@]}"; do
+    recid="${IDS[$idx]}"
     [ -z "$recid" ] && continue
     log "processing $recid"
     # Publish the active recordId so the dashboard can show "Uploading"
@@ -90,7 +109,7 @@ while IFS= read -r recid; do
     # Lowest priority for both CPU (Nice 19) and IO (idle class) — guarantees
     # this drain yields to anything realtime even if cgroup limits aren't set.
     rc=0
-    nice -n 19 ionice -c idle "$HOOK" --drain "$recid" || rc=$?
+    nice -n 19 ionice -c idle "$HOOK" --drain "$recid" < /dev/null || rc=$?
     if [ "$rc" -eq 0 ]; then
         log "done $recid"
         processed=$((processed + 1))
@@ -102,6 +121,6 @@ while IFS= read -r recid; do
     rm -f "$CURRENT_FILE" 2>/dev/null
     # Clear recid so the EXIT trap does NOT think we were interrupted mid-run.
     recid=""
-done < "$WORK_FILE"
+done
 
 log "drain complete — processed=$processed failed=$failed"

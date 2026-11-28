@@ -1,0 +1,55 @@
+{
+    "refs": {
+        "label_zero": "مراجع ({{count}})",
+        "label_one": "مرجع واحد ({{count}})",
+        "label_two": "مرجعان ({{count}})",
+        "label_few": "مراجع ({{count}})",
+        "label_many": "مرجعًا ({{count}})",
+        "label_other": "مراجع ({{count}})",
+        "removeAria": "إزالة {{fileName}}"
+    },
+    "sources": {
+        "label_zero": "مصادر ({{count}})",
+        "label_one": "مصدر واحد ({{count}})",
+        "label_two": "مصدران ({{count}})",
+        "label_few": "مصادر ({{count}})",
+        "label_many": "مصدرًا ({{count}})",
+        "label_other": "مصادر ({{count}})",
+        "unknown": "غير معروف",
+        "removeAria": "إزالة {{name}}"
+    },
+    "audio": {
+        "label": "الصوت",
+        "original": "الأصلي",
+        "originalTitleAvailable": "استخدام الصوت الأصلي من مقطعك المصدر",
+        "originalTitleUnavailable": "الصوت الأصلي متاح فقط مع مقطع مصدر واحد",
+        "aiNarration": "سرد بالذكاء الاصطناعي",
+        "muteTtsDuringSourceClips": "كتم صوت TTS أثناء المقاطع المصدر"
+    },
+    "smartPlan": {
+        "label": "خطة ذكية",
+        "analyzing": "جارٍ تحليل الطلب…",
+        "captureWebsite": "التقاط الموقع الإلكتروني",
+        "skipWebsite": "تخطي الموقع الإلكتروني",
+        "webSearch": "بحث في الويب",
+        "skipSearch": "تخطي البحث",
+        "muteTtsOnClips": "كتم TTS على المقاطع",
+        "ttsOverClips": "TTS فوق المقاطع",
+        "muteTtsTitle": "كتم سرد TTS أثناء لقطات المقطع المصدر بحيث يُشغَّل الصوت الأصلي للعرض",
+        "overlayInfographics": "تراكب الإنفوجرافيك",
+        "sideInfographics": "إنفوجرافيك جانبي",
+        "overlayTitle": "تعويم الإنفوجرافيك فوق لقطات العرض (مقابل بطاقة جنبًا إلى جنب)",
+        "manual": "يدوي",
+        "auto": "تلقائي",
+        "hideWhy": "إخفاء السبب ▴",
+        "why": "لماذا؟ ▾"
+    },
+    "webCapture": {
+        "label": "التقاط الويب",
+        "ignoredTitle": "{{url}} — تم تجاهله (لا يزال في الطلب، لم يُلتقط)",
+        "activeTitle": "{{url}} — سيتم التقاط لقطات الشاشة والصور واستخدامها كمراجع",
+        "undo": "تراجع",
+        "reEnableAria": "إعادة تفعيل الالتقاط لـ {{host}}",
+        "skipAria": "تخطي الالتقاط لـ {{host}}"
+    }
+}

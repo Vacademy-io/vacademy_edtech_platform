@@ -22,6 +22,8 @@ import {
 import { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import AssessmentPreview from './-components/AssessmentPreview';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import AssessmentOverviewTab from './-components/AssessmentOverviewTab';
@@ -41,14 +43,15 @@ export const Route = createLazyFileRoute(
     ),
 });
 
-const heading = (
+const buildHeading = (t: TFunction) => (
     <div className="flex items-center gap-4">
         <CaretLeft onClick={() => window.history.back()} className="cursor-pointer" />
-        <h1 className="text-lg">Homework Details</h1>
+        <h1 className="text-lg">{t('heading.title')}</h1>
     </div>
 );
 
 const AssessmentDetailsComponent = () => {
+    const { t } = useTranslation('homeworkCreationAssessmentTabIndex');
     const { assessmentId, examType, assesssmentType, assessmentTab } = Route.useParams();
     const { data: instituteDetails } = useSuspenseQuery(useInstituteQuery());
     const { data: assessmentDetails, isLoading } = useSuspenseQuery(
@@ -96,7 +99,7 @@ const AssessmentDetailsComponent = () => {
 
     const handleOpenDialog = () => {
         if (Object.keys(questionsDataSectionWise).length === 0) {
-            toast.error('No sections have been added for this homework.');
+            toast.error(t('actions.noSectionsError'));
         } else {
             setIsPreviewAssessmentDialogOpen(true);
         }
@@ -104,7 +107,7 @@ const AssessmentDetailsComponent = () => {
     const handleCloseDialog = () => setIsPreviewAssessmentDialogOpen(false);
     const handleExportAssessment = () => {
         if (Object.keys(questionsDataSectionWise).length === 0) {
-            toast.error('No sections have been added for this homework.');
+            toast.error(t('actions.noSectionsError'));
         } else {
             navigate({
                 to: '/assessment/export/$assessmentId',
@@ -115,7 +118,8 @@ const AssessmentDetailsComponent = () => {
         }
     };
     useEffect(() => {
-        setNavHeading(heading);
+        setNavHeading(buildHeading(t));
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     if (isLoading || isQuestionsLoading) return <DashboardLoader />;
@@ -123,11 +127,8 @@ const AssessmentDetailsComponent = () => {
     return (
         <>
             <Helmet>
-                <title>Homework Details</title>
-                <meta
-                    name="description"
-                    content="This page shows all details related to an homework."
-                />
+                <title>{t('helmet.title')}</title>
+                <meta name="description" content={t('helmet.description')} />
             </Helmet>
             <div>
                 <div className="flex items-center justify-between gap-4">
@@ -141,7 +142,13 @@ const AssessmentDetailsComponent = () => {
                             } py-1.5 shadow-none`}
                         >
                             <LockSimple size={16} className="mr-2" />
-                            {assessmentDetails[0]?.saved_data.assessment_visibility}
+                            {t(
+                                `badge.visibility.${assessmentDetails[0]?.saved_data.assessment_visibility}`,
+                                {
+                                    defaultValue: assessmentDetails[0]?.saved_data
+                                        .assessment_visibility,
+                                }
+                            )}
                         </Badge>
                         <Separator orientation="vertical" className="h-8 w-px bg-neutral-300" />
                         <Badge
@@ -164,7 +171,9 @@ const AssessmentDetailsComponent = () => {
                                     className="mr-2 text-neutral-400"
                                 />
                             )}
-                            {assessmentDetails?.[0]?.status}
+                            {t(`badge.status.${assessmentDetails?.[0]?.status}`, {
+                                defaultValue: assessmentDetails?.[0]?.status,
+                            })}
                         </Badge>
                     </div>
                     <div className="flex flex-col items-center gap-y-2">
@@ -179,17 +188,17 @@ const AssessmentDetailsComponent = () => {
                                     buttonType="secondary"
                                     onClick={handleOpenDialog}
                                 >
-                                    Preview Homework
+                                    {t('actions.previewHomework')}
                                 </MyButton>
                             </DialogTrigger>
                             {Object.keys(questionsDataSectionWise).length > 0 && (
-                                <DialogContent className="no-scrollbar !m-0 h-[90vh] !w-[90vw] !max-w-full !gap-0 overflow-y-auto !p-0 [&>button]:hidden">
+                                <DialogContent className="no-scrollbar !m-0 max-h-dialog-tall !w-dialog-xl !max-w-full !gap-0 overflow-y-auto !p-0 [&>button]:hidden">
                                     <AssessmentPreview handleCloseDialog={handleCloseDialog} />
                                 </DialogContent>
                             )}
                         </Dialog>
                         <MyButton scale="large" onClick={handleExportAssessment} className="py-4">
-                            Export Offline
+                            {t('actions.exportOffline')}
                         </MyButton>
                     </div>
                 </div>
@@ -210,7 +219,7 @@ const AssessmentDetailsComponent = () => {
                                         selectedTab === 'overview' ? 'text-primary-500' : ''
                                     }`}
                                 >
-                                    Overview
+                                    {t('tabs.overview')}
                                 </span>
                             </TabsTrigger>
                             {assessmentTab !== 'upcomingTests' && (
@@ -227,7 +236,7 @@ const AssessmentDetailsComponent = () => {
                                             selectedTab === 'submissions' ? 'text-primary-500' : ''
                                         }`}
                                     >
-                                        Submissions
+                                        {t('tabs.submissions')}
                                     </span>
                                 </TabsTrigger>
                             )}
@@ -244,7 +253,7 @@ const AssessmentDetailsComponent = () => {
                                         selectedTab === 'basicInfo' ? 'text-primary-500' : ''
                                     }`}
                                 >
-                                    Basic Info
+                                    {t('tabs.basicInfo')}
                                 </span>
                             </TabsTrigger>
                             <TabsTrigger
@@ -260,7 +269,7 @@ const AssessmentDetailsComponent = () => {
                                         selectedTab === 'questions' ? 'text-primary-500' : ''
                                     }`}
                                 >
-                                    Questions
+                                    {t('tabs.questions')}
                                 </span>
                             </TabsTrigger>
                             <TabsTrigger
@@ -276,7 +285,7 @@ const AssessmentDetailsComponent = () => {
                                         selectedTab === 'participants' ? 'text-primary-500' : ''
                                     }`}
                                 >
-                                    Participants
+                                    {t('tabs.participants')}
                                 </span>
                             </TabsTrigger>
                             <TabsTrigger
@@ -292,7 +301,7 @@ const AssessmentDetailsComponent = () => {
                                         selectedTab === 'accessControl' ? 'text-primary-500' : ''
                                     }`}
                                 >
-                                    Access Control
+                                    {t('tabs.accessControl')}
                                 </span>
                             </TabsTrigger>
                         </TabsList>
@@ -308,7 +317,7 @@ const AssessmentDetailsComponent = () => {
                             </MyButton>
                         )}
                     </div>
-                    <div className="max-h-[72vh] overflow-y-auto pr-8">
+                    <div className="max-h-dialog-tall overflow-y-auto pe-8">
                         <TabsContent value="overview">
                             <AssessmentOverviewTab />
                         </TabsContent>

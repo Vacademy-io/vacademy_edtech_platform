@@ -26,6 +26,14 @@ export interface SubmissionStudentData {
     report_release_result_status: string | null;
     last_report_release_date: string | null;
     evaluation_status?: string | null;
+
+    // How to reach the learner. Every participants query selects these now, so they
+    // arrive on Attempted and Pending alike — for the never-attempted rows they come
+    // from the batch enrollment instead, since those learners have no registration row.
+    // Optional, and any one can be blank for a learner imported without it.
+    user_email?: string | null;
+    phone_number?: string | null;
+    username?: string | null;
 }
 
 export interface StudentDetailsAttemptedOpen {

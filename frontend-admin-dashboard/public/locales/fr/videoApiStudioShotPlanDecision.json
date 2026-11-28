@@ -1,0 +1,47 @@
+{
+    "header": {
+        "shotPlan_one": "Plan de {{count}} plan",
+        "shotPlan_many": "Plan de {{count}} plans",
+        "shotPlan_other": "Plan de {{count}} plans",
+        "actedScenes_one": "{{count}} scène jouée",
+        "actedScenes_many": "{{count}} scènes jouées",
+        "actedScenes_other": "{{count}} scènes jouées"
+    },
+    "row": {
+        "shotTypePlaceholder": "type de plan",
+        "secondsPlaceholder": "sec",
+        "narrationBriefPlaceholder": "ce que ce moment couvre",
+        "transitionInAriaLabel": "transition d'entrée",
+        "transitionPlaceholder": "transition…",
+        "backgroundTreatmentAriaLabel": "traitement de l'arrière-plan",
+        "backgroundPlaceholder": "arrière-plan…",
+        "actedScene": "Scène jouée",
+        "dialogueLineAriaLabel": "Réplique de {{character}}",
+        "continuesPreviousScene": "poursuit la scène précédente",
+        "newScene": "nouvelle scène"
+    },
+    "transitions": {
+        "cut": "cut",
+        "fade": "fondu",
+        "crossfade": "fondu enchaîné",
+        "slide_left": "glissement à gauche",
+        "slide_up": "glissement vers le haut",
+        "zoom_in": "zoom avant",
+        "whip_pan": "panoramique fouetté",
+        "circle_iris": "iris circulaire",
+        "smash_cut": "cut brutal",
+        "dip_to_black": "fondu au noir",
+        "dissolve_up": "dissolution montante"
+    },
+    "backgrounds": {
+        "brand_solid": "couleur unie de marque",
+        "brand_textured": "texture de marque",
+        "brand_gradient": "dégradé de marque",
+        "media_hero": "média héro"
+    },
+    "footer": {
+        "letAiDecide": "Laisser l'IA décider",
+        "saveAndContinue": "Enregistrer et continuer",
+        "approvePlan": "Approuver le plan"
+    }
+}

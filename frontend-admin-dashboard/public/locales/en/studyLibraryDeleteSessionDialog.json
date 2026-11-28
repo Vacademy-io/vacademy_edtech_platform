@@ -1,0 +1,25 @@
+{
+    "heading": "Delete Session",
+    "confirm": {
+        "recurring": "This is a recurring session. What would you like to delete?",
+        "single": "Are you sure you want to delete this session?"
+    },
+    "options": {
+        "scheduleOnly": "Delete only this schedule",
+        "entireSession": "Delete entire session (all schedules)"
+    },
+    "notify": {
+        "label": "Notify learners about the cancellation",
+        "description": "When unchecked, no cancellation email is sent to enrolled learners."
+    },
+    "toast": {
+        "sessionDeleted": "Session deleted successfully",
+        "scheduleDeleted": "Schedule deleted successfully",
+        "deleteFailed": "Failed to delete. Please try again."
+    },
+    "actions": {
+        "cancel": "Cancel",
+        "delete": "Delete",
+        "deleting": "Deleting..."
+    }
+}

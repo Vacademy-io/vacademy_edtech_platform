@@ -1,0 +1,44 @@
+{
+    "saved": "Réglages des rappels de paiement enregistrés.",
+    "saveFailed": "Impossible d’enregistrer les réglages.",
+    "loadFailed": "Impossible de charger ces réglages.",
+    "retry": "Réessayer",
+    "save": "Enregistrer",
+    "saving": "Enregistrement…",
+    "reminders": {
+        "title": "Rappels de paiement",
+        "description": "Rappelez aux membres chaque paiement avant et après l’échéance. Les rappels sont envoyés par votre workflow : vous choisissez le modèle WhatsApp ou e-mail.",
+        "toggle": "Envoyer des rappels de paiement",
+        "daysBefore": "Jours avant l’échéance",
+        "daysBeforeHint": "Un ou plusieurs, séparés par des virgules, ex. 7 ou 7, 3",
+        "onDueDate": "Aussi le jour de l’échéance",
+        "every": "Puis tous les N jours après",
+        "everyHint": "0 = aucun rappel après l’échéance",
+        "stopAfter": "Arrêter après N jours de retard",
+        "stopAfterHint": "Laisser vide pour rappeler jusqu’au paiement",
+        "redList": "Liste rouge après N jours impayés",
+        "redListHint": "Envoie une alerte unique à l’équipe ; vide = aucune",
+        "sendHour": "Heure d’envoi (0–23)",
+        "sendHourHint": "Dans le fuseau de l’établissement",
+        "includeAutopay": "Rappeler aussi les membres en prélèvement automatique",
+        "workflowNote": "Pour les envoyer, créez un workflow sur l’événement « Membership Payment Reminder » avec votre modèle. Il contient le nom de l’apprenant, le montant, la devise, l’échéance, les jours de retard et un lien de paiement. Utilisez « Membership Payment Red List » pour les alertes à l’équipe. Les apprenants en pause sont ignorés."
+    },
+    "summary": {
+        "title": "Ce que reçoivent les membres",
+        "due": "le jour de l’échéance",
+        "after": "tous les {{every}} jours après, jusqu’au paiement",
+        "afterUntil": "tous les {{every}} jours après, pendant {{until}} jours au plus",
+        "none": "Aucun rappel avec ces réglages.",
+        "before_one": "1 jour avant",
+        "before_many": "{{count}} jours avant",
+        "before_other": "{{count}} jours avant",
+        "redList_one": "Liste rouge après {{count}} jour impayé.",
+        "redList_many": "Liste rouge après {{count}} jours impayés.",
+        "redList_other": "Liste rouge après {{count}} jours impayés."
+    },
+    "calendar": {
+        "title": "Facturation par mois civil",
+        "description": "Les forfaits mensuels, 3, 6 et 12 mois se renouvellent chaque mois au jour d’échéance propre à chaque membre, et un paiement en retard de quelques jours ne le décale pas. Désactivé : les forfaits se comptent en jours (30, 90, 180, 365) et un paiement en retard fait démarrer la période suivante le jour du paiement.",
+        "toggle": "Facturer par mois civil au jour d’échéance de chaque membre"
+    }
+}

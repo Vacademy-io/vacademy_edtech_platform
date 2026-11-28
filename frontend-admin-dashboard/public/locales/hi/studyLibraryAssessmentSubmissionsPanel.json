@@ -1,0 +1,42 @@
+{
+    "title": "सबमिशन",
+    "loading": "सबमिशन लोड हो रहे हैं…",
+    "noSubmissionsYet": "अभी तक कोई सबमिशन नहीं है।",
+    "learnerFallback": "शिक्षार्थी",
+    "submittedAt": "{{date}} को सबमिट किया गया",
+    "pageOfTotal": "पृष्ठ {{page}} / {{total}}",
+    "status": {
+        "evaluated": "मूल्यांकित",
+        "evaluating": "मूल्यांकन हो रहा है",
+        "pending": "लंबित"
+    },
+    "actions": {
+        "reEvaluate": "पुनः मूल्यांकन करें",
+        "quickEvaluate": "त्वरित मूल्यांकन",
+        "tool": "टूल"
+    },
+    "errors": {
+        "couldNotLoadSubmissions": "सबमिशन लोड नहीं हो सके। उन्हें देखने के लिए \"सबमिशन देखें\" खोलें।",
+        "couldNotLoadQuestion": "मूल्यांकन प्रश्न लोड नहीं हो सका। कृपया पूर्ण टूल आज़माएँ।",
+        "enterMarks": "कृपया अंक दर्ज करें।",
+        "submitFailed": "मूल्यांकन सबमिट करने में विफल रहा। कृपया पुनः प्रयास करें।"
+    },
+    "toast": {
+        "evaluationSubmitted": "मूल्यांकन सबमिट किया गया",
+        "evaluationSubmittedDescription": "{{name}} का सबमिशन मूल्यांकित कर दिया गया है।"
+    },
+    "dialog": {
+        "heading": "मूल्यांकन करें — {{name}}",
+        "marks": "अंक",
+        "outOfMarks": " ({{max}} में से)",
+        "remarks": "टिप्पणियाँ",
+        "optional": "(वैकल्पिक)",
+        "remarksPlaceholder": "टिप्पणियाँ जोड़ें जो शिक्षार्थी देखेगा…",
+        "evaluatedPdf": "मूल्यांकित PDF",
+        "choosePdf": "PDF चुनें",
+        "noFileChosen": "कोई फ़ाइल नहीं चुनी गई",
+        "cancel": "रद्द करें",
+        "submitting": "सबमिट किया जा रहा है…",
+        "submitEvaluation": "मूल्यांकन सबमिट करें"
+    }
+}

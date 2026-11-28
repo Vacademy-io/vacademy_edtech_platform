@@ -1,0 +1,46 @@
+{
+    "title": "تقرير أداء المراكز",
+    "emptyState": "لا توجد بيانات مراكز متاحة للفترة المحددة",
+    "kpi": {
+        "activeCenters": "المراكز النشطة",
+        "totalEnrolled": "إجمالي المسجلين",
+        "totalInteractions": "إجمالي التفاعلات",
+        "totalOptOuts": "إجمالي حالات إلغاء الاشتراك"
+    },
+    "distribution": {
+        "title": "توزيع المراكز",
+        "subtitle": "المستخدمون حسب المركز — نظرة عامة مرئية",
+        "barChartHeading": "المستخدمون حسب المركز",
+        "pieChartHeading": "توزيع المستخدمين",
+        "tooltipEnrolled": "المسجلون",
+        "tooltipInteractions": "التفاعلات",
+        "tooltipOptOuts": "إلغاء الاشتراك",
+        "usersLabel": "المستخدمون"
+    },
+    "table": {
+        "title": "تفاصيل أداء المراكز",
+        "subtitlePrefix": "التسجيل والتفاعلات وحالات إلغاء الاشتراك لكل مركز.",
+        "shareWord": "الحصة",
+        "subtitleSuffix": "= نسبة هذا المركز من إجمالي المسجلين.",
+        "exportCsv": "تصدير CSV",
+        "center": "المركز",
+        "enrolled": "المسجلون",
+        "shareOfEnrolled": "حصة من المسجلين",
+        "shareHint": "حصة كل مركز من إجمالي العملاء المحتملين المسجلين = عدد المسجلين في هذا المركز ÷ إجمالي المسجلين.",
+        "interactions": "التفاعلات",
+        "avgPerUser": "المتوسط/المستخدم",
+        "optOuts": "إلغاء الاشتراك",
+        "optOutPercent": "نسبة إلغاء الاشتراك %",
+        "status": "الحالة",
+        "total": "الإجمالي"
+    },
+    "csv": {
+        "center": "المركز",
+        "enrolledUsers": "المستخدمون المسجلون",
+        "totalInteractions": "إجمالي التفاعلات",
+        "avgPerUser": "المتوسط/المستخدم",
+        "optOuts": "إلغاء الاشتراك",
+        "optOutPercent": "نسبة إلغاء الاشتراك %",
+        "status": "الحالة"
+    }
+}

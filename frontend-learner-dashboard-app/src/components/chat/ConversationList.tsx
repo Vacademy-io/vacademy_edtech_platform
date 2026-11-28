@@ -1,4 +1,5 @@
 import { Users, Megaphone, User, ChatCircle } from "@phosphor-icons/react";
+import { useTranslation } from "react-i18next";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
@@ -14,16 +15,19 @@ export interface ConversationListProps {
   onSelect: (conversation: ChatConversationResponse) => void;
 }
 
-function typeMeta(conv: ChatConversationResponse) {
+function typeMeta(conv: ChatConversationResponse, t: (key: string, opts?: Record<string, unknown>) => string) {
   const batchTerm = getTerminology(ContentTerms.Batch, SystemTerms.Batch);
   switch (conv.type) {
     case "COMMUNITY":
-      return { Icon: Megaphone, fallbackTitle: "Community" };
+      return { Icon: Megaphone, fallbackTitle: t("common.typeCommunity") };
     case "BATCH_GROUP":
-      return { Icon: Users, fallbackTitle: `${batchTerm} Group` };
+      return {
+        Icon: Users,
+        fallbackTitle: t("conversationList.typeFallback.batchGroup", { batch: batchTerm }),
+      };
     case "DIRECT":
     default:
-      return { Icon: User, fallbackTitle: "Direct message" };
+      return { Icon: User, fallbackTitle: t("common.typeDirectMessage") };
   }
 }
 
@@ -33,6 +37,8 @@ export function ConversationList({
   isLoading = false,
   onSelect,
 }: ConversationListProps) {
+  const { t } = useTranslation("chatFeatureA");
+
   if (isLoading) {
     return (
       <div className="space-y-1 p-2">
@@ -53,9 +59,11 @@ export function ConversationList({
     return (
       <div className="flex h-full flex-col items-center justify-center gap-2 p-6 text-center">
         <ChatCircle size={32} className="text-muted-foreground" />
-        <p className="text-body font-medium text-foreground">No conversations yet</p>
+        <p className="text-body font-medium text-foreground">
+          {t("conversationList.empty.title")}
+        </p>
         <p className="text-caption text-muted-foreground">
-          Start a new conversation or open the community channel.
+          {t("conversationList.empty.description")}
         </p>
       </div>
     );
@@ -65,7 +73,7 @@ export function ConversationList({
     <ScrollArea className="h-full">
       <ul className="flex flex-col py-1">
         {conversations.map((conv) => {
-          const { Icon, fallbackTitle } = typeMeta(conv);
+          const { Icon, fallbackTitle } = typeMeta(conv, t);
           const title = conv.title?.trim() || fallbackTitle;
           const isSelected = conv.id === selectedId;
           return (
@@ -103,11 +111,13 @@ export function ConversationList({
                   </span>
                   <span className="mt-0.5 flex items-center justify-between gap-2">
                     <span className="truncate text-caption text-muted-foreground">
-                      {conv.lastMessagePreview || "No messages yet"}
+                      {conv.lastMessagePreview || t("conversationList.noMessagesYet")}
                     </span>
                     {conv.unreadCount > 0 && (
                       <span className="flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-primary px-1.5 text-caption font-semibold text-primary-foreground">
-                        {conv.unreadCount > 99 ? "99+" : conv.unreadCount}
+                        {conv.unreadCount > 99
+                          ? t("conversationList.unreadOverflow")
+                          : conv.unreadCount}
                       </span>
                     )}
                   </span>

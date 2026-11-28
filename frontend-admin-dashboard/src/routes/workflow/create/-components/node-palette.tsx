@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { useStoreApi } from 'reactflow';
 import { WORKFLOW_NODE_TYPES } from '@/types/workflow/workflow-types';
 import { useWorkflowBuilderStore } from '../-stores/workflow-builder-store';
 import { Button } from '@/components/ui/button';
@@ -15,7 +17,18 @@ const categories = [
 ] as const;
 
 export function NodePalette() {
+    const { t } = useTranslation('workflowNodePalette');
     const addNode = useWorkflowBuilderStore((s) => s.addNode);
+    const flowStore = useStoreApi();
+    // Drop a new node in the middle of what the canvas shows right now. The old fixed grid put the
+    // 3rd, 6th… node far to the right, outside the visible canvas, until the admin pressed Fit view.
+    const visibleCenter = () => {
+        const { width, height, transform } = flowStore.getState();
+        const [tx, ty, zoom] = transform;
+        if (!width || !height || !zoom) return undefined;
+        const stagger = (useWorkflowBuilderStore.getState().nodes.length % 5) * 30;
+        return { x: (width / 2 - tx) / zoom - 110 + stagger, y: (height / 2 - ty) / zoom - 40 + stagger };
+    };
     const workflowType = useWorkflowBuilderStore((s) => s.workflowType);
     const [search, setSearch] = useState('');
 
@@ -33,11 +46,11 @@ export function NodePalette() {
 
     return (
         <div className="flex h-full flex-col gap-4 overflow-y-auto p-4">
-            <h3 className="text-sm font-semibold text-gray-700">Add Nodes</h3>
+            <h3 className="text-sm font-semibold text-gray-700">{t('addNodes')}</h3>
             <Input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search nodes..."
+                placeholder={t('searchPlaceholder')}
                 className="h-8 text-xs"
             />
             {categories.map((category) => {
@@ -49,7 +62,7 @@ export function NodePalette() {
                 return (
                     <div key={category}>
                         <p className="mb-1.5 text-xs font-medium uppercase tracking-wide text-gray-500">
-                            {category}
+                            {t(`categories.${category}`)}
                         </p>
                         <div className="flex flex-col gap-1">
                             {nodesInCategory.map((nodeType) => (
@@ -59,7 +72,7 @@ export function NodePalette() {
                                         size="sm"
                                         className="flex-1 justify-start gap-2 text-left"
                                         onClick={() =>
-                                            addNode(nodeType.type, nodeType.label)
+                                            addNode(nodeType.type, nodeType.label, visibleCenter())
                                         }
                                     >
                                         <span>{nodeType.icon}</span>

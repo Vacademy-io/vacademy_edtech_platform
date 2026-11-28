@@ -1,0 +1,25 @@
+{
+    "header": {
+        "title": "सेवा उपयोग",
+        "subtitle": "सबसे सक्रिय सेवाएँ और एपीआई"
+    },
+    "tooltip": {
+        "usage": "उपयोग: {{value}}",
+        "users": "उपयोगकर्ता: {{value}}",
+        "avgResponse": "औसत प्रतिक्रिया: {{value}}ms"
+    },
+    "empty": {
+        "message": "कोई सेवा डेटा उपलब्ध नहीं है"
+    },
+    "error": {
+        "widgetName": "सेवा उपयोग"
+    },
+    "list": {
+        "users_one": "{{count}} उपयोगकर्ता",
+        "users_other": "{{count}} उपयोगकर्ता"
+    },
+    "footer": {
+        "avgResponseTime": "औसत प्रतिक्रिया समय:",
+        "ms": "{{value}}ms"
+    }
+}

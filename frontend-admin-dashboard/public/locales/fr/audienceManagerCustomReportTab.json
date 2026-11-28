@@ -1,0 +1,23 @@
+{
+    "buildSection": {
+        "title": "Créer un rapport",
+        "groupByLabel": "Regrouper par (dimensions)",
+        "measuresLabel": "Mesures",
+        "filtersHeading": "Filtres",
+        "runButton": "Exécuter le rapport",
+        "pickHint": "Choisissez au moins une dimension et une mesure."
+    },
+    "resultSection": {
+        "title": "Résultat",
+        "matrixViewLabel": "Vue matrice",
+        "emptyHint": "Aucune ligne ne correspond à cette configuration.",
+        "totalColumn": "Total",
+        "matrixCaption": "{{measure}} par {{rowDim}} (lignes) × {{colDim}} (colonnes).",
+        "truncatedMatrix_one": "Généré à partir de la première {{count}} ligne — affinez vos filtres pour restreindre le résultat.",
+        "truncatedMatrix_many": "Généré à partir des premières {{count}} lignes — affinez vos filtres pour restreindre le résultat.",
+        "truncatedMatrix_other": "Généré à partir des {{count}} premières lignes — affinez vos filtres pour restreindre le résultat.",
+        "truncatedTable_one": "Affichage de la première {{count}} ligne — affinez vos filtres pour restreindre le résultat.",
+        "truncatedTable_many": "Affichage des premières {{count}} lignes — affinez vos filtres pour restreindre le résultat.",
+        "truncatedTable_other": "Affichage des {{count}} premières lignes — affinez vos filtres pour restreindre le résultat."
+    }
+}

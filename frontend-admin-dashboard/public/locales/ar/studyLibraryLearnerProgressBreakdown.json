@@ -1,0 +1,17 @@
+{
+    "emptyTitle": "لا يوجد محتوى للدورة بعد",
+    "emptyHint": "لم يتم إنشاء {{term}} لهذه الدفعة بعد.",
+    "subjectProgressHeading": "تقدّم {{term}}",
+    "moduleCount_zero": "لا يوجد {{term}}",
+    "moduleCount_one": "{{term}} واحد",
+    "moduleCount_two": "{{term}}ان",
+    "moduleCount_few": "{{count}} {{term}}",
+    "moduleCount_many": "{{count}} {{term}}",
+    "moduleCount_other": "{{count}} {{term}}",
+    "moduleChapterBreakdownHeading": "تفاصيل {{term}} والفصول",
+    "selectSubjectPlaceholder": "اختر {{term}}",
+    "noModulesForSubject": "لا يوجد {{moduleTerm}} لهذا {{subjectTerm}}.",
+    "moduleLabel": "{{term}}: {{name}}",
+    "noChaptersInModule": "لا توجد فصول في هذا {{term}}.",
+    "done": "منتهٍ"
+}

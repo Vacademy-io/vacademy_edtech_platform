@@ -1,0 +1,46 @@
+{
+    "tabs": {
+        "active": "सक्रिय",
+        "invited": "आमंत्रित"
+    },
+    "addMember": "सदस्य जोड़ें",
+    "search": {
+        "ariaLabel": "सदस्य खोजें",
+        "placeholder": "नाम, ईमेल या फ़ोन से खोजें",
+        "clearAriaLabel": "खोज साफ़ करें"
+    },
+    "filters": {
+        "roleLabel": "भूमिका",
+        "rolePlaceholder": "भूमिका खोजें…",
+        "summary_one": "{{count}} सदस्य में से {{filtered}}",
+        "summary_other": "{{count}} सदस्यों में से {{filtered}}",
+        "chipSearchLabel": "खोज",
+        "chipRoleLabel": "भूमिका",
+        "clearAll": "सभी साफ़ करें"
+    },
+    "table": {
+        "member": "सदस्य",
+        "email": "ईमेल",
+        "phone": "फ़ोन",
+        "roles": "भूमिकाएँ",
+        "status": "स्थिति",
+        "pendingDues": "बकाया राशि",
+        "actions": "कार्रवाई"
+    },
+    "empty": {
+        "noMatch": "आपके फ़िल्टर से कोई सदस्य मेल नहीं खाता।",
+        "none": "कोई सदस्य नहीं मिला।"
+    },
+    "dues": {
+        "pendingCount_one": "{{count}} बकाया",
+        "pendingCount_other": "{{count}} बकाया"
+    },
+    "actions": {
+        "removeFrom": "{{org}} से हटाएं"
+    },
+    "toast": {
+        "removeScheduled": "सदस्य को हटाने के लिए निर्धारित किया गया — चुनी गई तारीख तक पहुंच जारी रहेगी",
+        "removed": "सदस्य को {{org}} से हटाया गया",
+        "removeFailed": "सदस्य को हटाने में विफल"
+    }
+}

@@ -1,0 +1,14 @@
+{
+    "copyHistory": "Copy history",
+    "copiedContent": "Copied content",
+    "usedByBatches_one": "Used by {{count}} batch",
+    "usedByBatches_other": "Used by {{count}} batches",
+    "showCopyHistory": "Show copy history",
+    "contentBroughtInFrom": "Content was brought in from",
+    "usedAsSourceBy": "Used as source by",
+    "batchCount_one": "{{count}} batch",
+    "batchCount_other": "{{count}} batches",
+    "linkedCopy": "Linked copy",
+    "separateCopy": "Separate copy",
+    "unknownBatch": "Unknown batch"
+}

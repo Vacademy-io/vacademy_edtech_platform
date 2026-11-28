@@ -1,4 +1,5 @@
 import { UseFormReturn } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import { FormField, FormItem, FormControl } from '@/components/ui/form';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
@@ -18,6 +19,7 @@ interface AutopaySettingsCardProps {
  * read at enrollment time.
  */
 const AutopaySettingsCard = ({ form }: AutopaySettingsCardProps) => {
+    const { t } = useTranslation('manageStudentsAutopaySettingsCard');
     const enabled = form.watch('autopaySettings.enabled');
     const trialDays = form.watch('autopaySettings.trialDays');
     const authEnabled = form.watch('autopaySettings.authEnabled');
@@ -33,7 +35,7 @@ const AutopaySettingsCard = ({ form }: AutopaySettingsCardProps) => {
             <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-2xl font-bold">
                     <ArrowsClockwise size={22} />
-                    Autopay &amp; Free Trial
+                    {t('title')}
                 </CardTitle>
             </CardHeader>
             <CardContent>
@@ -46,14 +48,10 @@ const AutopaySettingsCard = ({ form }: AutopaySettingsCardProps) => {
                                 <div className="flex items-center justify-between gap-4">
                                     <div className="w-full">
                                         <div className="text-base font-semibold">
-                                            Auto-renew paid subscriptions
+                                            {t('autoRenew.label')}
                                         </div>
                                         <div className="flex items-center justify-between text-xs text-muted-foreground">
-                                            <span>
-                                                Charge the learner&apos;s saved payment method (UPI
-                                                mandate / card) automatically at each renewal.
-                                                Learners can cancel anytime.
-                                            </span>
+                                            <span>{t('autoRenew.description')}</span>
                                             <Switch
                                                 id="enable-autopay-switch"
                                                 checked={field.value}
@@ -69,7 +67,7 @@ const AutopaySettingsCard = ({ form }: AutopaySettingsCardProps) => {
 
                 {enabled && (
                     <div className="mt-4 border-t pt-4">
-                        <span className="text-sm font-medium">Free Trial (days)</span>
+                        <span className="text-sm font-medium">{t('trial.label')}</span>
                         <FormField
                             control={form.control}
                             name="autopaySettings.trialDays"
@@ -80,7 +78,7 @@ const AutopaySettingsCard = ({ form }: AutopaySettingsCardProps) => {
                                             type="number"
                                             min={0}
                                             className="mt-2 w-40"
-                                            placeholder="0"
+                                            placeholder={t('trial.placeholder')}
                                             value={field.value ?? 0}
                                             onChange={(e) =>
                                                 field.onChange(
@@ -95,8 +93,7 @@ const AutopaySettingsCard = ({ form }: AutopaySettingsCardProps) => {
                             )}
                         />
                         <div className="mt-1 text-xs text-muted-foreground">
-                            Give access now and take the first payment after this many days. Leave 0
-                            to charge immediately and renew each cycle.
+                            {t('trial.helpText')}
                         </div>
 
                         <div className="mt-4 border-t pt-4">
@@ -109,14 +106,10 @@ const AutopaySettingsCard = ({ form }: AutopaySettingsCardProps) => {
                                             <div className="flex items-center justify-between gap-4">
                                                 <div className="w-full">
                                                     <div className="text-base font-semibold">
-                                                        Take an authorization charge
+                                                        {t('authCharge.label')}
                                                     </div>
                                                     <div className="flex items-center justify-between text-xs text-muted-foreground">
-                                                        <span>
-                                                            A nominal amount debited at signup to
-                                                            verify the payment method and register
-                                                            the mandate.
-                                                        </span>
+                                                        <span>{t('authCharge.description')}</span>
                                                         <Switch
                                                             id="enable-auth-charge-switch"
                                                             checked={field.value ?? true}
@@ -132,7 +125,7 @@ const AutopaySettingsCard = ({ form }: AutopaySettingsCardProps) => {
 
                             {authEnabled !== false && (
                                 <div className="mt-4">
-                                    <span className="text-sm font-medium">Authorization amount</span>
+                                    <span className="text-sm font-medium">{t('authAmount.label')}</span>
                                     <FormField
                                         control={form.control}
                                         name="autopaySettings.authAmount"
@@ -144,7 +137,7 @@ const AutopaySettingsCard = ({ form }: AutopaySettingsCardProps) => {
                                                         min={1}
                                                         step="0.01"
                                                         className="mt-2 w-40"
-                                                        placeholder="1"
+                                                        placeholder={t('authAmount.placeholder')}
                                                         value={field.value ?? ''}
                                                         onChange={(e) =>
                                                             field.onChange(
@@ -159,8 +152,7 @@ const AutopaySettingsCard = ({ form }: AutopaySettingsCardProps) => {
                                         )}
                                     />
                                     <div className="mt-1 text-xs text-muted-foreground">
-                                        Defaults to 1. Only charged on free-trial signups — without a
-                                        trial the first real payment registers the mandate itself.
+                                        {t('authAmount.helpText')}
                                     </div>
 
                                     <FormField
@@ -172,15 +164,10 @@ const AutopaySettingsCard = ({ form }: AutopaySettingsCardProps) => {
                                                     <div className="mt-4 flex items-center justify-between gap-4">
                                                         <div className="w-full">
                                                             <div className="text-sm font-medium">
-                                                                Refund the authorization amount
+                                                                {t('authRefundable.label')}
                                                             </div>
                                                             <div className="flex items-center justify-between text-xs text-muted-foreground">
-                                                                <span>
-                                                                    Refund it automatically once the
-                                                                    mandate is registered. The full
-                                                                    plan price is still charged when
-                                                                    the trial ends.
-                                                                </span>
+                                                                <span>{t('authRefundable.description')}</span>
                                                                 <Switch
                                                                     id="refund-auth-switch"
                                                                     checked={field.value ?? false}
@@ -198,17 +185,13 @@ const AutopaySettingsCard = ({ form }: AutopaySettingsCardProps) => {
 
                             {authEnabled === false && (trialDays ?? 0) > 0 && (
                                 <div className="mt-2 text-xs text-warning-600">
-                                    Free trials need an authorization charge — gateways will not
-                                    register a mandate on a zero-value order, so autopay cannot be set
-                                    up for trial signups without one.
+                                    {t('authRequiredWarning')}
                                 </div>
                             )}
                         </div>
 
                         <div className="mt-4 border-t pt-4">
-                            <span className="text-sm font-medium">
-                                Mandate limit (max charge per renewal)
-                            </span>
+                            <span className="text-sm font-medium">{t('maxAmount.label')}</span>
                             <FormField
                                 control={form.control}
                                 name="autopaySettings.maxAmount"
@@ -219,7 +202,7 @@ const AutopaySettingsCard = ({ form }: AutopaySettingsCardProps) => {
                                                 type="number"
                                                 min={0}
                                                 className="mt-2 w-40"
-                                                placeholder="Defaults to plan price"
+                                                placeholder={t('maxAmount.placeholder')}
                                                 value={field.value ?? ''}
                                                 onChange={(e) =>
                                                     field.onChange(
@@ -234,14 +217,12 @@ const AutopaySettingsCard = ({ form }: AutopaySettingsCardProps) => {
                                 )}
                             />
                             <div className="mt-1 text-xs text-muted-foreground">
-                                The mandate authorizes each auto-charge up to this cap, so it must be
-                                at least the plan&apos;s recurring price. Leave blank to use the plan
-                                price; set higher to leave headroom for tax / price changes.
+                                {t('maxAmount.helpText')}
                             </div>
                         </div>
 
                         <div className="mt-4 border-t pt-4">
-                            <span className="text-sm font-medium">Grace period (days)</span>
+                            <span className="text-sm font-medium">{t('gracePeriod.label')}</span>
                             <FormField
                                 control={form.control}
                                 name="autopaySettings.gracePeriodDays"
@@ -252,7 +233,7 @@ const AutopaySettingsCard = ({ form }: AutopaySettingsCardProps) => {
                                                 type="number"
                                                 min={0}
                                                 className="mt-2 w-40"
-                                                placeholder="0"
+                                                placeholder={t('gracePeriod.placeholder')}
                                                 value={field.value ?? ''}
                                                 onChange={(e) =>
                                                     field.onChange(
@@ -267,17 +248,12 @@ const AutopaySettingsCard = ({ form }: AutopaySettingsCardProps) => {
                                 )}
                             />
                             <div className="mt-1 text-xs text-muted-foreground">
-                                If a renewal payment fails on the due date, keep the learner&apos;s
-                                access for this many days past expiry while we retry the charge. Access
-                                is revoked only if it&apos;s still unpaid when the grace period ends.
-                                Leave blank for no grace.
+                                {t('gracePeriod.helpText')}
                             </div>
                         </div>
 
                         <div className="mt-4">
-                            <span className="text-sm font-medium">
-                                Total subscription duration (months)
-                            </span>
+                            <span className="text-sm font-medium">{t('totalDuration.label')}</span>
                             <FormField
                                 control={form.control}
                                 name="autopaySettings.totalDurationMonths"
@@ -288,7 +264,7 @@ const AutopaySettingsCard = ({ form }: AutopaySettingsCardProps) => {
                                                 type="number"
                                                 min={1}
                                                 className="mt-2 w-40"
-                                                placeholder="Ongoing"
+                                                placeholder={t('totalDuration.placeholder')}
                                                 value={field.value ?? ''}
                                                 onChange={(e) =>
                                                     field.onChange(
@@ -303,10 +279,7 @@ const AutopaySettingsCard = ({ form }: AutopaySettingsCardProps) => {
                                 )}
                             />
                             <div className="mt-1 text-xs text-muted-foreground">
-                                Total length of the subscription, e.g. 12 for a 12-month course. Autopay
-                                renews until this term is reached, then stops charging — the learner
-                                keeps access until the final paid period ends. Leave blank for an
-                                open-ended subscription.
+                                {t('totalDuration.helpText')}
                             </div>
                         </div>
                     </div>

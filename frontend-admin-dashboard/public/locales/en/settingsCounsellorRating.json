@@ -1,0 +1,83 @@
+{
+    "header": {
+        "title": "How counsellors are scored",
+        "subtitle": "The score is what shows up on every counsellor card and dropdown. Pick a preset, or use Advanced to tune it yourself."
+    },
+    "loading": "Loading…",
+    "actions": {
+        "refreshScores": "Refresh scores",
+        "refreshing": "Refreshing…",
+        "save": "Save",
+        "saving": "Saving…",
+        "showAdvanced": "Show advanced numbers",
+        "hideAdvanced": "Hide advanced numbers"
+    },
+    "toasts": {
+        "saved": "Saved",
+        "saveFailed": "Save failed",
+        "recomputed_one": "Refreshed scores for {{count}} counsellor",
+        "recomputed_other": "Refreshed scores for {{count}} counsellors",
+        "recomputeFailed": "Recompute failed"
+    },
+    "strategy": {
+        "automatic": {
+            "title": "Score them automatically based on performance",
+            "description": "The system looks at how many leads they close and how fast, and gives them a score from 0 to 100. Recomputed nightly and after every conversion."
+        },
+        "manual": {
+            "title": "I’ll set each counsellor’s score manually",
+            "description": "No automatic calculation. Use the inputs in Settings → Workbench team to set or update scores by hand."
+        }
+    },
+    "presets": {
+        "heading": "Quick presets",
+        "balanced": {
+            "label": "Balanced",
+            "description": "Closing rate and speed weighted evenly."
+        },
+        "closers": {
+            "label": "Reward closers",
+            "description": "Closing rate matters more than speed."
+        },
+        "fast": {
+            "label": "Reward fast callers",
+            "description": "Speed of close matters more than closing rate."
+        }
+    },
+    "fields": {
+        "startingScore": {
+            "label": "Everyone starts at score"
+        },
+        "windowDays": {
+            "label": "Look at the last",
+            "suffix": "days of work"
+        },
+        "minSample": {
+            "label": "A counsellor needs at least",
+            "suffix": "assigned leads before they get a real score"
+        },
+        "fastHeading": "What counts as “fast” in your team?",
+        "idealVelocity": {
+            "label": "Closes within",
+            "suffix": "hours = full speed credit"
+        },
+        "worstVelocity": {
+            "label": "Slower than",
+            "suffix": "days = no speed credit"
+        }
+    },
+    "balance": {
+        "heading": "What matters more to your team?",
+        "closing": "Closing",
+        "speed": "Speed",
+        "ariaLabel": "Closing vs speed balance",
+        "closingLower": "closing",
+        "speedLower": "speed"
+    },
+    "advanced": {
+        "wConversion": "w_conversion (0–1)",
+        "wVelocity": "w_velocity (0–1)",
+        "idealVelocityHours": "ideal_velocity_hours",
+        "worstVelocityHours": "worst_velocity_hours"
+    }
+}

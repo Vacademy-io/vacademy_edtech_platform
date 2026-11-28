@@ -1,0 +1,33 @@
+{
+    "header": {
+        "title": "रेफ़रल सेटिंग्स",
+        "description": "रेफ़रल कोड का उपयोग होने पर रेफ़रर और रेफ़री के लिए पुरस्कार कॉन्फ़िगर करें"
+    },
+    "card": {
+        "defaultBadge": "डिफ़ॉल्ट",
+        "changeSettings": "रेफ़रल सेटिंग्स बदलें"
+    },
+    "refereeBenefit": {
+        "label": "रेफ़री लाभ",
+        "freeDays": "{{value}} मुफ़्त दिन",
+        "bonusContent": "बोनस कंटेंट",
+        "discountOff": "{{value}} की छूट"
+    },
+    "referrerTiers": {
+        "label": "रेफ़रर टियर"
+    },
+    "programSettings": {
+        "label": "प्रोग्राम सेटिंग्स",
+        "vestingPeriod": "वेस्टिंग अवधि",
+        "combineOffers": "ऑफ़र संयोजित करें",
+        "yes": "हां",
+        "no": "नहीं"
+    },
+    "types": {
+        "discountPercentage": "प्रतिशत छूट",
+        "discountFixed": "निश्चित छूट",
+        "bonusContent": "बोनस कंटेंट",
+        "freeDays": "मुफ़्त दिन",
+        "pointsSystem": "पॉइंट सिस्टम"
+    }
+}

@@ -1,0 +1,12 @@
+{
+    "trigger": {
+        "label": "تصدير"
+    },
+    "settingsButton": "إعدادات التصدير",
+    "close": "إغلاق",
+    "letterhead": {
+        "upload": "الترويسة",
+        "delete": "حذف الترويسة"
+    },
+    "answerKeyToggle": "مع مفتاح الإجابة"
+}

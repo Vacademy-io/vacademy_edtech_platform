@@ -1,0 +1,24 @@
+{
+    "title": "تحميل مستند",
+    "errors": {
+        "noFileSelected": "يرجى تحديد ملف أولاً.",
+        "noQuestionsFound": "لم يتم العثور على أسئلة. تأكد من أن مستندك يستخدم التنسيق المطلوب الموضح أعلاه.",
+        "parseFailed": "فشل في تحليل المستند. يرجى المحاولة مرة أخرى."
+    },
+    "requiredFormat": {
+        "heading": "تنسيق المستند المطلوب",
+        "sectionHeader": "عنوان القسم",
+        "questionSample": "(1.) نص السؤال…",
+        "optionSample": "(a.) نص الخيار…",
+        "correctAnswer": "الإجابة الصحيحة",
+        "explanation": "الشرح"
+    },
+    "dropZone": {
+        "clickToSelect": "انقر لاختيار ملف",
+        "supportedFormats": "يدعم ملفات .docx و .html"
+    },
+    "parsingProgress": "جارٍ تحليل المستند… {{progress}}%",
+    "cancel": "إلغاء",
+    "processing": "جارٍ المعالجة…",
+    "parseAndPreview": "تحليل ومعاينة"
+}

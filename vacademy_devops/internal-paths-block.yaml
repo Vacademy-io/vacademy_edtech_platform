@@ -1,0 +1,125 @@
+# internal-paths-block: a separate Ingress on the public host that answers
+# 403 for the /<svc>/internal service-to-service paths (and the other
+# "internal" path segments listed below), via a deny-all source range, so those
+# paths are reachable only inside the cluster. Apply it by hand
+# (kubectl apply -f / kubectl delete -f) after every service-to-service base URL
+# points at in-cluster Service addresses; it is not part of the Helm release.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: vacademy-internal-block
+  namespace: default
+  labels:
+    app: internal-paths-block
+  annotations:
+    # No cert-manager annotation on purpose: the cert for this host is owned
+    # by the helm-managed vacademy-services-ingress; we just reuse its secret.
+    nginx.ingress.kubernetes.io/denylist-source-range: "0.0.0.0/0,::/0"
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - backend-stage.vacademy.io
+      secretName: vacademy-tls-secret
+  rules:
+    - host: backend-stage.vacademy.io
+      http:
+        paths:
+          - path: /auth-service/internal
+            pathType: Prefix
+            backend:
+              service:
+                name: auth-service
+                port:
+                  number: 8071
+          - path: /auth-service/v1/internal
+            pathType: Prefix
+            backend:
+              service:
+                name: auth-service
+                port:
+                  number: 8071
+          - path: /auth-service/v1/user/internal
+            pathType: Prefix
+            backend:
+              service:
+                name: auth-service
+                port:
+                  number: 8071
+          - path: /admin-core-service/internal
+            pathType: Prefix
+            backend:
+              service:
+                name: admin-core-service
+                port:
+                  number: 8072
+          - path: /admin-core-service/institute/v1/internal
+            pathType: Prefix
+            backend:
+              service:
+                name: admin-core-service
+                port:
+                  number: 8072
+          - path: /admin-core-service/llm-analytics/internal
+            pathType: Prefix
+            backend:
+              service:
+                name: admin-core-service
+                port:
+                  number: 8072
+          - path: /assessment-service/internal
+            pathType: Prefix
+            backend:
+              service:
+                name: assessment-service
+                port:
+                  number: 8074
+          - path: /community-service/internal
+            pathType: Prefix
+            backend:
+              service:
+                name: community-service
+                port:
+                  number: 8073
+          - path: /media-service/internal
+            pathType: Prefix
+            backend:
+              service:
+                name: media-service
+                port:
+                  number: 8075
+          - path: /notification-service/internal
+            pathType: Prefix
+            backend:
+              service:
+                name: notification-service
+                port:
+                  number: 8076
+          - path: /notification-service/push-notifications/internal
+            pathType: Prefix
+            backend:
+              service:
+                name: notification-service
+                port:
+                  number: 8076
+          - path: /ai-service/internal
+            pathType: Prefix
+            backend:
+              service:
+                name: ai-service
+                port:
+                  number: 8077
+          - path: /ai-service/credits/v1/internal
+            pathType: Prefix
+            backend:
+              service:
+                name: ai-service
+                port:
+                  number: 8077
+          - path: /ai-service/engagement/plan/internal
+            pathType: Prefix
+            backend:
+              service:
+                name: ai-service
+                port:
+                  number: 8077

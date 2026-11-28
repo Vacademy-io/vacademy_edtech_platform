@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Check, Sparkle, MicrophoneStage } from '@phosphor-icons/react';
@@ -30,6 +31,7 @@ function wordCount(s: string): number {
  * shot_plan.json) plus a concatenated script for v2 compatibility.
  */
 export function NarrationDecision({ decision, isSubmitting, onSubmit }: NarrationDecisionProps) {
+    const { t } = useTranslation('videoApiStudioNarrationDecision');
     const initial = useMemo<Row[]>(() => {
         const shots = decision.payload?.shots ?? [];
         if (shots.length > 0) {
@@ -104,17 +106,17 @@ export function NarrationDecision({ decision, isSubmitting, onSubmit }: Narratio
                     <span className="flex size-7 items-center justify-center rounded-md bg-violet-100 dark:bg-violet-900/30">
                         <MicrophoneStage className="size-4 text-violet-600" />
                     </span>
-                    Narration ({rows.length} {rows.length === 1 ? 'shot' : 'shots'})
+                    {t('header.title', { count: rows.length })}
                 </div>
                 <div className="text-xs text-muted-foreground">
-                    {totalWords} words · ≈ {estSeconds}s
+                    {t('header.wordsEstimate', { count: totalWords, seconds: estSeconds })}
                 </div>
             </div>
 
             {hookVariants.length > 0 && (
                 <div className="space-y-1.5 border-b bg-violet-50/50 px-4 py-2.5 dark:bg-violet-950/20">
                     <p className="text-xs font-medium text-muted-foreground">
-                        Opening line — pick a hook:
+                        {t('hooks.pickLabel')}
                     </p>
                     <div className="flex flex-wrap gap-1.5">
                         <button
@@ -127,7 +129,7 @@ export function NarrationDecision({ decision, isSubmitting, onSubmit }: Narratio
                                     : 'text-muted-foreground hover:text-foreground'
                             }`}
                         >
-                            Draft
+                            {t('hooks.draft')}
                         </button>
                         {hookVariants.map((v, i) => (
                             <button
@@ -161,7 +163,7 @@ export function NarrationDecision({ decision, isSubmitting, onSubmit }: Narratio
                             onChange={(e) => update(i, e.target.value)}
                             rows={2}
                             className="min-h-0 resize-y text-sm leading-relaxed"
-                            placeholder="No narration for this shot"
+                            placeholder={t('shot.placeholder')}
                         />
                     </div>
                 ))}
@@ -176,7 +178,7 @@ export function NarrationDecision({ decision, isSubmitting, onSubmit }: Narratio
                     className="gap-1.5 text-muted-foreground"
                 >
                     <Sparkle className="size-3.5" />
-                    Let AI decide
+                    {t('actions.letAiDecide')}
                 </Button>
                 <Button
                     size="sm"
@@ -185,7 +187,7 @@ export function NarrationDecision({ decision, isSubmitting, onSubmit }: Narratio
                     className="gap-1.5 bg-gradient-to-r from-violet-600 to-indigo-600 text-white hover:from-violet-700 hover:to-indigo-700"
                 >
                     <Check className="size-4" />
-                    {dirty ? 'Save & continue' : 'Approve & continue'}
+                    {dirty ? t('actions.saveAndContinue') : t('actions.approveAndContinue')}
                 </Button>
             </div>
         </div>

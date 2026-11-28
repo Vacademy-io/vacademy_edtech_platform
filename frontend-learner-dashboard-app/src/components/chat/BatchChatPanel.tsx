@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import axios from "axios";
+import { useQueryClient } from "@tanstack/react-query";
 import { ChatSlash, WarningCircle, UsersThree } from "@phosphor-icons/react";
+import { useTranslation } from "react-i18next";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { CourseLeaderboard } from "@/routes/study-library/courses/course-details/-components/CourseLeaderboard";
@@ -12,6 +14,8 @@ import {
   sendMessage,
   deleteMessage,
   markRead,
+  CONVERSATIONS_KEY,
+  UNREAD_COUNT_KEY,
   type ChatConversationResponse,
   type ChatMessagePayload,
 } from "@/services/chat/chatApi";
@@ -22,16 +26,17 @@ import { MessageComposer, type ComposerAttachment } from "./MessageComposer";
 /**
  * Known rule-rejection reason codes the backend returns as the
  * ResponseStatusException reason (Spring surfaces it in `data.message`),
- * mapped to a learner-friendly toast. Mirrors ChatScreen.
+ * mapped to the `ruleRejection.*` catalog key for a learner-friendly toast.
+ * Mirrors ChatScreen.
  */
-const RULE_REJECTION_MESSAGES: Record<string, string> = {
-  SLOW_MODE: "Slow mode is on — please wait before sending again",
-  BLOCKED_BY_MODERATION: "Message blocked: it contains a banned word",
-  RULES_NOT_ACKNOWLEDGED: "Please accept the community rules first",
-  LINKS_NOT_ALLOWED: "Links aren't allowed here",
-  ATTACHMENTS_NOT_ALLOWED: "Attachments aren't allowed here",
-  NEW_MEMBER_READONLY: "New members can't post yet",
-  CHAT_DISABLED: "Chat is disabled for this institute",
+const RULE_REJECTION_KEYS: Record<string, string> = {
+  SLOW_MODE: "ruleRejection.slowMode",
+  BLOCKED_BY_MODERATION: "ruleRejection.blockedByModeration",
+  RULES_NOT_ACKNOWLEDGED: "ruleRejection.rulesNotAcknowledged",
+  LINKS_NOT_ALLOWED: "ruleRejection.linksNotAllowed",
+  ATTACHMENTS_NOT_ALLOWED: "ruleRejection.attachmentsNotAllowed",
+  NEW_MEMBER_READONLY: "ruleRejection.newMemberReadonly",
+  CHAT_DISABLED: "ruleRejection.chatDisabled",
 };
 
 /** Extracts the Spring ResponseStatusException reason from an error, if present. */
@@ -51,7 +56,7 @@ function isDeterministicRejection(err: unknown): boolean {
   const status = err.response?.status;
   if (status == null || status < 400 || status >= 500) return false;
   const reason = reasonOf(err);
-  return !!reason && reason in RULE_REJECTION_MESSAGES;
+  return !!reason && reason in RULE_REJECTION_KEYS;
 }
 
 /** Is this the kill-switch (chat turned off for the institute)? */
@@ -79,6 +84,7 @@ export function BatchChatPanel({
   packageSessionId,
   className,
 }: BatchChatPanelProps) {
+  const { t } = useTranslation("chatFeatureA");
   const [currentUserId, setCurrentUserId] = useState("");
   const [conversation, setConversation] =
     useState<ChatConversationResponse | null>(null);
@@ -99,6 +105,19 @@ export function BatchChatPanel({
   const pendingSeqRef = useRef(0);
   // Conversation id in a ref so SSE callbacks read the latest value.
   const conversationIdRef = useRef<string | null>(null);
+  const queryClient = useQueryClient();
+
+  // The sidebar unread badge reads the shared conversation list (on /chat) or the polled unread total
+  // (elsewhere); after reading this batch here, clear its unread in the former and refresh the latter.
+  const syncReadToBadge = useCallback(
+    (convId: string) => {
+      queryClient.setQueryData<ChatConversationResponse[]>(CONVERSATIONS_KEY, (prev) =>
+        prev?.map((c) => (c.id === convId ? { ...c, unreadCount: 0 } : c)),
+      );
+      void queryClient.invalidateQueries({ queryKey: UNREAD_COUNT_KEY });
+    },
+    [queryClient],
+  );
   conversationIdRef.current = conversation?.id ?? null;
 
   // ── Resolve current user once (learner getChatUser is async) ───────────────
@@ -144,15 +163,14 @@ export function BatchChatPanel({
         // Mark the newest message read if there's anything unread.
         const newest = page.messages[page.messages.length - 1];
         if (newest && conv.unreadCount > 0) {
-          markRead(conv.id, newest.id).catch(() => undefined);
+          markRead(conv.id, newest.id)
+            .then(() => syncReadToBadge(conv.id))
+            .catch(() => undefined);
         }
       } catch (err) {
         if (cancelled) return;
         if (isChatDisabled(err)) {
-          setDisabledMessage(
-            reasonOf(err) ||
-              "Messaging is turned off for this institute",
-          );
+          setDisabledMessage(reasonOf(err) || t("batchPanel.disabledFallback"));
           setError("disabled");
         } else {
           console.error("Failed to open batch conversation:", err);
@@ -166,7 +184,7 @@ export function BatchChatPanel({
     return () => {
       cancelled = true;
     };
-  }, [packageSessionId]);
+  }, [packageSessionId, syncReadToBadge]);
 
   // ── Load older messages ────────────────────────────────────────────────────
   const handleLoadMore = useCallback(async () => {
@@ -265,9 +283,17 @@ export function BatchChatPanel({
           return next;
         });
         if (page.latestSeq != null) latestSeqRef.current = page.latestSeq;
+        // Messages that arrived while the stream was paused are on screen now — mark them read so the
+        // server doesn't push them and the badge doesn't count them.
+        const newest = page.messages[page.messages.length - 1];
+        if (newest && !document.hidden) {
+          markRead(convId, newest.id)
+            .then(() => syncReadToBadge(convId))
+            .catch(() => undefined);
+        }
       })
       .catch(() => undefined);
-  }, []);
+  }, [syncReadToBadge]);
 
   useChatStream({
     enabled: currentUserId.length > 0 && !!conversation,
@@ -321,10 +347,8 @@ export function BatchChatPanel({
       console.error("Failed to send message:", err);
 
       const reason = reasonOf(err);
-      toast.error(
-        (reason && RULE_REJECTION_MESSAGES[reason]) ||
-          "Message failed to send.",
-      );
+      const reasonKey = reason && RULE_REJECTION_KEYS[reason];
+      toast.error(reasonKey ? t(reasonKey) : t("screen.sendGenericError"));
 
       if (isDeterministicRejection(err)) {
         // A rule rejection (e.g. banned word / slow mode) will never succeed on
@@ -343,7 +367,7 @@ export function BatchChatPanel({
         );
       }
     }
-  }, []);
+  }, [t]);
 
   const handleSend = useCallback(
     async (text: string, attachment?: ComposerAttachment) => {
@@ -410,9 +434,9 @@ export function BatchChatPanel({
       );
     } catch (err) {
       console.error("Failed to delete message:", err);
-      toast.error("Couldn't delete the message. Please try again.");
+      toast.error(t("screen.deleteError"));
     }
-  }, []);
+  }, [t]);
 
   // ── States ─────────────────────────────────────────────────────────────────
   // Constrain height so the thread scrolls inside the tab.
@@ -433,7 +457,7 @@ export function BatchChatPanel({
       >
         <ChatSlash size={40} weight="duotone" className="text-muted-foreground" />
         <p className="text-body font-medium text-foreground">
-          {disabledMessage || "Messaging is turned off for this institute"}
+          {disabledMessage || t("batchPanel.disabledFallback")}
         </p>
       </div>
     );
@@ -454,10 +478,10 @@ export function BatchChatPanel({
           className="text-muted-foreground"
         />
         <p className="text-body font-medium text-foreground">
-          Couldn't load the discussion
+          {t("batchPanel.genericErrorTitle")}
         </p>
         <p className="max-w-xs text-caption text-muted-foreground">
-          Something went wrong opening these messages. Please try again later.
+          {t("batchPanel.genericErrorDescription")}
         </p>
       </div>
     );
@@ -492,7 +516,7 @@ export function BatchChatPanel({
   }
 
   const composerDisabled = conversation.canPost === false;
-  const composerDisabledReason = "You don't have permission to post here.";
+  const composerDisabledReason = t("common.noPermissionToPost");
   // Sort by seq (createdAt tiebreak) so a pending bubble never renders below a resynced real message.
   const orderedMessages = [...messages].sort(
     (a, b) => a.seq - b.seq || (a.createdAt || "").localeCompare(b.createdAt || ""),
@@ -510,10 +534,10 @@ export function BatchChatPanel({
         </span>
         <div className="min-w-0 flex-1">
           <p className="truncate text-body font-semibold text-foreground">
-            {conversation.title?.trim() || "Group messages"}
+            {conversation.title?.trim() || t("common.typeGroupMessages")}
           </p>
           <p className="truncate text-caption text-muted-foreground">
-            Group messages
+            {t("common.typeGroupMessages")}
           </p>
         </div>
         {packageSessionId && (

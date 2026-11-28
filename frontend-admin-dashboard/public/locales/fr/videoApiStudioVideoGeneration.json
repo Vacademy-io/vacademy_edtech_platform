@@ -1,0 +1,169 @@
+{
+    "contentTypes": {
+        "video": {
+            "label": "Vidéo",
+            "description": "Vidéos narrées avec animations et visuels"
+        },
+        "slides": {
+            "label": "Diapositives",
+            "description": "Diaporamas avec images, graphiques et diagrammes"
+        },
+        "quiz": {
+            "label": "Quiz",
+            "description": "Quiz interactifs pour tester les connaissances"
+        },
+        "storybook": {
+            "label": "Livre illustré",
+            "description": "Histoires illustrées à feuilleter"
+        },
+        "interactiveGame": {
+            "label": "Jeu interactif",
+            "description": "Jeux jouables qui enseignent par l'interaction"
+        },
+        "puzzleBook": {
+            "label": "Livre de puzzles",
+            "description": "Mots croisés, mots mêlés et casse-têtes"
+        },
+        "simulation": {
+            "label": "Simulation",
+            "description": "Simulations pratiques de sciences et de physique"
+        },
+        "flashcards": {
+            "label": "Cartes mémoire",
+            "description": "Cartes mémoire pour une mémorisation rapide"
+        },
+        "mapExploration": {
+            "label": "Exploration de carte",
+            "description": "Cartes interactives à cliquer et explorer"
+        },
+        "worksheet": {
+            "label": "Fiche d'exercices",
+            "description": "Fiches d'exercices pratiques avec réponses"
+        },
+        "codePlayground": {
+            "label": "Bac à sable de code",
+            "description": "Défis de code avec éditeur en direct"
+        },
+        "timeline": {
+            "label": "Chronologie",
+            "description": "Chronologies d'événements interactives et déroulantes"
+        },
+        "conversation": {
+            "label": "Conversation",
+            "description": "Simulations de conversations réelles"
+        }
+    },
+    "visualPreferenceFamilies": {
+        "stockVideo": "Vidéo libre de droits / images réelles",
+        "aiImagery": "Images générées par IA",
+        "svgIllustrated": "Diagrammes SVG / illustrés",
+        "motionGraphics": "Animations graphiques",
+        "appUiMockup": "Maquettes d'interface d'application / appareil",
+        "aiVideo": "Vidéo générée par IA (Veo)"
+    },
+    "aiVideoModels": {
+        "veo31": {
+            "label": "Veo 3.1 — Meilleure qualité",
+            "hint": "Fidélité photoréaliste maximale + respect fidèle du prompt. ~0,20 $/s (≈1,60 $ pour un clip de 8 s)."
+        },
+        "veo31Fast": {
+            "label": "Veo 3.1 Fast — Équilibré",
+            "hint": "Qualité proche du modèle complet, moins cher. ~0,10 $/s (≈0,80 $ pour un clip de 8 s)."
+        },
+        "veo31Lite": {
+            "label": "Veo 3.1 Lite — Économique",
+            "hint": "Fidélité la plus basse, le moins cher. ~0,03 $/s (≈0,24 $ pour un clip de 8 s)."
+        }
+    },
+    "overridableStages": {
+        "shotPlanner": {
+            "label": "Planification des plans",
+            "hint": "Planifie l'intégralité de la vidéo plan par plan."
+        },
+        "narrationWriter": {
+            "label": "Rédaction de la narration",
+            "hint": "Rédige le texte de narration pour chaque plan."
+        },
+        "perShotHtml": {
+            "label": "HTML par plan",
+            "hint": "Génère le HTML de chaque plan — le plus gros consommateur de tokens."
+        },
+        "actPlanner": {
+            "label": "Planificateur d'actes",
+            "hint": "Décompose l'intention en actes avant la planification des plans."
+        },
+        "regenHtml": {
+            "label": "Régénération HTML",
+            "hint": "Régénération corrective en cas d'échec de validation."
+        }
+    },
+    "avatarModels": {
+        "flashtalk": "FlashTalk (rapide, économique)",
+        "klingStandard": "Kling AI Avatar v2 (Standard)",
+        "veedFabric": "VEED Fabric 1.0",
+        "heygenAvatar4": "HeyGen Avatar 4",
+        "klingPro": "Kling AI Avatar v2 (Pro)",
+        "ltx23": "LTX 2.3 (audio vers vidéo)",
+        "seedance20": "Seedance 2.0 (référence vers vidéo)"
+    },
+    "qualityTiers": {
+        "free": {
+            "label": "Gratuit",
+            "description": "Génération rapide, qualité de base"
+        },
+        "standard": {
+            "label": "Standard",
+            "description": "Visuels intelligents avec diversité et validation"
+        },
+        "premium": {
+            "label": "Premium",
+            "description": "Relecture du script + amélioration des images"
+        },
+        "ultra": {
+            "label": "Ultra",
+            "description": "Meilleure qualité — toutes les améliorations activées",
+            "badge": "Par défaut"
+        },
+        "superUltra": {
+            "label": "Super Ultra",
+            "description": "Transitions en fondu enchaîné + texte cinétique avec synchronisation parfaite des mots",
+            "badge": "Nouveau"
+        }
+    },
+    "voiceGenders": {
+        "female": "Femme",
+        "male": "Homme"
+    },
+    "ttsProviders": {
+        "standard": {
+            "label": "Standard",
+            "description": "Microsoft Edge TTS (gratuit)"
+        },
+        "premium": {
+            "label": "Premium",
+            "description": "Google Cloud / Sarvam AI (2x crédits)"
+        }
+    },
+    "targetAudiences": {
+        "class1to2": "Classe 1-2 (6-7 ans)",
+        "class3to4": "Classe 3-4 (8-9 ans)",
+        "class5": "Classe 5 (10-11 ans)",
+        "class6to8": "Classe 6-8 (11-14 ans)",
+        "class9to10": "Classe 9-10 (14-16 ans)",
+        "class11to12": "Classe 11-12 (16-18 ans)",
+        "undergraduate": "Licence (premier cycle)",
+        "graduateProfessional": "Master / Professionnel",
+        "generalAdult": "Grand public / Adultes"
+    },
+    "targetDurations": {
+        "seconds30": "30 secondes",
+        "minute1": "1 minute",
+        "minutes2to3": "2-3 minutes",
+        "minutes5": "5 minutes",
+        "minutes10": "10 minutes"
+    },
+    "errors": {
+        "insufficientCredits": "Crédits insuffisants",
+        "rateLimited": "Trop de requêtes. Veuillez patienter un instant et réessayer."
+    }
+}

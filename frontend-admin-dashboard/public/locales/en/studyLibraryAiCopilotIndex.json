@@ -1,0 +1,225 @@
+{
+    "helmet": {
+        "title": "Create with {{aiName}}",
+        "description": "Create courses with {{aiName}} using natural language prompts."
+    },
+    "header": {
+        "title": "Create with {{aiName}}",
+        "subtitle": "Describe your course idea and let {{aiName}} generate a complete learning experience"
+    },
+    "examplePrompts": {
+        "python": "Create a beginner-level Python Programming course for aspiring developers",
+        "ml": "Design an end-to-end Machine Learning curriculum using Python and Scikit-Learn",
+        "cloud": "Build a Cloud Computing Fundamentals course covering AWS, Azure, and GCP basics",
+        "dataEngineering": "Develop a Data Engineering course focusing on ETL pipelines and SQL concepts"
+    },
+    "draftBanner": {
+        "untitled": "Untitled Course",
+        "savedOn": "Draft saved {{date}}",
+        "discard": "Discard",
+        "resume": "Resume"
+    },
+    "form": {
+        "courseGoalPlaceholder": "Describe your course goal... e.g., 'Create a comprehensive Python programming course for beginners covering basics to advanced topics'",
+        "courseSettings": "Course Settings",
+        "skillLevelPlaceholder": "Skill Level",
+        "skillLevels": {
+            "beginner": "Beginner",
+            "intermediate": "Intermediate",
+            "advanced": "Advanced"
+        },
+        "aiModelPlaceholder": "AI Model",
+        "autoSmart": "Auto (Smart)",
+        "loading": "Loading...",
+        "structureFollowsKb": "Structure follows the knowledge base",
+        "custom": "Custom...",
+        "durationPlaceholder": "Duration",
+        "durationCustomMinutes": "{{minutes}} min",
+        "durationOptions": {
+            "min30": "30 min",
+            "min45": "45 min",
+            "min60": "60 min",
+            "min90": "90 min",
+            "hours2": "2 hours"
+        },
+        "durationInputPlaceholder": "Duration (minutes)",
+        "numberOfChapters": "Number of {{chapters}}",
+        "slidesPerChapterInputPlaceholder": "{{slides}} per {{chapter}}",
+        "additionalOptions": "Additional Options",
+        "contentOptionsLabel": "Content Options",
+        "selectedCount_one": "{{count}} selected",
+        "selectedCount_other": "{{count}} selected",
+        "structureLabel": "Structure",
+        "configured": "Configured",
+        "referencesLabel": "References",
+        "apiKeysLabel": "API Keys",
+        "documentContent": {
+            "title": "Document content",
+            "caption": "Woven into every generated document slide.",
+            "customButton": "Custom",
+            "standardFlowButton": "Standard learning flow",
+            "standardFlowTooltip": "Why it matters → Short notes → High-yield point → Visual/process → Application → Flashcards → Mini quiz → Summary",
+            "types": {
+                "whyItMatters": "Why it matters",
+                "notes": "Short notes",
+                "highYield": "High-yield point",
+                "visualProcess": "Visual / process",
+                "application": "Application",
+                "flashcards": "Flashcards",
+                "quiz": "Quiz",
+                "summary": "Summary",
+                "practicalExamples": "Practical examples",
+                "interactiveGames": "Interactive games"
+            }
+        },
+        "courseStructure": {
+            "title": "Course structure",
+            "quizzesCaption": "Quizzes",
+            "quizPlacement": {
+                "perTopic": "Mini quiz per topic",
+                "chapter": "One chapter quiz",
+                "both": "Both",
+                "none": "No quizzes"
+            },
+            "chapterDeliverablesCaption": "Chapter deliverables",
+            "chapterAssignment": {
+                "auto": "Assignment: auto",
+                "withSolution": "Assignment + solution",
+                "none": "No assignment"
+            },
+            "chapterVideo": "Chapter video",
+            "aiTeacher": "AI teacher",
+            "aiTeacherTooltip": "Prepare every slide for the one-to-one AI teacher after the course is created: about 2 credits per document or video slide, plus about 1 credit per AI image when images are enabled in Settings → Course settings → Tutor Mode.",
+            "reduceRepetition": "Reduce repetition (2nd pass)",
+            "reduceRepetitionTooltip": "After all slides generate, slides that repeat material another slide in the chapter already covers are rewritten once.",
+            "figuresCaption": "Diagrams & figures",
+            "figuresPolicy": {
+                "prefer": "Prefer source figures",
+                "require": "Source figures required",
+                "generatedOnly": "Generated only"
+            }
+        },
+        "generateButton": "Generate Course Outline"
+    },
+    "contentDialog": {
+        "title": "Content Options",
+        "description": "Select what to include in your course",
+        "options": {
+            "diagrams": "Diagrams",
+            "codeSnippets": "Code Snippets",
+            "practiceProblems": "Practice Problems",
+            "quizzes": "Quizzes",
+            "assignments": "Assignments",
+            "solutions": "Solutions",
+            "youtubeVideos": "YouTube Videos",
+            "aiVideos": "AI Videos",
+            "aiSlides": "AI Slides",
+            "aiStorybook": "AI Storybook"
+        },
+        "programmingLanguage": "Programming Language",
+        "selectLanguagePlaceholder": "Select language",
+        "done": "Done"
+    },
+    "structureDialog": {
+        "title": "Course Structure",
+        "description": "Configure advanced course hierarchy",
+        "selectPlaceholder": "Select {{term}}",
+        "numberOf": "Number of {{term}}",
+        "done": "Done"
+    },
+    "referencesDialog": {
+        "title": "References",
+        "description": "Add URLs or files for the AI to reference",
+        "addUrlLabel": "Add URL",
+        "urlPlaceholder": "https://example.com",
+        "clickToView": "Click to view content",
+        "noContentFetched": "No content fetched",
+        "uploadFilesLabel": "Upload Files",
+        "dropzoneHint": "Drop files or click (PDF, DOC, CSV, XLSX)",
+        "done": "Done"
+    },
+    "referenceContentDialog": {
+        "titleFallback": "Reference Content",
+        "close": "Close"
+    },
+    "keysDialog": {
+        "title": "API Keys",
+        "description": "Add your API keys for AI generation",
+        "openRouterLabel": "OpenRouter API Key",
+        "geminiLabel": "Gemini API Key",
+        "added": "Added",
+        "openRouterPlaceholder": "sk-...",
+        "geminiPlaceholder": "AIza...",
+        "infoHow": "How to get keys:",
+        "infoVisit": "Visit",
+        "infoOr": "or",
+        "googleAiStudio": "Google AI Studio",
+        "done": "Done"
+    },
+    "confirmDialog": {
+        "title": "Review Course Details",
+        "description": "Please review your course configuration below. Once you proceed, you won't be able to return and edit this information.",
+        "courseGoal": "Course Goal",
+        "notProvided": "Not provided",
+        "sourceMaterial": "Source Material",
+        "sourceKb": "Built from your selected knowledge base — the outline mirrors its sections and every page is written from its content.",
+        "sourceFiles_one": "Grounded in {{count}} uploaded reference document.",
+        "sourceFiles_other": "Grounded in {{count}} uploaded reference documents.",
+        "sourceNone": "No source material selected — the AI will write this course from its own general knowledge. To build it from your own material, go back and pick a knowledge base or upload a reference document.",
+        "learningOutcome": "Learning Outcome",
+        "skillLevel": "Skill Level",
+        "numberOf": "Number of {{term}}",
+        "structure": "Structure",
+        "structureFollowsKbDetail": "Follows the knowledge base: one {{chapter}} per selected topic, one or more {{slides}} per section.",
+        "courseLength": "Course Length",
+        "minutes_one": "{{count}} minute",
+        "minutes_other": "{{count}} minutes",
+        "slidesPerChapter": "{{slides}} per {{chapter}}",
+        "whatToInclude": "What to Include",
+        "options": {
+            "diagrams": "Diagrams",
+            "codeSnippets": "Code Snippets",
+            "codeSnippetsWithLang": "Code Snippets ({{language}})",
+            "practiceProblems": "Practice Problems",
+            "quizzes": "Quizzes",
+            "assignments": "Assignments",
+            "solutions": "Solutions",
+            "youtubeVideo": "YouTube Video",
+            "aiGeneratedVideo": "AI Generated Video",
+            "aiSlides": "AI Slides",
+            "aiStorybook": "AI Storybook"
+        },
+        "references": "References",
+        "urlsAdded_one": "{{count}} URL added",
+        "urlsAdded_other": "{{count}} URLs added",
+        "filesUploaded_one": "{{count}} file uploaded",
+        "filesUploaded_other": "{{count}} files uploaded",
+        "goBack": "Go back and Edit",
+        "uploadingReferences": "Uploading references…",
+        "continue": "Continue"
+    },
+    "toasts": {
+        "keySaved": "{{keyType}} key saved!",
+        "keySaveFailed": "Failed to save key",
+        "deleteKeyConfirm": "Are you sure you want to delete the {{keyType}} key?",
+        "keyDeleted": "{{keyType}} key deleted",
+        "noKeysFound": "No keys found to delete",
+        "keyDeleteFailed": "Failed to delete key",
+        "enterCourseGoal": "Please enter a course goal",
+        "selectProgrammingLanguage": "Please select a programming language when code snippets are enabled",
+        "fileTooLarge": "File \"{{fileName}}\" exceeds the maximum size of 512 MB",
+        "fileInvalidType": "File \"{{fileName}}\" is not a valid type. Only PDF, DOC, DOCX, CSV, and XLSX files are allowed.",
+        "fileError": "Error with file \"{{fileName}}\": {{message}}",
+        "fileLimitPartial": "You can only upload up to 5 files. {{remaining}} slot(s) remaining. Only the first {{remaining}} file(s) will be added.",
+        "fileLimitReached": "You have already reached the maximum limit of 5 files. Please remove some files before adding new ones.",
+        "onlyPdfUsed": "Only PDF references are used to build the course; other files were ignored.",
+        "somePdfUploadFailed": "Some reference PDFs could not be uploaded and were skipped.",
+        "pdfUploadMissingUser": "Could not upload reference PDFs (missing user id); continuing without them.",
+        "urlAddedSuccess": "URL added and content fetched successfully",
+        "urlFetchFailed": "Could not fetch URL content, but added as reference"
+    },
+    "keyTypes": {
+        "openai": "OpenRouter",
+        "gemini": "Gemini"
+    }
+}

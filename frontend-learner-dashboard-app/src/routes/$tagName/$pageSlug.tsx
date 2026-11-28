@@ -2,14 +2,24 @@
  * Handles custom catalogue pages, e.g. /vacademy/about-us, /vacademy/contact.
  * The page route slug is matched against the catalogue config's pages[].route field.
  */
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Navigate } from "@tanstack/react-router";
+import { RouteMatcher } from "./-services/route-matcher";
+import { CatalogueTagContext } from "./-components/CatalogueTagContext";
+import { retainSiteLanguage } from "./-utils/catalogue-route-search";
 import { CourseCataloguePage } from "./-components/CourseCataloguePage";
+import { RootMountedSegment } from "./-components/RootMountedSegment";
+import { CommerceRouteGate } from "./-components/commerce/route-gate";
+import { PageAliasRedirect } from "./-utils/catalogue-page-routes";
+import { getCachedRootCatalogueTag } from "@/services/domain-routing";
 import { useDomainRouting } from "@/hooks/use-domain-routing";
 import { DashboardLoader } from "@/components/core/dashboard-loader";
 import RootNotFoundComponent from "@/components/core/default-not-found";
 import { useEffect, useState } from "react";
 
 export const Route = createFileRoute("/$tagName/$pageSlug")({
+  // Keep the visitor's site language (?lang=) across catalogue navigation
+  // (sites with languages only; a no-op everywhere else).
+  search: { middlewares: [retainSiteLanguage] },
   component: RouteComponent,
 });
 
@@ -44,7 +54,7 @@ function RouteComponent() {
           <p className="mb-4 text-gray-600">{domainRouting.error}</p>
           <button
             onClick={() => window.location.reload()}
-            className="rounded-md bg-primary-600 px-4 py-2 text-white hover:bg-primary-700"
+            className="rounded-catalogue-sm bg-primary-500 px-4 py-2 text-primary-foreground hover:brightness-90"
           >
             Retry
           </button>
@@ -55,12 +65,72 @@ function RouteComponent() {
 
   if (!domainRouting.instituteId) return <RootNotFoundComponent />;
 
+  // "/new/about" on a host where `new` is mounted at the root → "/about".
+  // Not for a page named like an app route ("/new/privacy-policy"): "/privacy-policy"
+  // is the app's own page, so the tagged address IS this page's address.
+  if (
+    RouteMatcher.isRootMounted(resolvedTagName) &&
+    !RouteMatcher.isReservedRootPage(resolvedTagName, resolvedPageSlug)
+  ) {
+    return <Navigate to={`/${resolvedPageSlug}` as never} search={true} replace />;
+  }
+
+  // A renamed page's former route (page.aliases) forwards to the page, so old
+  // links keep working; without aliases this renders the page as before.
+  const classic = (
+    <CatalogueTagContext.Provider value={resolvedTagName}>
+      <PageAliasRedirect
+        instituteId={domainRouting.instituteId}
+        tagName={resolvedTagName}
+        slug={resolvedPageSlug}
+      >
+        <CourseCataloguePage
+          tagName={resolvedTagName}
+          instituteId={domainRouting.instituteId}
+          instituteThemeCode={domainRouting.instituteThemeCode}
+          pageSlug={resolvedPageSlug}
+        />
+      </PageAliasRedirect>
+    </CatalogueTagContext.Provider>
+  );
+
+  // Root-mounted host, and the first segment is NOT the root tag: "/blog/<slug>"
+  // is most likely a page of the root catalogue plus a blog post slug (the
+  // tagged form of that address is "/<tag>/blog/<slug>", handled by the
+  // $pageSlug_.$postSlug route). Read it as that page first; only when the root
+  // catalogue has no such page is the segment another catalogue's tag.
+  const rootTag = getCachedRootCatalogueTag();
+  if (rootTag && !RouteMatcher.isRootMounted(resolvedTagName)) {
+    // "/p/<slug>", "/c/<slug>", "/q/<code>" of a shop on the root catalogue come
+    // first; the gate falls through at once for every other address.
+    return (
+      <CommerceRouteGate
+        instituteId={domainRouting.instituteId}
+        siteName={domainRouting.instituteName}
+        tagName={rootTag}
+        segments={[resolvedTagName, resolvedPageSlug]}
+        fallback={
+          <RootMountedSegment
+            rootTag={rootTag}
+            segment={resolvedTagName}
+            instituteId={domainRouting.instituteId}
+            instituteThemeCode={domainRouting.instituteThemeCode}
+            fallback={classic}
+            pageOnly
+          />
+        }
+      />
+    );
+  }
+
+  // "/<tag>/search" and "/<tag>/cart" of a shop on a tagged site.
   return (
-    <CourseCataloguePage
-      tagName={resolvedTagName}
+    <CommerceRouteGate
       instituteId={domainRouting.instituteId}
-      instituteThemeCode={domainRouting.instituteThemeCode}
-      pageSlug={resolvedPageSlug}
+      siteName={domainRouting.instituteName}
+      tagName={resolvedTagName}
+      segments={[resolvedPageSlug]}
+      fallback={classic}
     />
   );
 }

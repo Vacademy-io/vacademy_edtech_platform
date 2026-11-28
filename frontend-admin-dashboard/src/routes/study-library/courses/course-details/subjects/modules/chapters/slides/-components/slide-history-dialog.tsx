@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import {
     CircleNotch,
     ClockCounterClockwise,
@@ -50,10 +52,10 @@ const formatChangedAt = (iso: string): string => {
     });
 };
 
-const formatSize = (chars: number): string => {
-    if (!chars) return 'empty';
-    if (chars < 1000) return `${chars} chars`;
-    return `${(chars / 1000).toFixed(1)}k chars`;
+const formatSize = (t: TFunction, chars: number): string => {
+    if (!chars) return t('size.empty');
+    if (chars < 1000) return t('size.chars', { count: chars });
+    return t('size.kChars', { value: (chars / 1000).toFixed(1) });
 };
 
 /**
@@ -79,6 +81,7 @@ export const SlideHistoryDialog = ({
     onOpenChange?: (open: boolean) => void;
     hideTrigger?: boolean;
 }) => {
+    const { t } = useTranslation('studyLibrarySlideHistoryDialog');
     const [internalOpen, setInternalOpen] = useState(false);
     const isControlled = controlledOpen !== undefined;
     const open = isControlled ? controlledOpen : internalOpen;
@@ -136,7 +139,7 @@ export const SlideHistoryDialog = ({
             return res.data;
         },
         onSuccess: async (data) => {
-            toast.success('Version restored as the current draft. Review it, then publish.');
+            toast.success(t('toast.restoreSuccess'));
             await queryClient.invalidateQueries({ queryKey: ['slides'] });
             queryClient.invalidateQueries({ queryKey: ['slide-content-history', slideId] });
             onRestored(data.restored_value, data.slide_status);
@@ -147,7 +150,7 @@ export const SlideHistoryDialog = ({
                 (err as { response?: { data?: { ex?: string; message?: string } } })?.response?.data
                     ?.ex ||
                 (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
-                'Failed to restore this version';
+                t('toast.restoreFailed');
             toast.error(message);
         },
         onSettled: () => setConfirmingRestore(false),
@@ -172,7 +175,7 @@ export const SlideHistoryDialog = ({
                     buttonType="secondary"
                     scale="medium"
                     layoutVariant="default"
-                    title="View and restore previous versions"
+                    title={t('trigger.title')}
                     onClick={() => {
                         setSelectedId(null);
                         setConfirmingRestore(false);
@@ -180,11 +183,11 @@ export const SlideHistoryDialog = ({
                     }}
                 >
                     <ClockCounterClockwise size={18} />
-                    <span className="hidden md:inline">History</span>
+                    <span className="hidden md:inline">{t('trigger.label')}</span>
                 </MyButton>
             )}
             <MyDialog
-                heading="Version history"
+                heading={t('dialogHeading')}
                 open={open}
                 onOpenChange={(o) => {
                     setOpen(o);
@@ -196,11 +199,7 @@ export const SlideHistoryDialog = ({
                 dialogWidth="w-full max-w-4xl"
             >
                 <div className="flex flex-col gap-3">
-                    <p className="text-caption text-neutral-500">
-                        Each version is a snapshot of this slide&apos;s content taken just before it
-                        was overwritten. Restoring copies a snapshot into the current draft —
-                        published content is not changed until you publish again.
-                    </p>
+                    <p className="text-caption text-neutral-500">{t('description')}</p>
                     <div className="flex min-h-80 flex-col gap-3 md:flex-row">
                         {/* Version list */}
                         <div className="flex max-h-96 shrink-0 flex-col gap-1 overflow-y-auto md:w-64">
@@ -213,14 +212,14 @@ export const SlideHistoryDialog = ({
                                 <div className="flex flex-1 flex-col items-center justify-center gap-2 p-6 text-center">
                                     <Warning size={24} className="text-danger-500" />
                                     <p className="text-caption text-neutral-500">
-                                        Could not load version history.
+                                        {t('history.loadError')}
                                     </p>
                                     <MyButton
                                         buttonType="secondary"
                                         scale="small"
                                         onClick={() => historyQuery.refetch()}
                                     >
-                                        Retry
+                                        {t('retry')}
                                     </MyButton>
                                 </div>
                             )}
@@ -228,8 +227,7 @@ export const SlideHistoryDialog = ({
                                 <div className="flex flex-1 flex-col items-center justify-center gap-2 p-6 text-center">
                                     <ClockCounterClockwise size={24} className="text-neutral-300" />
                                     <p className="text-caption text-neutral-500">
-                                        No previous versions yet. A version is recorded each time
-                                        this slide&apos;s content changes.
+                                        {t('history.empty')}
                                     </p>
                                 </div>
                             )}
@@ -249,8 +247,13 @@ export const SlideHistoryDialog = ({
                                         {formatChangedAt(entry.changed_at)}
                                     </span>
                                     <span className="text-caption text-neutral-500">
-                                        Draft: {formatSize(entry.draft_length)} · Published:{' '}
-                                        {formatSize(entry.published_length)}
+                                        {t('entry.draftSize', {
+                                            size: formatSize(t, entry.draft_length),
+                                        })}{' '}
+                                        ·{' '}
+                                        {t('entry.publishedSize', {
+                                            size: formatSize(t, entry.published_length),
+                                        })}
                                     </span>
                                 </button>
                             ))}
@@ -261,7 +264,7 @@ export const SlideHistoryDialog = ({
                             {selectedId == null ? (
                                 <div className="flex flex-1 items-center justify-center rounded-md border border-dashed border-neutral-200 p-6">
                                     <p className="text-caption text-neutral-400">
-                                        Select a version to preview it
+                                        {t('preview.selectPrompt')}
                                     </p>
                                 </div>
                             ) : detailQuery.isLoading ? (
@@ -272,14 +275,14 @@ export const SlideHistoryDialog = ({
                                 <div className="flex flex-1 flex-col items-center justify-center gap-2 p-6 text-center">
                                     <Warning size={24} className="text-danger-500" />
                                     <p className="text-caption text-neutral-500">
-                                        Could not load this version.
+                                        {t('preview.loadError')}
                                     </p>
                                     <MyButton
                                         buttonType="secondary"
                                         scale="small"
                                         onClick={() => detailQuery.refetch()}
                                     >
-                                        Retry
+                                        {t('retry')}
                                     </MyButton>
                                 </div>
                             ) : (
@@ -299,7 +302,7 @@ export const SlideHistoryDialog = ({
                                                 }}
                                             >
                                                 <FileText size={14} />
-                                                Draft
+                                                {t('source.draft')}
                                             </MyButton>
                                             <MyButton
                                                 buttonType={
@@ -314,7 +317,7 @@ export const SlideHistoryDialog = ({
                                                 }}
                                             >
                                                 <Globe size={14} />
-                                                Published
+                                                {t('source.published')}
                                             </MyButton>
                                         </div>
                                         <MyButton
@@ -340,26 +343,26 @@ export const SlideHistoryDialog = ({
                                             {restoreMutation.isPending ? (
                                                 <>
                                                     <CircleNotch className="size-4 animate-spin" />
-                                                    Restoring…
+                                                    {t('restore.restoring')}
                                                 </>
                                             ) : confirmingRestore ? (
-                                                'Confirm restore to draft?'
+                                                t('restore.confirm')
                                             ) : (
-                                                'Restore this version'
+                                                t('restore.action')
                                             )}
                                         </MyButton>
                                     </div>
                                     {!previewValue ? (
                                         <div className="flex flex-1 items-center justify-center rounded-md border border-dashed border-neutral-200 p-6">
                                             <p className="text-caption text-neutral-400">
-                                                This snapshot has no{' '}
-                                                {previewSource === 'DRAFT' ? 'draft' : 'published'}{' '}
-                                                content
+                                                {previewSource === 'DRAFT'
+                                                    ? t('preview.noContent.draft')
+                                                    : t('preview.noContent.published')}
                                             </p>
                                         </div>
                                     ) : isDocEditor ? (
                                         <iframe
-                                            title="Version preview"
+                                            title={t('preview.iframeTitle')}
                                             sandbox=""
                                             srcDoc={previewValue}
                                             className="h-80 w-full rounded-md border border-neutral-200 bg-white"

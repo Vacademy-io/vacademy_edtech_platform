@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
+import vacademy.io.admin_core_service.core.security.HrAccessGuard;
 import vacademy.io.admin_core_service.features.hr_employee.dto.DesignationDTO;
 import vacademy.io.admin_core_service.features.hr_employee.entity.Designation;
 import vacademy.io.admin_core_service.features.hr_employee.repository.DesignationRepository;
@@ -17,6 +18,9 @@ public class DesignationService {
 
     @Autowired
     private DesignationRepository designationRepository;
+
+    @Autowired
+    private HrAccessGuard hrAccessGuard;
 
     @Transactional
     public String addDesignation(DesignationDTO dto, String instituteId) {
@@ -42,9 +46,10 @@ public class DesignationService {
     }
 
     @Transactional
-    public String updateDesignation(String id, DesignationDTO dto) {
+    public String updateDesignation(String id, DesignationDTO dto, String instituteId) {
         Designation designation = designationRepository.findById(id)
                 .orElseThrow(() -> new VacademyException("Designation not found"));
+        hrAccessGuard.requireInstituteMatch(designation.getInstituteId(), instituteId, "Designation");
 
         if (StringUtils.hasText(dto.getName())) {
             designation.setName(dto.getName());

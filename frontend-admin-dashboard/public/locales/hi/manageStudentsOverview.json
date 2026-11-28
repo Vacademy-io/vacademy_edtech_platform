@@ -1,0 +1,66 @@
+{
+    "toast": {
+        "copiedToClipboard": "{{field}} क्लिपबोर्ड पर कॉपी हो गया!",
+        "copyFailed": "{{field}} कॉपी करने में विफल"
+    },
+    "password": {
+        "notFound": "पासवर्ड नहीं मिला"
+    },
+    "empty": {
+        "noOverviewData": "कोई अवलोकन डेटा उपलब्ध नहीं है"
+    },
+    "errors": {
+        "fetchStudentDetails": "छात्र विवरण प्राप्त करने में त्रुटि"
+    },
+    "fallback": {
+        "notAvailable": "उपलब्ध नहीं"
+    },
+    "sections": {
+        "customFields": "कस्टम फ़ील्ड",
+        "termsAndConditions": "नियम एवं शर्तें",
+        "accountCredentials": "खाता प्रमाणपत्र",
+        "generalDetails": "सामान्य विवरण",
+        "referralDetails": "रेफ़रल विवरण",
+        "contactInformation": "संपर्क जानकारी",
+        "locationDetails": "स्थान विवरण",
+        "guardianDetails": "अभिभावक का विवरण"
+    },
+    "fields": {
+        "status": "स्थिति",
+        "signedOn": "हस्ताक्षर की तारीख",
+        "signedPdf": "हस्ताक्षरित PDF",
+        "enrollmentNo": "नामांकन संख्या",
+        "gender": "लिंग",
+        "school": "स्कूल",
+        "country": "देश",
+        "state": "राज्य",
+        "city": "शहर",
+        "pincode": "पिन कोड",
+        "address": "पता",
+        "mobileNo": "मोबाइल नंबर",
+        "emailId": "ईमेल आईडी",
+        "fatherName": "पिता/पुरुष अभिभावक का नाम",
+        "fatherMobileNo": "पिता/पुरुष अभिभावक का मोबाइल नंबर",
+        "fatherEmailId": "पिता/पुरुष अभिभावक की ईमेल आईडी",
+        "motherName": "माता/महिला अभिभावक का नाम",
+        "motherMobileNo": "माता/महिला अभिभावक का मोबाइल नंबर",
+        "motherEmailId": "माता/महिला अभिभावक की ईमेल आईडी",
+        "username": "उपयोगकर्ता नाम",
+        "password": "पासवर्ड",
+        "attendance": "उपस्थिति",
+        "count": "गिनती"
+    },
+    "status": {
+        "signed": "हस्ताक्षरित",
+        "notSigned": "हस्ताक्षरित नहीं"
+    },
+    "actions": {
+        "download": "डाउनलोड करें"
+    },
+    "otherContacts": {
+        "heading": "अन्य संपर्क विवरण",
+        "hint": "इस व्यक्ति ने दूसरी पूछताछ में ये नंबर और ईमेल दिए।",
+        "phone": "फ़ोन",
+        "email": "ईमेल"
+    }
+}

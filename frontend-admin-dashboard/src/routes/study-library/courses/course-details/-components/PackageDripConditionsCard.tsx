@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Badge } from '@/components/ui/badge';
 import {
     Plus,
@@ -33,6 +34,7 @@ export const PackageDripConditionsCard: React.FC<PackageDripConditionsCardProps>
     onUpdate,
     onDelete,
 }) => {
+    const { t } = useTranslation('studyLibraryPackageDripConditionsCard');
     const [dialogOpen, setDialogOpen] = useState(false);
     const [editingCondition, setEditingCondition] = useState<DripCondition | undefined>();
     const [editingTarget, setEditingTarget] = useState<'chapter' | 'slide' | undefined>();
@@ -86,14 +88,13 @@ export const PackageDripConditionsCard: React.FC<PackageDripConditionsCardProps>
         config: DripCondition['drip_condition'][number]
     ) => {
         // Only allow deletion of disabled conditions
+        const targetLabel = target === 'chapter' ? t('target.chapter') : t('target.slide');
         if (config.is_enabled) {
-            alert(
-                `Cannot delete an enabled condition. Please disable the ${target} drip condition first.`
-            );
+            alert(t('alerts.cannotDeleteEnabled', { target: targetLabel }));
             return;
         }
 
-        if (confirm(`Are you sure you want to delete this ${target} drip condition?`)) {
+        if (confirm(t('alerts.confirmDelete', { target: targetLabel }))) {
             // If this is the only config, delete the entire condition
             if (condition.drip_condition.length === 1) {
                 onDelete(condition.id);
@@ -136,20 +137,18 @@ export const PackageDripConditionsCard: React.FC<PackageDripConditionsCardProps>
         <>
             <div className="mb-2 flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                    <h1>Drip Conditions</h1>
+                    <h1>{t('heading')}</h1>
                 </div>
                 <MyButton scale="small" onClick={handleAddCondition}>
-                    <Plus className="mr-2 size-4" />
-                    Add
+                    <Plus className="me-2 size-4" />
+                    {t('add')}
                 </MyButton>
             </div>
 
             {flattenedConditions.length === 0 ? (
                 <div className="rounded-lg border border-dashed p-8 text-center">
-                    <h3 className="mt-4 text-base font-medium">No drip conditions</h3>
-                    <p className="mt-2 text-sm text-muted-foreground">
-                        Add conditions to control when content becomes available to learners.
-                    </p>
+                    <h3 className="mt-4 text-base font-medium">{t('emptyTitle')}</h3>
+                    <p className="mt-2 text-sm text-muted-foreground">{t('emptyHint')}</p>
                 </div>
             ) : (
                 <div className="space-y-3">
@@ -162,12 +161,16 @@ export const PackageDripConditionsCard: React.FC<PackageDripConditionsCardProps>
                                 <div className="min-w-0 flex-1 space-y-2">
                                     <div className="flex flex-wrap items-center gap-2">
                                         <Badge variant="outline" className="capitalize">
-                                            {target}
+                                            {target === 'chapter'
+                                                ? t('target.chapter')
+                                                : t('target.slide')}
                                         </Badge>
                                         <Badge className={getBehaviorColor(config.behavior)}>
                                             {getBehaviorIcon(config.behavior)}
-                                            <span className="ml-1 capitalize">
-                                                {config.behavior}
+                                            <span className="ms-1 capitalize">
+                                                {t(`behavior.${config.behavior}`, {
+                                                    defaultValue: config.behavior,
+                                                })}
                                             </span>
                                         </Badge>
                                         {config.is_enabled !== undefined && !config.is_enabled && (
@@ -175,7 +178,7 @@ export const PackageDripConditionsCard: React.FC<PackageDripConditionsCardProps>
                                                 variant="outline"
                                                 className="bg-gray-100 text-gray-600"
                                             >
-                                                Disabled
+                                                {t('disabled')}
                                             </Badge>
                                         )}
                                     </div>
@@ -219,7 +222,7 @@ export const PackageDripConditionsCard: React.FC<PackageDripConditionsCardProps>
                                             onClick={() =>
                                                 handleDeleteCondition(condition, target, config)
                                             }
-                                            title="Delete condition"
+                                            title={t('deleteCondition')}
                                             className="size-8 p-0"
                                         >
                                             <Trash className="size-4" />

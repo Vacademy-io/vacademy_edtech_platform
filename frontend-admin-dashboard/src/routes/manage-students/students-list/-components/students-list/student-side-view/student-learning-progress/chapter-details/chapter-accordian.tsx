@@ -1,5 +1,6 @@
 import { CaretUp, CaretDown } from '@phosphor-icons/react';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { TopicDetails } from './topic-details/topic-details';
 import { StatusIcon } from '../status-icon';
 import { InlineProgress } from '../inline-progress';
@@ -12,6 +13,7 @@ export const ChapterAccordian = ({
     ChapterDetails: ChapterWithProgress;
     key: number;
 }) => {
+    const { t } = useTranslation('manageStudentsChapterAccordian');
     const [expand, setExpand] = useState(false);
 
     const chapterCompletionStatus: 'done' | 'pending' =
@@ -29,7 +31,7 @@ export const ChapterAccordian = ({
                     <div className="flex min-w-0 items-center gap-2">
                         <StatusIcon status={chapterCompletionStatus} />
                         <div className="truncate">
-                            Chapter {key}: {ChapterDetails.chapter_name}
+                            {t('chapterLabel', { number: key })} {ChapterDetails.chapter_name}
                         </div>
                     </div>
                     <div className="flex items-center gap-3">

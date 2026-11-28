@@ -1,0 +1,322 @@
+{
+    "page": {
+        "description": "كيف كان أداء اختباراتك: المشاركة والدرجات والتصحيح المعلّق والمتعلمون الذين يحتاجون إلى متابعة."
+    },
+    "hero": {
+        "eyebrow": "تحليلات التقييمات",
+        "title": "لوحة معلومات التقييمات",
+        "compared": "مقارنة بـ {{range}}"
+    },
+    "share": {
+        "csv": "تصدير CSV",
+        "pdf": "تنزيل PDF"
+    },
+    "filters": {
+        "rangeLabel": "النطاق الزمني",
+        "allOf": "كل {{term}}",
+        "types": "أنواع الاختبارات",
+        "allTypes": "كل أنواع الاختبارات",
+        "clear": "مسح",
+        "refresh": "تحديث",
+        "startDate": "تاريخ البدء",
+        "endDate": "تاريخ الانتهاء",
+        "apply": "تطبيق",
+        "invalidRange": "يجب أن يكون تاريخ الانتهاء في يوم البدء أو بعده",
+        "rangeTooLong": "اختر نطاقًا لا يزيد عن {{days}} يومًا",
+        "updatedAt": "آخر تحديث {{time}} · يتحدّث كل دقيقة"
+    },
+    "presets": {
+        "today": "اليوم",
+        "last5": "آخر 5 أيام",
+        "last7": "آخر 7 أيام",
+        "last30": "آخر 30 يومًا",
+        "next7": "الأيام السبعة القادمة",
+        "custom": "مخصص"
+    },
+    "error": {
+        "title": "تعذّر تحميل لوحة المعلومات",
+        "body": "تحقق من اتصالك وحاول مرة أخرى.",
+        "retry": "إعادة المحاولة"
+    },
+    "warnings": {
+        "enrollmentUnavailable": "تعذّر تحميل عضوية {{term}} الآن، لذا يُحتسب المتعلمون المسجَّلون فقط. قد يكون عدد «لم تتم المحاولة» أقل من الحقيقي."
+    },
+    "delta": {
+        "points": "{{v}} نقطة",
+        "percent": "{{v}}%",
+        "plain": "{{v}}",
+        "vs": "مقارنة بـ {{range}}"
+    },
+    "kpis": {
+        "tests": "الاختبارات",
+        "testsDetail": "مغلقة: {{closed}} · مباشرة: {{live}} · قادمة: {{upcoming}} · في أي وقت: {{open}}",
+        "participation": "المشاركة",
+        "participationDetail": "{{attempted}} من أصل {{expected}} من {{term}} أدّوا الاختبارات المغلقة",
+        "noClosed": "لا توجد اختبارات مغلقة في هذه الفترة بعد",
+        "submissions": "التسليمات",
+        "submissionsDetail": "بواسطة {{n}} من {{term}}",
+        "avgScore": "متوسط الدرجة",
+        "avgScoreDetail": "المحاولات المصحّحة: {{n}} · الأعلى {{top}}",
+        "noScores": "لا توجد محاولات مصحّحة بعد",
+        "notAttempted": "لم تتم المحاولة",
+        "notAttemptedDetail_zero": "محاولات فائتة في {{count}} اختبار مغلق",
+        "notAttemptedDetail_one": "محاولات فائتة في {{count}} اختبار مغلق",
+        "notAttemptedDetail_two": "محاولات فائتة في {{count}} اختبارين مغلقين",
+        "notAttemptedDetail_few": "محاولات فائتة في {{count}} اختبارات مغلقة",
+        "notAttemptedDetail_many": "محاولات فائتة في {{count}} اختبارًا مغلقًا",
+        "notAttemptedDetail_other": "محاولات فائتة في {{count}} اختبار مغلق",
+        "backlog": "التصحيح المعلّق",
+        "backlogDetail": "للتصحيح: {{evaluate}} · نتائج للنشر: {{release}}",
+        "backlogClear": "تم تصحيح كل شيء ونشره",
+        "noSubmissions": "لا توجد تسليمات في هذه الفترة"
+    },
+    "trend": {
+        "title": "النشاط اليومي",
+        "metrics": {
+            "submissions": "التسليمات",
+            "score": "متوسط الدرجة",
+            "learners": "المتعلمون",
+            "tests": "الاختبارات"
+        },
+        "subtitles": {
+            "submissions": "المحاولات المُسلَّمة يوميًا",
+            "score": "متوسط درجات المحاولات المُسلَّمة يوميًا",
+            "learners": "عدد المتعلمين المختلفين الذين سلّموا يوميًا",
+            "tests": "الاختبارات التي فُتحت نافذتها يوميًا"
+        }
+    },
+    "empty": {
+        "noActivity": "لا توجد اختبارات أو تسليمات في هذه الفترة",
+        "noSubmissions": "لا توجد تسليمات في هذه الفترة",
+        "noTests": "لا توجد اختبارات في هذه الفترة",
+        "noBatches": "لا توجد {{term}} في هذه الفترة",
+        "noMatch": "لا توجد اختبارات تطابق عوامل التصفية هذه"
+    },
+    "donut": {
+        "title": "من أدّى الاختبارات",
+        "subtitle_zero": "عبر {{count}} اختبار مغلق",
+        "subtitle_one": "عبر {{count}} اختبار مغلق",
+        "subtitle_two": "عبر {{count}} اختبارين مغلقين",
+        "subtitle_few": "عبر {{count}} اختبارات مغلقة",
+        "subtitle_many": "عبر {{count}} اختبارًا مغلقًا",
+        "subtitle_other": "عبر {{count}} اختبار مغلق",
+        "attempted": "تمت المحاولة",
+        "notAttempted": "لم تتم المحاولة",
+        "center": "المشاركة"
+    },
+    "scores": {
+        "title": "توزيع الدرجات",
+        "subtitle": "المحاولات المصحّحة: {{n}} · المتوسط {{avg}}",
+        "band": "{{band}}%",
+        "learners": "المحاولات: {{n}}",
+        "legend": {
+            "low": "أقل من 50%",
+            "mid": "50–75%",
+            "high": "75% فأكثر"
+        }
+    },
+    "heatmap": {
+        "title": "متى يسلّم المتعلمون",
+        "subtitle": "التسليمات حسب يوم الأسبوع والساعة، بتوقيتك المحلي",
+        "cell": "التسليمات: {{n}}",
+        "fewer": "أقل",
+        "more": "أكثر"
+    },
+    "types": {
+        "title": "أنواع الاختبارات",
+        "subtitle": "عدد الاختبارات من كل نوع في هذه الفترة",
+        "meta": "التسليمات: {{n}} · المتوسط {{avg}}"
+    },
+    "playModes": {
+        "exam": "امتحان",
+        "mock": "اختبار تجريبي",
+        "practice": "تدريب",
+        "survey": "استبيان",
+        "offline": "امتحان غير متصل",
+        "assignment": "واجب",
+        "other": "أخرى"
+    },
+    "liveNow": {
+        "title": "مباشر الآن",
+        "none": "لا يوجد اختبار جارٍ الآن",
+        "autoRefresh": "تتحدّث الأعداد كل دقيقة",
+        "endsAt": "ينتهي {{time}}",
+        "submitted": "سلّموا: {{n}}",
+        "writing": "قيد الإجابة: {{n}}",
+        "notStarted": "لم يبدؤوا: {{n}}",
+        "ofExpected": "من أصل {{n}} من المتعلمين",
+        "open": "فتح"
+    },
+    "status": {
+        "ALL": "الكل",
+        "CLOSED": "مغلق",
+        "LIVE": "مباشر",
+        "UPCOMING": "قادم",
+        "OPEN": "في أي وقت"
+    },
+    "table": {
+        "title": "كل الاختبارات",
+        "subtitle": "الاختبارات: {{n}} · انقر على أحدها لفتحه",
+        "truncated": "يُعرض أول {{limit}} من الاختبارات — ضيّق النطاق لرؤية الباقي",
+        "search": "ابحث عن اختبار أو مادة أو دفعة",
+        "untitled": "اختبار بلا عنوان",
+        "when": "الموعد",
+        "anytime": "في أي وقت",
+        "test": "الاختبار",
+        "status": "الحالة",
+        "participation": "المشاركة",
+        "avgScore": "متوسط الدرجة",
+        "range": "{{low}} – {{high}}",
+        "submissions": "المُسلَّمة",
+        "writing": "قيد الإجابة: {{n}}",
+        "evaluation": "التصحيح",
+        "allDone": "اكتمل الكل"
+    },
+    "insights": {
+        "best": "الاختبار الأعلى درجة",
+        "bestMeta": "المتوسط {{avg}} · المحاولات: {{n}}",
+        "lowest": "أدنى مشاركة",
+        "lowestMeta": "أدّاه {{rate}} · لم يؤدّه {{missed}}",
+        "topBatch": "أفضل دفعة",
+        "topBatchMeta": "المتوسط {{avg}} · المشاركة {{rate}}",
+        "backlog": "التصحيح",
+        "backlogTitle": "محاولات بانتظار التصحيح: {{n}}",
+        "backlogMeta_zero": "في {{count}} اختبار",
+        "backlogMeta_one": "في {{count}} اختبار",
+        "backlogMeta_two": "في {{count}} اختبارين",
+        "backlogMeta_few": "في {{count}} اختبارات",
+        "backlogMeta_many": "في {{count}} اختبارًا",
+        "backlogMeta_other": "في {{count}} اختبار",
+        "backlogNone": "لا شيء متأخر",
+        "backlogNoneMeta": "لا شيء بانتظار التصحيح أو النشر"
+    },
+    "batches": {
+        "title": "أداء {{term}}",
+        "subtitle": "المشاركة في الاختبارات المغلقة ومتوسط الدرجة",
+        "unknown": "دفعة غير معروفة",
+        "sort": {
+            "lowest": "الأدنى أولًا",
+            "highest": "الأعلى أولًا",
+            "score": "حسب الدرجة"
+        },
+        "meta_zero": "{{count}} اختبار · المحاولون {{attempted}}/{{expected}} · المتوسط {{avg}}",
+        "meta_one": "{{count}} اختبار · المحاولون {{attempted}}/{{expected}} · المتوسط {{avg}}",
+        "meta_two": "{{count}} اختباران · المحاولون {{attempted}}/{{expected}} · المتوسط {{avg}}",
+        "meta_few": "{{count}} اختبارات · المحاولون {{attempted}}/{{expected}} · المتوسط {{avg}}",
+        "meta_many": "{{count}} اختبارًا · المحاولون {{attempted}}/{{expected}} · المتوسط {{avg}}",
+        "meta_other": "{{count}} اختبار · المحاولون {{attempted}}/{{expected}} · المتوسط {{avg}}",
+        "checked": "تم تصحيح {{done}}/{{total}} ورقة"
+    },
+    "top": {
+        "title": "أفضل {{term}}",
+        "subtitle": "أعلى متوسط درجات في الاختبارات المصحّحة",
+        "tests_zero": "{{count}} اختبار",
+        "tests_one": "{{count}} اختبار",
+        "tests_two": "{{count}} اختباران",
+        "tests_few": "{{count}} اختبارات",
+        "tests_many": "{{count}} اختبارًا",
+        "tests_other": "{{count}} اختبار",
+        "best": "أفضل درجة {{best}}"
+    },
+    "queue": {
+        "title": "قائمة انتظار التصحيح",
+        "subtitle_zero": "يتبقى عمل في {{count}} اختبار",
+        "subtitle_one": "يتبقى عمل في {{count}} اختبار",
+        "subtitle_two": "يتبقى عمل في {{count}} اختبارين",
+        "subtitle_few": "يتبقى عمل في {{count}} اختبارات",
+        "subtitle_many": "يتبقى عمل في {{count}} اختبارًا",
+        "subtitle_other": "يتبقى عمل في {{count}} اختبار",
+        "empty": "لا شيء قيد الانتظار",
+        "allClear": "تم تصحيح كل تسليم ونشر نتيجته",
+        "done": "تم تصحيح {{done}}/{{total}}",
+        "toEvaluate": "للتصحيح: {{n}}",
+        "toRelease": "للنشر: {{n}}",
+        "open": "فتح الاختبار",
+        "by": "بواسطة {{names}}"
+    },
+    "followUp": {
+        "title": "{{term}} بحاجة إلى متابعة",
+        "viewLabel": "أي المتعلمين",
+        "views": {
+            "missed": "اختبارات فائتة",
+            "low": "درجات منخفضة"
+        },
+        "threshold": "فاتهم على الأقل",
+        "missedPlus": "فاتهم {{n}}+",
+        "missedSubtitle": "متعلمون فاتهم {{missed}} أو أكثر من الاختبارات المغلقة: {{n}}",
+        "missedNone": "لم يفت أحدًا {{missed}} أو أكثر من الاختبارات المغلقة",
+        "lowSubtitle": "متعلمون متوسطهم أقل من {{line}}: {{n}}",
+        "lowNone": "لا أحد متوسطه أقل من {{line}}",
+        "messageAll": "مراسلة {{n}} عبر WhatsApp",
+        "email": "البريد الإلكتروني",
+        "csv": "CSV",
+        "showingTop": "عرض {{shown}} من {{total}}",
+        "learnersCount": "المتعلمون: {{n}}",
+        "nobody": "لا يوجد أحد لمراسلته",
+        "missedOf": "فاته {{missed}}/{{expected}}",
+        "took": "أدّى {{rate}}",
+        "scoredTests_zero": "{{count}} اختبار مصحّح",
+        "scoredTests_one": "{{count}} اختبار مصحّح",
+        "scoredTests_two": "{{count}} اختباران مصحّحان",
+        "scoredTests_few": "{{count}} اختبارات مصحّحة",
+        "scoredTests_many": "{{count}} اختبارًا مصحّحًا",
+        "scoredTests_other": "{{count}} اختبار مصحّح",
+        "avg": "المتوسط {{avg}}",
+        "lastSubmitted": "آخر تسليم {{date}}",
+        "neverSubmitted": "لا تسليمات في هذه الفترة"
+    },
+    "csv": {
+        "name": "الاسم",
+        "email": "البريد الإلكتروني",
+        "mobile": "الجوال",
+        "batch": "الدفعة",
+        "testsSet": "الاختبارات المسندة",
+        "testsTaken": "الاختبارات المؤدّاة",
+        "testsMissed": "الاختبارات الفائتة",
+        "testsScored": "الاختبارات المصحّحة",
+        "avgScore": "متوسط الدرجة %",
+        "bestScore": "أفضل درجة %",
+        "lastSubmitted": "آخر تسليم",
+        "start": "وقت الفتح",
+        "end": "وقت الإغلاق",
+        "test": "الاختبار",
+        "type": "النوع",
+        "visibility": "الوصول",
+        "status": "الحالة",
+        "subject": "المادة",
+        "batches": "الدفعات",
+        "expected": "مُسند إلى",
+        "attempted": "المحاولون",
+        "participation": "المشاركة %",
+        "notAttempted": "لم تتم المحاولة",
+        "submissions": "التسليمات",
+        "highestScore": "أعلى درجة %",
+        "lowestScore": "أدنى درجة %",
+        "evaluated": "المصحّحة",
+        "awaitingEvaluation": "بانتظار التصحيح",
+        "awaitingRelease": "بانتظار النشر",
+        "checkedBy": "صحّحها"
+    },
+    "copyCheck": {
+        "title": "تصحيح الأوراق",
+        "subtitle": "تم تصحيح {{checked}} من {{total}} · {{waiting}} بانتظار التصحيح",
+        "segments": {
+            "teacher": "بواسطة المعلمين",
+            "ai": "بواسطة الذكاء الاصطناعي",
+            "auto": "مصححة تلقائيًا",
+            "other": "درجات أُدخلت مباشرة",
+            "waiting": "بانتظار التصحيح"
+        },
+        "teachersTitle": "من صحّح الأوراق",
+        "noTeachers": "لم يصحّح أي معلم أوراقًا في هذه الفترة",
+        "copies": "{{n}} ورقة",
+        "tests_zero": "{{count}} اختبار",
+        "tests_one": "اختبار واحد ({{count}})",
+        "tests_two": "اختباران ({{count}})",
+        "tests_few": "{{count}} اختبارات",
+        "tests_many": "{{count}} اختبارًا",
+        "tests_other": "{{count}} اختبار",
+        "perCopy": "~{{minutes}} دقيقة لكل ورقة",
+        "lastChecked": "آخر تصحيح {{date}}"
+    }
+}

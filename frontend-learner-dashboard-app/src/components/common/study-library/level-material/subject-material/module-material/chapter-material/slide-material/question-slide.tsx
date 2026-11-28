@@ -2,6 +2,7 @@
 
 import type React from "react";
 import { useState, useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { MyInput } from "@/components/design-system/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -11,6 +12,7 @@ import authenticatedAxiosInstance from "@/lib/auth/axiosInstance";
 import {
     SUBMIT_QUESTION_SLIDE_ANSWERS,
     GET_QUESTION_SLIDE_ACTIVITY_LOGS,
+    QUESTION_SLIDE_MY_RESULT,
 } from "@/constants/urls";
 import { v4 as uuidv4 } from "uuid";
 import { getUserId } from "@/constants/getUserId";
@@ -20,6 +22,20 @@ import { useResolvedPackageSessionId } from "@/hooks/study-library/useResolvedPa
 import { refreshProgressAfterSubmit } from "@/utils/study-library/tracking/refreshProgressAfterSubmit";
 import { toast } from "sonner";
 import { trackOrQueue, isNetworkError } from "@/lib/offline/events/track-or-queue";
+import CbeQuestionSlide from "./cbe-question-slide";
+import { CheckCircle, XCircle } from "@phosphor-icons/react";
+import { cn } from "@/lib/utils";
+import { announceSlideCompleted } from "@/services/slide-engagement";
+import { QuizInstantFeedbackPanel } from "./quiz-instant-feedback-panel";
+import {
+    answerKindOf,
+    correctAnswerHtml,
+    instantVerdictOf,
+    optionReview,
+    submittedOptionsOf,
+    type OptionReview,
+    type QuestionSlideResult,
+} from "./question-slide-result";
 
 interface Option {
     id: string;
@@ -72,7 +88,36 @@ interface QuestionResponseMap {
     };
 }
 
-const QuestionSlide = ({ questionData, onSubmit }: QuestionSlideProps) => {
+/** An option row; once the answer is checked, the right options green and a wrong pick red. */
+const optionRowClass = (review: OptionReview, selected: boolean) =>
+    cn(
+        "flex flex-row-reverse items-center justify-between rounded-md border p-3 w-full transition-all duration-200",
+        review === "correct"
+            ? "border-success-500 bg-success-50"
+            : review === "wrong"
+              ? "border-danger-500 bg-danger-50"
+              : selected
+                ? "border-gray-600 bg-gray-50 hover:border-gray-400"
+                : "border-gray-200 hover:border-gray-400"
+    );
+
+const OptionReviewIcon = ({ review }: { review: OptionReview }) =>
+    review === "correct" ? (
+        <CheckCircle
+            aria-hidden="true"
+            weight="fill"
+            className="size-5 shrink-0 text-success-600"
+        />
+    ) : review === "wrong" ? (
+        <XCircle
+            aria-hidden="true"
+            weight="fill"
+            className="size-5 shrink-0 text-danger-600"
+        />
+    ) : null;
+
+const ChoiceOrTextQuestionSlide = ({ questionData, onSubmit }: QuestionSlideProps) => {
+    const { t } = useTranslation("libraryCommonB");
     const router = useRouter();
     const queryClient = useQueryClient();
     const { chapterId, moduleId, subjectId } = router.state.location.search;
@@ -111,6 +156,13 @@ const QuestionSlide = ({ questionData, onSubmit }: QuestionSlideProps) => {
     // re-enable it as "Resubmit" once the learner edits their answer (retry).
     const [lastSubmittedSignatureMap, setLastSubmittedSignatureMap] = useState<
         Record<string, string>
+    >({});
+    // Per-slide result of the latest submission (right / wrong + the correct
+    // answer), filled only when the author left "Show correct answer after
+    // submit" on. Null: unknown yet, or nothing to show — the slide then behaves
+    // exactly as before.
+    const [resultMap, setResultMap] = useState<
+        Record<string, QuestionSlideResult | null>
     >({});
     const [isDecimal, setIsDecimal] = useState(false);
     const [maxDecimals, setMaxDecimals] = useState(0);
@@ -186,6 +238,23 @@ const QuestionSlide = ({ questionData, onSubmit }: QuestionSlideProps) => {
     const unchangedSinceSubmit =
         hasSubmitted &&
         currentAnswerSignature === (lastSubmittedSignatureMap[slideId] ?? "");
+
+    // Read the learner's latest result on this slide. Best-effort: signed out,
+    // slow (capped so Submit never hangs on it) or failed, nothing is shown,
+    // which is the slide's behaviour without it.
+    const loadResult = async (id: string): Promise<QuestionSlideResult | null> => {
+        try {
+            const userId = await getUserId();
+            if (!userId) return null;
+            const res = await authenticatedAxiosInstance.get<QuestionSlideResult>(
+                QUESTION_SLIDE_MY_RESULT,
+                { params: { slide_id: id }, timeout: 10000 }
+            );
+            return res.data ?? null;
+        } catch {
+            return null;
+        }
+    };
 
     // Submit question mutation
     const submitQuestionMutation = useMutation({
@@ -298,9 +367,10 @@ const QuestionSlide = ({ questionData, onSubmit }: QuestionSlideProps) => {
         },
         onSuccess: (result) => {
             if (result && "offlineQueued" in result && result.offlineQueued) {
-                toast.info("Saved — will sync when online");
+                toast.info(t("questionSlide.toast.savedOffline"));
             } else {
-                console.log("Question answer submitted successfully");
+                // Collects "Count as engagement" points once the server sees it done.
+                announceSlideCompleted(slideId);
             }
         },
         onError: (error: Error) => {
@@ -308,99 +378,20 @@ const QuestionSlide = ({ questionData, onSubmit }: QuestionSlideProps) => {
         },
     });
 
-    // Parse auto evaluation JSON to find correct answer
+    // Start every question blank. This effect used to pre-select the correct
+    // option (or type the correct numeric / one-word answer) straight from the
+    // answer key as soon as the slide opened, which gave the answer away — and
+    // because the previous-answer loader below only fills EMPTY fields, a
+    // returning learner saw the key instead of what they had actually answered.
+    // Only the numeric format settings are needed from the question here.
     useEffect(() => {
+        if (questionType !== "NUMERIC" || !questionData?.options_json) return;
         try {
-            if (questionData?.auto_evaluation_json) {
-                const evaluationData = JSON.parse(
-                    questionData.auto_evaluation_json
-                );
-
-                if (questionType === "MCQS" || questionType === "TRUE_FALSE") {
-                    // For multiple choice questions and true/false
-                    if (evaluationData.data?.correctOptionIds) {
-                        const correctId =
-                            evaluationData.data.correctOptionIds[0];
-                        setSelectedOptionsMap((prev) => ({
-                            ...prev,
-                            [slideId]: {
-                                id: correctId,
-                                name:
-                                    questionData.options.find(
-                                        (o) => o.id === correctId
-                                    )?.text.content || "",
-                            },
-                        }));
-                    } else {
-                        // If not specified, assume first option is correct (for demo)
-                        setSelectedOptionsMap((prev) => ({
-                            ...prev,
-                            [slideId]: {
-                                id: questionData.options[0]?.id,
-                                name:
-                                    questionData.options[0]?.text.content || "",
-                            },
-                        }));
-                    }
-                } else if (questionType === "MCQM") {
-                    // For multiple select questions
-                    if (evaluationData.data?.correctOptionIds) {
-                        setSelectedMultiOptionsMap((prev) => ({
-                            ...prev,
-                            [slideId]: evaluationData.data.correctOptionIds.map(
-                                (id: string) => ({
-                                    id,
-                                    name:
-                                        questionData.options.find(
-                                            (o) => o.id === id
-                                        )?.text.content || "",
-                                })
-                            ),
-                        }));
-                    }
-                } else if (
-                    questionType === "ONE_WORD" ||
-                    questionType === "NUMERIC"
-                ) {
-                    // For one-word or numeric questions
-                    if (evaluationData.data?.correctAnswer) {
-                        setInputValuesMap((prev) => ({
-                            ...prev,
-                            [slideId]: evaluationData.data.correctAnswer,
-                        }));
-                    }
-                }
-            } else if (
-                questionType === "MCQS" ||
-                questionType === "TRUE_FALSE"
-            ) {
-                // Default to first option if no evaluation data
-                setSelectedOptionsMap((prev) => ({
-                    ...prev,
-                    [slideId]: {
-                        id: questionData.options[0]?.id,
-                        name: questionData.options[0]?.text.content || "",
-                    },
-                }));
-            }
-
-            // Parse options_json for numeric type questions
-            if (questionType === "NUMERIC" && questionData.options_json) {
-                const options = JSON.parse(questionData.options_json);
-                setIsDecimal(options.numeric_type === "DECIMAL");
-                setMaxDecimals(options.decimals || 0);
-            }
+            const options = JSON.parse(questionData.options_json);
+            setIsDecimal(options.numeric_type === "DECIMAL");
+            setMaxDecimals(options.decimals || 0);
         } catch (error) {
-            console.error("Error parsing JSON data:", error);
-            if (questionType === "MCQS" || questionType === "TRUE_FALSE") {
-                setSelectedOptionsMap((prev) => ({
-                    ...prev,
-                    [slideId]: {
-                        id: questionData.options[0]?.id,
-                        name: questionData.options[0]?.text.content || "",
-                    },
-                }));
-            }
+            console.error("Error parsing numeric options:", error);
         }
     }, [questionData, questionType]);
 
@@ -504,6 +495,20 @@ const QuestionSlide = ({ questionData, onSubmit }: QuestionSlideProps) => {
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [slideId, questionData?.id]);
+
+    // A returning learner sees the result of their latest answer again.
+    useEffect(() => {
+        if (!slideId || slideId === "unknown") return;
+        let cancelled = false;
+        void loadResult(slideId).then((result) => {
+            if (cancelled || !result) return;
+            setResultMap((prev) => ({ ...prev, [slideId]: result }));
+        });
+        return () => {
+            cancelled = true;
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [slideId]);
 
     const handleOptionSelect = (optionId: string, optionName: string) => {
         if (isSubmitting) return;
@@ -638,6 +643,8 @@ const QuestionSlide = ({ questionData, onSubmit }: QuestionSlideProps) => {
             ...prev,
             [slideId]: true,
         }));
+        // The shown result belongs to the previous answer; never pair it with this one.
+        setResultMap((prev) => ({ ...prev, [slideId]: null }));
 
         try {
             let submissionValue: string | string[];
@@ -697,6 +704,15 @@ const QuestionSlide = ({ questionData, onSubmit }: QuestionSlideProps) => {
                 toast.success("Answer saved — it will sync when you're back online");
             }
 
+            // Right or wrong comes from the server (the answer key is not on the
+            // device). Read before the state below changes, so the result and the
+            // "submitted" look land in one render. A queued offline answer has
+            // no result until it syncs.
+            const result = queuedOffline ? null : await loadResult(slideId);
+            if (result) {
+                setResultMap((prev) => ({ ...prev, [slideId]: result }));
+            }
+
             // Keep the learner's answer on screen (do NOT clear it) and reveal
             // the answer guidance so they can self-check. These are formative
             // "Knowledge Check" questions — "look back, think again and retry",
@@ -727,6 +743,30 @@ const QuestionSlide = ({ questionData, onSubmit }: QuestionSlideProps) => {
         }
     };
 
+    // ---- Result after submit (author's "Show correct answer after submit") ----
+    // Shown only while the answer on screen is the one that was checked; once the
+    // learner edits it for a retry, the slide goes back to its plain look.
+    const slideResult = resultMap[slideId] ?? null;
+    // ...and only when that answer is the one the result is about (a returning
+    // learner's pre-filled answer can come from an older attempt).
+    const resultIsForShownAnswer =
+        !!slideResult &&
+        buildAnswerSignature(submittedOptionsOf(slideResult)) ===
+            currentAnswerSignature;
+    const instantVerdict =
+        unchangedSinceSubmit && resultIsForShownAnswer
+            ? instantVerdictOf(slideResult)
+            : null;
+    const reviewingOptions =
+        instantVerdict === "correct" || instantVerdict === "incorrect";
+    const reviewOf = (optionId: string, selectedIds: string[]): OptionReview =>
+        reviewingOptions ? optionReview(optionId, selectedIds, slideResult) : null;
+    const explanationHtml = questionData?.explanation_text_data?.content?.trim()
+        ? questionData.explanation_text_data.content
+        : slideResult?.explanation_html?.trim()
+          ? slideResult.explanation_html
+          : null;
+
     // Render the appropriate question component based on question type
     const renderQuestionContent = () => {
         switch (questionType) {
@@ -743,13 +783,21 @@ const QuestionSlide = ({ questionData, onSubmit }: QuestionSlideProps) => {
                                         option.text.content
                                     )
                                 }
-                                className={`flex flex-row-reverse items-center justify-between rounded-md border p-3 w-full transition-all duration-200 hover:border-gray-400 ${
+                                className={optionRowClass(
+                                    reviewOf(
+                                        option.id,
+                                        selectedOption ? [selectedOption.id] : []
+                                    ),
                                     selectedOption?.id === option.id
-                                        ? "border-gray-600 bg-gray-50"
-                                        : "border-gray-200"
-                                }`}
+                                )}
                             >
-                                <div className="relative flex items-center">
+                                <div className="relative flex items-center gap-2">
+                                    <OptionReviewIcon
+                                        review={reviewOf(
+                                            option.id,
+                                            selectedOption ? [selectedOption.id] : []
+                                        )}
+                                    />
                                     <div
                                         className={`w-5 h-5 border rounded-md flex items-center justify-center transition-colors ${
                                             selectedOption?.id === option.id
@@ -806,15 +854,23 @@ const QuestionSlide = ({ questionData, onSubmit }: QuestionSlideProps) => {
                                         option.text.content
                                     )
                                 }
-                                className={`flex flex-row-reverse items-center justify-between rounded-md border p-3 w-full transition-all duration-200 hover:border-gray-400 ${
+                                className={optionRowClass(
+                                    reviewOf(
+                                        option.id,
+                                        selectedOptions.map((opt) => opt.id)
+                                    ),
                                     selectedOptions.some(
                                         (opt) => opt.id === option.id
                                     )
-                                        ? "border-gray-600 bg-gray-50"
-                                        : "border-gray-200"
-                                }`}
+                                )}
                             >
-                                <div className="relative flex items-center">
+                                <div className="relative flex items-center gap-2">
+                                    <OptionReviewIcon
+                                        review={reviewOf(
+                                            option.id,
+                                            selectedOptions.map((opt) => opt.id)
+                                        )}
+                                    />
                                     <div
                                         className={`w-5 h-5 border rounded-md flex items-center justify-center transition-colors ${
                                             selectedOptions.some(
@@ -862,7 +918,7 @@ const QuestionSlide = ({ questionData, onSubmit }: QuestionSlideProps) => {
                             inputType="text"
                             input={inputValue}
                             onChangeFunction={handleInputChange}
-                            inputPlaceholder="Type your one-word answer"
+                            inputPlaceholder={t("questionSlide.placeholders.oneWord")}
                             className="text-base sm:text-lg py-3 font-normal w-full border-gray-300 focus:border-gray-600 focus:ring-gray-600"
                             onCopy={(e) => e.preventDefault()}
                             onCut={(e) => e.preventDefault()}
@@ -877,7 +933,7 @@ const QuestionSlide = ({ questionData, onSubmit }: QuestionSlideProps) => {
                         <Textarea
                             value={inputValue}
                             onChange={handleInputChange}
-                            placeholder="Type your answer..."
+                            placeholder={t("questionSlide.placeholders.longAnswer")}
                             className="min-h-reg-150 sm:min-h-reg-200 text-base border-gray-300 focus:border-gray-600 focus:ring-gray-600"
                             onCopy={(e) => e.preventDefault()}
                             onCut={(e) => e.preventDefault()}
@@ -896,8 +952,8 @@ const QuestionSlide = ({ questionData, onSubmit }: QuestionSlideProps) => {
                                 onChangeFunction={handleNumericChange}
                                 inputPlaceholder={
                                     isDecimal
-                                        ? "Enter decimal value"
-                                        : "Enter integer value"
+                                        ? t("questionSlide.placeholders.decimal")
+                                        : t("questionSlide.placeholders.integer")
                                 }
                                 inputMode="numeric"
                                 className="text-base sm:text-lg py-3 font-normal w-full max-w-md border-gray-300 focus:border-gray-600 focus:ring-gray-600"
@@ -958,7 +1014,7 @@ const QuestionSlide = ({ questionData, onSubmit }: QuestionSlideProps) => {
                                         className="h-12 text-base font-normal hover:bg-gray-100 border-gray-200"
                                         onClick={() => handleKeyPress("clear")}
                                     >
-                                        Clear
+                                        {t("questionSlide.numericPad.clear")}
                                     </Button>
                                 </div>
                             </CardContent>
@@ -967,7 +1023,7 @@ const QuestionSlide = ({ questionData, onSubmit }: QuestionSlideProps) => {
                 );
 
             default:
-                return <p>Unsupported question type: {questionType}</p>;
+                return <p>{t("questionSlide.unsupportedType", { type: questionType })}</p>;
         }
     };
 
@@ -985,7 +1041,7 @@ const QuestionSlide = ({ questionData, onSubmit }: QuestionSlideProps) => {
     return (
         <div className="w-full bg-white rounded-lg shadow-sm p-4 sm:p-6">
             <h2 className="text-lg sm:text-xl font-medium text-gray-900 mb-2 sm:mb-3">
-                Question:
+                {t("questionSlide.questionLabel")}
             </h2>
             {/* Render the question's rich HTML on its own (NOT inside the <h2>):
                 it can contain block content like ordered/bulleted lists, which
@@ -1011,16 +1067,16 @@ const QuestionSlide = ({ questionData, onSubmit }: QuestionSlideProps) => {
             <div className="mt-4 sm:mt-6">
                 <h3 className="text-base sm:text-lg font-medium text-gray-700 mb-2 sm:mb-3">
                     {questionType === "MCQS"
-                        ? "Select one answer:"
+                        ? t("questionSlide.prompts.mcqs")
                         : questionType === "TRUE_FALSE"
-                          ? "Select True or False:"
+                          ? t("questionSlide.prompts.trueFalse")
                           : questionType === "MCQM"
-                            ? "Select all that apply:"
+                            ? t("questionSlide.prompts.mcqm")
                             : questionType === "ONE_WORD"
-                              ? "Enter your answer:"
+                              ? t("questionSlide.prompts.oneWord")
                               : questionType === "LONG_ANSWER"
-                                ? "Type your answer:"
-                                : "Enter numeric value:"}
+                                ? t("questionSlide.prompts.longAnswer")
+                                : t("questionSlide.prompts.numeric")}
                 </h3>
 
                 {renderQuestionContent()}
@@ -1038,20 +1094,35 @@ const QuestionSlide = ({ questionData, onSubmit }: QuestionSlideProps) => {
                     }`}
                 >
                     {isSubmitting
-                        ? "Submitting..."
+                        ? t("questionSlide.buttons.submitting")
                         : unchangedSinceSubmit
-                          ? "Submitted"
+                          ? t("questionSlide.buttons.submitted")
                           : hasSubmitted
-                            ? "Resubmit"
-                            : "Submit"}
+                            ? t("questionSlide.buttons.resubmit")
+                            : t("questionSlide.buttons.submit")}
                 </button>
             </div>
 
+            {/* Right / wrong, the correct answer and the explanation, when the
+                author left "Show correct answer after submit" on. */}
+            {instantVerdict && (
+                <QuizInstantFeedbackPanel
+                    verdict={instantVerdict}
+                    answerHtml={correctAnswerHtml(
+                        questionType,
+                        slideResult,
+                        questionData?.options
+                    )}
+                    answerKind={answerKindOf(questionType)}
+                    explanationHtml={explanationHtml}
+                />
+            )}
+
             {/* Answer guidance (explanation_text_data). Locked until the learner
                 submits — it can NEVER be read before an attempt. After submit it
-                auto-expands and can be collapsed/re-opened for self-checking. */}
-            {hasSubmitted &&
-                questionData?.explanation_text_data?.content?.trim() && (
+                auto-expands and can be collapsed/re-opened for self-checking.
+                The panel above already carries it while a result is shown. */}
+            {!instantVerdict && hasSubmitted && explanationHtml && (
                 <div className="mt-6 w-full">
                     <button
                         type="button"
@@ -1064,16 +1135,15 @@ const QuestionSlide = ({ questionData, onSubmit }: QuestionSlideProps) => {
                         className="text-sm font-medium text-primary-500 transition-colors hover:text-primary-400"
                     >
                         {showExplanation
-                            ? "Hide answer guidance"
-                            : "Show answer guidance"}
+                            ? t("questionSlide.explanation.hide")
+                            : t("questionSlide.explanation.show")}
                     </button>
 
                     {showExplanation && (
                         <div
                             className="rich-text-content mt-3 rounded-lg border border-neutral-200 bg-neutral-50 p-4 text-neutral-700"
                             dangerouslySetInnerHTML={{
-                                __html: questionData.explanation_text_data
-                                    .content,
+                                __html: explanationHtml,
                             }}
                         />
                     )}
@@ -1082,5 +1152,18 @@ const QuestionSlide = ({ questionData, onSubmit }: QuestionSlideProps) => {
         </div>
     );
 };
+
+/**
+ * Spreadsheet & Written Response (CBE_RESPONSE) has its own workspace, AI
+ * check and result panel, so it is routed to a separate component instead of
+ * threading through every type switch above. Different component types keep
+ * the two hook sets apart when the learner moves between slides.
+ */
+const QuestionSlide = (props: QuestionSlideProps) =>
+    props.questionData?.question_type === "CBE_RESPONSE" ? (
+        <CbeQuestionSlide questionData={props.questionData} />
+    ) : (
+        <ChoiceOrTextQuestionSlide {...props} />
+    );
 
 export default QuestionSlide;

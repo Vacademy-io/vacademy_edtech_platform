@@ -1,9 +1,17 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useInstituteQuery } from '@/services/student-list-section/getInstituteDetails';
 import { GetFilterData } from '@/routes/manage-students/students-list/-constants/all-filters';
 import { MyTable, TableData } from '@/components/design-system/table';
 import { MyPagination } from '@/components/design-system/pagination';
 import { useStudentFilters } from '@/routes/manage-students/students-list/-hooks/useStudentFilters';
+import {
+    useLearnerLocationFilters,
+    withLocationFiltersAfterGender,
+} from '@/routes/manage-students/students-list/-hooks/useLearnerLocationFilters';
+import { getActiveRoleDisplaySettingsKey } from '@/lib/auth/instituteUtils';
+import { getDisplaySettingsFromCache } from '@/services/display-settings';
+import { FilterConfig } from '@/routes/manage-students/students-list/-types/students-list-types';
 import { useStudentTable } from '@/routes/manage-students/students-list/-hooks/useStudentTable';
 import { StudentTable } from '@/types/student-table-types';
 import { myColumns } from '@/components/design-system/utils/constants/table-column-data';
@@ -18,10 +26,9 @@ import { SmartErrorPage } from '@/components/core/SmartErrorPage';
 import { StudentListHeader } from '@/routes/manage-students/students-list/-components/students-list/student-list-section/student-list-header';
 import { StudentFilters } from '@/routes/manage-students/students-list/-components/students-list/student-list-section/student-filters';
 import { BulkActions } from '@/routes/manage-students/students-list/-components/students-list/bulk-actions';
-import { myAssessmentColumns } from './assessment-columns';
+import { buildMyAssessmentColumns } from './assessment-columns';
 import { UseFormReturn } from 'react-hook-form';
-import { z } from 'zod';
-import testAccessSchema from '../-utils/add-participants-schema';
+import type { TestAccessFormValues } from '../-utils/add-participants-schema';
 import { useTestAccessStore } from '../-utils/zustand-global-states/step3-adding-participants';
 import { Route } from '..';
 import { Step3ParticipantsListIndiviudalStudentInterface } from '@/types/assessments/student-questionwise-status';
@@ -29,7 +36,7 @@ import { getInstituteId } from '@/constants/helper';
 import { handleGetIndividualStudentList } from '@/routes/assessment/assessment-list/assessment-details/$assessmentId/$examType/$assesssmentType/$assessmentTab/-services/assessment-details-services';
 import { useInstituteDetailsStore } from '@/stores/students/students-list/useInstituteDetailsStore';
 
-type TestAccessFormType = z.infer<typeof testAccessSchema>;
+type TestAccessFormType = TestAccessFormValues;
 
 export const getCurrentSession = (): string => {
     const currentDate = new Date();
@@ -64,7 +71,12 @@ export const StudentListTab = ({ form }: { form: UseFormReturn<TestAccessFormTyp
             id: session.id,
             name: session.session_name,
         })) || [];
-    const filters = GetFilterData(instituteDetails, getCurrentSession());
+    const { t: tAllFilters } = useTranslation('manageStudentsAllFilters');
+    const { t: tAssessmentColumns } = useTranslation('homeworkCreationAssessmentColumns');
+    const myAssessmentColumns = useMemo(
+        () => buildMyAssessmentColumns(tAssessmentColumns),
+        [tAssessmentColumns]
+    );
     const [isAssessment] = useState(true);
     const { setValue } = form;
 
@@ -85,7 +97,25 @@ export const StudentListTab = ({ form }: { form: UseFormReturn<TestAccessFormTyp
         setAppliedFilters,
         handleSessionChange,
         sessionList,
+        setColumnFilters,
     } = useStudentFilters();
+
+    // City / Region chips, the same ones (and the same "Manage filters" switches) as the
+    // Learner List page. A role whose City / Region column is hidden there gets no chip here.
+    const roleHiddenColumns = useMemo(() => {
+        const cached = getDisplaySettingsFromCache(getActiveRoleDisplaySettingsKey());
+        return new Set(cached?.learnerListColumns?.hiddenColumns ?? []);
+    }, []);
+    const locationFilters = useLearnerLocationFilters({
+        instituteId,
+        appliedFilters,
+        setColumnFilters,
+        setAppliedFilters,
+    }).filter((f) => !roleHiddenColumns.has(f.id === 'cities' ? 'city' : 'region'));
+    const filters: FilterConfig[] = withLocationFiltersAfterGender(
+        GetFilterData(tAllFilters, instituteDetails, getCurrentSession()),
+        locationFilters
+    );
 
     const {
         studentTableData,

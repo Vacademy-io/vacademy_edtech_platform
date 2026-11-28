@@ -1,6 +1,5 @@
 import { useMemo } from 'react';
-import { TokenKey } from '@/constants/auth/tokens';
-import { getTokenFromCookie, getUserRoles } from '@/lib/auth/sessionUtility';
+import { getRolesForCurrentInstitute } from '@/lib/auth/instituteUtils';
 
 export interface VimotionRoleInfo {
     roles: string[];
@@ -8,12 +7,11 @@ export interface VimotionRoleInfo {
     isContentCreator: boolean;
 }
 
-// Reads the viewer's roles off the JWT. ADMIN gates the Team tab and the
-// Top Up flow; CONTENT CREATOR sees credits read-only and cannot top up.
+// Reads the viewer's roles in the current institute off the JWT. ADMIN gates the Team tab
+// and the Top Up flow; CONTENT CREATOR sees credits read-only and cannot top up.
 export function useVimotionRole(): VimotionRoleInfo {
     return useMemo(() => {
-        const token = getTokenFromCookie(TokenKey.accessToken);
-        const roles = (getUserRoles(token) || []).map((r) => r.toUpperCase());
+        const roles = getRolesForCurrentInstitute().map((r) => r.toUpperCase());
         return {
             roles,
             isAdmin: roles.includes('ADMIN'),

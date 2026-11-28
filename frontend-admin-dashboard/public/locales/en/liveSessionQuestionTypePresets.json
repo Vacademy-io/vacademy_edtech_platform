@@ -1,0 +1,46 @@
+{
+    "questionTypes": {
+        "mcqs": {
+            "label": "MCQ — Single Correct",
+            "hint": "Four options, one right answer. The default question style."
+        },
+        "mcqm": {
+            "label": "MCQ — Multiple Correct",
+            "hint": "Four options where any combination can be correct."
+        },
+        "trueFalse": {
+            "label": "True / False",
+            "hint": "Two-option statements — quick recall checks."
+        },
+        "oneWord": {
+            "label": "One Word Answer",
+            "hint": "Learners type a short answer. Auto-graded by exact match."
+        },
+        "longAnswer": {
+            "label": "Long Answer",
+            "hint": "Open-ended writing prompts — manual evaluation by the teacher."
+        }
+    },
+    "presets": {
+        "mcqOnly": {
+            "label": "Only MCQs (Single Correct)",
+            "description": "Classic objective set — fastest to grade, easiest for learners."
+        },
+        "mcqTf": {
+            "label": "MCQs + True / False",
+            "description": "Objective mix that adds quick recall checks alongside MCQs."
+        },
+        "mcqOneword": {
+            "label": "MCQs + One Word",
+            "description": "Recognition + recall — learners pick and also type short answers."
+        },
+        "mixedAll": {
+            "label": "Mixed Assessment (all types)",
+            "description": "A balanced spread of MCQ, True/False, One Word, and Long Answer."
+        },
+        "subjectiveObjective": {
+            "label": "Subjective + Objective Mix",
+            "description": "MCQs for recall, Long Answers for application. Manual grading needed."
+        }
+    }
+}

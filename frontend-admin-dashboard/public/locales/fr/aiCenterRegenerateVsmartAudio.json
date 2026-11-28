@@ -1,0 +1,33 @@
+{
+    "heading": "Vsmart Audio",
+    "fields": {
+        "text": {
+            "label": "Texte",
+            "placeholder": "Saisissez le texte"
+        },
+        "numQuestions": {
+            "label": "Nombre de questions",
+            "placeholder": "Saisissez le nombre de questions"
+        },
+        "classLevel": {
+            "label": "Niveau de classe",
+            "placeholder": "Saisissez le niveau de classe"
+        },
+        "topics": {
+            "label": "Sujets",
+            "placeholder": "Saisissez les sujets"
+        },
+        "questionType": {
+            "label": "Type de question",
+            "placeholder": "Saisissez le type de question"
+        },
+        "questionLanguage": {
+            "label": "Langue des questions",
+            "placeholder": "Saisissez la langue des questions"
+        }
+    },
+    "actions": {
+        "cancel": "Annuler",
+        "regenerate": "Régénérer"
+    }
+}

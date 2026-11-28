@@ -1,4 +1,5 @@
 import { createLazyFileRoute } from "@tanstack/react-router"
+import { useTranslation } from "react-i18next"
 
 export const Route = createLazyFileRoute(
   "/evaluation/evaluations/assessment-details/$assessmentId/$examType/$assesssmentType/",
@@ -7,9 +8,10 @@ export const Route = createLazyFileRoute(
 })
 
 function RouteComponent() {
+  const { t } = useTranslation("evaluationAssessmentDetailsIndex")
   return (
     <div>
-      Hello
+      {t("greeting")}
       "/evaluation/evaluations/assessment-details/$assessmentId/$examType/$assesssmentType/"!
     </div>
   )

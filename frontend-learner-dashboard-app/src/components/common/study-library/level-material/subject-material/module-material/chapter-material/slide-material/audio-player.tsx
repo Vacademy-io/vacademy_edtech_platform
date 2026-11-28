@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { v4 as uuidv4 } from "uuid";
 import { useAudioTrackingStore } from "@/stores/study-library/audio-tracking-store";
 import { useAudioSync } from "@/hooks/study-library/useAudioSync";
@@ -35,6 +36,8 @@ import {
 } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
+import { SlideDownloadTypeKey } from "@/constants/slide-download-permission";
+import { SlideDownloadButton } from "./slide-download-button";
 
 interface AudioPlayerProps {
     audioSlide: {
@@ -49,6 +52,7 @@ interface AudioPlayerProps {
 }
 
 const AudioPlayer: React.FC<AudioPlayerProps> = ({ audioSlide }) => {
+    const { t } = useTranslation("libraryCommonA");
     const { activeItem } = useContentStore();
     const addActivity = useAudioTrackingStore((state) => state.addActivity);
     const { syncAudioTrackingData } = useAudioSync();
@@ -133,7 +137,7 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ audioSlide }) => {
                 }
             } catch (err) {
                 console.error("Failed to load audio resources:", err);
-                setError("Failed to load audio.");
+                setError(t("audioPlayer.failedToLoad"));
             } finally {
                 setIsLoading(false);
             }
@@ -350,9 +354,9 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ audioSlide }) => {
         return (
             <div className="flex flex-col items-center justify-center p-12 h-full">
                 <Card className="w-full max-w-2xl">
-                    <CardContent className="flex flex-col items-center justify-center py-16">
-                        <SpinnerGap className="h-10 w-10 animate-spin text-primary mb-4" />
-                        <p className="text-muted-foreground font-medium">Loading Audio...</p>
+                    <CardContent className="flex flex-col items-center justify-center py-16 gap-4">
+                        <SpinnerGap className="h-10 w-10 animate-spin text-primary" />
+                        <p className="text-muted-foreground font-medium">{t("audioPlayer.loading")}</p>
                     </CardContent>
                 </Card>
             </div>
@@ -367,13 +371,13 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ audioSlide }) => {
                         <div className="h-14 w-14 rounded-full bg-destructive/10 flex items-center justify-center mb-4">
                             <SpeakerSlash className="h-7 w-7 text-destructive" />
                         </div>
-                        <p className="text-destructive font-medium">{error || "Audio source unavailable"}</p>
-                        <Button 
-                            variant="outline" 
+                        <p className="text-destructive font-medium">{error || t("audioPlayer.sourceUnavailable")}</p>
+                        <Button
+                            variant="outline"
                             className="mt-4"
                             onClick={() => window.location.reload()}
                         >
-                            Try Again
+                            {t("common.tryAgain")}
                         </Button>
                     </CardContent>
                 </Card>
@@ -393,7 +397,7 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ audioSlide }) => {
                                 {imageUrl ? (
                                     <img 
                                         src={imageUrl} 
-                                        alt="Audio Cover" 
+                                        alt={t("audioPlayer.coverAlt")}
                                         className="w-full h-full object-cover opacity-80"
                                     />
                                 ) : (
@@ -409,10 +413,10 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ audioSlide }) => {
                                 {/* Title Overlay */}
                                 <div className="absolute bottom-0 start-0 end-0 p-6">
                                     <h2 className="text-xl sm:text-2xl font-bold text-foreground line-clamp-2">
-                                        {activeItem?.title || "Audio Track"}
+                                        {activeItem?.title || t("audioPlayer.titleFallback")}
                                     </h2>
                                     <p className="text-sm text-muted-foreground mt-1 line-clamp-1">
-                                        {activeItem?.description || "Listen to this audio lesson"}
+                                        {activeItem?.description || t("audioPlayer.descriptionFallback")}
                                     </p>
                                 </div>
                             </div>
@@ -481,7 +485,7 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ audioSlide }) => {
                                 {/* Speed Control */}
                                 <Select value={playbackRate} onValueChange={handleSpeedChange}>
                                     <SelectTrigger className="w-20 h-9">
-                                        <SelectValue placeholder="Speed" />
+                                        <SelectValue placeholder={t("audioPlayer.speedPlaceholder")} />
                                     </SelectTrigger>
                                     <SelectContent>
                                         {["0.5", "0.75", "1", "1.25", "1.5", "1.75", "2"].map((rate) => (
@@ -524,7 +528,7 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ audioSlide }) => {
                                         onClick={() => setShowTranscript(!showTranscript)}
                                     >
                                         <FileText className="h-4 w-4" />
-                                        <span className="hidden sm:inline">Transcript</span>
+                                        <span className="hidden sm:inline">{t("audioPlayer.transcriptLabel")}</span>
                                         {showTranscript ? (
                                             <CaretUp className="h-3 w-3" />
                                         ) : (
@@ -532,6 +536,15 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ audioSlide }) => {
                                         )}
                                     </Button>
                                 )}
+
+                                {/* Content Protection → Audio: off for learners unless switched on.
+                                    Never offered for an offline (decrypted, blob:) copy — same as video. */}
+                                <SlideDownloadButton
+                                    typeKey={SlideDownloadTypeKey.AUDIO}
+                                    title={activeItem?.title}
+                                    url={audioUrl.startsWith("blob:") ? null : audioUrl}
+                                    mimeType="audio/mpeg"
+                                />
                             </div>
                         </div>
                     </div>
@@ -545,7 +558,7 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ audioSlide }) => {
                         <div className="p-4 border-b bg-muted/30">
                             <h3 className="font-semibold flex items-center gap-2">
                                 <FileText className="h-4 w-4 text-primary" />
-                                Transcript
+                                {t("audioPlayer.transcriptLabel")}
                             </h3>
                         </div>
                         <ScrollArea className="h-64">

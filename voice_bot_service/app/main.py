@@ -30,14 +30,24 @@ from fastapi import APIRouter, FastAPI, Query, Request, Response, WebSocket
 from fastapi.responses import JSONResponse, PlainTextResponse
 
 from . import admin_core
+from . import vendor_failures
+from .ambience import build_ambience_mixer
 from .bot import CallOutcome, run_bot
-from . import ttscache, ttswarm
+from . import memory, procs, ttscache, ttswarm
 from .config import get_settings
 from .providers import rumik_pace_description
 from .report import build_and_post_report, report_spool_sweeper
 
 logging.basicConfig(level=logging.INFO,
                     format="%(asctime)s %(levelname)s %(name)s %(message)s")
+# Pipecat's loguru output: INFO plus a short DEBUG allowlist (app/pipecat_logs.py).
+from . import pipecat_logs  # noqa: E402
+pipecat_logs.configure()
+from .sarvam_v4_voices import SARVAM_V4_MODEL  # noqa: E402
+
+# Before any HTTP session exists: every later aiohttp/httpx client is covered.
+vendor_failures.install()
+
 logger = logging.getLogger("voice_bot")
 
 # Live-call admission control. The event loop is single-threaded, so a plain int
@@ -51,8 +61,23 @@ _active_calls = 0
 _inflight_handshakes = 0
 
 
+def _pod_capacity() -> int:
+    """Calls the whole pod takes: MAX_CONCURRENT_CALLS is per process."""
+    return get_settings().max_concurrent_calls * procs.count()
+
+
+def _pod_active() -> int:
+    return procs.pod_totals(_active_calls, _inflight_handshakes)[0]
+
+
+def _publish_counts() -> None:
+    """Share this process's counts with the pod's other processes (app/procs.py).
+    A no-op in a single-process pod."""
+    procs.publish(_active_calls, _inflight_handshakes)
+
+
 def _capacity_left() -> bool:
-    return _active_calls < get_settings().max_concurrent_calls
+    return _pod_active() < _pod_capacity()
 
 
 def _warm_llm() -> None:
@@ -77,11 +102,29 @@ async def lifespan(app: FastAPI):
             logger.info("lifespan: LLM provider pre-warmed")
         except Exception:
             logger.exception("lifespan: LLM pre-warm failed (non-fatal)")
+        try:
+            # Silero + Smart Turn loaded once here, shared by every call
+            # (app/audio_models.py), so no call pays the load at answer time.
+            from . import audio_models
+            await asyncio.to_thread(audio_models.warm)
+        except Exception:
+            logger.exception("lifespan: audio model pre-load failed (non-fatal)")
+        # The heavy imports are in: freeze them out of every future collection
+        # (see app/memory.py) — but only while no call is live.
+        if _active_calls == 0:
+            try:
+                memory.freeze_startup()
+            except Exception:
+                logger.exception("lifespan: gc freeze failed (non-fatal)")
 
     # Background on purpose: pre-warm and the spool sweeper must not delay
     # startup (the probe window) or block /answer for live traffic.
+    _publish_counts()   # overwrite whatever a previous process in this slot left
     app.state.warm_task = asyncio.create_task(_warm())
-    app.state.spool_task = asyncio.create_task(report_spool_sweeper())
+    # Pod singletons (app/procs.py): with several processes only process 0
+    # sweeps the report spool, so a spooled report is never posted twice.
+    leader = procs.is_leader()
+    app.state.spool_task = asyncio.create_task(report_spool_sweeper()) if leader else None
 
     async def _open_speech_cache():
         # Rebuilds the RAM index from ONE SQL query. Off the startup path on
@@ -93,17 +136,19 @@ async def lifespan(app: FastAPI):
             logger.exception("lifespan: speech cache open failed (non-fatal)")
 
     app.state.speech_cache_task = asyncio.create_task(_open_speech_cache())
-    app.state.tts_sweeper_task = asyncio.create_task(ttswarm.sweeper())
+    app.state.tts_sweeper_task = asyncio.create_task(ttswarm.sweeper()) if leader else None
     # Mirrors the ledger into Postgres so the analytics screens are plain SQL
     # rather than a live dependency on this box's disk, and picks up any flush
     # queued the other way. Both use the auth this process already has.
-    app.state.tts_reporter_task = asyncio.create_task(ttswarm.reporter())
+    app.state.tts_reporter_task = asyncio.create_task(ttswarm.reporter()) if leader else None
     try:
         yield
     finally:
         for t in (app.state.warm_task, app.state.spool_task,
                   app.state.speech_cache_task, app.state.tts_sweeper_task,
                   app.state.tts_reporter_task):
+            if t is None:
+                continue
             t.cancel()
             with contextlib.suppress(asyncio.CancelledError, Exception):
                 await t
@@ -123,10 +168,25 @@ async def health():
     s = get_settings()
     return {
         "status": "ok",
-        "activeCalls": _active_calls,
-        "maxConcurrentCalls": s.max_concurrent_calls,
+        # Pod-wide (every process): the preStop drain waits on this number.
+        "activeCalls": _pod_active(),
+        "maxConcurrentCalls": _pod_capacity(),
+        "processes": procs.count(),
         "ws": s.wss_url("corr=<corr>"),
+        # Per Sarvam STT key: rest left after a refusal. Numbers only, no key text.
+        "sarvamSttKeys": _sarvam_key_status(),
+        # Recent failed calls to outside vendors; admin-core copies them into the
+        # platform's failed-call log. Host, path head, status and a short reason only.
+        "vendorFailures": vendor_failures.recent(),
     }
+
+
+def _sarvam_key_status() -> list:
+    try:
+        from .providers import SARVAM_KEYS
+        return SARVAM_KEYS.status()
+    except Exception:
+        return []
 
 
 _SARVAM_TTS_URL = "https://api.sarvam.ai/text-to-speech"
@@ -151,7 +211,6 @@ def _tts_chunks(text: str, limit: int = 450) -> list[str]:
 
 async def _synth_chunk(session, chunk: str, speaker: str, model: str, lang: str, sample_rate: int):
     body = {
-        "inputs": [chunk],
         "target_language_code": lang,
         "speaker": speaker,
         "model": model,
@@ -161,6 +220,11 @@ async def _synth_chunk(session, chunk: str, speaker: str, model: str, lang: str,
         # containers, but plays MP3 reliably. MP3 is also the telephony default.
         "output_audio_codec": "mp3",
     }
+    # v4 takes the documented "text"; v2/v3 keep the "inputs" list they were built on.
+    if str(model).startswith("bulbul:v4"):
+        body["text"] = chunk
+    else:
+        body["inputs"] = [chunk]
     async with session.post(_SARVAM_TTS_URL, json=body,
                             headers={"api-subscription-key": get_settings().sarvam_api_key},
                             timeout=aiohttp.ClientTimeout(total=20)) as resp:
@@ -330,7 +394,7 @@ async def tts_cache_warm(request: Request):
             model=(body.get("model") or "").strip(),
             voice=(body.get("voice") or "").strip(),
             pace=body.get("pace"), temperature=body.get("temperature"),
-            texts=texts)
+            texts=texts, language=body.get("language"))
     except Exception:
         logger.exception("tts-cache warm failed")
         return JSONResponse({"error": "warm failed"}, status_code=502)
@@ -512,8 +576,10 @@ def _google_tts_mp3(text: str, voice: str, pace: float) -> bytes:
             ),
         )
         return resp.audio_content or b""
-    except Exception:
+    except Exception as exc:
         logger.exception("preview: google tts failed voice=%s", voice)
+        vendor_failures.record("texttospeech.googleapis.com", "TTS", reason=vendor_failures.clean_reason(
+            f"{type(exc).__name__}: {exc}"))
         return b""
 
 
@@ -541,13 +607,16 @@ async def _edge_tts_mp3(text: str, voice: str, pace: float) -> bytes:
         async for chunk in edge_tts.Communicate(text, v, rate=f"{pct:+d}%").stream():
             if chunk.get("type") == "audio" and chunk.get("data"):
                 out += chunk["data"]
-    except Exception:
+    except Exception as exc:
         logger.exception("preview: edge synthesis failed for voice %r", v[:40])
+        vendor_failures.record("speech.platform.bing.com", "TTS", reason=vendor_failures.clean_reason(
+            f"{type(exc).__name__}: {exc}"))
         return b""
     return out
 
 
-async def _smallest_tts_wav(text: str, voice: str, model: str, pace: float) -> bytes:
+async def _smallest_tts_wav(text: str, voice: str, model: str, pace: float,
+                            language: str | None = None) -> bytes:
     """One-shot Smallest.ai Lightning synthesis over its websocket -> WAV bytes.
 
     Protocol probe-verified 2026-08-05: one JSON message with flush=True returns
@@ -561,6 +630,7 @@ async def _smallest_tts_wav(text: str, voice: str, model: str, pace: float) -> b
     except ImportError:
         logger.error("preview: websockets missing for smallest")
         return b""
+    from .speech_language import smallest_language_code
     pcm = bytearray()
     try:
         async with websockets.connect(
@@ -569,7 +639,7 @@ async def _smallest_tts_wav(text: str, voice: str, model: str, pace: float) -> b
                 open_timeout=15) as ws:
             await ws.send(json.dumps({
                 "text": text, "voice_id": (voice or s.smallest_voice).strip(),
-                "model": model, "language": "hi",
+                "model": model, "language": smallest_language_code(language),
                 "sample_rate": s.smallest_sample_rate, "output_format": "pcm",
                 "speed": max(0.5, min(2.0, pace)), "continue": False, "flush": True,
             }))
@@ -586,9 +656,12 @@ async def _smallest_tts_wav(text: str, voice: str, model: str, pace: float) -> b
                 if status in ("complete", "error"):
                     if status == "error":
                         logger.warning("preview: smallest error %s", str(ev)[:200])
+                        vendor_failures.record("waves-api.smallest.ai", "TTS stream", reason=vendor_failures.clean_reason(
+                            ev.get("message") or ev.get("error") or "Smallest returned an error"))
                     break
-    except Exception:
+    except Exception as exc:
         logger.exception("preview: smallest tts failed voice=%s model=%s", voice, model)
+        vendor_failures.record("waves-api.smallest.ai", "TTS stream", reason=type(exc).__name__)
         return b""
     if not pcm:
         return b""
@@ -601,14 +674,82 @@ async def _smallest_tts_wav(text: str, voice: str, model: str, pace: float) -> b
     return buf.getvalue()
 
 
+async def _navana_tts_wav(text: str, voice: str, lang: str, pace: float | None) -> bytes:
+    """One-shot Navana synthesis (POST /tts/bytes) -> WAV bytes. The response is
+    headerless PCM; X-Sample-Rate says its rate."""
+    import io
+    import wave
+    s = get_settings()
+    body = {"text": text, "lang": lang, "voice": (voice or s.navana_tts_voice).strip(),
+            "output_format": "24000:pcm16"}
+    if pace is not None:          # the audition's slider; the cache renders at the live default
+        body["speed"] = max(0.5, min(2.0, pace))
+    # One key per request from the same pool as the live sockets (a render
+    # holds a Navana stream too); a capacity refusal moves on to the next key.
+    from .providers import NAVANA_KEYS, _Lease
+    lease, tried = _Lease(), set()
+    while True:
+        key = NAVANA_KEYS.acquire(lease, exclude=tried)
+        if key is None:
+            logger.warning("preview: navana — every key refused (%d tried)", len(tried))
+            return b""
+        try:
+            async with app.state.http_session.post(
+                    "https://tts.navana.ai/tts/bytes", json=body,
+                    headers={"X-API-Key": key},
+                    timeout=aiohttp.ClientTimeout(total=60)) as r:
+                if r.status != 200:
+                    detail = (await r.text())[:200]
+                    if r.status == 429 or "concurrency" in detail.lower():
+                        NAVANA_KEYS.refused(key)
+                        tried.add(key)
+                        continue
+                    if r.status in (401, 402, 403):
+                        # A bad / revoked / out-of-credit key: rest it as the live
+                        # sockets do and try the next — at load 0 it would
+                        # otherwise be picked first for every render.
+                        logger.warning("preview: navana key #%d of %d refused %s — resting it "
+                                       "%.0f s: %s", NAVANA_KEYS.index(key),
+                                       len(NAVANA_KEYS.keys()), r.status,
+                                       NAVANA_KEYS.BAD_KEY_SECS, detail)
+                        NAVANA_KEYS.refused(key, NAVANA_KEYS.BAD_KEY_SECS)
+                        tried.add(key)
+                        continue
+                    logger.warning("preview: navana %s %s (key #%d)", r.status, detail,
+                                   NAVANA_KEYS.index(key))
+                    return b""
+                rate = int(r.headers.get("X-Sample-Rate") or 24000)
+                pcm = await r.read()
+        except Exception:
+            logger.exception("preview: navana tts failed voice=%s (key #%d)", voice,
+                             NAVANA_KEYS.index(key))
+            return b""
+        finally:
+            NAVANA_KEYS.release(lease, key)
+        break
+    if not pcm:
+        return b""
+    buf = io.BytesIO()
+    with wave.open(buf, "wb") as w:
+        w.setnchannels(1)
+        w.setsampwidth(2)
+        w.setframerate(rate)
+        w.writeframes(pcm)
+    return buf.getvalue()
+
+
 @router.get("/preview.mp3")
 async def preview(
     text: str = Query(..., max_length=300),
-    voice: str = Query(..., max_length=32),
+    voice: str = Query(..., max_length=48),
     lang: str = Query("hi-IN", max_length=8),
     pace: float = Query(1.0, ge=0.5, le=2.0),
     temperature: float | None = Query(None, ge=0.01, le=2.0),
-    model: str = Query("sarvam", max_length=24),
+    # 24 was too short for the one form that needs it: "smallest:lightning_v3.1_pro"
+    # is 27 chars, so the documented per-model escape hatch 422'd before reaching
+    # any vendor. Still capped - this is a public endpoint - just not below the
+    # length of its own longest legitimate value.
+    model: str = Query("sarvam", max_length=48),
 ):
     """Voice tester for the admin AI-Agents editor: speak a short sample text in any
     Bulbul speaker at a chosen pace/expressiveness, so admins can A/B voices before
@@ -662,18 +803,58 @@ async def preview(
         if not s.smallest_api_key:
             logger.warning("preview: smallest requested but SMALLEST_API_KEY unset")
             return Response(status_code=503)
-        sm_model = s.smallest_model
-        if ":" in engine:
-            cand = engine.split(":", 1)[1].strip()
-            if cand:
-                sm_model = cand if cand.startswith("lightning") else f"lightning_{cand}"
+        from .providers import smallest_model_for
+        sm_model = smallest_model_for(engine)
+        from .speech_language import smallest_language_code
+        language = smallest_language_code(lang)
         key = hashlib.sha1(
-            f"pv|{sm_model}|{voice}|{pace}|{text}".encode("utf-8")).hexdigest()
+            f"pv|{sm_model}|{voice}|{pace}|{language}|{text}".encode("utf-8")).hexdigest()
         # Lightning streams raw PCM over its websocket; wrap as WAV (same reason
         # as the Rumik path — no mp3 encoder in this image).
         path = os.path.join(s.tts_cache_dir, f"pv-{key}.wav")
         if not os.path.exists(path):
-            raw = await _smallest_tts_wav(text, voice, sm_model, pace)
+            raw = await _smallest_tts_wav(text, voice, sm_model, pace, language)
+            if not raw:
+                return Response(status_code=502)
+            if not _cache_write(path, raw):
+                return Response(content=raw, media_type="audio/wav")
+            await _evict_tts_cache_async()
+        return _serve_audio(path, "audio/wav")
+
+    if engine.startswith("navana") or engine.startswith("bodhi"):
+        # Navana audition through its non-streaming endpoint (the live call
+        # streams; same voices, same language rule). Raw PCM → WAV, as Smallest.
+        from .providers import navana_keys
+        if not navana_keys(s.navana_api_key):
+            logger.warning("preview: navana requested but NAVANA_API_KEY unset")
+            return Response(status_code=503)
+        from .providers import navana_language
+        nv_lang = navana_language(lang)
+        key = hashlib.sha1(f"pv|navana|{voice}|{pace}|{nv_lang}|{text}".encode("utf-8")).hexdigest()
+        path = os.path.join(s.tts_cache_dir, f"pv-{key}.wav")
+        if not os.path.exists(path):
+            # No speed: the live call's stream cannot send one, so an audition
+            # at another speed would lie about what ships.
+            raw = await _navana_tts_wav(text, voice, nv_lang, None)
+            if not raw:
+                return Response(status_code=502)
+            if not _cache_write(path, raw):
+                return Response(content=raw, media_type="audio/wav")
+            await _evict_tts_cache_async()
+        return _serve_audio(path, "audio/wav")
+
+    if engine.startswith("plivo") or engine.startswith("koyal"):
+        # Plivo audition through its batch endpoint: the same voice id, language
+        # and pace clamp as the live stream, so the audition is what ships.
+        from .plivo_tts import plivo_credentials, plivo_tts_bytes
+        if not all(plivo_credentials()):
+            logger.warning("preview: plivo requested but PLIVO_TTS_AUTH_ID/TOKEN unset")
+            return Response(status_code=503)
+        key = hashlib.sha1(f"pv|plivo|{voice}|{pace}|{text}".encode("utf-8")).hexdigest()
+        path = os.path.join(s.tts_cache_dir, f"pv-{key}.wav")
+        if not os.path.exists(path):
+            raw = await plivo_tts_bytes(text, voice, pace, session=app.state.http_session,
+                                        sample_rate=24000)
             if not raw:
                 return Response(status_code=502)
             if not _cache_write(path, raw):
@@ -714,23 +895,30 @@ async def preview(
                 return Response(content=raw, media_type="audio/wav")
             await _evict_tts_cache_async()
         return _serve_audio(path, "audio/wav")
+    is_v4 = engine.startswith(("sarvam_v4", "sarvam-v4", "bulbul:v4", "bulbul_v4", "bulbul-v4"))
+    sarvam_model = SARVAM_V4_MODEL if is_v4 else s.sarvam_tts_model
+    if is_v4 and temperature is not None:
+        temperature = min(temperature, 1.0)  # v4's documented range is 0.01-1.0
     key = hashlib.sha1(
-        f"pv|{s.sarvam_tts_model}|{voice}|{lang}|{pace}|{temperature}|{text}".encode("utf-8")
+        f"pv|{sarvam_model}|{voice}|{lang}|{pace}|{temperature}|{text}".encode("utf-8")
     ).hexdigest()
     path = os.path.join(s.tts_cache_dir, f"pv-{key}.mp3")
     if not os.path.exists(path):
         session = app.state.http_session
         body = {
-            "inputs": [text],
             "target_language_code": lang,
             "speaker": voice.strip().lower(),
-            "model": s.sarvam_tts_model,
+            "model": sarvam_model,
             "speech_sample_rate": s.tts_prompt_sample_rate,
             "output_audio_codec": "mp3",
             "pace": pace,
         }
         if temperature is not None:
             body["temperature"] = temperature
+        if is_v4:
+            body["text"] = text
+        else:
+            body["inputs"] = [text]
         try:
             async with session.post(_SARVAM_TTS_URL, json=body,
                                     headers={"api-subscription-key": s.sarvam_api_key},
@@ -816,6 +1004,12 @@ def _consume_ws_token(corr: str, token: str, now: float | None = None) -> bool:
     if not get_settings().internal_client_secret:
         return True  # dev: verify already logged + returned True; nothing to spend
     key = f"{corr}|{token}"
+    if procs.multi():
+        # Several processes: the spend must be visible to all of them.
+        if not procs.spend_token_shared(key, _WS_TOKEN_TTL_SECS):
+            logger.warning("ws-token: replay rejected corr=%s", corr)
+            return False
+        return True
     if key in _spent_ws_tokens:
         logger.warning("ws-token: replay rejected corr=%s", corr)
         return False
@@ -899,7 +1093,7 @@ async def answer(
     # /plivo/ai-next (human handoff or hangup) exactly as a finished call would.
     if not _capacity_left():
         logger.warning("answer: at capacity (%d/%d) — serving busy fallback corr=%s",
-                       _active_calls, s.max_concurrent_calls, corr)
+                       _pod_active(), _pod_capacity(), corr)
         busy_redirect = f'<Redirect method="POST">{escape(nxt)}</Redirect>' if nxt else "<Hangup/>"
         busy_xml = (
             '<?xml version="1.0" encoding="UTF-8"?><Response>'
@@ -1025,6 +1219,7 @@ async def ws_endpoint(websocket: WebSocket):
         await websocket.close()
         return
     _inflight_handshakes += 1
+    _publish_counts()
 
     call_uuid = None
     _inflight_held = True
@@ -1052,6 +1247,7 @@ async def ws_endpoint(websocket: WebSocket):
             return
         _active_calls += 1
         _active_slot = True
+        _publish_counts()
 
         stream_id = (call_data or {}).get("stream_id")
         call_uuid = (call_data or {}).get("call_id")
@@ -1083,6 +1279,9 @@ async def ws_endpoint(websocket: WebSocket):
                 audio_in_enabled=True,
                 audio_out_enabled=True,
                 add_wav_header=False,
+                # Room tone under every call — started by the transport on its
+                # StartFrame, i.e. before the greeting (app/ambience.py).
+                audio_out_mixer=build_ambience_mixer(s),
                 # pipecat 1.4: NO vad_analyzer here — the VAD (with the telephony
                 # min_volume=0.35 tuning from live call 8e1e00ad) lives on the
                 # user aggregator in bot.run_bot, alongside Smart Turn v3.
@@ -1136,6 +1335,24 @@ async def ws_endpoint(websocket: WebSocket):
             _inflight_handshakes -= 1
         if _active_slot:
             _active_calls -= 1
+        _publish_counts()
+        if _active_slot:
+            # Free this call now rather than at the interpreter's next full
+            # collection (app/memory.py). Scheduled, not inline: until this
+            # handler returns, its own locals still reference the pipeline — and
+            # pipecat's TurnTrackingObserver keeps a turn-end timer (2.5 s after
+            # the bot's last audio) that holds it too. 3 s clears both.
+            try:
+                asyncio.get_running_loop().call_later(3.0, _reclaim_after_call, corr)
+            except Exception:
+                logger.exception("ws: could not schedule memory reclaim corr=%s", corr)
+
+
+def _reclaim_after_call(corr: str) -> None:
+    try:
+        memory.reclaim(idle=_active_calls == 0 and _inflight_handshakes == 0, corr=corr or "")
+    except Exception:
+        logger.exception("memory: reclaim failed corr=%s", corr)
 
 
 app.include_router(router)

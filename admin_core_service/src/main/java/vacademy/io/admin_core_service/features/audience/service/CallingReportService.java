@@ -245,7 +245,8 @@ public class CallingReportService {
                    ar.user_id,
                    ar.parent_name AS lead_name,
                    ar.parent_mobile AS lead_phone,
-                   COALESCE(ar.source_type, 'UNKNOWN') AS source_type,
+                   """ + ReportSourceSql.effective("ar.source_type", "a.campaign_type") + """
+                       AS source_type,
                    TO_CHAR(ar.submitted_at, """ + ISO_UTC + """
             ) AS submitted_at,
                    ls.label AS lead_status_label,

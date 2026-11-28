@@ -65,6 +65,9 @@ public class SubOrgEnrollRequestDTO {
     /** External reference (cheque #, UPI ref, receipt number) — stored on PaymentLog.paymentSpecificData. */
     private String offlinePaymentReference;
 
+    /** How the offline payment was made (mode, sub-option, reference); see OfflinePaymentDetailsService. */
+    private vacademy.io.admin_core_service.features.offline_payment.dto.OfflinePaymentDetailsDTO offlinePaymentDetails;
+
     /** If true and an OFFLINE payment was recorded, generate an invoice via InvoiceService. */
     private boolean generateInvoice;
 

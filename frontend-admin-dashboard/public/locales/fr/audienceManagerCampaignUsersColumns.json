@@ -1,0 +1,17 @@
+{
+    "columns": {
+        "serialNumber": "N°",
+        "details": "Détails",
+        "status": "Statut",
+        "reachOutIn": "Contacter dans",
+        "followUpAt": "Relance le",
+        "counsellor": "Conseiller",
+        "activityNotes": "Activité et notes",
+        "submittedOn": "Envoyé le"
+    },
+    "actions": {
+        "reassign": "Réattribuer",
+        "assign": "Attribuer",
+        "deleteLead": "Supprimer le prospect"
+    }
+}

@@ -502,10 +502,10 @@
                         <div class="invoice-details-label">Date:</div>
                         <div class="invoice-details-value">{{invoice_date}}</div>
                     </div>
-                    <div class="invoice-details-row">
-                        <div class="invoice-details-label">ABN:</div>
-                        <div class="invoice-details-value">41 459 532 142</div>
-                    </div>
+                    {{#if tax_registration_number}}<div class="invoice-details-row">
+                        <div class="invoice-details-label">Tax Reg. No:</div>
+                        <div class="invoice-details-value">{{tax_registration_number}}</div>
+                    </div>{{/if}}
                 </div>
             </div>
         </div>
@@ -519,9 +519,7 @@
                 </div>
             </div>
             <div class="company-address">
-                <p>PO Box 55</p>
-                <p>James Cook University, Queensland 4811</p>
-                <p>Australia</p>
+                {{#if institute_postal_address}}<p>{{institute_postal_address}}</p>{{/if}}
                 <p>{{institute_contact}}</p>
             </div>
         </div>
@@ -592,10 +590,6 @@
         <!-- /TERMS_AND_CONDITIONS_BLOCK -->
 
         <!-- Footer -->
-        <div class="footer-note">
-            <p>*Please note that all prices are inclusive of GST for Australian customers.</p>
-        </div>
-        
         <div class="footer-bar">
             Need assistance? Don't hesitate to contact us at: {{institute_contact}}
         </div>

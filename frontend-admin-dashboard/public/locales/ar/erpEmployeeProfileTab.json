@@ -1,0 +1,35 @@
+{
+    "edit": "تعديل",
+    "sections": {
+        "profile": "الملف الشخصي",
+        "emergencyContact": "جهة اتصال الطوارئ",
+        "statutoryIdentifiers": "المعرّفات القانونية"
+    },
+    "fields": {
+        "employeeCode": "رمز الموظف",
+        "name": "الاسم",
+        "employmentStatus": "حالة التوظيف",
+        "email": "البريد الإلكتروني",
+        "mobile": "الجوال",
+        "employmentType": "نوع التوظيف",
+        "department": "القسم",
+        "designation": "المسمى الوظيفي",
+        "reportingManager": "المدير المباشر",
+        "joinDate": "تاريخ الالتحاق",
+        "noticePeriod": "فترة الإشعار",
+        "nationality": "الجنسية",
+        "phone": "الهاتف",
+        "relation": "صلة القرابة",
+        "bloodGroup": "فصيلة الدم",
+        "maritalStatus": "الحالة الاجتماعية",
+        "pan": "رقم PAN",
+        "uan": "رقم UAN"
+    },
+    "noticePeriodDays_zero": "لا توجد أيام إشعار",
+    "noticePeriodDays_one": "يوم إشعار واحد",
+    "noticePeriodDays_two": "يوما إشعار",
+    "noticePeriodDays_few": "{{count}} أيام إشعار",
+    "noticePeriodDays_many": "{{count}} يومًا إشعار",
+    "noticePeriodDays_other": "{{count}} يوم إشعار",
+    "maskedNumbersHint": "الأرقام المخزّنة تظهر مخفية جزئيًا. التعديل يستبدل الرقم فقط عند كتابة رقم جديد."
+}

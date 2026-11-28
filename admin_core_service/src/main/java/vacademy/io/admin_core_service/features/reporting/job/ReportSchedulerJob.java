@@ -92,10 +92,10 @@ public class ReportSchedulerJob {
     private String resolveName(String instituteId) {
         try {
             return instituteRepository.findById(instituteId)
-                    .map(i -> i.getInstituteName() == null ? "Vacademy" : i.getInstituteName())
-                    .orElse("Vacademy");
+                    .map(i -> i.getInstituteName() == null ? "" : i.getInstituteName())
+                    .orElse("");
         } catch (Exception e) {
-            return "Vacademy";
+            return "";
         }
     }
 }

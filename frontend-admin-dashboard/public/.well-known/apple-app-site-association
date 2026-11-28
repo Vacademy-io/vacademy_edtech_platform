@@ -1,0 +1,14 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appID": "35NLZB49QN.io.evalezy.app",
+        "paths": [
+          "/evalezy",
+          "/evalezy/*"
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,313 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+    <title>Vacademy Classroom</title>
+    <style>
+        /* Pre-flight cards only. Plain CSS that Chrome 4x understands: these cards must render
+           even when the app CSS/JS cannot. Colours mirror the design tokens (hsl). */
+        #panel-preflight { display: none; }
+        #panel-preflight.panel-pf-on {
+            display: block; position: fixed; top: 0; right: 0; bottom: 0; left: 0; z-index: 2147483000;
+            overflow: auto; background: hsl(0, 0%, 98%); color: hsl(0, 0%, 15%);
+            font-family: 'Open Sans', Roboto, 'Droid Sans', Arial, sans-serif; font-size: 22px; line-height: 1.45;
+        }
+        .panel-pf-card {
+            max-width: 1100px; margin: 48px auto; padding: 40px 48px; background: hsl(0, 0%, 100%);
+            border: 1px solid hsl(214.3, 31.8%, 91.4%); border-radius: 8px;
+        }
+        .panel-pf-card h1 { margin: 0 0 16px; font-size: 40px; line-height: 1.2; font-weight: 600; color: hsl(0, 0%, 9%); }
+        .panel-pf-card p { margin: 0 0 12px; }
+        .panel-pf-card ol { margin: 8px 0 20px; padding-left: 32px; list-style: decimal; }
+        .panel-pf-card li { margin-bottom: 8px; }
+        .panel-pf-meta { font-size: 18px; color: hsl(0, 0%, 40%); word-break: break-all; }
+        .panel-pf-errors {
+            margin: 12px 0 20px; padding: 16px; max-height: 300px; overflow: auto; font-family: monospace;
+            font-size: 16px; white-space: pre-wrap; word-break: break-all; background: hsl(0, 86%, 97%);
+            border: 1px solid hsl(0, 76%, 85%); border-radius: 6px; color: hsl(0, 60%, 35%);
+        }
+        .panel-pf-actions { margin-top: 24px; }
+        .panel-pf-actions button {
+            min-height: 72px; min-width: 240px; margin: 0 16px 16px 0; padding: 0 32px; font-size: 22px; font-weight: 600;
+            border-radius: 6px; border: 1px solid hsl(0, 0%, 80%); background: hsl(0, 0%, 100%); color: hsl(0, 0%, 25%);
+        }
+        .panel-pf-actions button.panel-pf-primary { background: hsl(24, 85%, 54%); border-color: hsl(24, 85%, 54%); color: hsl(0, 0%, 100%); }
+    </style>
+    <script>
+        /* Vacademy Classroom pre-flight. ES5 ONLY: this must run on any engine, including the
+           ones it rejects. Keep MIN in sync with src/panel/config.ts PANEL_MIN_CHROME and
+           android/app/mobile-flavors.json minWebViewMajor (verify-panel-dist.mjs checks). */
+        (function () {
+            var MIN = 66;
+            var w = window;
+            var ua = navigator.userAgent || '';
+            var errors = w.__PANEL_ERRORS__ = [];
+
+            function pushError(text) {
+                try {
+                    if (errors.length >= 50) errors.shift();
+                    errors.push(String(text).slice(0, 600));
+                } catch (e) { /* ignore */ }
+            }
+            w.addEventListener('error', function (e) {
+                var t = e && e.target;
+                if (t && t !== w && (t.src || t.href)) {
+                    pushError('Failed to load ' + (t.src || t.href));
+                    return;
+                }
+                pushError((e && e.message ? e.message : 'Error') + (e && e.filename ? ' @' + e.filename + ':' + e.lineno : ''));
+            }, true);
+            w.addEventListener('unhandledrejection', function (e) {
+                var r = e && e.reason;
+                pushError('Unhandled rejection: ' + (r && (r.stack || r.message) ? (r.stack || r.message) : String(r)));
+            });
+
+            /* Promise shims on the NATIVE Promise (owner decision 2: no core-js promise modules,
+               because core-js replaces window.Promise outright at V8 66). Vite's lazy-chunk
+               preload helper calls Promise.allSettled, which Chrome 66 lacks. */
+            var P = w.Promise;
+            function define(obj, name, fn) {
+                if (obj[name]) return;
+                try {
+                    Object.defineProperty(obj, name, { value: fn, writable: true, configurable: true, enumerable: false });
+                } catch (e) { obj[name] = fn; }
+            }
+            function makeAggregate(list, msg) {
+                if (typeof w.AggregateError === 'function') return new w.AggregateError(list, msg);
+                var err = new Error(msg);
+                err.name = 'AggregateError';
+                err.errors = list;
+                return err;
+            }
+            if (P) {
+                define(P.prototype, 'finally', function (f) {
+                    var C = this.constructor || P;
+                    var run = function () { return C.resolve(typeof f === 'function' ? f() : undefined); };
+                    return this.then(
+                        function (v) { return run().then(function () { return v; }); },
+                        function (r) { return run().then(function () { throw r; }); }
+                    );
+                });
+                define(P, 'allSettled', function (iterable) {
+                    var C = this;
+                    return new C(function (resolve) {
+                        var items = Array.from(iterable);
+                        var left = items.length;
+                        var out = new Array(left);
+                        if (!left) { resolve(out); return; }
+                        items.forEach(function (item, i) {
+                            C.resolve(item).then(function (value) {
+                                out[i] = { status: 'fulfilled', value: value };
+                                if (--left === 0) resolve(out);
+                            }, function (reason) {
+                                out[i] = { status: 'rejected', reason: reason };
+                                if (--left === 0) resolve(out);
+                            });
+                        });
+                    });
+                });
+                define(P, 'any', function (iterable) {
+                    var C = this;
+                    return new C(function (resolve, reject) {
+                        var items = Array.from(iterable);
+                        var left = items.length;
+                        var errs = new Array(left);
+                        if (!left) { reject(makeAggregate([], 'All promises were rejected')); return; }
+                        items.forEach(function (item, i) {
+                            C.resolve(item).then(resolve, function (reason) {
+                                errs[i] = reason;
+                                if (--left === 0) reject(makeAggregate(errs, 'All promises were rejected'));
+                            });
+                        });
+                    });
+                });
+                define(P, 'withResolvers', function () {
+                    var out = {};
+                    out.promise = new this(function (resolve, reject) { out.resolve = resolve; out.reject = reject; });
+                    return out;
+                });
+            }
+
+            /* Engine detection. */
+            var m = /Chrome\/(\d+)/.exec(ua);
+            var chromeMajor = m ? parseInt(m[1], 10) : null;
+            var override = /[?&]panelMinChrome=(\d+)/.exec(w.location.search || '');
+            var min = override ? parseInt(override[1], 10) : MIN;
+            var missing = [];
+            var script = document.createElement('script');
+            if (!('noModule' in script)) missing.push('ES modules');
+            if (typeof w.fetch !== 'function') missing.push('fetch');
+            if (typeof P !== 'function') missing.push('Promise');
+            if (typeof w.ResizeObserver !== 'function') missing.push('ResizeObserver');
+            if (typeof w.PointerEvent !== 'function') missing.push('PointerEvent');
+            if (typeof w.AbortController !== 'function') missing.push('AbortController');
+            if (typeof w.EventSource !== 'function') missing.push('EventSource');
+            try {
+                if (!(w.CSS && w.CSS.supports && w.CSS.supports('--x', '0'))) missing.push('CSS variables');
+            } catch (e) { missing.push('CSS variables'); }
+            var syntaxOk = false;
+            try {
+                /* async generator (63), object spread (60), optional catch binding (66) */
+                syntaxOk = new Function('async function* g() {} var o = { ...{ a: 1 } }; try { } catch { } return o.a === 1;')() === true;
+            } catch (e) { syntaxOk = false; }
+            if (!syntaxOk) missing.push('ES2019 syntax');
+
+            var cap = w.Capacitor;
+            var native = false;
+            try { native = !!(cap && cap.isNativePlatform && cap.isNativePlatform()); } catch (e) { native = false; }
+
+            var tooOldVersion = override ? (chromeMajor || 0) < min : chromeMajor !== null && chromeMajor < min;
+            var unsupported = tooOldVersion || missing.length > 0;
+            w.__PANEL_ENV__ = {
+                chromeMajor: chromeMajor, min: min, ua: ua, missing: missing, syntaxOk: syntaxOk,
+                native: native, unsupported: unsupported, at: Date.now()
+            };
+
+            /* Native escape hatches (PanelDevice plugin), so a HOME-app failure is never a dead end. */
+            function openSettings(target) {
+                try {
+                    var c = w.Capacitor;
+                    var plugin = c && c.Plugins && c.Plugins.PanelDevice;
+                    var p = null;
+                    if (plugin && typeof plugin.openSettings === 'function') p = plugin.openSettings({ target: target });
+                    else if (c && typeof c.nativePromise === 'function') p = c.nativePromise('PanelDevice', 'openSettings', { target: target });
+                    if (p && p.then) p.then(null, function (err) { pushError('openSettings failed: ' + (err && err.message)); });
+                } catch (e) { pushError('openSettings failed: ' + e.message); }
+            }
+
+            function el(tag, cls, text) {
+                var node = document.createElement(tag);
+                if (cls) node.className = cls;
+                if (text !== undefined && text !== null) node.textContent = text;
+                return node;
+            }
+            function button(label, primary, onClick) {
+                var b = el('button', primary ? 'panel-pf-primary' : '', label);
+                b.type = 'button';
+                b.onclick = onClick;
+                return b;
+            }
+            function actions() {
+                var box = el('div', 'panel-pf-actions');
+                box.appendChild(button('Reload', true, function () { w.location.reload(); }));
+                if (native) {
+                    box.appendChild(button('Android settings', false, function () { openSettings('settings'); }));
+                    box.appendChild(button('Switch home app', false, function () { openSettings('home'); }));
+                }
+                return box;
+            }
+            var shown = false;
+            function show(card) {
+                if (shown) return;
+                shown = true;
+                function mount() {
+                    var host = document.getElementById('panel-preflight');
+                    var root = document.getElementById('root');
+                    if (!host) return;
+                    host.innerHTML = '';
+                    host.appendChild(card);
+                    host.className = 'panel-pf-on';
+                    if (root) root.style.display = 'none';
+                }
+                if (document.getElementById('panel-preflight')) mount();
+                else document.addEventListener('DOMContentLoaded', mount);
+            }
+
+            function showTooOld() {
+                var card = el('div', 'panel-pf-card');
+                card.appendChild(el('h1', '', "This panel's browser is too old"));
+                card.appendChild(el('p', '', 'Vacademy Classroom needs Android System WebView / Chrome ' + min + ' or newer.'));
+                card.appendChild(el('p', '', 'Detected: ' + (chromeMajor ? 'Chrome ' + chromeMajor : 'unknown browser') +
+                    (missing.length ? ' (missing: ' + missing.join(', ') + ')' : '')));
+                card.appendChild(el('p', '', 'What you can do:'));
+                var ol = el('ol');
+                ol.appendChild(el('li', '', 'Ask the panel vendor for a firmware or Android System WebView update.'));
+                ol.appendChild(el('li', '', 'Use an Android or Windows OPS module plugged into the panel.'));
+                ol.appendChild(el('li', '', 'Open panel.vacademy.io in Chrome on another device.'));
+                card.appendChild(ol);
+                card.appendChild(el('p', 'panel-pf-meta', ua));
+                card.appendChild(actions());
+                show(card);
+            }
+            w.__PANEL_SHOW_TOO_OLD__ = function () {
+                w.__PANEL_UNSUPPORTED__ = true;
+                showTooOld();
+            };
+
+            w.__PANEL_SHOW_FAILED__ = function (reason) {
+                var card = el('div', 'panel-pf-card');
+                card.appendChild(el('h1', '', 'Vacademy Classroom could not start'));
+                card.appendChild(el('p', '', reason || 'The app did not finish starting.'));
+                var list = errors.length ? errors.slice(-12).join('\n') : 'No errors were captured.';
+                card.appendChild(el('div', 'panel-pf-errors', list));
+                card.appendChild(el('p', 'panel-pf-meta', (chromeMajor ? 'Chrome ' + chromeMajor + ' · ' : '') + ua));
+                card.appendChild(actions());
+                show(card);
+            };
+
+            if (unsupported) {
+                w.__PANEL_UNSUPPORTED__ = true;
+                showTooOld();
+                return;
+            }
+
+            /* Boot watchdog: React sets __PANEL_BOOTED__ after its first real commit. Also catch a
+               tree that booted and then unmounted to an empty #root (belt and braces). */
+            var started = Date.now();
+            var bootedAt = 0;
+            var timer = setInterval(function () {
+                if (w.__PANEL_UNSUPPORTED__ || w.__PANEL_BOOT_FAILED__ || shown) { clearInterval(timer); return; }
+                /* requestAnimationFrame (which gates __PANEL_BOOTED__) does not run while the
+                   page is hidden (display in standby, another app in front): never count that
+                   time against the 20 s budget. */
+                if (document.hidden) { started = Date.now(); return; }
+                if (w.__PANEL_BOOTED__) {
+                    if (!bootedAt) { bootedAt = Date.now(); return; }
+                    if (Date.now() - bootedAt >= 3000) {
+                        clearInterval(timer);
+                        var root = document.getElementById('root');
+                        if (!root || !root.firstChild) w.__PANEL_SHOW_FAILED__('The app started, then rendered an empty screen.');
+                    }
+                    return;
+                }
+                if (Date.now() - started > 20000) {
+                    clearInterval(timer);
+                    /* A late first commit (BootMarker) removes a card shown only by this timeout. */
+                    w.__PANEL_BOOT_TIMED_OUT__ = true;
+                    w.__PANEL_SHOW_FAILED__('The app did not finish starting within 20 seconds.');
+                }
+            }, 1000);
+        })();
+    </script>
+    <script nomodule>
+        /* Engines without ES modules never run the app; the pre-flight already showed the card,
+           this is the fallback if it threw. */
+        if (window.__PANEL_SHOW_TOO_OLD__) window.__PANEL_SHOW_TOO_OLD__();
+    </script>
+    <script>
+        /* Directory of this page, so Excalidraw's asset loader works from any base (APK, static host, adb). */
+        window.EXCALIDRAW_ASSET_PATH = location.href.replace(/[#?].*$/, '').replace(/[^/]*$/, '');
+    </script>
+    <!-- Open Sans, as in the admin index.html (owner decision 7), loaded WITHOUT blocking:
+         a parser-inserted stylesheet above the pre-flight would hold every script (pre-flight,
+         watchdog, app) until fonts.googleapis.com answers, which on a firewalled panel that
+         silently drops Google traffic is a TCP timeout (~2 min) of blank screen. Keep these
+         after the inline scripts. Offline/blocked panels use the system font. -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;500;600;700&display=swap" onload="this.onload=null;this.rel='stylesheet'" />
+    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;500;600;700&display=swap" /></noscript>
+</head>
+
+<body>
+    <div id="panel-preflight"></div>
+    <div id="root"></div>
+    <!-- The module entry (/src/panel/main.tsx) is injected by vite.panel.config.ts
+         (panelEntryScript). It is deliberately NOT a static tag here: the main vite.config.ts
+         dev dependency pre-scan globs every **/*.html in the project root and would follow it
+         into src/panel (core-js imports it cannot resolve). -->
+</body>
+
+</html>

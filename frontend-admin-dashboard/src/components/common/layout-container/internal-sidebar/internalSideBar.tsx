@@ -1,5 +1,6 @@
 'use client';
 import { useNavigate, useRouter } from '@tanstack/react-router';
+import { useTranslation } from 'react-i18next';
 import { Collapsible, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Folder, X } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
@@ -17,6 +18,7 @@ export const InternalSideBar = ({
 }) => {
     const router = useRouter();
     const navigate = useNavigate();
+    const { t } = useTranslation('internalSidebar');
     const { search } = router.state.location;
     const isMobile = useIsMobile();
     const isTablet = useIsTablet();
@@ -93,7 +95,7 @@ export const InternalSideBar = ({
                             className="fixed bottom-4 left-4 z-50 shadow-lg md:bottom-6 md:left-6"
                         >
                             <Folder className="mr-2 size-4" />
-                            {sideBarData?.title || 'Courses'}
+                            {sideBarData?.title || t('coursesFallback')}
                         </Button>
                     </SheetTrigger>
                     <SheetContent

@@ -1,0 +1,8 @@
+{
+    "cornerLabel": {
+        "default": "تقرير تعليمي"
+    },
+    "footer": {
+        "pageOf": "صفحة {{p}} من {{pageCount}}"
+    }
+}

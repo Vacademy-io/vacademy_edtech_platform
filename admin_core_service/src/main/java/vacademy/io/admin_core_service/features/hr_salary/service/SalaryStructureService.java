@@ -1,16 +1,22 @@
 package vacademy.io.admin_core_service.features.hr_salary.service;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.expression.Expression;
+import org.springframework.expression.spel.standard.SpelExpressionParser;
+import org.springframework.expression.spel.support.SimpleEvaluationContext;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
+import vacademy.io.admin_core_service.core.security.HrAccessGuard;
 import vacademy.io.admin_core_service.features.hr_employee.entity.EmployeeProfile;
 import vacademy.io.admin_core_service.features.hr_employee.repository.EmployeeProfileRepository;
 import vacademy.io.admin_core_service.features.hr_salary.dto.*;
 import vacademy.io.admin_core_service.features.hr_salary.entity.*;
 import vacademy.io.admin_core_service.features.hr_salary.enums.CalculationType;
+import vacademy.io.admin_core_service.features.hr_salary.enums.ComponentCategory;
 import vacademy.io.admin_core_service.features.hr_salary.enums.ComponentType;
 import vacademy.io.admin_core_service.features.hr_salary.repository.*;
+import vacademy.io.common.auth.model.CustomUserDetails;
 import vacademy.io.common.exceptions.VacademyException;
 
 import java.math.BigDecimal;
@@ -22,6 +28,13 @@ import java.util.stream.Collectors;
 @Service
 public class SalaryStructureService {
 
+    private static final String DEFAULT_CURRENCY = "INR";
+    private static final String SPECIAL_ALLOWANCE_CODE = "SPECIAL_ALLOWANCE";
+    /** Annual rounding tolerance (1 rupee) for the CTC tie-out. */
+    private static final BigDecimal CTC_TOLERANCE = BigDecimal.ONE;
+
+    private static final SpelExpressionParser SPEL_PARSER = new SpelExpressionParser();
+
     @Autowired
     private EmployeeProfileRepository employeeProfileRepository;
 
@@ -32,6 +45,9 @@ public class SalaryStructureService {
     private EmployeeSalaryComponentRepository salaryComponentRepository;
 
     @Autowired
+    private SalaryComponentRepository masterComponentRepository;
+
+    @Autowired
     private SalaryTemplateRepository salaryTemplateRepository;
 
     @Autowired
@@ -40,10 +56,13 @@ public class SalaryStructureService {
     @Autowired
     private SalaryRevisionRepository salaryRevisionRepository;
 
+    @Autowired
+    private HrAccessGuard hrAccessGuard;
+
     /**
      * Assigns a salary structure to an employee based on a template and CTC.
      * Handles component resolution order: Basic first, then percentage-of-basic,
-     * then gross-dependent components, then deductions.
+     * then gross-dependent components, then formulas — followed by a CTC tie-out.
      */
     @Transactional
     public String assignSalary(AssignSalaryDTO dto, String instituteId, String approverUserId) {
@@ -61,11 +80,14 @@ public class SalaryStructureService {
             throw new VacademyException("Effective from date is required");
         }
 
-        // 1. Find EmployeeProfile
+        // 1. Find EmployeeProfile — must belong to the validated institute (cross-tenant IDOR fix)
         EmployeeProfile employee = employeeProfileRepository.findById(dto.getEmployeeId())
                 .orElseThrow(() -> new VacademyException("Employee not found with id: " + dto.getEmployeeId()));
+        hrAccessGuard.requireInstituteMatch(employee.getInstituteId(), instituteId, "Employee");
 
-        // 2. Find and supersede any active structure
+        // 2. Find and supersede any active structure (effective-dated revision).
+        // The old structure ends the day before the new one starts, so payroll's
+        // effective-date selection has real, non-overlapping windows to pick from.
         BigDecimal oldCtc = null;
         EmployeeSalaryStructure oldStructure = null;
 
@@ -75,14 +97,22 @@ public class SalaryStructureService {
         if (activeStructureOpt.isPresent()) {
             oldStructure = activeStructureOpt.get();
             oldCtc = oldStructure.getCtcAnnual();
+
+            if (!oldStructure.getEffectiveFrom().isBefore(dto.getEffectiveFrom())) {
+                throw new VacademyException(
+                        "New salary structure must start after the current structure's effective date ("
+                        + oldStructure.getEffectiveFrom() + "). Backdating over an existing structure is not supported.");
+            }
+
             oldStructure.setStatus("SUPERSEDED");
             oldStructure.setEffectiveTo(dto.getEffectiveFrom().minusDays(1));
             salaryStructureRepository.save(oldStructure);
         }
 
-        // 3. Load template
+        // 3. Load template — must belong to the validated institute (cross-tenant IDOR fix)
         SalaryTemplate template = salaryTemplateRepository.findById(dto.getTemplateId())
                 .orElseThrow(() -> new VacademyException("Salary template not found with id: " + dto.getTemplateId()));
+        hrAccessGuard.requireInstituteMatch(template.getInstituteId(), instituteId, "Salary template");
 
         // 4. Create new EmployeeSalaryStructure
         BigDecimal ctcMonthly = dto.getCtcAnnual().divide(BigDecimal.valueOf(12), 2, RoundingMode.HALF_UP);
@@ -94,6 +124,7 @@ public class SalaryStructureService {
         newStructure.setCtcAnnual(dto.getCtcAnnual());
         newStructure.setCtcMonthly(ctcMonthly);
         newStructure.setStatus("ACTIVE");
+        newStructure.setCurrency(normalizeCurrency(dto.getCurrency()));
         newStructure.setRevisionReason(dto.getRevisionReason());
         newStructure.setApprovedBy(approverUserId);
         newStructure.setApprovedAt(LocalDateTime.now());
@@ -118,9 +149,9 @@ public class SalaryStructureService {
             }
         }
 
-        // 7. Calculate component amounts in dependency order
+        // 7. Calculate component amounts in dependency order (includes CTC tie-out)
         List<EmployeeSalaryComponent> calculatedComponents = calculateComponentAmounts(
-                templateComponents, ctcMonthly, overrideMap, newStructure);
+                templateComponents, dto.getCtcAnnual(), ctcMonthly, overrideMap, newStructure, instituteId);
 
         // 8. Save all employee salary components
         salaryComponentRepository.saveAll(calculatedComponents);
@@ -171,17 +202,26 @@ public class SalaryStructureService {
 
     /**
      * Calculates salary component amounts respecting dependency order:
-     * Phase 1: FIXED_AMOUNT and PERCENTAGE_OF_CTC (these have no dependencies)
-     * Phase 2: PERCENTAGE_OF_BASIC (depends on Basic being resolved in Phase 1)
-     * Phase 3: PERCENTAGE_OF_GROSS (depends on all EARNING components being resolved)
+     * Phase 1: FIXED_AMOUNT (no dependencies)
+     * Phase 2: PERCENTAGE_OF_CTC (depends only on CTC)
+     * Phase 3: PERCENTAGE_OF_BASIC (depends on Basic being resolved in Phase 1/2)
+     * Phase 4: PERCENTAGE_OF_GROSS (depends on the phase 1-3 earnings base; see below)
+     * Phase 5: FORMULA (SpEL, may reference any already-resolved component)
+     *
+     * After all phases a CTC tie-out runs: EARNING + EMPLOYER_CONTRIBUTION annual
+     * amounts must equal the CTC. A shortfall is absorbed by a system-managed
+     * "Special Allowance" balancing component; an overshoot (beyond a 1-rupee
+     * rounding tolerance) is a template configuration error and throws.
      *
      * Overrides bypass calculation and use the provided monthly amount directly.
      */
     private List<EmployeeSalaryComponent> calculateComponentAmounts(
             List<SalaryTemplateComponent> templateComponents,
+            BigDecimal ctcAnnual,
             BigDecimal ctcMonthly,
             Map<String, BigDecimal> overrideMap,
-            EmployeeSalaryStructure structure) {
+            EmployeeSalaryStructure structure,
+            String instituteId) {
 
         // Separate components by calculation type for ordered processing
         List<SalaryTemplateComponent> fixedComponents = new ArrayList<>();
@@ -272,7 +312,12 @@ public class SalaryStructureService {
         }
 
         // PHASE 4: Process PERCENTAGE_OF_GROSS components
-        // Gross = sum of all EARNING components resolved so far
+        // GROSS SEMANTICS: "gross" is defined as the sum of all EARNING components
+        // resolved in phases 1-3 (FIXED_AMOUNT, PERCENTAGE_OF_CTC, PERCENTAGE_OF_BASIC),
+        // i.e. all non-GROSS-based earnings. The base is computed ONCE here and every
+        // PERCENTAGE_OF_GROSS component resolves against that same base. GROSS-based
+        // components therefore do NOT compound on each other — this is deliberate and
+        // makes the result deterministic regardless of template display order.
         BigDecimal earningsTotal = resultMap.values().stream()
                 .filter(c -> ComponentType.EARNING.name().equals(c.getComponent().getType()))
                 .map(EmployeeSalaryComponent::getMonthlyAmount)
@@ -297,7 +342,13 @@ public class SalaryStructureService {
                     structure, tc, monthlyAmount, isOverridden));
         }
 
-        // PHASE 5: Process FORMULA components (placeholder -- treat as zero unless overridden)
+        // PHASE 5: Process FORMULA components via SpEL, in template display order.
+        // The formula result is the MONTHLY amount. Available variables:
+        //   #CTC (annual CTC), #CTC_MONTHLY, #BASIC (monthly basic, 0 if absent),
+        //   #GROSS (monthly gross of phases 1-3), and #<COMPONENT_CODE> = monthly
+        //   amount of every already-resolved component (uppercased, non-alphanumeric
+        //   characters replaced with '_'). Formulas resolve in display order, so a
+        //   formula may also reference earlier FORMULA components by code.
         for (SalaryTemplateComponent tc : formulaComponents) {
             String componentId = tc.getComponent().getId();
             BigDecimal monthlyAmount;
@@ -307,15 +358,153 @@ public class SalaryStructureService {
                 monthlyAmount = overrideMap.get(componentId);
                 isOverridden = true;
             } else {
-                // Formula evaluation is not implemented; default to fixed_value or zero
-                monthlyAmount = tc.getFixedValue() != null ? tc.getFixedValue() : BigDecimal.ZERO;
+                monthlyAmount = evaluateFormula(tc, ctcAnnual, ctcMonthly, basicMonthly, earningsTotal, resultMap);
+                monthlyAmount = clampValue(monthlyAmount, tc.getMinValue(), tc.getMaxValue());
             }
 
             resultMap.put(componentId, buildEmployeeSalaryComponent(
                     structure, tc, monthlyAmount, isOverridden));
         }
 
+        // CTC TIE-OUT: EARNING + EMPLOYER_CONTRIBUTION annual amounts must sum to the
+        // CTC. Without this, a template of e.g. 40% + 20% silently pays 60% of CTC.
+        applyCtcTieOut(resultMap, ctcAnnual, structure, instituteId);
+
         return new ArrayList<>(resultMap.values());
+    }
+
+    /**
+     * Evaluates a FORMULA component with SpEL. Uses SimpleEvaluationContext (data
+     * binding only — no reflection, type references or bean access) for safety.
+     * The result is interpreted as the MONTHLY amount.
+     */
+    private BigDecimal evaluateFormula(
+            SalaryTemplateComponent tc,
+            BigDecimal ctcAnnual,
+            BigDecimal ctcMonthly,
+            BigDecimal basicMonthly,
+            BigDecimal grossMonthly,
+            Map<String, EmployeeSalaryComponent> resultMap) {
+
+        String formula = tc.getFormula();
+        String componentName = tc.getComponent().getName();
+
+        if (!StringUtils.hasText(formula)) {
+            throw new VacademyException(
+                    "Component '" + componentName + "' uses FORMULA calculation but has no formula defined");
+        }
+
+        SimpleEvaluationContext context = SimpleEvaluationContext.forReadOnlyDataBinding().build();
+        context.setVariable("CTC", ctcAnnual);
+        context.setVariable("CTC_MONTHLY", ctcMonthly);
+        context.setVariable("BASIC", basicMonthly != null ? basicMonthly : BigDecimal.ZERO);
+        context.setVariable("GROSS", grossMonthly);
+
+        // Every already-resolved component is exposed by its sanitized code
+        for (EmployeeSalaryComponent resolved : resultMap.values()) {
+            String code = resolved.getComponent().getCode();
+            if (StringUtils.hasText(code)) {
+                context.setVariable(sanitizeVariableName(code), resolved.getMonthlyAmount());
+            }
+        }
+
+        try {
+            Expression expression = SPEL_PARSER.parseExpression(formula);
+            BigDecimal value = expression.getValue(context, BigDecimal.class);
+            if (value == null) {
+                throw new VacademyException(
+                        "Formula for component '" + componentName + "' evaluated to null: " + formula);
+            }
+            return value.setScale(2, RoundingMode.HALF_UP);
+        } catch (VacademyException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new VacademyException(
+                    "Invalid formula for component '" + componentName + "': " + formula
+                    + " (" + e.getMessage() + ")");
+        }
+    }
+
+    /** Uppercases a component code and replaces non-alphanumeric characters with '_'. */
+    private String sanitizeVariableName(String code) {
+        return code.toUpperCase().replaceAll("[^A-Z0-9]", "_");
+    }
+
+    /**
+     * Ensures EARNING + EMPLOYER_CONTRIBUTION annual amounts tie out to the CTC.
+     * A shortfall of at least 1 rupee annually is absorbed by a system-managed
+     * "Special Allowance" balancing component (adjusted in place if the template
+     * already contains one); an overshoot beyond the 1-rupee rounding tolerance
+     * throws — such a template is misconfigured.
+     */
+    private void applyCtcTieOut(
+            Map<String, EmployeeSalaryComponent> resultMap,
+            BigDecimal ctcAnnual,
+            EmployeeSalaryStructure structure,
+            String instituteId) {
+
+        BigDecimal totalAnnual = resultMap.values().stream()
+                .filter(c -> ComponentType.EARNING.name().equals(c.getComponent().getType())
+                        || ComponentType.EMPLOYER_CONTRIBUTION.name().equals(c.getComponent().getType()))
+                .map(EmployeeSalaryComponent::getAnnualAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal residual = ctcAnnual.subtract(totalAnnual);
+
+        if (residual.compareTo(CTC_TOLERANCE.negate()) < 0) {
+            throw new VacademyException(
+                    "Salary template components exceed CTC by " + residual.abs().setScale(2, RoundingMode.HALF_UP)
+                    + " annually (components total " + totalAnnual.setScale(2, RoundingMode.HALF_UP)
+                    + " against CTC " + ctcAnnual.setScale(2, RoundingMode.HALF_UP)
+                    + "). Fix the template so components do not exceed CTC.");
+        }
+
+        if (residual.compareTo(CTC_TOLERANCE) < 0) {
+            // Within rounding tolerance — nothing to balance
+            return;
+        }
+
+        // Adjust an existing Special Allowance from the template, if present
+        for (EmployeeSalaryComponent existing : resultMap.values()) {
+            if (SPECIAL_ALLOWANCE_CODE.equalsIgnoreCase(existing.getComponent().getCode())) {
+                BigDecimal newAnnual = existing.getAnnualAmount().add(residual);
+                existing.setAnnualAmount(newAnnual);
+                existing.setMonthlyAmount(newAnnual.divide(BigDecimal.valueOf(12), 2, RoundingMode.HALF_UP));
+                return;
+            }
+        }
+
+        // Otherwise add a balancing Special Allowance component
+        SalaryComponent specialAllowance = getOrCreateSpecialAllowanceComponent(instituteId);
+
+        EmployeeSalaryComponent balancing = new EmployeeSalaryComponent();
+        balancing.setSalaryStructure(structure);
+        balancing.setComponent(specialAllowance);
+        balancing.setAnnualAmount(residual);
+        balancing.setMonthlyAmount(residual.divide(BigDecimal.valueOf(12), 2, RoundingMode.HALF_UP));
+        balancing.setCalculationType(CalculationType.FIXED_AMOUNT.name());
+        balancing.setIsOverridden(false);
+
+        resultMap.put(specialAllowance.getId(), balancing);
+    }
+
+    /** Get-or-create the institute's system-managed Special Allowance salary component. */
+    private SalaryComponent getOrCreateSpecialAllowanceComponent(String instituteId) {
+        return masterComponentRepository.findByInstituteIdAndCode(instituteId, SPECIAL_ALLOWANCE_CODE)
+                .orElseGet(() -> {
+                    SalaryComponent component = new SalaryComponent();
+                    component.setInstituteId(instituteId);
+                    component.setName("Special Allowance");
+                    component.setCode(SPECIAL_ALLOWANCE_CODE);
+                    component.setType(ComponentType.EARNING.name());
+                    component.setCategory(ComponentCategory.FIXED.name());
+                    component.setIsTaxable(true);
+                    component.setIsStatutory(false);
+                    component.setIsActive(true);
+                    component.setDescription(
+                            "System-managed balancing component: absorbs the CTC residual left after all template components are resolved.");
+                    return masterComponentRepository.save(component);
+                });
     }
 
     /**
@@ -346,6 +535,21 @@ public class SalaryStructureService {
 
         // No Basic component in template at all -- return zero
         return BigDecimal.ZERO;
+    }
+
+    /**
+     * Normalizes an optional ISO-4217 currency code: defaults to INR, trims,
+     * uppercases and sanity-checks the 3-letter shape.
+     */
+    private String normalizeCurrency(String currency) {
+        if (!StringUtils.hasText(currency)) {
+            return DEFAULT_CURRENCY;
+        }
+        String normalized = currency.trim().toUpperCase();
+        if (!normalized.matches("[A-Z]{3}")) {
+            throw new VacademyException("Invalid currency code: " + currency + ". Expected a 3-letter code like INR or USD.");
+        }
+        return normalized;
     }
 
     /**
@@ -383,11 +587,16 @@ public class SalaryStructureService {
 
     /**
      * Gets a salary structure by ID with all its components.
+     * The owning employee is only known after the load, so the self-or-HR-staff
+     * check (institute membership + employee-in-institute + caller is HR staff
+     * or IS that employee) happens here rather than in the controller.
      */
     @Transactional(readOnly = true)
-    public EmployeeSalaryStructureDTO getStructure(String structureId) {
+    public EmployeeSalaryStructureDTO getStructure(String structureId, String instituteId, CustomUserDetails user) {
         EmployeeSalaryStructure structure = salaryStructureRepository.findById(structureId)
                 .orElseThrow(() -> new VacademyException("Salary structure not found"));
+
+        hrAccessGuard.requireSelfOrHrStaff(user, instituteId, structure.getEmployee().getId());
 
         return toStructureDTO(structure);
     }
@@ -429,6 +638,7 @@ public class SalaryStructureService {
                 .ctcMonthly(structure.getCtcMonthly())
                 .grossMonthly(structure.getGrossMonthly())
                 .netMonthly(structure.getNetMonthly())
+                .currency(structure.getCurrency() != null ? structure.getCurrency() : DEFAULT_CURRENCY)
                 .status(structure.getStatus())
                 .revisionReason(structure.getRevisionReason())
                 .build();

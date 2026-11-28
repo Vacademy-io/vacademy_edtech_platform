@@ -1,0 +1,40 @@
+{
+    "buckets": {
+        "dueToday": "Due Today",
+        "overdue1to3": "Overdue 1–3d",
+        "overdue3to7": "Overdue 3–7d",
+        "overdue7plus": "Overdue 7d+",
+        "upcoming": "Upcoming"
+    },
+    "section": {
+        "agingByCounsellor": "Aging by counsellor",
+        "closureReasons": "Closure reasons (last 30 days)"
+    },
+    "table": {
+        "headers": {
+            "counsellor": "Counsellor",
+            "dueToday": "Due today",
+            "days1to3": "1–3d",
+            "days3to7": "3–7d",
+            "days7plus": "7d+",
+            "upcoming": "Upcoming",
+            "oldestOverdue": "Oldest overdue"
+        },
+        "oldestOverdueValue": "{{count}}d"
+    },
+    "csv": {
+        "headers": {
+            "counsellor": "Counsellor",
+            "dueToday": "Due today",
+            "overdue1to3": "Overdue 1-3d",
+            "overdue3to7": "Overdue 3-7d",
+            "overdue7plus": "Overdue 7d+",
+            "upcoming": "Upcoming",
+            "oldestOverdueDays": "Oldest overdue (days)"
+        }
+    },
+    "empty": {
+        "noOpenFollowups": "No open follow-ups right now.",
+        "noClosures": "No follow-ups closed in the last 30 days."
+    }
+}

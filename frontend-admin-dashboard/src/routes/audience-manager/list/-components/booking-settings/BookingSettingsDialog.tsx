@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 import { Copy, LinkSimple } from '@phosphor-icons/react';
 import { MyDialog } from '@/components/design-system/dialog';
 import { MyButton } from '@/components/design-system/button';
@@ -42,6 +43,7 @@ export const BookingSettingsDialog = ({
     audienceName,
     instituteId,
 }: BookingSettingsDialogProps) => {
+    const { t } = useTranslation('audienceManagerBookingSettingsDialog');
     const [confirmDelete, setConfirmDelete] = useState(false);
 
     const {
@@ -61,9 +63,9 @@ export const BookingSettingsDialog = ({
         if (!link) return;
         try {
             await navigator.clipboard.writeText(link);
-            toast.success('Booking link copied');
+            toast.success(t('toast.copySuccess'));
         } catch {
-            toast.error('Could not copy the link');
+            toast.error(t('toast.copyError'));
         }
     };
 
@@ -79,9 +81,11 @@ export const BookingSettingsDialog = ({
             {
                 onSuccess: () =>
                     toast.success(
-                        nextStatus === 'INACTIVE' ? 'Booking page deactivated' : 'Booking page activated'
+                        nextStatus === 'INACTIVE'
+                            ? t('toast.deactivateSuccess')
+                            : t('toast.activateSuccess')
                     ),
-                onError: () => toast.error('Failed to update the booking page status'),
+                onError: () => toast.error(t('toast.statusUpdateError')),
             }
         );
     };
@@ -90,10 +94,10 @@ export const BookingSettingsDialog = ({
         if (!page?.id) return;
         deletePage.mutate({ id: page.id, instituteId }, {
             onSuccess: () => {
-                toast.success('Booking page deleted');
+                toast.success(t('toast.deleteSuccess'));
                 setConfirmDelete(false);
             },
-            onError: () => toast.error('Failed to delete the booking page'),
+            onError: () => toast.error(t('toast.deleteError')),
         });
     };
 
@@ -107,21 +111,20 @@ export const BookingSettingsDialog = ({
     } else if (error) {
         body = (
             <p className="py-8 text-center text-body text-neutral-500">
-                Couldn&apos;t load booking settings. Try again.
+                {t('states.loadError')}
             </p>
         );
     } else if (!page) {
         body = (
             <div className="flex flex-col gap-3">
                 <p className="text-body text-neutral-500">
-                    Enable bookings for &quot;{audienceName}&quot; — leads on this list get a public
-                    page where they can pick a slot on the host&apos;s calendar.
+                    {t('empty.description', { audienceName })}
                 </p>
                 <BookingPageForm
                     instituteId={instituteId}
                     fixedAudienceId={audienceId}
-                    defaultTitle={`${audienceName} Meeting`}
-                    onSaved={() => toast.success('Bookings are now enabled for this list')}
+                    defaultTitle={t('empty.defaultTitle', { audienceName })}
+                    onSaved={() => toast.success(t('toast.enableSuccess'))}
                 />
             </div>
         );
@@ -133,17 +136,19 @@ export const BookingSettingsDialog = ({
                     <div className="flex flex-wrap items-center justify-between gap-2">
                         <div className="flex items-center gap-2">
                             <LinkSimple className="size-4 text-neutral-500" />
-                            <p className="text-body font-semibold text-neutral-600">Public booking link</p>
+                            <p className="text-body font-semibold text-neutral-600">
+                                {t('active.linkLabel')}
+                            </p>
                         </div>
                         <StatusChip
-                            text={isInactive ? 'Inactive' : 'Active'}
+                            text={isInactive ? t('active.statusInactive') : t('active.statusActive')}
                             status={isInactive ? 'WARNING' : 'SUCCESS'}
                             textSize="text-caption"
                         />
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
                         <code className="min-w-0 flex-1 truncate rounded-md bg-neutral-100 px-2 py-1.5 text-caption text-neutral-600">
-                            {link ?? 'Link available once the page has a slug'}
+                            {link ?? t('active.linkPlaceholder')}
                         </code>
                         <MyButton
                             type="button"
@@ -154,7 +159,7 @@ export const BookingSettingsDialog = ({
                             onClick={handleCopyLink}
                         >
                             <Copy className="mr-1 size-3.5" />
-                            Copy
+                            {t('active.copy')}
                         </MyButton>
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
@@ -166,7 +171,7 @@ export const BookingSettingsDialog = ({
                             disable={updatePage.isPending}
                             onClick={handleToggleStatus}
                         >
-                            {isInactive ? 'Activate' : 'Deactivate'}
+                            {isInactive ? t('active.activate') : t('active.deactivate')}
                         </MyButton>
                         <MyButton
                             type="button"
@@ -175,7 +180,7 @@ export const BookingSettingsDialog = ({
                             className="text-danger-600 sm:min-w-0"
                             onClick={() => setConfirmDelete(true)}
                         >
-                            Delete
+                            {t('active.delete')}
                         </MyButton>
                     </div>
                 </div>
@@ -193,7 +198,7 @@ export const BookingSettingsDialog = ({
     return (
         <>
             <MyDialog
-                heading="Booking Settings"
+                heading={t('dialog.heading')}
                 open={open}
                 onOpenChange={onOpenChange}
                 dialogWidth="max-w-3xl"
@@ -204,14 +209,15 @@ export const BookingSettingsDialog = ({
             <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>Delete booking page</AlertDialogTitle>
+                        <AlertDialogTitle>{t('deleteDialog.title')}</AlertDialogTitle>
                         <AlertDialogDescription>
-                            Are you sure you want to delete the booking page for &quot;{audienceName}
-                            &quot;? Its public link will stop working. This action cannot be undone.
+                            {t('deleteDialog.description', { audienceName })}
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel disabled={deletePage.isPending}>Cancel</AlertDialogCancel>
+                        <AlertDialogCancel disabled={deletePage.isPending}>
+                            {t('deleteDialog.cancel')}
+                        </AlertDialogCancel>
                         <AlertDialogAction
                             onClick={(e) => {
                                 e.preventDefault();
@@ -220,7 +226,7 @@ export const BookingSettingsDialog = ({
                             disabled={deletePage.isPending}
                             className="bg-danger-600 hover:bg-danger-700"
                         >
-                            {deletePage.isPending ? 'Deleting...' : 'Delete'}
+                            {deletePage.isPending ? t('deleteDialog.deleting') : t('deleteDialog.confirm')}
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>

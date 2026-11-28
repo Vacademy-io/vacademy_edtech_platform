@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
+import { LayoutContainer } from "@/components/common/layout-container/layout-container";
 import { useNavHeadingStore } from "@/stores/layout-container/useNavHeadingStore";
 import {NotificationList} from "../-components/NotificationsList"
 
@@ -16,6 +17,11 @@ function RouteComponent() {
       setNavHeading(t("notifications.navHeading"));
     }, [t, setNavHeading]);
   return (
-    <NotificationList/>
+    // Every other dashboard route renders inside LayoutContainer; this one did
+    // not, which is why the sidebar and navbar were missing here — the page
+    // rendered as a bare full-bleed surface with no way back out.
+    <LayoutContainer>
+      <NotificationList/>
+    </LayoutContainer>
   );
 }

@@ -1,0 +1,44 @@
+{
+    "counts": {
+        "pages_one": "{{formatted}} पेज",
+        "pages_other": "{{formatted}} पेज",
+        "passages_one": "{{formatted}} अंश",
+        "passages_other": "{{formatted}} अंश",
+        "figures_one": "{{formatted}} डायग्राम और टेबल",
+        "figures_other": "{{formatted}} डायग्राम और टेबल",
+        "credits_one": "{{formatted}} क्रेडिट",
+        "credits_other": "{{formatted}} क्रेडिट",
+        "ocrPages_one": "{{formatted}} स्कैन किया पेज पढ़ा गया",
+        "ocrPages_other": "{{formatted}} स्कैन किए पेज पढ़े गए"
+    },
+    "aria": {
+        "stopUsing": "{{title}} का उपयोग बंद करें",
+        "startUsing": "{{title}} का उपयोग शुरू करें",
+        "actionsFor": "{{title}} के लिए कार्रवाइयां"
+    },
+    "toast": {
+        "nowUsed": "अब जवाबों के लिए उपयोग किया जा रहा है",
+        "noLongerUsed": "अब जवाबों के लिए उपयोग नहीं किया जा रहा",
+        "updateFailed": "यह अपडेट नहीं हो सका",
+        "reindexing": "इसे फिर से पढ़ा जा रहा है — आपसे दोबारा शुल्क नहीं लिया जाएगा।",
+        "reindexFailed": "दोबारा पढ़ना शुरू नहीं हो सका",
+        "removeSuccess": "हटा दिया गया",
+        "removeFailed": "यह स्रोत हटाया नहीं जा सका"
+    },
+    "readAgain": "फिर से पढ़ें",
+    "remove": "हटाएं",
+    "stage": {
+        "working": "काम जारी है",
+        "gettingStarted": "शुरुआत की जा रही है"
+    },
+    "partialWarning": "{{total}} में से {{lowConfidence}} पेज विश्वसनीय रूप से नहीं पढ़े जा सके। बाकी उपयोग करने योग्य है — यदि यह मायने रखता है तो उन पेजों का स्पष्ट स्कैन फिर से अपलोड करें।",
+    "notActive": "फ़िलहाल इसका उपयोग जवाबों के लिए नहीं किया जा रहा है।",
+    "emptyState": "अभी तक कुछ नहीं जोड़ा गया। शुरू करने के लिए एक पाठ्यपुस्तक, नोट्स का सेट या पुराना पेपर जोड़ें।",
+    "deleteDialog": {
+        "title": "इस स्रोत को हटाएं?",
+        "description": "“{{title}}” और इससे पढ़ी गई हर चीज़ हटा दी जाएगी। इसे बाद में फिर से जोड़ने पर दोबारा क्रेडिट खर्च होंगे। काम खोए बिना इसका उपयोग बंद करने के लिए, इसके बजाय इसे बंद करें।",
+        "cancel": "रद्द करें",
+        "removing": "हटाया जा रहा है…",
+        "confirm": "हटाएं"
+    }
+}

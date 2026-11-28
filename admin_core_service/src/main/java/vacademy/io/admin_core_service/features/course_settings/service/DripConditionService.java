@@ -11,6 +11,8 @@ import vacademy.io.admin_core_service.features.course_settings.dto.DripCondition
 import vacademy.io.admin_core_service.features.slide.repository.SlideRepository;
 import vacademy.io.admin_core_service.features.packages.repository.PackageRepository;
 
+// Course knowledge: deliberately not wired to ContentIndexMarker. Drip rules change
+// only access, and course knowledge resolves access at query time.
 @Slf4j
 @Service
 @RequiredArgsConstructor

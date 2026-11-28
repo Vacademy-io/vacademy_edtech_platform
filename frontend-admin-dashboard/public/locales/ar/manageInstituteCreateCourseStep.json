@@ -1,0 +1,16 @@
+{
+    "selectionLabel": "اختيار {{course}}",
+    "selectExisting": "اختر {{course}} موجودة",
+    "createNew": "إنشاء {{course}} جديدة",
+    "selectPlaceholder": "اختر {{course}}",
+    "addNewCourse": "إضافة دورة جديدة",
+    "validation": {
+        "selectCourse": "يرجى اختيار دورة"
+    },
+    "toast": {
+        "batchCreated": "تم إنشاء الدفعة بنجاح",
+        "createFailed": "فشل إنشاء الدفعة"
+    },
+    "searchPlaceholder": "ابحث عن {{course}}…",
+    "emptyCourses": "لا توجد دورات بعد. اختر \"إنشاء جديد\" أعلاه."
+}

@@ -1,0 +1,32 @@
+{
+    "validation": {
+        "urlRequired": "URL आवश्यक है",
+        "urlInvalid": "कृपया एक मान्य URL दर्ज करें",
+        "youtubeUrlInvalid": "कृपया एक मान्य YouTube URL दर्ज करें"
+    },
+    "defaults": {
+        "videoName": "YouTube वीडियो"
+    },
+    "fields": {
+        "urlPlaceholder": "https://www.youtube.com/watch?v=..."
+    },
+    "preview": {
+        "thumbnailAlt": "वीडियो थंबनेल"
+    },
+    "toasts": {
+        "invalidYoutubeUrl": "अमान्य YouTube URL",
+        "durationReadFailed": "YouTube से वीडियो की अवधि नहीं पढ़ी जा सकी। कृपया पुनः प्रयास करें।",
+        "youtubeLoading": "YouTube अभी लोड हो रहा है। कृपया कुछ क्षण प्रतीक्षा करें और पुनः प्रयास करें।",
+        "updateSuccess": "वीडियो लिंक सफलतापूर्वक अपडेट किया गया!",
+        "addSuccess": "वीडियो सफलतापूर्वक जोड़ा गया!",
+        "updateFailed": "लिंक अपडेट करने में विफल",
+        "addFailed": "वीडियो जोड़ने में विफल",
+        "reorderFailed": "स्लाइड बनाई गई लेकिन क्रम बदलना विफल रहा"
+    },
+    "actions": {
+        "updatingLink": "लिंक अपडेट हो रहा है...",
+        "addingVideo": "वीडियो जोड़ा जा रहा है...",
+        "updateLink": "YouTube लिंक अपडेट करें",
+        "addVideo": "YouTube वीडियो जोड़ें"
+    }
+}

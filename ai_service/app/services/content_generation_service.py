@@ -2,8 +2,9 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import asyncio
-from typing import AsyncGenerator, Optional
+from typing import Any, AsyncGenerator, Optional
 from uuid import uuid4
 
 from ..ports.llm_client import OutlineLLMClient
@@ -11,7 +12,7 @@ from ..schemas.course_outline import Todo
 from .youtube_service import YouTubeService
 from .content_prompts import ContentGenerationPrompts
 from .document_postprocess import (
-    DOC_IMAGE_MODEL,
+    doc_image_model,
     illustrate_document,
     normalize_code_blocks,
     strip_wrapping_fence,
@@ -26,6 +27,11 @@ from sqlalchemy.orm import Session
 from typing import Optional
 
 logger = logging.getLogger(__name__)
+
+# Illustrations per generated DOCUMENT slide. Lower than the module default
+# (which serves the single-page HTML Document author) because a course run fans
+# out across every slide at once. Override: COURSE_SLIDE_MAX_IMAGES.
+_COURSE_SLIDE_MAX_IMAGES = int(os.getenv("COURSE_SLIDE_MAX_IMAGES") or 3)
 
 
 class ContentGenerationService:
@@ -42,9 +48,12 @@ class ContentGenerationService:
         db_session: Optional[Session] = None,
         institute_id: Optional[str] = None,
         user_id: Optional[str] = None,
+        metering: Any = None,
     ) -> None:
         logger.info("[ContentGenService] Initializing ContentGenerationService")
         self._llm_client = llm_client
+        # Usage-event attribution for this run's charges (never changes one).
+        self._metering = metering
         self._youtube_service = youtube_service or YouTubeService()
         self._db_session = db_session
         self._institute_id = institute_id
@@ -76,15 +85,16 @@ class ContentGenerationService:
             logger.error(f"[ContentGenService] FAILED to initialize VideoGenerationService: {e}")
             raise
         
-        # Use the same model as outline generation
-        self._content_model = "google/gemini-2.5-flash"
+        # Default content model + its failover chain: the 'content' use case
+        # (ai_model_defaults, super-admin portal; GLM by default).
+        self._content_model, self._content_fallbacks = self._resolve_use_case("content", db_session)
         # DOCUMENT slides are now creative, self-contained HTML (rendered in an
         # iframe) and benefit from a strong front-end model — same as the manual
-        # "AI document" authoring. gemini-2.5-flash produced visibly lower-craft
-        # pages. Overridable per-slide via todo.metadata.model. Env override:
-        # HTML_DOC_MODEL.
-        import os
-        self._html_doc_model = os.getenv("HTML_DOC_MODEL") or "anthropic/claude-sonnet-5"
+        # "AI document" authoring: the 'html_document' use case. Overridable
+        # per-slide via todo.metadata.model. Env override: HTML_DOC_MODEL.
+        _html_env = (os.getenv("HTML_DOC_MODEL") or "").strip()
+        _html_model, self._html_doc_fallbacks = self._resolve_use_case("html_document", db_session)
+        self._html_doc_model = _html_env or _html_model
         # The model the user picked when creating the course. Set per run and
         # used by EVERY content leg; the hardcoded models above are only the
         # fallback when the user left it on "auto". Kept separate from
@@ -92,21 +102,52 @@ class ContentGenerationService:
         self._course_model: Optional[str] = None
         logger.info("[ContentGenService] ContentGenerationService fully initialized")
 
+    @staticmethod
+    def _resolve_use_case(use_case: str, db_session=None):
+        """(primary, [fallbacks]) for a use case; never raises."""
+        try:
+            from .model_selection import resolve_model_sync, resolve_models
+            if db_session is not None:
+                return resolve_models(db_session, use_case)
+            return resolve_model_sync(use_case)
+        except Exception as exc:  # noqa: BLE001
+            from ..constants.model_defaults import GLM_DEFAULT, NON_GLM_FALLBACK
+            logger.warning(f"[ContentGenService] {use_case} model lookup failed ({exc}); using {GLM_DEFAULT}")
+            return GLM_DEFAULT, [NON_GLM_FALLBACK]
+
+    @staticmethod
+    def _wizard_model(todo) -> Optional[str]:
+        """The wizard's explicit per-family pick (todo.metadata.model). The
+        LLM-authored todo.model is deliberately ignored: the outline prompt used
+        to make the model write gemini-2.5-pro / a retired preview slug there."""
+        if todo is None:
+            return None
+        return (getattr(todo, "metadata", None) or {}).get("model") or None
+
     def _model_for(self, todo=None, default: Optional[str] = None) -> str:
         """Which model generates this slide.
 
-        Precedence: a per-todo override (injected from the wizard's per-family
-        settings) → the model the user chose for the course → the hardcoded
-        default for this kind of content. So a user's pick is honoured
-        everywhere, and the hardcode is only ever the fallback.
+        Precedence: the wizard's per-family pick (todo.metadata.model) → the
+        model the user chose for the course → the use-case default for this
+        kind of content. So a user's pick is honoured everywhere.
         """
-        if todo is not None:
-            picked = (getattr(todo, "metadata", None) or {}).get("model") or getattr(
-                todo, "model", None
-            )
-            if picked:
-                return picked
+        picked = self._wizard_model(todo)
+        if picked:
+            return picked
         return self._course_model or default or self._content_model
+
+    def _retry_models_for(self, model: str):
+        """Failover targets after `model` failed: the chain of the use case it
+        came from (html_document for documents, content otherwise)."""
+        if model == self._html_doc_model:
+            chain = [*self._html_doc_fallbacks, self._content_model, *self._content_fallbacks]
+        else:
+            chain = [self._content_model, *self._content_fallbacks]
+        out = []
+        for candidate in chain:
+            if candidate and candidate != model and candidate not in out:
+                out.append(candidate)
+        return out
 
     @staticmethod
     def _video_voice_kwargs(todo: Todo) -> dict:
@@ -121,11 +162,28 @@ class ContentGenerationService:
             "quality_tier": metadata.get("quality_tier", "ultra"),
         }
 
+    def _meter(self) -> Any:
+        """The router's verified metering context (JWT), else an UNVERIFIED
+        one: the user id here comes from the request body, so it is kept only
+        as usage_context.claimed_user_id and never becomes the event actor."""
+        try:
+            ctx = getattr(self, "_metering", None)
+            if ctx is not None:
+                return ctx
+            from .ai_billing import metering_unverified
+            return metering_unverified(getattr(self, "_user_id", None), surface="ADMIN_APP")
+        except Exception:  # noqa: BLE001 - attribution must never cost a charge
+            return None
+
+    def _meter_kwargs(self, use_case: str, usage_context: Optional[dict] = None) -> dict:
+        from .ai_billing import metering_kwargs
+        return metering_kwargs(use_case, self._meter(), usage_context)
+
     def _bill_slide(self, *, tool_key: str, todo: Todo, model: str, usage_info: Optional[dict] = None) -> None:
         """Parametric per-slide charge = max(DB rate for tool_key, actual token
         cost). Best-effort on a fresh session; idempotent per request+slide so a
         retried/duplicated event never double-charges."""
-        from .ai_billing import record_tool_billing
+        from .ai_billing import UC, record_tool_billing
 
         usage_info = usage_info or {}
         record_tool_billing(
@@ -141,12 +199,17 @@ class ContentGenerationService:
             idempotency_key=(
                 f"course_slide:{self._request_id}:{todo.path}" if self._request_id else None
             ),
+            use_case=UC.CONTENT,
+            metering=self._meter(),
+            usage_context={"slide_path": getattr(todo, "path", None),
+                           "slide_title": getattr(todo, "title", None) or getattr(todo, "name", None),
+                           "request_id": getattr(self, "_request_id", None)},
         )
 
     async def _generate_with_model_fallback(self, prompt: str, model: str):
-        """Run one LLM generation, falling back to the service default model when
-        an outline-authored model fails (the outline LLM writes todo.model and can
-        name an unavailable model; an explicit model gets no client-side fallback).
+        """Run one LLM generation, falling back through the use case's chain
+        (row default, row fallback, non-GLM tail) when the chosen model fails —
+        an explicit model gets no client-side fallback in the LLM client.
 
         Returns (generated_content, usage_info, used_model).
         """
@@ -186,22 +249,31 @@ class ContentGenerationService:
             # Out-of-credits is fatal by design — no fallback model will help.
             raise
         except Exception as e:
-            if model == self._content_model:
-                # Already the fallback model, and it has had its same-model
-                # retry above — nothing left to try.
+            retry_models = self._retry_models_for(model)
+            if not retry_models:
+                # Nothing left to try (the chain is just this model, which has
+                # had its same-model retry above).
                 raise
-            logger.warning(
-                f"Model '{model}' failed ({e}); retrying with default '{self._content_model}'"
-            )
-            content, usage = await _call(self._content_model)
-            if _is_empty(content):
-                # Both the chosen model and the fallback came back empty — fail
-                # loudly so the slide is reported as an ERROR rather than saved
-                # blank.
-                raise ValueError(
-                    f"both '{model}' and fallback '{self._content_model}' returned empty content"
+            last_error: Exception = e
+            for fallback in retry_models:
+                logger.warning(
+                    f"Model '{model}' failed ({last_error}); retrying with fallback '{fallback}'"
                 )
-            return content, usage, self._content_model
+                try:
+                    content, usage = await _call(fallback)
+                except PaymentRequiredError:
+                    raise
+                except Exception as e2:  # noqa: BLE001
+                    last_error = e2
+                    continue
+                if not _is_empty(content):
+                    return content, usage, fallback
+                last_error = ValueError(f"fallback '{fallback}' returned empty content")
+            # Every model in the chain failed or came back empty — fail loudly
+            # so the slide is reported as an ERROR rather than saved blank.
+            raise ValueError(
+                f"'{model}' and fallbacks {retry_models} all failed or returned empty content: {last_error}"
+            )
 
     async def generate_document_content(
         self, todo: Todo, prompt: str, homework_content: Optional[str] = None
@@ -229,8 +301,9 @@ class ContentGenerationService:
 
             language = (todo.metadata or {}).get("language", "English")
             # Honor an explicitly-injected model (e.g. the wizard's pick); else
-            # default DOCUMENT slides to the strong HTML model (claude-sonnet-5),
-            # matching the manual "AI document" craft — NOT the fast content model.
+            # default DOCUMENT slides to the dedicated HTML model (see
+            # _html_doc_model), matching the manual "AI document" craft — NOT
+            # the fast content model.
             model = self._model_for(todo, default=self._html_doc_model)
 
             if is_homework_questions:
@@ -296,12 +369,32 @@ class ContentGenerationService:
             # generate any requested illustrations. All best-effort.
             generated_content = strip_wrapping_fence(generated_content)
             generated_content = normalize_code_blocks(generated_content)
+            # Bulk course generation fans out over every slide, so it keeps a
+            # tighter picture budget than the single-page HTML Document author
+            # (which is one deliberate page at a time, billed per image).
             generated_content, image_count = await illustrate_document(
-                generated_content, slide_path=todo.path
+                generated_content, slide_path=todo.path, max_images=_COURSE_SLIDE_MAX_IMAGES
             )
             if image_count and self._db_session:
+                # billing.image_registry_pricing: off (default) = the flat
+                # image rate as before; shadow adds would_be_credits to the
+                # usage metadata; on charges the model's registry price.
+                image_model = doc_image_model()
                 try:
+                    from .image_model_resolver import plan_image_charge
+                    charge = plan_image_charge(image_model, 1, feature="document_illustration")
+                except Exception as e:  # noqa: BLE001
+                    logger.warning(f"Image pricing plan failed ({e}); billing illustrations as before")
+                    charge = None
+                try:
+                    from .ai_billing import UC, supported_kwargs
                     token_service = TokenUsageService(self._db_session)
+                    base_metadata = {"slide_path": todo.path, "feature": "document_illustration"}
+                    _meter = supported_kwargs(
+                        token_service.record_usage_and_deduct_credits,
+                        self._meter_kwargs(UC.CONTENT_IMAGE, {"slide_path": todo.path,
+                                                              "feature": "document_illustration"}),
+                    )
                     for _ in range(image_count):
                         token_service.record_usage_and_deduct_credits(
                             api_provider=ApiProvider.OPENAI,  # via OpenRouter
@@ -311,8 +404,10 @@ class ContentGenerationService:
                             request_type=RequestType.IMAGE,
                             institute_id=self._institute_id,
                             user_id=self._user_id,
-                            model=DOC_IMAGE_MODEL,
-                            metadata={"slide_path": todo.path, "feature": "document_illustration"},
+                            model=image_model,
+                            metadata=charge.metadata(dict(base_metadata)) if charge else dict(base_metadata),
+                            precomputed_credits=charge.precomputed_credits if charge else None,
+                            **_meter,
                         )
                 except Exception as e:
                     logger.warning(f"Failed to record document illustration usage: {str(e)}")
@@ -549,21 +644,31 @@ class ContentGenerationService:
             event_count = 0
             pipeline_error: Optional[str] = None
 
+            # One kwargs set for both legs; recorded as the run request (final
+            # target HTML) so a kill during leg 1, between the legs or during
+            # the fire-and-forget leg 2 is auto-resumed (ai_video_resumer).
+            _video_kwargs = dict(
+                language=todo.metadata.get("language", "English"),
+                captions_enabled=True,  # Default for course outline
+                html_quality=todo.metadata.get("html_quality", "advanced"),
+                model=self._wizard_model(todo),  # wizard pick only; None = video pipeline default
+                target_audience=todo.metadata.get("target_audience", "General/Adult"),
+                target_duration=todo.metadata.get("target_duration", "2-3 minutes"),
+                **self._video_voice_kwargs(todo),
+                institute_id=self._institute_id,
+                user_id=self._user_id,
+            )
+            from .video_run_request import capture as _capture_run_request
+            _run_request = _capture_run_request("course_builder", "HTML", _video_kwargs)
+
             async for event in self._video_gen_service.generate_till_stage(
                 video_id=video_id,
                 prompt=prompt,
                 target_stage="SCRIPT",  # Stop at SCRIPT stage
-                language=todo.metadata.get("language", "English"),
-                captions_enabled=True,  # Default for course outline
-                html_quality=todo.metadata.get("html_quality", "advanced"),
                 resume=False,
-                model=todo.metadata.get("model") or todo.model,  # Use model from metadata or todo
-                target_audience=todo.metadata.get("target_audience", "General/Adult"),
-                target_duration=todo.metadata.get("target_duration", "2-3 minutes"),
-                **self._video_voice_kwargs(todo),
                 db_session=self._db_session,
-                institute_id=self._institute_id,
-                user_id=self._user_id
+                run_request=_run_request,
+                **_video_kwargs,
             ):
                 event_count += 1
                 logger.info(f"[AI_VIDEO] Received event #{event_count} for {video_id}: {event.get('type', 'unknown')}, stage={event.get('stage', 'N/A')}")
@@ -672,22 +777,18 @@ class ContentGenerationService:
                     else:
                         logger.warning(f"[AI_VIDEO] Script file not found in S3, but proceeding anyway (may fail)")
                     
-                    # Resume from SCRIPT stage and continue till HTML
+                    # Resume from SCRIPT stage and continue till HTML. Leg 1
+                    # ended with the run lease in `handoff` (its completed
+                    # stages are short of the run request's final HTML); this
+                    # leg acquires it — or, if a resumer on another pod already
+                    # took the run over, yields LEASE_HELD and stops.
                     async for event in self._video_gen_service.generate_till_stage(
                         video_id=video_id,
                         prompt=prompt,
                         target_stage="HTML",  # Continue till HTML
-                        language=todo.metadata.get("language", "English"),
-                        captions_enabled=True,
-                        html_quality=todo.metadata.get("html_quality", "advanced"),
                         resume=True,  # Resume from current stage (SCRIPT)
-                        model=todo.metadata.get("model") or todo.model,
-                        target_audience=todo.metadata.get("target_audience", "General/Adult"),
-                        target_duration=todo.metadata.get("target_duration", "2-3 minutes"),
-                        **self._video_voice_kwargs(todo),
                         db_session=self._db_session,
-                        institute_id=self._institute_id,
-                        user_id=self._user_id
+                        **_video_kwargs,
                     ):
                         # Log background progress but don't send events to frontend
                         if event.get("type") == "completed":
@@ -790,7 +891,7 @@ class ContentGenerationService:
                 captions_enabled=False,  # SLIDES are visual-only
                 html_quality=todo.metadata.get("html_quality", "advanced"),
                 resume=False,
-                model=todo.metadata.get("model") or todo.model,
+                model=self._wizard_model(todo),
                 target_audience=todo.metadata.get("target_audience", "General/Adult"),
                 target_duration=todo.metadata.get("target_duration", "2-3 minutes"),
                 **self._video_voice_kwargs(todo),
@@ -898,22 +999,28 @@ class ContentGenerationService:
             yield json.dumps(started_event)
 
             pipeline_error: Optional[str] = None
-            async for event in self._video_gen_service.generate_till_stage(
-                video_id=video_id,
-                prompt=prompt,
-                target_stage="SCRIPT",
+            _story_kwargs = dict(
                 content_type="STORYBOOK",
                 language=todo.metadata.get("language", "English"),
                 captions_enabled=True,
                 html_quality=todo.metadata.get("html_quality", "advanced"),
-                resume=False,
-                model=todo.metadata.get("model") or todo.model,
+                model=self._wizard_model(todo),
                 target_audience=todo.metadata.get("target_audience", "General/Adult"),
                 target_duration=todo.metadata.get("target_duration", "2-3 minutes"),
                 **self._video_voice_kwargs(todo),
-                db_session=self._db_session,
                 institute_id=self._institute_id,
                 user_id=self._user_id,
+            )
+            from .video_run_request import capture as _capture_run_request
+            _story_run_request = _capture_run_request("storybook_builder", "HTML", _story_kwargs)
+            async for event in self._video_gen_service.generate_till_stage(
+                video_id=video_id,
+                prompt=prompt,
+                target_stage="SCRIPT",
+                resume=False,
+                db_session=self._db_session,
+                run_request=_story_run_request,
+                **_story_kwargs,
             ):
                 if event.get("type") == "error":
                     pipeline_error = event.get("message") or "Storybook generation failed"
@@ -976,18 +1083,9 @@ class ContentGenerationService:
                         video_id=video_id,
                         prompt=prompt,
                         target_stage="HTML",
-                        content_type="STORYBOOK",
-                        language=todo.metadata.get("language", "English"),
-                        captions_enabled=True,
-                        html_quality=todo.metadata.get("html_quality", "advanced"),
                         resume=True,
-                        model=todo.metadata.get("model") or todo.model,
-                        target_audience=todo.metadata.get("target_audience", "General/Adult"),
-                        target_duration=todo.metadata.get("target_duration", "2-3 minutes"),
-                        **self._video_voice_kwargs(todo),
                         db_session=self._db_session,
-                        institute_id=self._institute_id,
-                        user_id=self._user_id,
+                        **_story_kwargs,
                     ):
                         if event.get("type") == "completed":
                             logger.info(f"[AI_STORYBOOK] Background HTML generation completed for {video_id}")
@@ -1195,6 +1293,7 @@ class ContentGenerationService:
                 # Record token usage for content generation
                 if self._db_session and usage_info:
                     try:
+                        from .ai_billing import UC, supported_kwargs
                         token_service = TokenUsageService(self._db_session)
                         # Determine provider based on model
                         api_provider = ApiProvider.GEMINI if "gemini" in self._model_for(todo).lower() else ApiProvider.OPENAI
@@ -1207,6 +1306,11 @@ class ContentGenerationService:
                             institute_id=self._institute_id,
                             user_id=self._user_id,
                             model=self._model_for(todo),
+                            **supported_kwargs(
+                                token_service.record_usage_and_deduct_credits,
+                                self._meter_kwargs(UC.CONTENT, {"slide_path": todo.path,
+                                                                "feature": "ai_video_code"}),
+                            ),
                         )
                     except Exception as e:
                         logger.warning(f"Failed to record content generation token usage: {str(e)}")

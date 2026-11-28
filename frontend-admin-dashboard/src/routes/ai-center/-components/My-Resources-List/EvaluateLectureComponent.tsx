@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { handleEvaluateLecture } from '../../-services/ai-center-service';
 import { DashboardLoader } from '@/components/core/dashboard-loader';
 import AITasksList from '../AITasksList';
@@ -7,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { getRandomTaskName } from '../../-utils/helper';
 
 const EvaluateLectureComponent = ({ fileId }: { fileId: string }) => {
+    const { t } = useTranslation('aiCenterEvaluateLectureComponent');
     const [enableDialog, setEnableDialog] = useState(false);
     const queryClient = useQueryClient();
 
@@ -35,20 +37,20 @@ const EvaluateLectureComponent = ({ fileId }: { fileId: string }) => {
     return (
         <>
             <Badge
-                className={`cursor-pointer whitespace-nowrap bg-[#F4F9FF] text-black
+                className={`cursor-pointer whitespace-nowrap bg-info-50 text-black
                      ${generateAssessmentMutation.status === 'pending' ? 'h-6' : ''}`}
                 onClick={handleExtractQuestions}
             >
                 {generateAssessmentMutation.status === 'pending' ? (
                     <DashboardLoader />
                 ) : (
-                    'Evaluate Lecture'
+                    t('trigger.label')
                 )}
             </Badge>
 
             {enableDialog && (
                 <AITasksList
-                    heading="Vsmart Feedback"
+                    heading={t('tasksList.heading')}
                     enableDialog={enableDialog}
                     setEnableDialog={setEnableDialog}
                 />

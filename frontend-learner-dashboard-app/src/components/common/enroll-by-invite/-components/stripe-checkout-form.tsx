@@ -1,5 +1,6 @@
 import { CardElement, useElements, useStripe } from "@stripe/react-stripe-js";
 import { useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
 
 interface StripeCheckoutFormProps {
   error: string | null;
@@ -24,6 +25,7 @@ export const StripeCheckoutForm = ({
   error,
   onPaymentMethodReady,
 }: StripeCheckoutFormProps) => {
+  const { t } = useTranslation("enrollmentA");
   const stripe = useStripe();
   const elements = useElements();
   const callbackRef = useRef(onPaymentMethodReady);
@@ -57,7 +59,7 @@ export const StripeCheckoutForm = ({
         console.error("Stripe or Elements not available");
         return {
           success: false,
-          error: "Stripe is not loaded yet. Please try again.",
+          error: t("stripeCheckout.notLoaded"),
         };
       }
 
@@ -65,7 +67,7 @@ export const StripeCheckoutForm = ({
       if (!cardElement) {
         return {
           success: false,
-          error: "Card element not found. Please refresh the page.",
+          error: t("stripeCheckout.cardElementNotFound"),
         };
       }
 
@@ -80,14 +82,14 @@ export const StripeCheckoutForm = ({
           return {
             success: false,
             error:
-              error.message || "An error occurred during payment processing.",
+              error.message || t("stripeCheckout.processingError"),
           };
         }
 
         if (!paymentMethod) {
           return {
             success: false,
-            error: "Failed to create payment method.",
+            error: t("stripeCheckout.createMethodFailed"),
           };
         }
 
@@ -99,7 +101,7 @@ export const StripeCheckoutForm = ({
         console.error("Stripe payment error:", err);
         return {
           success: false,
-          error: "An unexpected error occurred. Please try again.",
+          error: t("common.unexpectedError"),
         };
       }
     };
@@ -115,9 +117,9 @@ export const StripeCheckoutForm = ({
     <div className="w-full max-w-md mx-auto">
       <div className="bg-white rounded-md border border-gray-200 p-6 text-center">
         <h2 className="text-2xl font-bold text-gray-800 mb-2">
-          💳 Secure Payment
+          💳 {t("stripeCheckout.title")}
         </h2>
-        <p className="text-gray-600 mb-6">Enter your card details below.</p>
+        <p className="text-gray-600 mb-6">{t("stripeCheckout.description")}</p>
         <div className="p-4 border border-gray-300 rounded-lg mb-6 bg-white">
           <CardElement
             options={{
@@ -142,7 +144,7 @@ export const StripeCheckoutForm = ({
         </div>
         {error && (
           <div className="mt-5 p-4 bg-red-50 border border-red-200 rounded-lg text-start">
-            <strong className="text-red-800">❌ Error</strong>
+            <strong className="text-red-800">❌ {t("common.error")}</strong>
             <p className="text-red-700 text-sm mt-1">{error}</p>
           </div>
         )}

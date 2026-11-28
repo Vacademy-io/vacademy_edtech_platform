@@ -1,0 +1,10 @@
+{
+    "tabs": {
+        "internalParticipants": "Participants internes",
+        "externalParticipants": "Participants externes"
+    },
+    "toasts": {
+        "pdfExportSuccess": "Données de la liste des répondants étudiants exportées avec succès au format PDF",
+        "csvExportSuccess": "Données de la liste des répondants étudiants exportées avec succès au format CSV"
+    }
+}

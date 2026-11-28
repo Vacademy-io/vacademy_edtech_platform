@@ -32,9 +32,12 @@ Design constraints
    simply discards `ocr_payloads`. A scanned/image-only PDF therefore yields no
    text — and the tutor is told it cannot read the slide, which is the honest
    outcome and costs nothing.
-3. **Reuse the existing cache.** `file_conversion` is already a
-   fileId -> extracted-text cache with an idempotent boot-time DDL, so a slide
-   whose PDF was previously converted by a MathPix path is reused for free.
+3. **Reuse the existing cache table, read by vendor.** `file_conversion` is
+   already a fileId -> extracted-text cache with an idempotent boot-time DDL.
+   It is shared with MathPix HTML and the tutor's caches (including the
+   `tutor_pdf_probe` JSON of page counts), so this service reads and writes
+   only rows tagged `SLIDE_TEXT_VENDOR`; any other vendor's row for the same
+   fileId would reach the learner as slide text.
 """
 from __future__ import annotations
 
@@ -163,9 +166,15 @@ def get_cached_slide_text(db: Session, file_id: str) -> Optional[str]:
 
     Callers MUST have passed file_belongs_to_institute first — the cache is keyed
     by fileId alone, so an unscoped read here would serve another tenant's text.
+
+    Only this service's own rows are read. The table is shared, and the newest
+    row of any vendor for a PDF can be the tutor's probe JSON (page counts) or
+    MathPix HTML, neither of which is slide text.
     """
     try:
-        row = FileConversionRepository(db).find_success_by_source_file_id(file_id)
+        row = FileConversionRepository(db).find_success_by_vendor_and_file_id(
+            SLIDE_TEXT_VENDOR, file_id
+        )
         if row and row.html_text:
             return row.html_text
     except Exception as exc:  # noqa: BLE001
@@ -237,13 +246,13 @@ async def _extract_and_cache(file_id: str) -> None:
 
             with background_db_session() as db:
                 repo = FileConversionRepository(db)
-                if repo.find_success_by_source_file_id(file_id) is None:
-                    repo.start(
+                if repo.find_success_by_vendor_and_file_id(SLIDE_TEXT_VENDOR, file_id) is None:
+                    repo.store_success(
                         vendor_file_id=file_id,
                         vendor=SLIDE_TEXT_VENDOR,
                         file_id=file_id,
+                        html=body,
                     )
-                    repo.cache_html(file_id, body)
             logger.info(
                 "slide text: cached %d chars for fileId=%s (%d pages)",
                 len(body), file_id, len(extracted.pages),

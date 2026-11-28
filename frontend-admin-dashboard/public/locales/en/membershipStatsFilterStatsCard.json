@@ -1,0 +1,9 @@
+{
+    "title": "Selected Range Statistics",
+    "subtitle": "Based on your current filters",
+    "usersFound_one": "{{count}} user found",
+    "usersFound_other": "{{count}} users found",
+    "new": "New",
+    "retainer": "Retainer",
+    "viewMembers": "View Members"
+}

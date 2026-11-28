@@ -1,0 +1,19 @@
+{
+    "header": {
+        "title": "VSmart व्याख्यान पूर्वावलोकन"
+    },
+    "labels": {
+        "lectureTitle": "📘 व्याख्यान शीर्षक: {{title}}",
+        "level": "स्तर:",
+        "modeOfTeaching": "शिक्षण का तरीका:",
+        "lectureLanguage": "व्याख्यान की भाषा:",
+        "lectureDuration": "व्याख्यान की अवधि:",
+        "topicCovered": "कवर किया गया विषय:",
+        "content": "सामग्री:",
+        "inLectureQuestion": "व्याख्यान के दौरान प्रश्न:",
+        "activity": "गतिविधि:",
+        "assignment": "असाइनमेंट",
+        "notApplicable": "लागू नहीं",
+        "task": "कार्य:"
+    }
+}

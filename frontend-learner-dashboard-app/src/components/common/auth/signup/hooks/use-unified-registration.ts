@@ -12,6 +12,7 @@ import { fetchAndStoreStudentDetails } from '@/services/studentDetails';
 import { getTokenDecodedData } from '@/lib/auth/sessionUtility';
 import { generateCredentials, areCredentialsRequired } from '../utils/credential-generator';
 import { SignupSettings } from '@/config/signup/defaultSignupSettings';
+import { isExistingAccountWithoutSession, sendExistingAccountToSignIn } from '@/lib/auth/existing-account-sign-in';
 
 export interface RegistrationData {
   username?: string;
@@ -311,8 +312,12 @@ export function useUnifiedRegistration(): UseUnifiedRegistrationReturn {
         }
       }
 
+      // The e-mail already belonged to an account that must sign in itself: it is enrolled,
+      // but no account was created and no session was issued.
+      const existingAccount = isExistingAccountWithoutSession(response);
+
       // Show success message
-      if (showSuccessMessage) {
+      if (showSuccessMessage && !existingAccount) {
         toast.success(i18n.t("auth:enrollment.accountCreated"));
       }
 
@@ -330,6 +335,15 @@ export function useUnifiedRegistration(): UseUnifiedRegistrationReturn {
             // Use register response tokens if login fails (e.g. backend returns tokens on register)
           }
         }
+      }
+
+      // Not signed in by the password above either: send them to the normal sign-in, which
+      // brings them back where this sign-up would have.
+      if (existingAccount && shouldAutoLogin && !authResponse.accessToken) {
+        return await sendExistingAccountToSignIn({
+          email: data.email,
+          redirect: redirectAfterLogin ? customRedirectRoute || "/study-library/courses" : undefined,
+        });
       }
 
       // Handle post-registration

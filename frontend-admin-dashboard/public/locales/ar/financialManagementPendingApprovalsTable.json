@@ -1,0 +1,34 @@
+{
+    "toast": {
+        "approved": "تمت الموافقة على التسوية",
+        "rejected": "تم رفض التسوية",
+        "reviewFailed": "فشلت مراجعة التسوية"
+    },
+    "errors": {
+        "unableToLoad": "تعذر تحميل الموافقات المعلقة",
+        "tryAgain": "يرجى المحاولة مرة أخرى."
+    },
+    "empty": {
+        "noPendingApprovals": "لا توجد موافقات معلقة",
+        "allReviewed": "تمت مراجعة جميع طلبات التسوية."
+    },
+    "table": {
+        "student": "الطالب",
+        "feeType": "نوع الرسوم",
+        "cpoPlan": "CPO / الخطة",
+        "type": "النوع",
+        "expected": "المتوقع",
+        "amount": "المبلغ",
+        "reason": "السبب",
+        "dueDate": "تاريخ الاستحقاق",
+        "actions": "الإجراءات"
+    },
+    "adjustmentType": {
+        "concession": "تنازل",
+        "penalty": "غرامة"
+    },
+    "actions": {
+        "approve": "موافقة",
+        "reject": "رفض"
+    }
+}

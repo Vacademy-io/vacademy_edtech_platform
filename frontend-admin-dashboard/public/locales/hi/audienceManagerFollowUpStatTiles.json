@@ -1,0 +1,24 @@
+{
+    "tiles": {
+        "overdue": {
+            "label": "लंबित",
+            "caption": "समय-सीमा बीत चुकी"
+        },
+        "today": {
+            "label": "आज",
+            "caption": "आज देय"
+        },
+        "upcoming": {
+            "label": "आगामी",
+            "caption": "अगले 7 दिन"
+        },
+        "all": {
+            "label": "सभी",
+            "caption": "सभी लंबित"
+        },
+        "completed": {
+            "label": "पूर्ण",
+            "caption": "हो चुके"
+        }
+    }
+}

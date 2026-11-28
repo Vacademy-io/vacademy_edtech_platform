@@ -1,0 +1,43 @@
+{
+    "dialog": {
+        "heading": "دي سمارت برومبت"
+    },
+    "fields": {
+        "text": {
+            "label": "النص",
+            "placeholder": "أدخل النص"
+        },
+        "num": {
+            "label": "عدد الأسئلة",
+            "placeholder": "أدخل عدد الأسئلة"
+        },
+        "classLevel": {
+            "label": "المستوى الدراسي",
+            "placeholder": "أدخل المستوى الدراسي"
+        },
+        "topics": {
+            "label": "المواضيع",
+            "placeholder": "أدخل المواضيع"
+        },
+        "questionType": {
+            "label": "نوع السؤال",
+            "placeholder": "أدخل نوع السؤال"
+        },
+        "questionLanguage": {
+            "label": "لغة السؤال",
+            "placeholder": "أدخل لغة السؤال"
+        }
+    },
+    "actions": {
+        "cancel": "إلغاء",
+        "regenerate": "إعادة الإنشاء"
+    },
+    "validation": {
+        "textRequired": "النص مطلوب",
+        "numRequired": "يجب ألا يقل عدد الأسئلة عن 1",
+        "classLevelRequired": "المستوى الدراسي مطلوب",
+        "topicsRequired": "المواضيع مطلوبة",
+        "questionTypeRequired": "نوع السؤال مطلوب",
+        "questionLanguageRequired": "لغة السؤال مطلوبة"
+    }
+}

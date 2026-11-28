@@ -1,0 +1,35 @@
+{
+    "addToBatches_one": "Add to batches ({{count}} selected)",
+    "addToBatches_other": "Add to batches ({{count}} selected)",
+    "applyToAllBatches": "Apply to all batches",
+    "position": {
+        "label": "Position",
+        "endOfChapter": "End of chapter",
+        "beginningOfChapter": "Beginning of chapter"
+    },
+    "status": {
+        "label": "Status",
+        "published": "Published",
+        "draft": "Draft"
+    },
+    "notifyLearners": {
+        "label": "Notify learners",
+        "on": "On",
+        "off": "Off"
+    },
+    "actions": {
+        "adding": "Adding…",
+        "add": "Add"
+    },
+    "fields": {
+        "subject": "Subject",
+        "module": "Module",
+        "chapter": "Chapter"
+    },
+    "fixedOrSelect": {
+        "loading": "Loading {{label}}s…",
+        "select": "Select {{label}}",
+        "search": "Search {{label}}…",
+        "noMatches": "No matches"
+    }
+}

@@ -1,0 +1,29 @@
+{
+    "editHeading": "تعديل المسمى الوظيفي",
+    "addHeading": "إضافة مسمى وظيفي",
+    "cancel": "إلغاء",
+    "saveChanges": "حفظ التغييرات",
+    "saving": "جارٍ الحفظ…",
+    "fields": {
+        "nameLabel": "الاسم",
+        "namePlaceholder": "مثال: معلم أول",
+        "codeLabel": "الرمز",
+        "codePlaceholder": "مثال: SR-TCH",
+        "levelLabel": "المستوى",
+        "levelPlaceholder": "مثال: 3",
+        "levelHelp": "الرقم الأعلى يعني أقدمية أكبر.",
+        "gradeLabel": "الدرجة",
+        "gradePlaceholder": "مثال: L3",
+        "descriptionLabel": "الوصف",
+        "descriptionPlaceholder": "ما الذي يشمله هذا المسمى الوظيفي"
+    },
+    "toasts": {
+        "updated": "تم تحديث المسمى الوظيفي",
+        "added": "تمت إضافة المسمى الوظيفي"
+    },
+    "errors": {
+        "nameRequired": "أعطِ المسمى الوظيفي اسمًا",
+        "levelWholeNumber": "استخدم عددًا صحيحًا",
+        "saveFailed": "تعذّر حفظ هذا المسمى الوظيفي"
+    }
+}

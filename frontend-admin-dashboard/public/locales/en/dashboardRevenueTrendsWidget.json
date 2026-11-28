@@ -1,0 +1,32 @@
+{
+    "heading": "Amount collected",
+    "rangeGroup": "Collection time range",
+    "ranges": {
+        "3d": "3 days",
+        "7d": "7 days",
+        "24d": "24 days",
+        "all": "All"
+    },
+    "subtitle": "Paid payments · last {{range}}",
+    "totalCollected": "Total collected",
+    "payments_one": "{{formatted}} payment",
+    "payments_other": "{{formatted}} payments",
+    "emptyState": "No collections in this period",
+    "tooltip": {
+        "collected": "Collected"
+    },
+    "months": {
+        "jan": "Jan",
+        "feb": "Feb",
+        "mar": "Mar",
+        "apr": "Apr",
+        "may": "May",
+        "jun": "Jun",
+        "jul": "Jul",
+        "aug": "Aug",
+        "sep": "Sep",
+        "oct": "Oct",
+        "nov": "Nov",
+        "dec": "Dec"
+    }
+}

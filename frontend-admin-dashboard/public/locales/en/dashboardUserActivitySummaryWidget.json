@@ -1,0 +1,22 @@
+{
+    "header": {
+        "title": "Today's Activity",
+        "subtitle": "Real-time summary of user engagement"
+    },
+    "stats": {
+        "uniqueUsers": "Unique Users",
+        "sessions": "Sessions",
+        "apiCalls": "API Calls",
+        "activityTime": "Activity Time",
+        "avgSession": "Avg Session",
+        "peakHour": "Peak Hour"
+    },
+    "suffix": {
+        "hours": "h",
+        "minutes": "m",
+        "oclock": ":00"
+    },
+    "error": {
+        "widgetName": "activity summary"
+    }
+}

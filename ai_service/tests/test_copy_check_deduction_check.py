@@ -1,0 +1,342 @@
+"""Offline tests for re-checking cut marks against the answer's image.
+
+No network. Run:
+    cd vacademy_platform/ai_service && PYTHONPATH=.. APP_ENV=local \
+        .venv/bin/python tests/test_copy_check_deduction_check.py
+"""
+from __future__ import annotations
+
+import asyncio
+import json
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
+
+from PIL import Image
+
+from ai_service.app.services.copy_check import deduction_check as dc
+
+failures: list[str] = []
+
+
+def check(label: str, cond: bool, detail: str = "") -> None:
+    if cond:
+        print(f"  PASS  {label}")
+    else:
+        failures.append(f"{label}: {detail}")
+        print(f"  FAIL  {label} — {detail}")
+
+
+LAYOUT = {"pages": [
+    {"page_id": "p4", "lines": [
+        {"line_id": "p4_r3", "box": [86, 259, 59, 43], "text": "25)"},
+        {"line_id": "p4_r4", "box": [72, 320, 457, 48], "text": "= 1/6 (-3/12 + 5/12)"},
+        {"line_id": "p4_r11", "box": [321, 848, 56, 44], "text": "= 1/30"},
+        {"line_id": "p4_r12", "box": [56, 1041, 685, 51], "text": "26) Speed: 210/3 = 70 km/h"},
+    ]},
+    {"page_id": "p5", "lines": [
+        {"line_id": "p5_r1", "box": [100, 100, 600, 50], "text": "continued"},
+        {"line_id": "p5_r2", "box": [100, 200, 300, 50], "text": "x = 5"},
+    ]},
+]}
+
+
+def _verdict(marks=1.0):
+    return {
+        "question_id": "q25", "marks_awarded": marks, "max_marks": 2.0, "status": "COMPLETED",
+        "extracted_answer": "= 1/6 (-3/12 + 5/12) ... = 1/30", "answer_rows": ["p4_r3", "p4_r11"],
+        "criteria_breakdown": [
+            {"criteria_name": "Method", "marks": 1.0, "max_marks": 1.0, "reason": "ok"},
+            {"criteria_name": "Final answer", "marks": 0.0, "max_marks": 1.0, "reason": "final answer 1/30, not 7/30"},
+        ],
+        "annotations": [
+            {"style": "cross", "target": "p4_r11", "page_id": "p4"},
+            {"style": "score", "target": "p4_r11", "page_id": "p4", "text": "1/2"},
+            {"style": "margin_note", "target": "p4_r11", "page_id": "p4", "text": "Final answer should be 7/30"},
+        ],
+    }
+
+
+def test_regions() -> None:
+    print("\nanswer_regions — the answer's rows, full writing width, padded, per page")
+    regions = dc.answer_regions(LAYOUT, ["p4_r3", "p4_r11"])
+    check("one region on p4", [r[0] for r in regions] == ["p4"], str(regions))
+    left, top, right, bottom = regions[0][1]
+    check("starts above the label", top < 259, str(top))
+    check("reaches below the last row (stacked denominator room)", bottom > 892, str(bottom))
+    check("stops before the next answer", bottom < 1041, str(bottom))
+    check("full width of the writing", left <= 56 and right >= 741, str((left, right)))
+    regions = dc.answer_regions(LAYOUT, ["p4_r11", "p5_r2"])
+    check("runs on to the next page", [r[0] for r in regions] == ["p4", "p5"], str(regions))
+    check("unknown rows -> nothing", dc.answer_regions(LAYOUT, ["p9_r1"]) == [])
+
+
+def test_apply() -> None:
+    print("\napply_check — raise on a misreading, never lower, keep real cuts")
+    v = _verdict()
+    raised = dc.apply_check(v, {"what_the_student_wrote": "7/5 (-3/12 + 5/12) = 7/5 x 1/6 = 7/30",
+                                "cuts": [{"reason": "final answer 1/30", "finding": "misread", "why": "the image shows 7/30"}],
+                                "marks_awarded": 2, "note": ""})
+    check("raised to full", raised and v["marks_awarded"] == 2.0, str(v["marks_awarded"]))
+    styles = [a["style"] for a in v["annotations"]]
+    check("cross -> tick, note dropped", "cross" not in styles and "margin_note" not in styles, str(styles))
+    check("score rewritten", [a["text"] for a in v["annotations"] if a["style"] == "score"] == ["2/2"])
+    check("breakdown sums to the mark", sum(c["marks"] for c in v["criteria_breakdown"]) == 2.0)
+
+    v = _verdict()
+    check("a real cut is kept", not dc.apply_check(v, {"cuts": [{"finding": "real"}], "marks_awarded": 2}) and v["marks_awarded"] == 1.0)
+    v = _verdict()
+    check("never lowered", not dc.apply_check(v, {"cuts": [{"finding": "misread"}], "marks_awarded": 0}) and v["marks_awarded"] == 1.0)
+    v = _verdict()
+    dc.apply_check(v, {"cuts": [{"finding": "misread", "why": "x"}], "marks_awarded": 9})
+    check("capped at max", v["marks_awarded"] == 2.0)
+    v = _verdict(0.5)
+    dc.apply_check(v, {"cuts": [{"finding": "misread", "why": "7 not 1"}, {"finding": "real"}],
+                       "marks_awarded": 1.5, "note": "Common factor not shown."})
+    check("partial raise keeps a note", v["marks_awarded"] == 1.5 and
+          [a["text"] for a in v["annotations"] if a["style"] == "margin_note"] == ["Common factor not shown."])
+
+
+class FakeLLM:
+    def __init__(self, reply):
+        self.reply, self.calls, self.images = reply, 0, 0
+
+    async def chat_completion(self, **kw):
+        self.calls += 1
+        self.images = len(kw["messages"][1]["attachments"])
+        return {"content": json.dumps(self.reply), "usage": {"prompt_tokens": 1500, "completion_tokens": 100}}
+
+
+def test_checker() -> None:
+    print("\nDeductionChecker — only cut marks are checked, and it never breaks grading")
+    async def fake_download(url, dest):
+        dest.write_bytes(b"%PDF")
+    dc._download = fake_download
+    dc.DeductionChecker._render = lambda self, pdf, pid: Image.new("RGB", (1400, 2200), "white") if pid in ("p4", "p5") else None
+    llm = FakeLLM({"cuts": [{"finding": "misread", "why": "7/30"}], "marks_awarded": 2})
+    ck = dc.DeductionChecker("http://x/c.pdf", LAYOUT, llm)
+    q = {"question_id": "q25", "question_text": "7/5 x (-3/12) + 7/5 x (5/12)", "max_marks": 2.0, "paper_label": "25"}
+    v = _verdict()
+    check("cut answer raised", asyncio.run(ck.check(v, q, {"rubric": []})) and v["marks_awarded"] == 2.0)
+    check("one image sent", llm.images == 1, str(llm.images))
+    check("pdf fetched once and kept as bytes", ck._pdf == b"%PDF")
+    full = _verdict(2.0)
+    calls = llm.calls
+    check("full marks not re-checked", not asyncio.run(ck.check(full, q, {})) and llm.calls == calls)
+
+    calls = llm.calls
+    mcq = {"question_id": "q6", "question_type": "MCQS", "question_text": "reciprocal of -7/19", "max_marks": 1.0}
+    v = _verdict(0.0); v["max_marks"] = 1.0
+    check("MCQs are left to the option-letter rule", not asyncio.run(ck.check(v, mcq, {})) and llm.calls == calls)
+
+    class Boom(FakeLLM):
+        async def chat_completion(self, **kw):
+            raise RuntimeError("provider down")
+    v = _verdict()
+    check("provider failure leaves the verdict alone",
+          not asyncio.run(dc.DeductionChecker("http://x", LAYOUT, Boom({})).check(v, q, {})) and v["marks_awarded"] == 1.0)
+
+
+def test_reading_borrowed_from_the_paper() -> None:
+    print("\nborrowed_phrases — a reading copied from the question or scheme raises nothing")
+    layout = {"pages": [{"page_id": "p4", "lines": [
+        {"line_id": "p4_r1", "box": [0, 0, 500, 40],
+         "text": "Consideration can be inadequate. A contract cannot be void just because of its consideration."},
+        {"line_id": "p4_r2", "box": [0, 50, 500, 40],
+         "text": "Anita let her neighbour Sohan use her van for Rs 3000 a month and Sohan paid in advance."},
+        {"line_id": "p4_r3", "box": [0, 100, 500, 40], "text": "It is not a void contract and is enforceable."},
+    ]}]}
+    q = {"question_id": "q4", "max_marks": 3.0, "question_text": (
+        "Anita agreed to let her neighbour Sohan use her van for six months for Rs 3,000 a month. "
+        "Anita fixed the hire herself after consulting her chartered accountant, and nobody pressed "
+        "her to agree. Decide whether Anita is right.")}
+    rubric = {"rubric": [{"criteria_name": "Free consent", "max_marks": 1.0, "evaluation_guidelines":
+                          "Anita fixed the hire herself after advice and nobody pressed her, so her consent was free"}]}
+    v = {"extracted_answer": "Consideration can be inadequate ... It is not a void contract and is enforceable.",
+         "answer_rows": ["p4_r1", "p4_r3"]}
+    # What the check claimed on a real copy: a sentence of the question.
+    copied = {"what_the_student_wrote": (
+        "Consideration can be inadequate; contract cannot be void just because of its consideration. "
+        "Anita fixed the hire herself after consulting her chartered accountant and nobody pressed her to agree.")}
+    n = dc.borrowed_phrases(copied, q, rubric, v, layout)
+    check("a sentence of the question is caught", n > dc.MAX_BORROWED, f"{n} borrowed phrases")
+    faithful = {"what_the_student_wrote": "Anita let her neighbour Sohan use her van for Rs 3000 a month. "
+                                          "It is not a void contract and is enforceable."}
+    n = dc.borrowed_phrases(faithful, q, rubric, v, layout)
+    check("facts of the question the student restated are not borrowed", n == 0, f"{n} borrowed phrases")
+    maths = {"what_the_student_wrote": "7/5 (-3/12 + 5/12) = 7/5 x 1/6 = 7/30"}
+    check("maths working is never affected", dc.borrowed_phrases(maths, q, rubric, v, layout) == 0)
+
+    async def fake_download(url, dest):
+        dest.write_bytes(b"%PDF")
+    dc._download = fake_download
+    dc.DeductionChecker._render = lambda self, pdf, pid: Image.new("RGB", (1400, 2200), "white")
+    llm = FakeLLM({**copied, "cuts": [{"finding": "misread", "why": "free consent is stated"}], "marks_awarded": 3})
+    cut = dict(v, question_id="q4", marks_awarded=2.0, max_marks=3.0, status="COMPLETED",
+               criteria_breakdown=[{"criteria_name": "Free consent", "marks": 0.0, "max_marks": 1.0, "reason": "missing"}],
+               annotations=[])
+    raised = asyncio.run(dc.DeductionChecker("http://x/c.pdf", layout, llm).check(cut, q, rubric))
+    check("a borrowed reading does not raise the mark", not raised and cut["marks_awarded"] == 2.0,
+          f"raised to {cut['marks_awarded']}")
+
+
+if __name__ == "__main__":
+    test_regions()
+    test_apply()
+    test_checker()
+    test_reading_borrowed_from_the_paper()
+    print()
+    if failures:
+        print(f"{len(failures)} FAILED")
+        for f in failures:
+            print("  -", f)
+        sys.exit(1)
+    print("all passed")
+
+
+def test_a_raise_respects_each_criterions_max_stored_as_max():
+    # attach_criteria_max stores the ceiling as "max": the whole raise used to
+    # land on the last criterion ("Vocabulary 17/15").
+    from app.services.copy_check.deduction_check import apply_check
+    verdict = {"marks_awarded": 89.0, "max_marks": 100.0, "criteria_breakdown": [
+        {"criteria_name": "Content", "marks": 26.0, "max": 30.0},
+        {"criteria_name": "Vocabulary", "marks": 13.0, "max": 15.0}]}
+    result = {"marks_awarded": 95, "cuts": [{"finding": "misread", "why": "read wrong"}]}
+    assert apply_check(verdict, result)
+    marks = [c["marks"] for c in verdict["criteria_breakdown"]]
+    assert marks == [30.0, 15.0]
+    assert verdict["marks_awarded"] == 95.0
+    assert all(c["marks"] <= c["max"] for c in verdict["criteria_breakdown"])
+
+
+def test_a_raise_past_every_criterions_max_is_cut_back():
+    from app.services.copy_check.deduction_check import apply_check
+    verdict = {"marks_awarded": 8.0, "max_marks": 50.0, "criteria_breakdown": [
+        {"criteria_name": "Paragraph 1", "marks": 4.0, "max": 10.0},
+        {"criteria_name": "Paragraph 2", "marks": 4.0, "max": 10.0}]}
+    result = {"marks_awarded": 40, "cuts": [{"finding": "misread", "why": "read wrong"}]}
+    assert apply_check(verdict, result)
+    assert verdict["marks_awarded"] == 20.0 and verdict["deduction_check"]["to"] == 20.0
+    assert [c["marks"] for c in verdict["criteria_breakdown"]] == [10.0, 10.0]
+
+
+def test_no_room_at_all_means_no_raise():
+    from app.services.copy_check.deduction_check import apply_check
+    verdict = {"marks_awarded": 20.0, "max_marks": 50.0, "criteria_breakdown": [
+        {"criteria_name": "Paragraph 1", "marks": 10.0, "max": 10.0},
+        {"criteria_name": "Paragraph 2", "marks": 10.0, "max": 10.0}]}
+    result = {"marks_awarded": 30, "cuts": [{"finding": "misread", "why": "read wrong"}]}
+    assert not apply_check(verdict, result)
+    assert verdict["marks_awarded"] == 20.0 and "deduction_check" not in verdict
+
+
+def _q5_verdict():
+    """Q5 of a real copy: 5(a) not attempted (six lines at 0), 5(b) partly
+    right, with 0.5 cut on 5(b)'s variation line (index 7)."""
+    lines = [{"criteria_name": f"5(a) point {i + 1}", "marks": 0.0, "max": 1.0, "reason": "Not attempted"}
+             for i in range(6)]
+    lines += [
+        {"criteria_name": "Court may dissolve for permanent incapacity", "marks": 1.0, "max": 1.0,
+         "reason": "Full marks - rule stated"},
+        {"criteria_name": "Applied: four months' absence is temporary", "marks": 0.5, "max": 1.0,
+         "reason": "0.5 mark deducted because variation (never work again) not answered, p7_r16"},
+        {"criteria_name": "Unregistered firm cannot sue", "marks": 1.0, "max": 1.0, "reason": "Full marks"},
+        {"criteria_name": "Pending suit: withdraw and file afresh", "marks": 0.0, "max": 1.0,
+         "reason": "Remedy not given"},
+    ]
+    return {"marks_awarded": 2.5, "max_marks": 10.0, "criteria_breakdown": lines, "annotations": []}
+
+
+def test_the_raise_lands_on_the_misread_line_by_id():
+    from app.services.copy_check.deduction_check import apply_check
+    v = _q5_verdict()
+    result = {"marks_awarded": 3.0, "cuts": [
+        {"id": 7, "finding": "misread", "why": "the variation is answered: the court can dissolve it"},
+        {"id": 0, "finding": "real", "why": "5(a) is blank"}]}
+    assert apply_check(v, result)
+    lines = v["criteria_breakdown"]
+    assert lines[7]["marks"] == 1.0 and lines[7]["reason"].startswith("Re-checked against the handwriting: the variation")
+    assert lines[0]["marks"] == 0.0 and lines[0]["reason"] == "Not attempted"
+    assert v["marks_awarded"] == 3.0
+
+
+def test_the_raise_finds_its_line_by_the_echoed_reason():
+    from app.services.copy_check.deduction_check import apply_check
+    v = _q5_verdict()
+    result = {"marks_awarded": 3.0, "cuts": [{"finding": "misread", "why": "answered",
+                                             "reason": "0.5 mark deducted because variation (never work again) not answered, p7_r16"}]}
+    assert apply_check(v, result)
+    assert [c["marks"] for c in v["criteria_breakdown"]][6:8] == [1.0, 1.0]
+    assert v["criteria_breakdown"][0]["marks"] == 0.0
+
+
+def test_an_unmatched_misread_never_raises_a_blank_line():
+    from app.services.copy_check.deduction_check import apply_check
+    v = _q5_verdict()
+    # id 6 is a full line (never offered as a cut), so the check named no line.
+    result = {"marks_awarded": 3.5, "cuts": [{"id": 6, "finding": "misread", "why": "x"}]}
+    assert apply_check(v, result)
+    lines = v["criteria_breakdown"]
+    # Part-credited line first, then the line cut for a point not given.
+    assert v["marks_awarded"] == 3.5 and lines[7]["marks"] == 1.0 and lines[9]["marks"] == 0.5
+    assert all(c["marks"] == 0.0 for c in lines[:6])
+
+
+def test_lines_cut_as_not_attempted_are_raised_only_when_named():
+    from app.services.copy_check.deduction_check import apply_check
+    v = _q5_verdict()
+    v["criteria_breakdown"][7]["marks"] = 1.0
+    v["criteria_breakdown"][9]["reason"] = "Not attempted"
+    v["marks_awarded"] = 3.0
+    assert not apply_check(v, {"marks_awarded": 4.0, "cuts": [{"finding": "misread", "why": "x"}]})
+    assert v["marks_awarded"] == 3.0
+    assert apply_check(v, {"marks_awarded": 4.0, "cuts": [{"id": 0, "finding": "misread", "why": "5(a) is on p9"}]})
+    assert v["criteria_breakdown"][0]["marks"] == 1.0
+
+
+def test_the_raise_is_capped_by_the_misread_lines_room():
+    from app.services.copy_check.deduction_check import apply_check
+    v = _q5_verdict()
+    result = {"marks_awarded": 4.0, "cuts": [{"id": 7, "finding": "misread", "why": "x"}]}
+    assert apply_check(v, result)
+    assert v["marks_awarded"] == 3.0
+    assert sum(c["marks"] for c in v["criteria_breakdown"]) == 3.0
+
+
+def test_prompt_lists_only_real_cuts_with_their_ids():
+    from app.services.copy_check.deduction_check import build_prompt
+    v = _q5_verdict()
+    prompt = build_prompt({"question_text": "Q5", "max_marks": 10}, {"rubric": []}, v)
+    listed = json.loads(prompt.split("cutting marks for:\n", 1)[1].split("\nNotes written", 1)[0])
+    assert [c["id"] for c in listed] == [0, 1, 2, 3, 4, 5, 7, 9]
+    assert '"id": <the cut' in prompt
+
+
+def test_a_raise_keeps_the_graders_reason_when_the_check_explains_instead():
+    from app.services.copy_check.deduction_check import apply_check
+    v = _q5_verdict()
+    v["annotations"] = [{"style": "margin_note", "target": "p8_r10", "page_id": "p8", "text": "5(a) not attempted; remedy missing"},
+                        {"style": "score", "target": "p8_r10", "page_id": "p8", "text": "2.5/10"}]
+    v["feedback"] = "old feedback"
+    result = {"marks_awarded": 3.0, "cuts": [{"id": 7, "finding": "misread", "why": "variation answered"}],
+              "note": "You earned credit for stating the variation; part (a) and the remedy are still missing.",
+              "feedback": "The variation is answered after all; 5(a) and the fresh-suit remedy are still missing."}
+    assert apply_check(v, result)
+    notes = [a["text"] for a in v["annotations"] if a["style"] == "margin_note"]
+    assert notes == ["5(a) not attempted; remedy missing"]
+    assert v["feedback"].startswith("The variation is answered after all")
+    assert [a["text"] for a in v["annotations"] if a["style"] == "score"] == ["3/10"]
+
+
+def test_a_short_remaining_reason_from_the_check_replaces_the_note():
+    from app.services.copy_check.deduction_check import apply_check, _margin_fragment
+    v = _q5_verdict()
+    v["annotations"] = [{"style": "margin_note", "target": "p8_r10", "page_id": "p8", "text": "variation wrong"}]
+    assert apply_check(v, {"marks_awarded": 3.0, "note": "5(a) and remedy missing",
+                           "cuts": [{"id": 7, "finding": "misread", "why": "x"}]})
+    assert [a["text"] for a in v["annotations"] if a["style"] == "margin_note"] == ["5(a) and remedy missing"]
+    assert v["feedback"] == "5(a) and remedy missing"  # an older reply with no feedback field
+    assert not _margin_fragment("Well done on the variation")
+    assert not _margin_fragment("Fourth difference (dissolution vs creation by law/perpetual succession) was written in the table")
+    assert _margin_fragment("Sections not quoted")

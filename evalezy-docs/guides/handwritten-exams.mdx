@@ -1,0 +1,735 @@
+---
+title: "Handwritten term exams"
+description: "Grade a school's scanned answer sheets, from the marking scheme to the report card."
+icon: "pen-nib"
+---
+
+This guide follows a school ERP through one term exam: a CBSE Class X Science half-yearly paper, graded from scanned answer sheets. It covers the whole loop, from turning the school's marking scheme into rubrics to writing marks into report cards.
+
+<Steps>
+  <Step title="Create the exam">
+    Send the questions, max marks, rubrics and model answers from the school's marking scheme.
+  </Step>
+  <Step title="Register the class roster">
+    Add students by your own student ID.
+  </Step>
+  <Step title="Open the exam">
+    Lock the paper so copies can be submitted.
+  </Step>
+  <Step title="Scan, upload and submit">
+    Scan one PDF per student, upload it, then submit it for that student.
+  </Step>
+  <Step title="Follow progress">
+    Poll for changes until every copy is graded.
+  </Step>
+  <Step title="Teacher review">
+    Teachers check the AI marks on the dashboard or through your UI.
+  </Step>
+  <Step title="Finalize and publish">
+    Finalize, write marks into report cards and download the checked copies.
+  </Step>
+</Steps>
+
+## Before you start
+
+- An API key with `evaluation:read` and `evaluation:write`. Add `evaluation:review` if teachers will change marks in your UI, and `evaluation:finalize` for the system that publishes results. See [Authentication](/authentication).
+- Enough credits. A handwritten copy costs 1 credit per page of the uploaded PDF, blank pages included. A class of 40 students with 12-page copies costs about 480 credits.
+- A scanner that produces one PDF per student, with every page in order.
+
+<Note>
+There is no sandbox: every key is live and every graded copy is charged. Test with a short exam and two or three copies.
+</Note>
+
+## 1. Create the exam
+
+Create the exam with the whole paper inline. Each question has a `label` (the number printed on the paper), a `type`, `text` and `max_marks`. For long answers, add a `rubric` and a `model_answer` from the school's marking scheme. This is what makes the AI mark like the school's own teachers.
+
+Set `external_ref` to your own ID for the exam. It is unique per institute, so a retried create cannot make a second copy of the exam.
+
+<CodeGroup>
+
+```bash curl
+curl https://api.evalezy.com/v1/exams \
+  -H "X-API-Key: $EVALEZY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: exam-hy-2026-x-sci" \
+  -d '{
+    "title": "Half-Yearly Examination 2026-27: Science, Class X",
+    "mode": "handwritten",
+    "external_ref": "erp-exam-hy-2026-x-sci",
+    "conducted_on": "2026-09-22",
+    "subject": "Science",
+    "level": "school",
+    "board": "CBSE",
+    "class": "X",
+    "instructions": "Section A: objective questions. Section B: answer in 80 to 120 words.",
+    "sections": [
+      { "name": "A", "order": 1 },
+      { "name": "B", "order": 2 }
+    ],
+    "questions": [
+      {
+        "label": "1",
+        "section": "A",
+        "type": "mcq_single",
+        "text": "Which gas is released when zinc reacts with dilute hydrochloric acid?",
+        "max_marks": 1,
+        "options": [
+          { "label": "A", "text": "Oxygen" },
+          { "label": "B", "text": "Hydrogen" },
+          { "label": "C", "text": "Chlorine" },
+          { "label": "D", "text": "Carbon dioxide" }
+        ],
+        "correct_options": ["B"]
+      },
+      {
+        "label": "21",
+        "section": "B",
+        "type": "long_answer",
+        "text": "Why is respiration considered an exothermic reaction? Explain.",
+        "max_marks": 3,
+        "model_answer": "During respiration, glucose is oxidised to carbon dioxide and water in the cells. This releases energy, so respiration is an exothermic reaction.",
+        "rubric": {
+          "partial_marking": true,
+          "criteria": [
+            {
+              "name": "Oxidation of glucose",
+              "marks": 1,
+              "keywords": ["glucose", "oxidised", "carbon dioxide", "water"],
+              "guidance": "States that glucose is broken down or oxidised to carbon dioxide and water."
+            },
+            {
+              "name": "Energy released",
+              "marks": 1,
+              "guidance": "States that energy is released."
+            },
+            {
+              "name": "Conclusion",
+              "marks": 1,
+              "guidance": "Concludes that a reaction which releases energy is exothermic."
+            }
+          ]
+        }
+      }
+    ]
+  }'
+```
+
+```python Python
+import os
+import requests
+
+API = "https://api.evalezy.com/v1"
+HEADERS = {"X-API-Key": os.environ["EVALEZY_API_KEY"]}
+
+exam = {
+    "title": "Half-Yearly Examination 2026-27: Science, Class X",
+    "mode": "handwritten",
+    "external_ref": "erp-exam-hy-2026-x-sci",
+    "conducted_on": "2026-09-22",
+    "subject": "Science",
+    "level": "school",
+    "board": "CBSE",
+    "class": "X",
+    "sections": [{"name": "A", "order": 1}, {"name": "B", "order": 2}],
+    "questions": [
+        {
+            "label": "1",
+            "section": "A",
+            "type": "mcq_single",
+            "text": "Which gas is released when zinc reacts with dilute hydrochloric acid?",
+            "max_marks": 1,
+            "options": [
+                {"label": "A", "text": "Oxygen"},
+                {"label": "B", "text": "Hydrogen"},
+                {"label": "C", "text": "Chlorine"},
+                {"label": "D", "text": "Carbon dioxide"},
+            ],
+            "correct_options": ["B"],
+        },
+        {
+            "label": "21",
+            "section": "B",
+            "type": "long_answer",
+            "text": "Why is respiration considered an exothermic reaction? Explain.",
+            "max_marks": 3,
+            "model_answer": "During respiration, glucose is oxidised to carbon dioxide and water "
+                            "in the cells. This releases energy, so respiration is exothermic.",
+            "rubric": {
+                "partial_marking": True,
+                "criteria": [
+                    {"name": "Oxidation of glucose", "marks": 1,
+                     "guidance": "States that glucose is oxidised to carbon dioxide and water."},
+                    {"name": "Energy released", "marks": 1,
+                     "guidance": "States that energy is released."},
+                    {"name": "Conclusion", "marks": 1,
+                     "guidance": "Concludes that a reaction which releases energy is exothermic."},
+                ],
+            },
+        },
+    ],
+}
+
+resp = requests.post(
+    f"{API}/exams",
+    json=exam,
+    headers={**HEADERS, "Idempotency-Key": "exam-hy-2026-x-sci"},
+    timeout=30,
+)
+if resp.status_code == 409 and resp.json()["error"]["code"] == "exam_exists":
+    exam_id = resp.json()["error"]["details"]["exam_id"]  # created on an earlier run
+else:
+    resp.raise_for_status()
+    exam_id = resp.json()["id"]
+    for w in resp.json().get("warnings") or []:
+        print("warning:", w["code"], w["message"])
+```
+
+```javascript Node
+const API = "https://api.evalezy.com/v1";
+const headers = {
+  "X-API-Key": process.env.EVALEZY_API_KEY,
+  "Content-Type": "application/json",
+};
+
+const exam = {
+  title: "Half-Yearly Examination 2026-27: Science, Class X",
+  mode: "handwritten",
+  external_ref: "erp-exam-hy-2026-x-sci",
+  conducted_on: "2026-09-22",
+  subject: "Science",
+  level: "school",
+  board: "CBSE",
+  class: "X",
+  sections: [{ name: "A", order: 1 }, { name: "B", order: 2 }],
+  questions: [/* same questions as the curl example */],
+};
+
+const res = await fetch(`${API}/exams`, {
+  method: "POST",
+  headers: { ...headers, "Idempotency-Key": "exam-hy-2026-x-sci" },
+  body: JSON.stringify(exam),
+});
+const body = await res.json();
+
+let examId;
+if (res.status === 409 && body.error.code === "exam_exists") {
+  examId = body.error.details.exam_id; // created on an earlier run
+} else if (!res.ok) {
+  throw new Error(`${body.error.code}: ${body.error.message}`);
+} else {
+  examId = body.id;
+  (body.warnings ?? []).forEach((w) => console.warn(w.code, w.message));
+}
+```
+
+</CodeGroup>
+
+The response is `201 Created` with the exam in `draft` status, a `dashboard_url` where teachers can open it, and the price of one page:
+
+```json Response (abridged)
+{
+  "id": "7c2e9b14-5a3f-4d81-b6e0-2f9a8c4d1e73",
+  "status": "draft",
+  "mode": "handwritten",
+  "title": "Half-Yearly Examination 2026-27: Science, Class X",
+  "external_ref": "erp-exam-hy-2026-x-sci",
+  "total_marks": 4.0,
+  "paper_max": 4.0,
+  "question_count": 2,
+  "dashboard_url": "https://dash.vacademy.io/assessment/assessment-list/assessment-details/7c2e9b14-5a3f-4d81-b6e0-2f9a8c4d1e73/EXAM/PRIVATE/overview",
+  "questions": [
+    { "id": "b4e7c1a9-0d2f-4a63-9f8e-5c1b7a3d6e20", "label": "1", "section": "A", "max_marks": 1.0 },
+    { "id": "f0a3d8c6-7e1b-4952-b8d4-a2e6c9f15b07", "label": "21", "section": "B", "max_marks": 3.0 }
+  ],
+  "rubric": { "version": 1, "locked": false, "questions_with_rubric": 1, "questions_without_rubric": 1 },
+  "quote": { "unit": "page", "credits_per_page": 1, "rate_source": "standard" }
+}
+```
+
+Store the question `id` for each `label`. Results and teacher overrides refer to questions by ID.
+
+### Rubric rules
+
+The API checks rubrics when you send them, so a mistake in the marking scheme is caught before any copy is graded.
+
+| Rule | Error |
+| --- | --- |
+| Criterion marks add up to the question's `max_marks` | `422 rubric_marks_mismatch` |
+| Criterion names are unique within a question | `422 rubric_duplicate_criterion` |
+| `guidance` describes what to look for, not marks ("award 2 marks", "half marks") | `422 rubric_guidance_has_marks` |
+| 1 to 30 criteria per rubric | `422 validation_failed` |
+
+`rubric` and `model_answer` are only accepted on `long_answer` questions. A long answer with neither gets an `auto_rubric` warning: a rubric is generated from the question text on the first copy and reused for the rest (`source: "generated"`); review it with `GET /exams/{id}/rubrics`. A generated rubric is less consistent with the school's scheme, so send at least a model answer for every long answer.
+
+<Warning>
+**Negative marks do not apply to handwritten copies.** A `negative_marks` value on a handwritten exam is ignored, and the response carries a `negative_marks_ignored` warning.
+</Warning>
+
+<Accordion title="Papers with internal choice (OR questions)">
+Choice groups ("attempt any N of M") are in beta and enabled on request. They are currently switched off, so `choice_groups` returns `422 feature_not_available`, and a question whose label looks like an OR question (for example `33-OR`) gets an `internal_choice_suspected` warning: both alternatives count towards the total. Contact [hello@evalezy.com](mailto:hello@evalezy.com) if you need choice groups.
+</Accordion>
+
+## 2. Register the class roster
+
+Register students with your own student ID as `external_id`. Candidates belong to the institute, so a student registered once can sit every later exam with the same `external_id`.
+
+<CodeGroup>
+
+```bash curl
+curl https://api.evalezy.com/v1/exams/$EXAM_ID/candidates \
+  -H "X-API-Key: $EVALEZY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: roster-hy-2026-x-sci-xa" \
+  -d '{
+    "candidates": [
+      { "external_id": "STU-2024-0117", "name": "Aarav Sharma", "roll_number": "10A-01", "section_or_class": "X-A" },
+      { "external_id": "STU-2024-0118", "name": "Diya Patel", "roll_number": "10A-02", "section_or_class": "X-A" }
+    ]
+  }'
+```
+
+```python Python
+roster = [
+    {"external_id": s.erp_id, "name": s.full_name,
+     "roll_number": s.roll_no, "section_or_class": s.section}
+    for s in students
+]
+resp = requests.post(
+    f"{API}/exams/{exam_id}/candidates",
+    json={"candidates": roster},
+    headers={**HEADERS, "Idempotency-Key": f"roster-{exam_id}-xa"},
+    timeout=30,
+)
+resp.raise_for_status()
+candidate_ids = {c["external_id"]: c["id"] for c in resp.json()["candidates"]}
+```
+
+```javascript Node
+const res = await fetch(`${API}/exams/${examId}/candidates`, {
+  method: "POST",
+  headers: { ...headers, "Idempotency-Key": `roster-${examId}-xa` },
+  body: JSON.stringify({ candidates: roster }),
+});
+const { registered, already_registered, candidates } = await res.json();
+```
+
+</CodeGroup>
+
+Send up to 2,000 candidates per call. Registering is safe to repeat: students already on the exam come back in `already_registered`.
+
+<Tip>
+Registering the roster is optional. A submission that names a new candidate registers them on the exam automatically. Registering first lets you list who has not submitted yet: `GET /exams/{id}/candidates` returns each student with `submission_id` and `submission_status`.
+</Tip>
+
+## 3. Open the exam
+
+Copies can only be submitted to an open exam. Opening checks that the exam has at least one question, every question has max marks, and every rubric adds up to its question's max.
+
+```bash
+curl -X POST https://api.evalezy.com/v1/exams/$EXAM_ID/open \
+  -H "X-API-Key: $EVALEZY_API_KEY"
+```
+
+Opening an open exam again changes nothing. You can also pass `"open": true` when you create the exam.
+
+Once the exam is open, you can no longer add or remove questions. You can still edit a question's `text`, `model_answer`, `rubric`, `tags`, `word_limit` and `expects_diagram`, and the exam's title and details.
+
+## 4. Scan the answer sheets
+
+Good scans are the biggest factor in grading quality.
+
+- **One PDF per student.** All of the student's pages, in order, in a single file. Supplementary sheets go at the end of the same PDF.
+- **Every page is billed.** The price is per page of the uploaded PDF, blank pages included. Remove blank and cover pages you don't need graded.
+- **Up to 40 pages is normal.** Copies of 41 to 80 pages are accepted but marked `needs_review` with the reason `pages_beyond_vision_limit`. Copies over 80 pages are refused with `422 too_many_pages`.
+- **PDF only, up to 50 MB.** Password-protected PDFs are rejected as `unparseable`. Phone photos are not accepted yet; see the [Roadmap](/platform/roadmap).
+- **English answers only.** Hindi and regional-language handwriting is not supported yet. Such a copy fails with `language_not_supported` and is not billed.
+
+## 5. Upload the PDFs
+
+Uploads are two steps: ask for upload URLs, then `PUT` each file to its URL. One call can presign up to 100 files, so a class of 40 is one request.
+
+<CodeGroup>
+
+```bash curl
+# 1. Ask for an upload URL
+curl https://api.evalezy.com/v1/uploads \
+  -H "X-API-Key: $EVALEZY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "files": [
+      { "filename": "STU-2024-0117.pdf", "content_type": "application/pdf", "size_bytes": 4182733 }
+    ]
+  }'
+
+# 2. PUT the file to upload_url, with the headers the response lists
+curl -X PUT "$UPLOAD_URL" \
+  -H "Content-Type: application/pdf" \
+  --data-binary @STU-2024-0117.pdf
+
+# 3. Check it: status becomes "ready" with a page count
+curl https://api.evalezy.com/v1/uploads/$UPLOAD_ID \
+  -H "X-API-Key: $EVALEZY_API_KEY"
+```
+
+```python Python
+from pathlib import Path
+
+pdfs = sorted(Path("scans/x-a").glob("*.pdf"))  # one file per student, named by ERP id
+resp = requests.post(
+    f"{API}/uploads",
+    json={"files": [
+        {"filename": p.name, "content_type": "application/pdf", "size_bytes": p.stat().st_size}
+        for p in pdfs
+    ]},
+    headers=HEADERS,
+    timeout=30,
+)
+resp.raise_for_status()
+uploads = resp.json()["uploads"]  # same order as files[]
+
+for pdf, up in zip(pdfs, uploads):
+    put = requests.put(
+        up["upload_url"],
+        data=pdf.read_bytes(),
+        headers=up.get("headers") or {"Content-Type": "application/pdf"},
+        timeout=300,
+    )
+    put.raise_for_status()
+
+for up in uploads:
+    info = requests.get(f"{API}/uploads/{up['id']}", headers=HEADERS, timeout=30).json()
+    if info["status"] == "rejected":
+        print(info["filename"], "rejected:", info["reject_reason"])
+    else:
+        print(info["filename"], info["status"], info["pages"], "pages")
+```
+
+```javascript Node
+import { readFile, stat } from "node:fs/promises";
+
+const files = ["STU-2024-0117.pdf", "STU-2024-0118.pdf"];
+const meta = await Promise.all(files.map(async (f) => ({
+  filename: f,
+  content_type: "application/pdf",
+  size_bytes: (await stat(`scans/x-a/${f}`)).size,
+})));
+
+const { uploads } = await (await fetch(`${API}/uploads`, {
+  method: "POST",
+  headers,
+  body: JSON.stringify({ files: meta }),
+})).json();
+
+for (const [i, up] of uploads.entries()) {
+  const put = await fetch(up.upload_url, {
+    method: up.method ?? "PUT",
+    headers: up.headers ?? { "Content-Type": "application/pdf" },
+    body: await readFile(`scans/x-a/${files[i]}`),
+  });
+  if (!put.ok) throw new Error(`upload failed for ${files[i]}: ${put.status}`);
+}
+```
+
+</CodeGroup>
+
+Each entry in `uploads[]` has an `id`, the `upload_url`, the `method` and `headers` to use, and an `expires_at` one hour away. Send `size_bytes` as the exact file size; the URL only accepts that file.
+
+`GET /uploads/{id}` checks the file on the first read after the `PUT` and returns `status`:
+
+| `status` | Meaning |
+| --- | --- |
+| `pending` | Not uploaded yet. `PUT` the file before `expires_at`. |
+| `ready` | Checked. `pages` is the page count you will be charged for. |
+| `rejected` | `reject_reason` is one of `file_too_large`, `not_a_pdf`, `too_many_pages`, `missing_object` (never uploaded before the URL expired) or `unparseable` (damaged or password-protected). |
+
+<Note>
+An upload can be used by one submission only. A second submission with the same `upload_id` is refused with `409 upload_already_used`. If you retry `POST /uploads` with the same `Idempotency-Key`, the replay does not contain the upload URLs (`upload_url_redacted: true`); request new uploads with a new key.
+</Note>
+
+## 6. Submit each copy
+
+Submit each ready upload for its student. Name the student inline by `external_id` (they are created and registered if they are new), or pass the `candidate_id` returned when you registered the roster.
+
+<CodeGroup>
+
+```bash curl
+curl https://api.evalezy.com/v1/exams/$EXAM_ID/submissions \
+  -H "X-API-Key: $EVALEZY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: sub-hy-2026-x-sci-STU-2024-0117" \
+  -d '{
+    "candidate": { "external_id": "STU-2024-0117", "name": "Aarav Sharma", "roll_number": "10A-01" },
+    "upload_id": "8a1d5f0e-3c2b-4f8e-9a77-1b2c3d4e5f60",
+    "metadata": { "erp_answer_sheet_id": "AS-55210" }
+  }'
+```
+
+```python Python
+def submit(exam_id, student, upload_id):
+    resp = requests.post(
+        f"{API}/exams/{exam_id}/submissions",
+        json={
+            "candidate": {"external_id": student.erp_id, "name": student.full_name,
+                          "roll_number": student.roll_no},
+            "upload_id": upload_id,
+        },
+        headers={**HEADERS, "Idempotency-Key": f"sub-{exam_id}-{student.erp_id}-{upload_id}"},
+        timeout=30,
+    )
+    body = resp.json()
+    if resp.status_code == 409 and body["error"]["code"] == "submission_exists":
+        # Already submitted. To replace it with this scan, resend with "replace": true.
+        return body["error"]["details"]["submission_id"]
+    resp.raise_for_status()
+    for w in body.get("warnings") or []:
+        print(student.erp_id, w["code"])  # e.g. pages_beyond_vision_limit
+    return body["id"]
+```
+
+```javascript Node
+const res = await fetch(`${API}/exams/${examId}/submissions`, {
+  method: "POST",
+  headers: { ...headers, "Idempotency-Key": `sub-${examId}-${student.erpId}-${uploadId}` },
+  body: JSON.stringify({
+    candidate: { external_id: student.erpId, name: student.name, roll_number: student.roll },
+    upload_id: uploadId,
+  }),
+});
+const submission = await res.json(); // 202 Accepted
+```
+
+</CodeGroup>
+
+The response is `202 Accepted`. Grading runs in the background:
+
+```json Response (abridged)
+{
+  "id": "e51f0b8d-3c7a-4e92-a1d4-6b8c0f2e9a35",
+  "exam_id": "7c2e9b14-5a3f-4d81-b6e0-2f9a8c4d1e73",
+  "candidate": { "id": "2d8a6f3e-91b4-4c07-8e5a-c3f7b1d9042e", "external_id": "STU-2024-0117" },
+  "state": "live",
+  "status": "queued",
+  "lane": "copy",
+  "pages": 12,
+  "needs_review": false,
+  "queue": { "position": 3, "estimated_ready_at": "2026-09-23T10:41:00Z" },
+  "credits_charged": null,
+  "quote": { "unit": "page", "pages": 12, "credits": 12, "rate_source": "standard" },
+  "warnings": []
+}
+```
+
+The `quote` is the fixed price of this copy. It is charged only when the copy is graded; failed and cancelled copies are free.
+
+| Response | What to do |
+| --- | --- |
+| `409 submission_exists` | The student already has a submission on this exam (`details.submission_id`). To replace it with a rescan, resend with `"replace": true`. |
+| `402 insufficient_credits` | Buy credits, then retry with the **same** `Idempotency-Key` (a `402` is never stored). `details` has `required` and `available`. |
+| `429 daily_quota_exceeded` | The institute's daily copy quota is used up. Retry after `details.resets_at` (00:00 UTC). |
+| `422 upload_rejected` | The upload is not ready or was rejected. `details.reason` says why. |
+| `409 exam_not_open` | Open the exam first. |
+
+## 7. Follow progress
+
+Don't poll each submission. Poll the feed of everything that changed since your last check, across all exams. [Syncing results](/guides/syncing-results) has the full worker.
+
+```bash
+curl "https://api.evalezy.com/v1/submissions?updated_since=2026-09-23T09:00:00Z&limit=100" \
+  -H "X-API-Key: $EVALEZY_API_KEY"
+```
+
+For a progress bar, `GET /exams/{id}?include=stats` returns counts: `candidates`, `submissions`, `queued`, `processing`, `graded`, `partially_graded`, `failed` and `finalized`.
+
+A submission moves through `queued`, `processing`, `reading` and `grading` to one of:
+
+| `status` | Meaning |
+| --- | --- |
+| `graded` | Every question has AI marks. Charged at the quote. |
+| `partially_graded` | Some questions could not be graded. Those questions show `status: "failed"` and need a teacher. |
+| `failed` | The copy could not be graded. Not charged. `error.code` says why. |
+| `cancelled` | You cancelled it. Not charged. |
+
+For a failed copy, `error.code` tells you what to do next. `copy_unreadable`: rescan and submit again with `"replace": true`. `timed_out`, `engine_unavailable` and `file_unavailable`: call `POST /submissions/{id}/re-evaluate`. `language_not_supported`: the copy is in Hindi or another unsupported language and has to be marked by hand.
+
+<Warning>
+Re-evaluating a copy is charged again at the same price. Rescan unreadable copies rather than re-evaluating them.
+</Warning>
+
+## 8. Teacher review
+
+AI marks are drafts. Nothing is published until you finalize, so teachers can check and correct every copy first. Start with the copies the AI flagged: `GET /exams/{id}/submissions?needs_review=true`.
+
+A question needs review when the AI could not grade it, when its confidence is below 0.60, or when the AI reported another reason in `review_reasons`. Copies of more than 40 pages are flagged as a whole with `pages_beyond_vision_limit`.
+
+<Tabs>
+  <Tab title="On the dashboard">
+    Exams created through the API also appear in the school's Vacademy dashboard, tagged **Source: API**. Teachers open the exam from `dashboard_url`, see each copy with the AI's marks and annotations, and change marks there. Their changes show up in the API results with `source: "ai_reviewed"`.
+
+    This needs no extra work in your ERP. Each teacher needs an account in the school's Vacademy dashboard.
+  </Tab>
+  <Tab title="In your own UI">
+    Build the review screen in your ERP and send changes back with the `evaluation:review` scope.
+
+    ```bash
+    curl -X PATCH https://api.evalezy.com/v1/submissions/$SUBMISSION_ID/questions/$QUESTION_ID \
+      -H "X-API-Key: $EVALEZY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "awarded": 2.5,
+        "feedback": "Correct explanation; the word equation is missing.",
+        "reviewer": { "ref": "TCH-0042", "name": "Mrs. R. Iyer" },
+        "reason": "Partial credit for the conclusion"
+      }'
+    ```
+
+    `awarded` must be between 0 and the question's max, in steps of 0.5; anything else is `422 invalid_marks`. The response is the updated question result. The reviewer and reason are kept on the result and shown on the dashboard.
+
+    If the AI's marks are right, approve the whole copy in one call. This clears `needs_review`:
+
+    ```bash
+    curl -X POST https://api.evalezy.com/v1/submissions/$SUBMISSION_ID/approve \
+      -H "X-API-Key: $EVALEZY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{ "reviewer": { "ref": "TCH-0042", "name": "Mrs. R. Iyer" } }'
+    ```
+
+    Both calls return `409 evaluation_in_progress` while the copy is still being graded.
+  </Tab>
+</Tabs>
+
+## 9. Finalize
+
+Finalizing turns draft marks into final marks. After that, overrides and re-evaluation are refused with `409 submission_finalized` until you unfinalize.
+
+```bash
+curl -X POST https://api.evalezy.com/v1/exams/$EXAM_ID/finalize \
+  -H "X-API-Key: $EVALEZY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "all_graded": true }'
+```
+
+```json Response
+{
+  "finalized": ["e51f0b8d-3c7a-4e92-a1d4-6b8c0f2e9a35", "91c6e2f4-8b3d-4a0e-b7f1-d5a2c8e64f19"],
+  "skipped": [],
+  "has_more": false
+}
+```
+
+- `"all_graded": true` finalizes every copy that is `graded` and leaves all other copies out entirely: they do not appear in `skipped`. Add `"allow_partial": true` to include `partially_graded` and `failed` copies too; failed questions then count as 0, so review them first.
+- `"submission_ids": [...]` (up to 500) finalizes specific copies. Any that can't be finalized come back in `skipped` with a reason: `not_graded` (still in the queue or grading), `partially_graded` or `failed` (without `allow_partial`), or `already_finalized`.
+- To find copies that are still not final, list `GET /exams/{id}/submissions?finalized=false`.
+- `all_graded` handles up to 500 copies per call. Call again while `has_more` is `true`.
+
+<Info>
+Finalizing through the API sends nothing to students or parents: no emails, no PDFs, no notifications. Your ERP decides when and how results are published.
+</Info>
+
+If a parent asks for a recheck after results are out, put the copy back on hold with a reason, correct it, and finalize again:
+
+```bash
+curl -X POST https://api.evalezy.com/v1/submissions/$SUBMISSION_ID/unfinalize \
+  -H "X-API-Key: $EVALEZY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "reason": "Recheck request RR-2026-118 from parent" }'
+```
+
+## 10. Write marks into report cards
+
+Read the results of the whole exam, 50 copies per page, and map them onto your report card. `finalized=true` returns only final marks.
+
+<CodeGroup>
+
+```bash curl
+curl "https://api.evalezy.com/v1/exams/$EXAM_ID/results?finalized=true&limit=50" \
+  -H "X-API-Key: $EVALEZY_API_KEY"
+```
+
+```python Python
+def final_results(exam_id):
+    params = {"finalized": "true", "limit": 50}
+    while True:
+        page = requests.get(f"{API}/exams/{exam_id}/results",
+                            params=params, headers=HEADERS, timeout=60).json()
+        yield from page["data"]
+        if not page["has_more"]:
+            return
+        params["cursor"] = page["next_cursor"]
+
+for r in final_results(exam_id):
+    erp.save_marks(
+        student_id=r["candidate"]["external_id"],
+        total=r["totals"]["awarded"],
+        out_of=r["totals"]["max"],
+        question_marks={q["label"]: q["awarded"] for q in r["questions"] if q["counted"]},
+    )
+```
+
+```javascript Node
+let cursor = null;
+do {
+  const qs = new URLSearchParams({ finalized: "true", limit: "50" });
+  if (cursor) qs.set("cursor", cursor);
+  const page = await (await fetch(`${API}/exams/${examId}/results?${qs}`, { headers })).json();
+  for (const r of page.data) {
+    await erp.saveMarks(r.candidate.external_id, r.totals.awarded, r.totals.max);
+  }
+  cursor = page.has_more ? page.next_cursor : null;
+} while (cursor);
+```
+
+</CodeGroup>
+
+Each result has `totals` (`awarded`, `max`, `percentage`, `questions_graded`, `questions_failed`) and one entry per question with `awarded`, `max`, `feedback` and a per-criterion breakdown in `criteria`. Results come as JSON only; `format=csv` is not available yet.
+
+## 11. Download checked copies
+
+The checked copy is the student's answer sheet with the AI's marks and comments on it, ready for the parent-teacher meeting. A result says whether one exists in `checked_copy.available`.
+
+<CodeGroup>
+
+```bash curl
+curl https://api.evalezy.com/v1/submissions/$SUBMISSION_ID/checked-copy \
+  -H "X-API-Key: $EVALEZY_API_KEY" \
+  -o STU-2024-0117-checked.pdf
+```
+
+```python Python
+with requests.get(f"{API}/submissions/{submission_id}/checked-copy",
+                  headers=HEADERS, stream=True, timeout=120) as r:
+    r.raise_for_status()
+    with open(f"checked/{student_id}.pdf", "wb") as f:
+        for chunk in r.iter_content(chunk_size=1 << 16):
+            f.write(chunk)
+```
+
+```javascript Node
+import { writeFile } from "node:fs/promises";
+
+const res = await fetch(`${API}/submissions/${submissionId}/checked-copy`, { headers });
+if (res.status === 404) {
+  // checked_copy_not_found: not graded yet, or no checked copy for this submission
+} else {
+  await writeFile(`checked/${studentId}.pdf`, Buffer.from(await res.arrayBuffer()));
+}
+```
+
+</CodeGroup>
+
+The API streams the PDF. Store it in your own storage and serve it to parents from there; your API key must never reach a browser. A copy without a checked PDF returns `404 checked_copy_not_found`.
+
+<Tip>
+`?redirect=true` may answer `302` with a short-lived link (`expires_in` 60 to 3,600 seconds, default 900) instead of streaming. If you use it, handle the redirect yourself and fetch the link without your `X-API-Key` header. Many HTTP clients forward custom headers on redirects.
+</Tip>
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Syncing results" icon="arrows-rotate" href="/guides/syncing-results">
+    A polling worker that never misses a change.
+  </Card>
+  <Card title="Going live" icon="rocket" href="/guides/going-live">
+    Keys, retries, credits and quotas before your first school.
+  </Card>
+</CardGroup>

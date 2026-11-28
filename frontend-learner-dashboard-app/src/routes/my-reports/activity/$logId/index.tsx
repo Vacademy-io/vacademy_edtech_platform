@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { LayoutContainer } from "@/components/common/layout-container/layout-container";
 import { DashboardLoader } from "@/components/core/dashboard-loader";
 import AIReportDetailsPage from "@/components/common/my-reports/ai-report-details-page";
@@ -38,6 +39,7 @@ const formatDate = (iso?: string | null) => {
 };
 
 function RouteComponent() {
+  const { t } = useTranslation("miscRoutesA");
   const navigate = useNavigate();
   const { logId } = Route.useParams();
 
@@ -71,7 +73,7 @@ function RouteComponent() {
             onClick={back}
           >
             <CaretLeft size={16} />
-            Back to My Reports
+            {t("myReports.detail.backToMyReports")}
           </MyButton>
         </div>
         {children}
@@ -95,12 +97,12 @@ function RouteComponent() {
     return (
       <Frame>
         <div className="flex min-h-reg-400 items-center justify-center px-6">
-          <div className="text-center">
-            <h2 className="mb-2 text-xl font-semibold text-neutral-700">
-              Insights Unavailable
+          <div className="text-center space-y-2">
+            <h2 className="text-xl font-semibold text-neutral-700">
+              {t("myReports.activity.insightsUnavailable")}
             </h2>
             <p className="text-neutral-500">
-              This report couldn&apos;t be opened. It may still be being prepared.
+              {t("myReports.activity.insightsUnavailableDescription")}
             </p>
           </div>
         </div>
@@ -115,7 +117,7 @@ function RouteComponent() {
     <Frame>
       <AIReportDetailsPage
         report={report}
-        assessmentName={data?.title || `${typeLabel} Insights`}
+        assessmentName={data?.title || t("myReports.activity.typeInsights", { type: typeLabel })}
         subtitle={date ? `${typeLabel} · ${date}` : typeLabel}
       />
     </Frame>

@@ -1,0 +1,22 @@
+{
+    "labels": {
+        "createdOn": "बनाया गया:",
+        "startDateAndTime": "प्रारंभ तिथि और समय:",
+        "endDateAndTime": "समाप्ति तिथि और समय:",
+        "duration": "अवधि:",
+        "totalParticipants": "कुल प्रतिभागी:"
+    },
+    "stats": {
+        "avgDuration": "औसत अवधि",
+        "avgMarks": "औसत अंक",
+        "minutesValue": "{{value}} मिनट"
+    },
+    "legend": {
+        "ongoing": "जारी",
+        "ongoingWithCount": "जारी ({{value}})",
+        "pending": "लंबित",
+        "pendingWithCount": "लंबित ({{value}})",
+        "attempted": "प्रयास किया गया",
+        "attemptedWithCount": "प्रयास किया गया ({{value}})"
+    }
+}

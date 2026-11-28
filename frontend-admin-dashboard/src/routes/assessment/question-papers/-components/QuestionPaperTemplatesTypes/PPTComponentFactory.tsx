@@ -11,6 +11,7 @@ import { LongAnswerQuestionPaperTemplatePPTView } from './LongAnswerType/LongAns
 import { TrueFalseQuestionPaperTemplatePPTView } from './TrueFalse/TrueFalseQuestionPaperTemplatePPTView';
 import { ComprehensiveSingleCorrectQuestionPaperTemplatePPTView } from './Comprehensive MCQ(Single Correct)/ComprehensiveSingleCorrectQuestionPaperTemplatePPTView';
 import { CodingQuestionPaperTemplatePPTView } from './Coding/CodingQuestionPaperTemplatePPTView';
+import { CbeResponseQuestionPaperTemplatePPTView } from './CbeResponse/CbeResponseQuestionPaperTemplatePPTView';
 
 type PPTComponentType = QuestionType;
 
@@ -27,6 +28,7 @@ const PPTComponentsMap: Record<PPTComponentType, PPTComponent> = {
     LONG_ANSWER: LongAnswerQuestionPaperTemplatePPTView,
     TRUE_FALSE: TrueFalseQuestionPaperTemplatePPTView,
     CODING: CodingQuestionPaperTemplatePPTView,
+    CBE_RESPONSE: CbeResponseQuestionPaperTemplatePPTView,
 };
 
 export const PPTComponentFactory = (params: {

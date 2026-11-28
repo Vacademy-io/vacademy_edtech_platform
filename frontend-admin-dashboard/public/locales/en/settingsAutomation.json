@@ -1,0 +1,33 @@
+{
+    "header": {
+        "title": "General Automations",
+        "subtitle": "Set up automatic emails and reminders — no technical setup needed. Pick a feature below and switch on the messages you want."
+    },
+    "sections": {
+        "general": {
+            "label": "General Automations",
+            "tagline": "Automatic emails for every part of your platform."
+        },
+        "parents": {
+            "label": "Parents",
+            "tagline": "Keep parents in the loop — same triggers, but emails go to the parent address."
+        },
+        "admin": {
+            "label": "Admin & Team",
+            "tagline": "Operational alerts and report digests routed to your admin / teacher team."
+        }
+    },
+    "card": {
+        "onCount_one": "{{count}} on",
+        "onCount_other": "{{count}} on",
+        "off": "Off",
+        "optionsAvailable_one": "{{count}} option available",
+        "optionsAvailable_other": "{{count}} options available",
+        "open": "Open"
+    },
+    "loading": "Loading your automations…",
+    "helpCard": {
+        "title": "Need something custom?",
+        "description": "Looking for an automation that isn’t listed here, or want to fine-tune recipients and conditions? You can use the <1>advanced workflow builder</1> to design exactly what you need."
+    }
+}

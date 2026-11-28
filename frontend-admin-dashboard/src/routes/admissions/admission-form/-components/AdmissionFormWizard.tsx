@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useNavigate, useRouterState } from '@tanstack/react-router';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import Step1StudentDetails from './steps/Step1StudentDetails';
@@ -16,6 +18,8 @@ import authenticatedAxiosInstance from '@/lib/auth/axiosInstance';
 import { BASE_URL } from '@/constants/urls';
 import { toast } from 'sonner';
 import { MyButton } from '@/components/design-system/button';
+import { ArrowLeft, GraduationCap } from '@phosphor-icons/react';
+import { ScreenHeader, StatusPill } from '@/components/shared/crm-enhance/screen-header';
 import { getTerminology } from '@/components/common/layout-container/sidebar/utils';
 import { RoleTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
 import {
@@ -125,18 +129,14 @@ export interface AdmissionFormData {
     sendEmail: boolean;
 }
 
-const getSteps = () => {
-    const learnerLabel = getTerminology(RoleTerms.Learner, SystemTerms.Learner);
-    return [
-        { id: 1, title: `${learnerLabel} Details` },
-        { id: 2, title: 'Previous School & Personal Details' },
-        { id: 3, title: `${learnerLabel} Parent Details` },
-        { id: 4, title: 'Address Details' },
-        { id: 5, title: 'Finish' },
-        { id: 6, title: 'Fee Assignment' },
-    ];
-};
-const STEPS = getSteps();
+const buildSteps = (t: TFunction, learnerLabel: string) => [
+    { id: 1, title: t('steps.studentDetails', { learnerLabel }) },
+    { id: 2, title: t('steps.previousSchoolPersonalDetails') },
+    { id: 3, title: t('steps.parentDetails', { learnerLabel }) },
+    { id: 4, title: t('steps.addressDetails') },
+    { id: 5, title: t('steps.finish') },
+    { id: 6, title: t('steps.feeAssignment') },
+];
 
 /** Convert ValidationError[] to a Record<field, message> for easy lookup */
 function errorsToMap(errors: ValidationError[]): Record<string, string> {
@@ -148,9 +148,12 @@ function errorsToMap(errors: ValidationError[]): Record<string, string> {
 }
 
 export default function AdmissionFormWizard() {
+    const { t } = useTranslation('admissionsAdmissionFormWizard');
     const navigate = useNavigate();
     const routerState = useRouterState();
     const locationState = routerState.location.state as any;
+    const learnerLabel = getTerminology(RoleTerms.Learner, SystemTerms.Learner);
+    const STEPS = useMemo(() => buildSteps(t, learnerLabel), [t, learnerLabel]);
     const [currentStep, setCurrentStep] = useState(1);
     const [admissionId, setAdmissionId] = useState('');
     const [admissionSubmitResult, setAdmissionSubmitResult] =
@@ -287,11 +290,11 @@ export default function AdmissionFormWizard() {
 
     const handleDownloadPdf = useCallback(async () => {
         if (!targetRef.current) {
-            toast.error('PDF template not ready. Please try again.');
+            toast.error(t('toast.pdfTemplateNotReady'));
             return;
         }
         setIsGeneratingPdf(true);
-        toast.info('Generating PDF...');
+        toast.info(t('toast.generatingPdf'));
         try {
             const canvas = await html2canvas(targetRef.current, {
                 scale: 2,
@@ -328,27 +331,30 @@ export default function AdmissionFormWizard() {
             }
 
             pdf.save(getPdfFilename());
-            toast.success('PDF downloaded!');
+            toast.success(t('toast.pdfDownloaded'));
         } catch (error) {
             console.error('PDF generation failed:', error);
-            toast.error('Failed to generate PDF. Please try again.');
+            toast.error(t('toast.pdfGenerationFailed'));
         } finally {
             setIsGeneratingPdf(false);
         }
-    }, [getPdfFilename]);
+    }, [getPdfFilename, t]);
 
     const handlePrint = useCallback(() => {
         if (!printTemplateRef.current) return;
         const printWindow = window.open('', '_blank');
         if (!printWindow) {
-            toast.error('Pop-up blocked. Please allow pop-ups to print.');
+            toast.error(t('toast.popupBlocked'));
             return;
         }
+        const printTitle = t('printDocumentTitle', {
+            studentName: `${formData.studentFirstName} ${formData.studentLastName}`,
+        });
         printWindow.document.write(`
             <!DOCTYPE html>
             <html>
             <head>
-                <title>Admission Form - ${formData.studentFirstName} ${formData.studentLastName}</title>
+                <title>${printTitle}</title>
                 <style>
                     @media print { body { margin: 0; } }
                     body { margin: 0; padding: 0; }
@@ -362,7 +368,7 @@ export default function AdmissionFormWizard() {
             printWindow.print();
             printWindow.close();
         };
-    }, [formData.studentFirstName, formData.studentLastName]);
+    }, [formData.studentFirstName, formData.studentLastName, t]);
 
     const handleChange = (
         e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
@@ -505,7 +511,9 @@ export default function AdmissionFormWizard() {
             if (data.enquiryTrackingId) {
                 setSourceTrackingId(data.enquiryTrackingId);
                 setSourceTrackingLabel(
-                    data.sourceType === 'APPLICATION' ? 'Application Tracking ID' : 'Enquiry Tracking ID'
+                    data.sourceType === 'APPLICATION'
+                        ? t('trackingLabel.application')
+                        : t('trackingLabel.enquiry')
                 );
             }
         } else if (sessionId) {
@@ -518,7 +526,7 @@ export default function AdmissionFormWizard() {
         if (!validateAllSteps()) return;
 
         if (!instituteId) {
-            toast.error('Institute details not available. Please try again.');
+            toast.error(t('toast.instituteDetailsUnavailable'));
             return;
         }
 
@@ -611,73 +619,97 @@ export default function AdmissionFormWizard() {
                 const data = response.data as AdmissionSubmitResult;
                 setAdmissionSubmitResult(data);
                 setAdmissionTrackingId(data.tracking_id || null);
-                toast.success(`Admission submitted successfully! ID: ${admissionId}`);
+                toast.success(t('toast.admissionSubmitted', { admissionId }));
                 setCurrentStep(6);
             } else {
-                toast.error('Failed to submit admission form. Please try again.');
+                toast.error(t('toast.admissionSubmitFailed'));
             }
         } catch (error) {
             console.error('Error submitting form:', error);
-            toast.error('An error occurred. Please check your network and try again.');
+            toast.error(t('toast.submissionError'));
         } finally {
             setIsSubmitting(false);
         }
     };
 
     return (
-        <div className="flex h-full flex-col rounded-lg bg-gray-50/50 p-6 font-sans">
-            <div className="mb-6 flex items-center justify-between">
-                <h1 className="flex items-center gap-3 text-2xl font-bold text-gray-800">
+        <div className="flex h-full flex-col rounded-lg bg-neutral-50 p-6 font-sans">
+            <ScreenHeader
+                className="mb-6"
+                back={
                     <button
+                        type="button"
                         onClick={() => navigate({ to: '/admissions/admission-list' })}
-                        className="rounded-md p-1 transition-colors hover:bg-gray-200"
-                        title="Back to Admission List"
+                        className="inline-flex w-fit items-center gap-1.5 text-caption font-semibold text-neutral-500 hover:text-primary-500"
                     >
-                        <svg
-                            className="h-5 w-5 text-gray-600"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                        >
-                            <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth="2"
-                                d="M10 19l-7-7m0 0l7-7m-7 7h18"
-                            ></path>
-                        </svg>
+                        <ArrowLeft className="size-4" />
+                        {t('backToAdmissionList')}
                     </button>
-                    Admission Form
-                </h1>
-                <div className="flex items-center gap-2">
-                    <MyButton
-                        onClick={handleDownloadPdf}
-                        buttonType="secondary"
-                        scale="medium"
-                        disable={isGeneratingPdf}
-                        className="flex items-center gap-1.5"
-                    >
-                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
-                        {isGeneratingPdf ? 'Generating...' : 'Download PDF'}
-                    </MyButton>
-                    <MyButton
-                        onClick={handlePrint}
-                        buttonType="secondary"
-                        scale="medium"
-                        className="flex items-center gap-1.5"
-                    >
-                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
-                        </svg>
-                        Print
-                    </MyButton>
-                </div>
-            </div>
+                }
+                icon={GraduationCap}
+                title={t('pageTitle')}
+                badge={
+                    admissionTrackingId || sourceTrackingId ? (
+                        <StatusPill tone="info">
+                            {admissionTrackingId
+                                ? t('trackingLabel.admission')
+                                : sourceTrackingLabel}
+                            {': '}
+                            {admissionTrackingId || sourceTrackingId}
+                        </StatusPill>
+                    ) : null
+                }
+                actions={
+                    <div className="flex items-center gap-2">
+                        <MyButton
+                            onClick={handleDownloadPdf}
+                            buttonType="secondary"
+                            scale="medium"
+                            disable={isGeneratingPdf}
+                            className="flex items-center gap-1.5"
+                        >
+                            <svg
+                                className="size-4"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth="2"
+                                    d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                                />
+                            </svg>
+                            {isGeneratingPdf ? t('downloadingPdf') : t('downloadPdf')}
+                        </MyButton>
+                        <MyButton
+                            onClick={handlePrint}
+                            buttonType="secondary"
+                            scale="medium"
+                            className="flex items-center gap-1.5"
+                        >
+                            <svg
+                                className="size-4"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth="2"
+                                    d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"
+                                />
+                            </svg>
+                            {t('print')}
+                        </MyButton>
+                    </div>
+                }
+            />
 
             {/* Stepper Tabs */}
-            <div className="hide-scrollbar mb-8 w-full overflow-x-auto rounded-t-lg border-b border-gray-200 bg-white shadow-sm">
+            <div className="hide-scrollbar mb-6 w-full overflow-x-auto rounded-xl border border-neutral-200 bg-white shadow-sm">
                 <div className="flex w-max min-w-full">
                     {STEPS.map((step) => {
                         const isActive = currentStep === step.id;
@@ -689,20 +721,20 @@ export default function AdmissionFormWizard() {
                                 className={`flex-1 whitespace-nowrap border-b-2 px-6 py-4 text-center text-sm font-medium transition-colors
                                 ${
                                     isActive
-                                        ? 'border-primary text-primary bg-primary/5'
+                                        ? 'border-primary-500 bg-primary-50 text-primary-600'
                                         : isCompleted
-                                          ? 'border-primary/50 text-gray-700 hover:bg-gray-50'
-                                          : 'border-transparent text-gray-400 hover:bg-gray-50 hover:text-gray-600'
+                                          ? 'border-primary-200 text-neutral-700 hover:bg-neutral-50'
+                                          : 'border-transparent text-neutral-400 hover:bg-neutral-50 hover:text-neutral-600'
                                 }`}
                             >
                                 <span
                                     className={`mr-2 inline-flex h-6 w-6 items-center justify-center rounded-full text-xs
                                     ${
                                         isActive
-                                            ? 'bg-primary text-white'
+                                            ? 'bg-primary-500 text-white'
                                             : isCompleted
-                                              ? 'bg-primary/20 text-primary'
-                                              : 'bg-gray-100 text-gray-500'
+                                              ? 'bg-success-50 text-success-600'
+                                              : 'bg-neutral-100 text-neutral-500'
                                     }`}
                                 >
                                     {isCompleted ? '✓' : step.id}
@@ -715,7 +747,7 @@ export default function AdmissionFormWizard() {
             </div>
 
             {/* Step Content */}
-            <div className="flex-1 overflow-y-auto rounded-lg border border-gray-100 bg-white p-6 shadow-sm">
+            <div className="flex-1 overflow-y-auto rounded-xl border border-neutral-200 bg-white p-6 shadow-sm">
                 {currentStep === 1 && (
                     <Step1StudentDetails
                         formData={formData}
@@ -763,13 +795,13 @@ export default function AdmissionFormWizard() {
 
             {/* Footer Navigation - hidden on Fee Assignment step */}
             {currentStep !== 6 && (
-                <div className="mt-6 flex justify-between rounded-lg border border-gray-100 bg-white p-4 shadow-sm">
+                <div className="mt-6 flex justify-between rounded-xl border border-neutral-200 bg-white p-4 shadow-sm">
                     <MyButton
                         onClick={prevStep}
                         disabled={currentStep === 1}
-                        className="rounded-lg border border-gray-300 px-6 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:opacity-50"
+                        buttonType="secondary"
                     >
-                        Previous
+                        {t('previous')}
                     </MyButton>
 
                     {currentStep === 5 ? (
@@ -778,14 +810,14 @@ export default function AdmissionFormWizard() {
                             disabled={isSubmitting}
                             className={`rounded-lg px-6 py-2.5 text-sm font-medium text-white shadow-sm transition-colors ${
                                 isSubmitting
-                                    ? 'cursor-not-allowed bg-green-400'
-                                    : 'bg-green-600 hover:bg-green-700'
+                                    ? 'cursor-not-allowed bg-success-400'
+                                    : 'bg-success-600 hover:bg-success-700'
                             }`}
                         >
-                            {isSubmitting ? 'Submitting...' : 'Submit Admission'}
+                            {isSubmitting ? t('submitting') : t('submitAdmission')}
                         </MyButton>
                     ) : (
-                        <MyButton onClick={nextStep}>Save & Next</MyButton>
+                        <MyButton onClick={nextStep}>{t('saveNext')}</MyButton>
                     )}
                 </div>
             )}
@@ -798,7 +830,9 @@ export default function AdmissionFormWizard() {
                         formData={formData}
                         instituteName={instituteName}
                         instituteLogo={logoBase64}
-                        trackingLabel={admissionTrackingId ? 'Admission Tracking ID' : sourceTrackingLabel}
+                        trackingLabel={
+                            admissionTrackingId ? t('trackingLabel.admission') : sourceTrackingLabel
+                        }
                         trackingId={admissionTrackingId || sourceTrackingId || ''}
                     />
                 </div>

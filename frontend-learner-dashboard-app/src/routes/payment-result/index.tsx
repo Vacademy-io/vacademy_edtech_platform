@@ -9,7 +9,11 @@ import { performFullAuthCycle } from "@/services/auth-cycle-service";
 import { loginEnrolledUser } from "@/services/signup-api";
 import { getAccessToken } from "@/lib/auth/sessionUtility";
 import { CheckCircle, XCircle, SpinnerGap } from "@phosphor-icons/react";
+import { useTranslation } from "react-i18next";
 import { BASE_URL_LEARNER_DASHBOARD } from "@/constants/urls";
+import { getTerminology, getTerminologyPlural } from "@/components/common/layout-container/sidebar/utils";
+import { ContentTerms, SystemTerms } from "@/types/naming-settings";
+import { settlePendingPurchase } from "@/routes/$tagName/-components/site-cart/pending-purchases";
 
 const paymentResultSearchSchema = z.object({
   orderId: z.string().optional(),
@@ -32,6 +36,7 @@ function isValidInstituteId(id: string | undefined): id is string {
 }
 
 function PaymentResultPage() {
+  const { t } = useTranslation("miscRoutesB");
   const search = Route.useSearch();
   const {
     orderId: orderIdParam,
@@ -139,6 +144,23 @@ function PaymentResultPage() {
     queryStatus === "failed" ||
     queryStatus === "cancelled";
   const isPending = !isPaid && !isFailed && (!!orderId || isLoading);
+
+  // Site-wide cart: a product-page checkout that left for a redirect gateway
+  // noted what it was buying (see site-cart/pending-purchases). Once the
+  // gateway settles, paid courses leave the cart; a failed payment only drops
+  // the note so the courses stay ready to retry. A no-op without such a note.
+  // Only the SERVER's status settles a note: the ?status= hint in the return
+  // URL can say failed/cancelled while the payment is still in flight, and
+  // dropping the note on it would leave a later PAID nothing to clear.
+  const serverSaysFailed =
+    paymentStatusValue === "FAILED" ||
+    paymentStatusValue === "CANCELLED" ||
+    paymentStatusValue === "USER_DROPPED";
+  useEffect(() => {
+    if (!orderId || isInvoicePayment) return;
+    if (isPaid) void settlePendingPurchase(orderId, "paid");
+    else if (serverSaysFailed) void settlePendingPurchase(orderId, "failed");
+  }, [orderId, isInvoicePayment, isPaid, serverSaysFailed]);
 
   // Invoice payments: just show the success screen, no enrollment redirect.
   // The invoice page is public; the learner may not have a dashboard session.
@@ -296,11 +318,10 @@ function PaymentResultPage() {
               <XCircle className="w-10 h-10 text-amber-600" />
             </div>
             <h1 className="text-xl font-semibold text-gray-900 mb-2">
-              Invalid Payment Link
+              {t("paymentResult.invalidLink.title")}
             </h1>
             <p className="text-gray-600 mb-6">
-              No order ID was provided. Please complete your payment from the
-              enrollment page.
+              {t("paymentResult.invalidLink.description")}
             </p>
           </>
         ) : isPaid ? (
@@ -309,23 +330,25 @@ function PaymentResultPage() {
               <CheckCircle className="w-10 h-10 text-green-600" />
             </div>
             <h1 className="text-xl font-semibold text-gray-900 mb-2">
-              Payment Successful!
+              {t("paymentResult.success.title")}
             </h1>
             {isInvoicePayment ? (
               <p className="text-gray-600 mb-6">
-                Your invoice has been paid. A confirmation email will be sent to
-                you shortly.
+                {t("paymentResult.success.invoiceDescription")}
               </p>
             ) : (
               <p className="text-gray-600 mb-6">
-                Your enrollment has been confirmed. Redirecting you to your
-                courses...
+                {t("paymentResult.success.enrollmentDescription", {
+                  courses: getTerminologyPlural(ContentTerms.Course, SystemTerms.Course),
+                })}
               </p>
             )}
             {isInvoicePayment && safeRedirectPath ? (
               <>
                 <p className="text-gray-600 mb-2">
-                  Taking you to your live class…
+                  {t("paymentResult.success.takingToLiveClass", {
+                    liveClass: getTerminology(ContentTerms.LiveSession, SystemTerms.LiveSession),
+                  })}
                 </p>
                 <a
                   href={
@@ -335,7 +358,7 @@ function PaymentResultPage() {
                   }
                   className="inline-flex items-center justify-center px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90 font-medium"
                 >
-                  Continue now
+                  {t("paymentResult.success.continueNow")}
                 </a>
               </>
             ) : isInvoicePayment ? null : (
@@ -347,7 +370,9 @@ function PaymentResultPage() {
                 }
                 className="inline-flex items-center justify-center px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90 font-medium"
               >
-                Go to My Courses
+                {t("paymentResult.success.goToCourses", {
+                  courses: getTerminologyPlural(ContentTerms.Course, SystemTerms.Course),
+                })}
               </a>
             )}
           </div>
@@ -357,11 +382,10 @@ function PaymentResultPage() {
               <XCircle className="w-10 h-10 text-red-600" />
             </div>
             <h1 className="text-xl font-semibold text-gray-900 mb-2">
-              Payment Failed or Cancelled
+              {t("paymentResult.failed.title")}
             </h1>
             <p className="text-gray-600 mb-6">
-              Your payment could not be completed. Please try again or contact
-              support if the issue persists.
+              {t("paymentResult.failed.description")}
             </p>
             <a
               href={
@@ -371,7 +395,7 @@ function PaymentResultPage() {
               }
               className="inline-flex items-center justify-center px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 font-medium"
             >
-              Back to Dashboard
+              {t("paymentResult.failed.backToDashboard")}
             </a>
           </>
         ) : (
@@ -380,11 +404,10 @@ function PaymentResultPage() {
               <SpinnerGap className="w-10 h-10 text-blue-600 animate-spin" />
             </div>
             <h1 className="text-xl font-semibold text-gray-900 mb-2">
-              Processing Payment...
+              {t("paymentResult.pending.title")}
             </h1>
             <p className="text-gray-600">
-              Please wait while we confirm your payment status. This usually
-              takes a few seconds.
+              {t("paymentResult.pending.description")}
             </p>
           </div>
         )}

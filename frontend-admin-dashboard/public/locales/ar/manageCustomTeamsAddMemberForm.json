@@ -1,0 +1,52 @@
+{
+    "title": "إضافة عضو جديد",
+    "description": "أنشئ مستخدمًا جديدًا وقم بتعيينه لفريق/دور مع صلاحية وصول محددة.",
+    "sections": {
+        "userDetails": "بيانات المستخدم",
+        "userAccessMapping": "تعيين وصول المستخدم",
+        "userAccessMappingHint": "حدد جلسة واحدة أو أكثر من جلسات الحزمة لمنح الوصول إليها."
+    },
+    "form": {
+        "fullNameLabel": "الاسم الكامل *",
+        "fullNamePlaceholder": "محمد أحمد",
+        "emailLabel": "البريد الإلكتروني *",
+        "emailPlaceholder": "example@mail.com",
+        "phoneLabel": "الهاتف",
+        "phonePlaceholder": "123 456 7890",
+        "roleLabel": "الدور *",
+        "selectRolePlaceholder": "اختر الدور",
+        "customRoleOption": "+ دور مخصص",
+        "customRoleNamePlaceholder": "أدخل اسم الدور المخصص",
+        "hasFacultyAssignedLabel": "هل لديه صلاحية تعيين أعضاء هيئة التدريس؟",
+        "packageSessionsLabel": "جلسات الحزمة",
+        "packageSessionsSearchPlaceholder": "البحث عن جلسات الحزمة...",
+        "loadingSessions": "جارٍ تحميل الجلسات...",
+        "noSessionsFound": "لم يتم العثور على جلسات حزمة.",
+        "sessionsPageInfo": "صفحة {{page}} من {{totalPages}} ({{count}} إجمالاً)",
+        "sessionsSelected_zero": "لم يتم تحديد أي جلسة",
+        "sessionsSelected_one": "تم تحديد جلسة واحدة",
+        "sessionsSelected_two": "تم تحديد جلستين",
+        "sessionsSelected_few": "تم تحديد {{count}} جلسات",
+        "sessionsSelected_many": "تم تحديد {{count}} جلسة",
+        "sessionsSelected_other": "تم تحديد {{count}} جلسة",
+        "linkageTypeLabel": "نوع الربط",
+        "selectLinkageTypePlaceholder": "اختر نوع الربط",
+        "linkageDirect": "مباشر",
+        "linkageInherited": "موروث",
+        "linkagePartnership": "شراكة"
+    },
+    "validation": {
+        "fullNameRequired": "الاسم الكامل مطلوب",
+        "invalidEmail": "عنوان بريد إلكتروني غير صالح",
+        "roleRequired": "الدور مطلوب"
+    },
+    "actions": {
+        "cancel": "إلغاء",
+        "addMember": "إضافة عضو"
+    },
+    "toast": {
+        "addSuccess": "تمت إضافة العضو بنجاح",
+        "addFailed": "فشلت إضافة العضو",
+        "customRoleNameRequired": "يرجى إدخال اسم دور مخصص"
+    }
+}

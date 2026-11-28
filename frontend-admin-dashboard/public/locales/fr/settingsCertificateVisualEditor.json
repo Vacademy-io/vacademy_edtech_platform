@@ -1,0 +1,63 @@
+{
+    "toolbar": {
+        "fieldsPlaced_one": "{{count}} champ placé",
+        "fieldsPlaced_many": "{{count}} champs placés",
+        "fieldsPlaced_other": "{{count}} champs placés",
+        "dropToAdd": "— déposez pour ajouter",
+        "uploadCustomImage": "Importer une image personnalisée"
+    },
+    "canvas": {
+        "removeFieldTitle": "Supprimer"
+    },
+    "badge": {
+        "certificateIdFieldLabel": "ID du certificat",
+        "autoStampTitle": "Apposé automatiquement sur chaque certificat — faites glisser pour le positionner vous-même",
+        "stopPrintingTitle": "Ne pas imprimer ceci automatiquement",
+        "turnOffAriaLabel": "Désactiver l'apposition automatique",
+        "certificateNumberLabel": "Numéro du certificat",
+        "stampedFooter": "{{names}} est apposé en bas à droite sur chaque certificat. Faites glisser le cadre en pointillés pour le positionner vous-même, ou supprimez-le pour arrêter complètement de l'imprimer."
+    },
+    "properties": {
+        "title": "Propriétés du champ",
+        "removeButton": "Supprimer",
+        "closeTitle": "Fermer les propriétés",
+        "fontSize": {
+            "label": "Taille de police",
+            "pxValue": "{{value}}px",
+            "customPlaceholder": "Taille en px"
+        },
+        "fontFamily": {
+            "label": "Police"
+        },
+        "fontWeight": {
+            "label": "Graisse de police",
+            "normal": "Normal",
+            "bold": "Gras"
+        },
+        "textColor": {
+            "label": "Couleur du texte"
+        },
+        "textAlignment": {
+            "label": "Alignement du texte",
+            "left": "Gauche",
+            "center": "Centre",
+            "right": "Droite"
+        },
+        "backgroundColor": {
+            "label": "Couleur de fond",
+            "clear": "Effacer",
+            "current": "Actuel : {{value}}",
+            "transparentValue": "transparent"
+        },
+        "position": {
+            "label": "Position",
+            "x": "Position X",
+            "y": "Position Y"
+        },
+        "fieldSize": {
+            "label": "Taille du champ",
+            "width": "Largeur",
+            "height": "Hauteur"
+        }
+    }
+}

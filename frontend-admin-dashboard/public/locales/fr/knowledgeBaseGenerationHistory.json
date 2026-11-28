@@ -1,0 +1,51 @@
+{
+    "artifactType": {
+        "questionPaper": "Sujet d'examen",
+        "course": "Cours",
+        "presentation": "Présentation",
+        "quiz": "Quiz",
+        "assessment": "Évaluation",
+        "notes": "Notes",
+        "summary": "Résumé",
+        "lessonPlan": "Plan de cours",
+        "worksheet": "Fiche d'exercices"
+    },
+    "status": {
+        "draft": "Brouillon",
+        "generating": "Génération en cours",
+        "notSavedYet": "Pas encore enregistré",
+        "saved": "Enregistré",
+        "failed": "Échoué"
+    },
+    "time": {
+        "justNow": "à l'instant",
+        "minutesAgo_one": "il y a {{count}} min",
+        "minutesAgo_many": "il y a {{count}} min",
+        "minutesAgo_other": "il y a {{count}} min",
+        "hoursAgo_one": "il y a {{count}} h",
+        "hoursAgo_many": "il y a {{count}} h",
+        "hoursAgo_other": "il y a {{count}} h"
+    },
+    "progress": {
+        "questions_one": "{{delivered}} sur {{planned}} question",
+        "questions_many": "{{delivered}} sur {{planned}} questions",
+        "questions_other": "{{delivered}} sur {{planned}} questions",
+        "credits_one": "{{count}} crédit",
+        "credits_many": "{{count}} crédits",
+        "credits_other": "{{count}} crédits"
+    },
+    "emptyState": {
+        "title": "Rien n'a encore été créé à partir de cette base de connaissances.",
+        "description": "Les sujets et cours que vous créez seront listés ici pour que vous puissiez y revenir."
+    },
+    "actions": {
+        "tryAgain": "Réessayer",
+        "open": "Ouvrir",
+        "inQuestionBank": "Dans la banque de questions",
+        "remove": "Supprimer"
+    },
+    "toast": {
+        "removed": "Supprimé de l'historique",
+        "removeFailed": "Impossible de supprimer cette entrée"
+    }
+}

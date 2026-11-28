@@ -1,0 +1,23 @@
+{
+    "columns": {
+        "status": "STATUT",
+        "uploadStatus": "Statut du téléversement",
+        "uploadError": "Erreur de téléversement"
+    },
+    "placeholders": {
+        "selectGender": "Sélectionner le genre",
+        "selectOption": "Sélectionner une option"
+    },
+    "hints": {
+        "mobileNumberExample": "(Ex. +91-1234567890)"
+    },
+    "errors": {
+        "viewErrors_one": "Erreur ({{count}})",
+        "viewErrors_many": "Erreur ({{count}})",
+        "viewErrors_other": "Erreurs ({{count}})"
+    },
+    "uploadResult": {
+        "success": "Réussi",
+        "failed": "Échoué"
+    }
+}

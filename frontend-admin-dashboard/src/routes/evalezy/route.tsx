@@ -1,0 +1,81 @@
+import { useEffect } from 'react';
+import { createFileRoute, Link, Outlet, useLocation, useNavigate } from '@tanstack/react-router';
+import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
+import { Prohibit } from '@phosphor-icons/react';
+import { DashboardLoader } from '@/components/core/dashboard-loader';
+import { useInstituteQuery } from '@/services/student-list-section/getInstituteDetails';
+import { takePlanBuyIntent } from '@/lib/plan-buy-intent';
+import { isIOS } from '@/native';
+import { EvalezyHeader } from './-components/EvalezyHeader';
+import { TrialBanner } from '@/components/common/trial-banner/TrialBanner';
+import { WelcomeTutorialDialog } from './-components/Tutorials';
+import { useEvalezySettings } from './-hooks/useEvalezySettings';
+import { isPaymentPending, PAYMENT_PENDING_PATHS, usePlanAccess } from './-hooks/usePlanAccess';
+
+export const Route = createFileRoute('/evalezy')({
+    component: EvalezyLayout,
+});
+
+/**
+ * Evalezy shell: a bare page (no portal sidebar or navbar) with the Evalezy top
+ * bar. Everything under /evalezy renders here, after the institute's
+ * "Evalezy app" switch has been checked.
+ */
+function EvalezyLayout() {
+    const { t } = useTranslation('evalezy');
+    // Also sets the institute store, naming and theme the screens below rely on.
+    useQuery(useInstituteQuery());
+    const { settings, isLoading } = useEvalezySettings();
+    const navigate = useNavigate();
+    const { pathname } = useLocation();
+    const planAccess = usePlanAccess();
+    // Signed up through "Buy <plan>" and not paid yet: only the plan, its checkout and the profile.
+    const lockedOut =
+        isPaymentPending(planAccess.data) &&
+        !PAYMENT_PENDING_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`));
+
+    useEffect(() => {
+        if (lockedOut) void navigate({ to: '/evalezy/plan', replace: true });
+    }, [lockedOut, navigate]);
+
+    // "Buy <plan>" on the website, then sign-up or log-in: go straight to that plan's checkout.
+    useEffect(() => {
+        if (isIOS()) return;
+        const plan = takePlanBuyIntent('evalezy');
+        if (plan) void navigate({ to: '/evalezy/credits', search: { buy: plan } });
+    }, [navigate]);
+
+    return (
+        // The native body already pads the safe-area insets, so the shell only fills
+        // what is left. min-w-0: this sits in the portal's flex wrapper, and without it
+        // long nowrap titles widen the page and the WebView zooms the whole app out.
+        <div className="min-h-screen-safe flex w-full min-w-0 flex-col bg-neutral-50">
+            <EvalezyHeader />
+            <TrialBanner
+                ns="evalezy"
+                renderUpgrade={(label) => (
+                    <Link to="/evalezy/plan" className="shrink-0 font-semibold underline">
+                        {/* No purchase wording in the iPhone app (App Store rules). */}
+                        {isIOS() ? t('plan.menu') : label}
+                    </Link>
+                )}
+            />
+            <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col p-4 sm:py-6">
+                {isLoading || lockedOut ? (
+                    <DashboardLoader />
+                ) : settings.enabled ? (
+                    <Outlet />
+                ) : (
+                    <div className="mt-10 flex flex-col items-center gap-3 rounded-lg border border-neutral-200 bg-white p-6 text-center">
+                        <Prohibit size={32} className="text-neutral-400" />
+                        <h1 className="text-h3 font-semibold text-neutral-800">{t('off.title')}</h1>
+                        <p className="max-w-md text-body text-neutral-500">{t('off.body')}</p>
+                    </div>
+                )}
+            </main>
+            {/* Right after a sign-up (trial, demo or buy): the 2-minute tutorial, once. */}
+            {!isLoading && !lockedOut && settings.enabled && <WelcomeTutorialDialog />}
+        </div>
+    );
+}

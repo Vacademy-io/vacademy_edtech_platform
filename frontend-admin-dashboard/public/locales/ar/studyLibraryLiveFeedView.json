@@ -1,0 +1,20 @@
+{
+    "verbs": {
+        "submitted": "أرسل",
+        "ran": "شغّل",
+        "answered": "أجاب",
+        "updated": "حدّث"
+    },
+    "aLearner": "متعلّم",
+    "aSlide": "شريحة",
+    "loadError": "تعذّر تحميل البث المباشر.",
+    "retry": "إعادة المحاولة",
+    "windowSummary_zero": "آخر {{count}} دقيقة · الأحدث أولًا",
+    "windowSummary_one": "آخر دقيقة · الأحدث أولًا",
+    "windowSummary_two": "آخر دقيقتين · الأحدث أولًا",
+    "windowSummary_few": "آخر {{count}} دقائق · الأحدث أولًا",
+    "windowSummary_many": "آخر {{count}} دقيقة · الأحدث أولًا",
+    "windowSummary_other": "آخر {{count}} دقيقة · الأحدث أولًا",
+    "emptyTitle": "لم يحدث أي شيء في هذه الدفعة بعد",
+    "emptySubtitle": "ستظهر هنا المشاركات والمحاولات وعمليات تشغيل الأكواد فور حدوثها."
+}

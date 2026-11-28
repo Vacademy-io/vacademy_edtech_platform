@@ -12,6 +12,7 @@ import { getChaptersByModuleId } from '@/utils/helpers/study-library-helpers.ts/
 import { useModulesWithChaptersQuery } from '@/routes/study-library/courses/-services/getModulesWithChapters';
 import { getTerminology } from '@/components/common/layout-container/sidebar/utils';
 import { ContentTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
+import { useTranslation } from 'react-i18next';
 
 export type AvailableFields =
     | 'course'
@@ -68,6 +69,7 @@ export const StudyMaterialDetailsForm = ({
     onFormSubmit,
     submitButtonName,
 }: StudyMaterialDetailsFormProps) => {
+    const { t } = useTranslation('studyLibraryStudyMaterialDetailsForm');
     const {
         getCourseFromPackage,
         getSessionFromPackage,
@@ -167,7 +169,8 @@ export const StudyMaterialDetailsForm = ({
         }));
     }, [chaptersList]);
 
-    // File type list formatted to match the FieldValue type
+    // File type list formatted to match the FieldValue type (values are fixed enum
+    // identifiers, not translated)
     const fileTypeList = [
         { id: 'PDF', name: 'PDF' },
         { id: 'DOC', name: 'DOC' },
@@ -221,13 +224,38 @@ export const StudyMaterialDetailsForm = ({
     // Get label and placeholder for each field
     const getFieldConfig = (fieldName: AvailableFields) => {
         const config = {
-            course: { label: getTerminology(ContentTerms.Course, SystemTerms.Course), placeholder: `Select ${getTerminology(ContentTerms.Course, SystemTerms.Course)}` },
-            session: { label: getTerminology(ContentTerms.Session, SystemTerms.Session), placeholder: `Select ${getTerminology(ContentTerms.Session, SystemTerms.Session)}` },
-            level: { label: 'Year/Class', placeholder: 'Select Year/Class' },
-            subject: { label: getTerminology(ContentTerms.Subject, SystemTerms.Subject), placeholder: `Select ${getTerminology(ContentTerms.Subject, SystemTerms.Subject)}` },
-            module: { label: getTerminology(ContentTerms.Module, SystemTerms.Module), placeholder: `Select ${getTerminology(ContentTerms.Module, SystemTerms.Module)}` },
-            chapter: { label: getTerminology(ContentTerms.Chapter, SystemTerms.Chapter), placeholder: `Select ${getTerminology(ContentTerms.Chapter, SystemTerms.Chapter)}` },
-            file_type: { label: 'File Type', placeholder: 'Select File Type' },
+            course: {
+                label: getTerminology(ContentTerms.Course, SystemTerms.Course),
+                placeholder: t('selectPlaceholder', {
+                    term: getTerminology(ContentTerms.Course, SystemTerms.Course),
+                }),
+            },
+            session: {
+                label: getTerminology(ContentTerms.Session, SystemTerms.Session),
+                placeholder: t('selectPlaceholder', {
+                    term: getTerminology(ContentTerms.Session, SystemTerms.Session),
+                }),
+            },
+            level: { label: t('yearClass'), placeholder: t('selectYearClass') },
+            subject: {
+                label: getTerminology(ContentTerms.Subject, SystemTerms.Subject),
+                placeholder: t('selectPlaceholder', {
+                    term: getTerminology(ContentTerms.Subject, SystemTerms.Subject),
+                }),
+            },
+            module: {
+                label: getTerminology(ContentTerms.Module, SystemTerms.Module),
+                placeholder: t('selectPlaceholder', {
+                    term: getTerminology(ContentTerms.Module, SystemTerms.Module),
+                }),
+            },
+            chapter: {
+                label: getTerminology(ContentTerms.Chapter, SystemTerms.Chapter),
+                placeholder: t('selectPlaceholder', {
+                    term: getTerminology(ContentTerms.Chapter, SystemTerms.Chapter),
+                }),
+            },
+            file_type: { label: t('fileType'), placeholder: t('selectFileType') },
         };
 
         return config[fieldName];

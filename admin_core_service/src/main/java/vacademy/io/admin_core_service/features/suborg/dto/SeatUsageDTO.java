@@ -17,4 +17,7 @@ public class SeatUsageDTO {
     private String packageName;
     private long usedSeats;
     private Integer totalSeats;
+    /** Parent institute email, set only for the learner portal (whom to ask for more seats). */
+    @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
+    private String supportEmail;
 }

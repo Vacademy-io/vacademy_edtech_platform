@@ -20,6 +20,10 @@ jobs:
       - name: Checkout source
         uses: actions/checkout@v3
 
+      # Stop before building an image every new pod would crash-loop on.
+      - name: Check Flyway migrations
+        run: bash .github/scripts/check-flyway-migrations.sh
+
       - name: Setup Java
         uses: actions/setup-java@v3
         with:

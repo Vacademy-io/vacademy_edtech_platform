@@ -1,5 +1,6 @@
 package vacademy.io.admin_core_service.core.config;
 
+import vacademy.io.admin_core_service.core.external.ExternalCallLog;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -15,11 +16,16 @@ import org.springframework.security.crypto.password.NoOpPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.header.writers.DelegatingRequestMatcherHeaderWriter;
+import org.springframework.security.web.header.writers.frameoptions.XFrameOptionsHeaderWriter;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
+import org.springframework.security.web.util.matcher.NegatedRequestMatcher;
+import org.springframework.security.web.util.matcher.RequestMatcher;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.cors.CorsConfigurationSource;
 import vacademy.io.common.auth.filter.InternalAuthFilter;
 import vacademy.io.common.auth.filter.JwtAuthFilter;
+import vacademy.io.common.auth.config.JsonAuthEntryPoint;
 
 @Configuration
 @EnableMethodSecurity
@@ -27,13 +33,13 @@ public class ApplicationSecurityConfig {
 
     private static final String[] INTERNAL_PATHS = { "/admin-core-service/internal/**" };
 
-    private static final String[] ALLOWED_PATHS = {
+    static final String[] ALLOWED_PATHS = {
             "/admin-core-service/open/**",
             "/admin-core-service/batch/v1/search",
             "/admin-core-service/public/**",
             "/admin-core-service/public/domain-routing/v1/**",
-            "/admin-core-service/live-presenter/v1/**",
-            "/admin-core-service/live-learner/v1/**",
+            // /live-presenter/v1/** and /live-learner/v1/** (legacy presentation mode) are NOT
+            // listed: no client calls them, so they need sign-in like any other route.
             "/admin-core-service/institute/open_learner/v1/**",
             "/admin-core-service/institute/v1/internal/create",
             "/admin-core-service/learner/v1/details/**",
@@ -83,12 +89,22 @@ public class ApplicationSecurityConfig {
             // Agent SSE stream - EventSource doesn't support auth headers, session is
             // validated internally
             "/admin-core-service/v1/agent/stream/**",
+            // Live activity SSE stream - same EventSource constraint. Unlike the
+            // per-call telephony stream, an instituteId is guessable, so this one is
+            // gated on a short-lived signed token minted by the AUTHENTICATED
+            // /stream-token endpoint, which stays off this list. The token also carries
+            // the caller's permitted categories, and the bus filters every event
+            // against them before writing.
+            "/admin-core-service/v1/live-activity/stream",
             "/admin-core-service/api/v1/audience/webhook/**",
             // Ad platform webhook endpoints (Meta hub.challenge GET + POST, Google POST)
             "/admin-core-service/api/v1/webhook/meta",
             "/admin-core-service/api/v1/webhook/google/**",
             // Meta OAuth callback (Meta redirects without Vacademy JWT)
             "/admin-core-service/v1/oauth/meta/callback",
+            // Marketing (ad spend + social posting) OAuth callbacks; the oauth_connect_state id is the CSRF guard
+            "/admin-core-service/v1/marketing/oauth/meta/callback",
+            "/admin-core-service/v1/marketing/oauth/google/callback",
             // YouTube OAuth callback (Google redirects without Vacademy JWT; state token is the CSRF guard)
             "/admin-core-service/youtube/oauth/callback",
             "/admin-core-service/health/**",
@@ -97,22 +113,36 @@ public class ApplicationSecurityConfig {
             // token, so an anonymous call does no server work and its round trip is
             // almost pure network. Does no DB access. See PerfPingController.
             "/admin-core-service/v1/perf/ping",
-            // Invoice test endpoints (for testing only)
-            "/admin-core-service/v1/invoices/test/**",
-            // Applicant public APIs for application form
-            "/admin-core-service/applicant/v1/enquiry/**",
-            "/admin-core-service/v1/applicant/**",
+            // Applicant APIs for the application form. Only these stay open; the rest of
+            // /v1/applicant/** (list, move-stage, onboard, parent/{id}, {id}/stages),
+            // /applicant/v1/enquiry/** and /v1/admission/submit require sign-in — every
+            // caller (admin dashboard, parent portal) already sends a JWT. Anonymous
+            // public forms use /admin-core-service/open/**.
+            "/admin-core-service/v1/applicant/apply",
+            "/admin-core-service/v1/applicant/*/payment/initiate",
+            "/admin-core-service/v1/applicant/bulk-apply",
             "/admin-core-service/enrollment-policy/**",
-            "/admin-core-service/v1/admission/submit",
             "/admin-core-service/v1/admission/bulk-submit-with-admission",
             // BBB server-to-server callback (no JWT — called by BigBlueButton when meeting ends)
             "/admin-core-service/live-sessions/provider/meeting/bbb-callback",
             "/admin-core-service/live-sessions/provider/meeting/bbb-analytics-callback",
+            // BBB activeness plugin report (from the learner's browser inside BBB, no JWT —
+            // authenticated by the per-learner HMAC token in the body)
+            "/admin-core-service/live-sessions/provider/meeting/bbb-activeness",
             // BBB recording upload (server-to-server from BBB post-publish script, auth via X-BBB-Secret header)
             "/admin-core-service/live-sessions/provider/meeting/recording/init-upload",
             "/admin-core-service/live-sessions/provider/meeting/recording/complete",
             // BBB server pool management (server-to-server from community_service, no JWT)
             "/admin-core-service/bbb/pool/**",
+            // BBB custom live-class domains, read by the pool start workflow.
+            // No JWT, but NOT unauthenticated: BbbCustomDomainController itself
+            // requires the shared X-Internal-Service-Token. Note the path must not
+            // contain the word "internal" — InternalAuthFilter substring-matches the
+            // URI and would demand clientName + Signature instead.
+            "/admin-core-service/bbb/custom-domains",
+            // ai_service copy-check callbacks for assignment AI evaluation. No JWT, but
+            // AssignmentCopyCheckCallbackController requires X-Internal-Service-Token.
+            "/admin-core-service/assignment-ai-evaluation/hook/**",
             // Zoom webhook callback (no JWT — verified by per-account HMAC signature)
             "/admin-core-service/live-sessions/provider/meeting/zoom-callback/**",
             // "Connect with Zoom" OAuth redirect (no JWT — CSRF-protected by the state record)
@@ -143,6 +173,11 @@ public class ApplicationSecurityConfig {
     };
     @Autowired
     JwtAuthFilter jwtAuthFilter;
+
+    // Replaces the default bodyless 403 (which is re-dispatched to a secured
+    // /error and comes back empty) with a JSON body naming the actual reason.
+    @Autowired
+    private JsonAuthEntryPoint jsonAuthEntryPoint;
     @Autowired
     UserDetailsService userDetailsService;
 
@@ -152,9 +187,27 @@ public class ApplicationSecurityConfig {
     @Autowired
     private CorsConfigurationSource corsConfigurationSource;
 
+    /**
+     * The public certificate verification document, which the learner portal
+     * shows in an iframe on the institute's own domain. Every other response
+     * keeps X-Frame-Options: DENY. The document sets its own CSP, which allows
+     * the framing and nothing else (see PublicCertificateVerificationController).
+     */
+    static final RequestMatcher VERIFICATION_DOCUMENT = request -> {
+        String uri = request.getRequestURI();
+        return uri != null
+                && uri.startsWith("/admin-core-service/open/v1/certificate/verify/")
+                && uri.endsWith("/document");
+    };
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
+                .headers(headers -> headers
+                        .frameOptions(frame -> frame.disable())
+                        .addHeaderWriter(new DelegatingRequestMatcherHeaderWriter(
+                                new NegatedRequestMatcher(VERIFICATION_DOCUMENT),
+                                new XFrameOptionsHeaderWriter(XFrameOptionsHeaderWriter.XFrameOptionsMode.DENY))))
                 .csrf(csrf -> csrf.disable())
                 .cors(cors -> cors.configurationSource(corsConfigurationSource))
                 .authorizeHttpRequests(authz -> {
@@ -173,13 +226,16 @@ public class ApplicationSecurityConfig {
                 .anonymous(anonymous -> anonymous.disable())
                 .authenticationProvider(authenticationProvider())
                 .addFilterBefore(internalAuthFilter, UsernamePasswordAuthenticationFilter.class)
-                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint(jsonAuthEntryPoint)
+                        .accessDeniedHandler(jsonAuthEntryPoint));
         return http.build();
     }
 
     @Bean
     public RestTemplate restTemplate() {
-        return new RestTemplate();
+        return ExternalCallLog.attach(new RestTemplate());
     }
 
     @Bean

@@ -1,4 +1,7 @@
 import { AI_SERVICE_BASE_URL } from '@/constants/urls';
+import type { TFunction } from 'i18next';
+
+const NS = 'videoApiStudioInputAsset';
 
 // ---------------------------------------------------------------------------
 // Types — DB record shape
@@ -147,9 +150,16 @@ function headers(apiKey: string): Record<string, string> {
     };
 }
 
+/**
+ * Create an input-asset record. `t` is optional — real callers thread their
+ * bound `t` through so the thrown message (often surfaced verbatim via a
+ * toast's `err.message` fallback) is translated; older/untranslated call
+ * sites keep working with the English message.
+ */
 export async function createInputAsset(
     apiKey: string,
-    payload: CreateInputAssetPayload
+    payload: CreateInputAssetPayload,
+    t?: TFunction
 ): Promise<InputAssetRecord> {
     const resp = await fetch(`${BASE}/create`, {
         method: 'POST',
@@ -157,7 +167,12 @@ export async function createInputAsset(
         body: JSON.stringify(payload),
     });
     if (!resp.ok) {
-        throw new Error(`Create failed (${resp.status}): ${await resp.text()}`);
+        const detail = await resp.text();
+        throw new Error(
+            t
+                ? t(`${NS}:errors.createFailed`, { status: resp.status, detail })
+                : `Create failed (${resp.status}): ${detail}`
+        );
     }
     return resp.json();
 }
@@ -178,9 +193,16 @@ export async function getInputAsset(apiKey: string, id: string): Promise<InputAs
     return resp.json();
 }
 
-export async function deleteInputAsset(apiKey: string, id: string): Promise<void> {
+/** See {@link createInputAsset} re: the optional `t`. */
+export async function deleteInputAsset(apiKey: string, id: string, t?: TFunction): Promise<void> {
     const resp = await fetch(`${BASE}/${id}`, { method: 'DELETE', headers: headers(apiKey) });
-    if (!resp.ok) throw new Error(`Delete failed (${resp.status})`);
+    if (!resp.ok) {
+        throw new Error(
+            t
+                ? t(`${NS}:errors.deleteFailed`, { status: resp.status })
+                : `Delete failed (${resp.status})`
+        );
+    }
 }
 
 /** Fetch the externally-hosted video_context.json artifact. No auth — S3 is public. */

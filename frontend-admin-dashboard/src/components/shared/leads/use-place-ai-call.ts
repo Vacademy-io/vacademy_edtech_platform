@@ -34,20 +34,47 @@ export function usePlaceAiCall({ invalidateKeys = [] }: UsePlaceAiCallOptions = 
                 preferredNumberId: vars.preferredNumberId,
             }),
         onSuccess: (resp, vars) => {
-            // A skip is HTTP 200 with dispatched=false (lead already assigned, duplicate
-            // within 30s, daily cap reached). Toasting "queued" for those told the user a
-            // call was placed when nothing was dialled — the phone simply never rang, with
-            // no reason shown anywhere. Surface the server's reason instead.
-            if (resp && resp.dispatched === false) {
-                toast.warning(resp.providerMessage || 'AI call was not placed');
+            // `dispatched` is the ONLY field that means a call actually went out.
+            //
+            // `status` cannot carry that: CallStatus.QUEUED is the CALL LOG's word for
+            // "the provider accepted the dial", so a phone that is ringing right now and
+            // a call still waiting for a free line BOTH report status === 'QUEUED'.
+            // Branching on it sent every successful dial down the waiting path, which
+            // returned early and skipped the invalidations below — so a placed AI call
+            // never appeared in the lead list or call history until a manual refresh.
+            const queueKeys = [['ai-call-queue-summary'], ['ai-call-queue-items']];
+            if (resp && resp.dispatched) {
+                toast.success(
+                    resp.providerMessage ||
+                        `AI call placed${vars.leadName ? ` for ${vars.leadName}` : ''}`
+                );
+                queryClient.invalidateQueries({ queryKey: ['recent-leads'] });
+                queryClient.invalidateQueries({ queryKey: ['telephony-call-history'] });
+                // The queue holds a row for this call too (DIALED), so the Call Queue
+                // page must not keep showing it as waiting.
+                for (const key of [...queueKeys, ...invalidateKeys]) {
+                    queryClient.invalidateQueries({ queryKey: key });
+                }
                 return;
             }
-            toast.success(`AI call queued${vars.leadName ? ` for ${vars.leadName}` : ''}`);
-            queryClient.invalidateQueries({ queryKey: ['recent-leads'] });
-            queryClient.invalidateQueries({ queryKey: ['telephony-call-history'] });
-            for (const key of invalidateKeys) {
-                queryClient.invalidateQueries({ queryKey: key });
+            // ACCEPTED BUT WAITING is not a failure. Every line is busy, so the call sits
+            // in the queue and dials itself; the server's message carries its place in
+            // line and a rough wait. A queue row is what distinguishes this from a skip.
+            if (resp && resp.queueItemId) {
+                toast.info(
+                    resp.providerMessage ||
+                        `AI call queued${vars.leadName ? ` for ${vars.leadName}` : ''}`
+                );
+                for (const key of queueKeys) {
+                    queryClient.invalidateQueries({ queryKey: key });
+                }
+                return;
             }
+            // A skip is HTTP 200 with dispatched=false and no queue row (lead already
+            // assigned, duplicate within 30s, daily cap reached). Toasting "queued" for
+            // those told the user a call was placed when nothing was dialled — the phone
+            // simply never rang, with no reason shown anywhere.
+            toast.warning(resp?.providerMessage || 'AI call was not placed');
         },
         onError: (err) => toast.error(extractServerErrorMessage(err)),
     });

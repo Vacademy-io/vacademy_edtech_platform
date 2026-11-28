@@ -100,6 +100,15 @@ def make_work(
         return work
 
     if task_type in ("PDF_TO_QUESTIONS", "IMAGE_TO_QUESTIONS"):
+        if params.get("tool") == "paper_digitise":
+            # An offline-test paper read (paper_digitise). It has no MathPix pdfId to
+            # resume from and its own billing/preflight; the generic re-run would fail
+            # on a missing pdfId or, worse, bill under the wrong tool.
+            raise NotRetryable(
+                "This was a question-paper read for an offline test. Re-run it from the "
+                "test's create form (Check answer sheets with AI)."
+            )
+
         async def work() -> str:
             html = await pdf_questions_service.fetch_or_convert_html(params.get("pdfId"), allow_poll=True)
             return await question_gen_service.questions_from_html(

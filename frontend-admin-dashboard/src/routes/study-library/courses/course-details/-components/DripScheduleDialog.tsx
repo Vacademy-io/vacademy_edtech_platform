@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { MyDialog } from '@/components/design-system/dialog';
 import { MyButton } from '@/components/design-system/button';
 import {
@@ -42,8 +43,6 @@ export interface DripScheduleDialogProps {
     /** Institute-wide starting point for the form (Settings → Course). */
     defaults?: DripScheduleDefaults;
     dripEnabled?: boolean;
-    /** Whether saved rules are actually applied to learners yet. */
-    enforcing?: boolean;
 }
 
 /**
@@ -62,8 +61,8 @@ export function DripScheduleDialog({
     onSave,
     defaults = DEFAULT_DRIP_SCHEDULE,
     dripEnabled = true,
-    enforcing = false,
 }: DripScheduleDialogProps) {
+    const { t } = useTranslation('studyLibraryDripScheduleDialog');
     const availableLevels = useMemo(
         () =>
             (['subject', 'module', 'chapter', 'slide'] as DripConditionContentLevel[]).filter(
@@ -136,7 +135,10 @@ export function DripScheduleDialog({
         // course — too far-reaching to do on a single stray click.
         if (
             !window.confirm(
-                `Remove ${existingCount} unlock rule${existingCount === 1 ? '' : 's'} from this course? Every ${getLevelDisplayName(level).toLowerCase()} opens for all learners immediately.`
+                t('clearConfirm', {
+                    count: existingCount,
+                    level: getLevelDisplayName(level).toLowerCase(),
+                })
             )
         ) {
             return;
@@ -157,39 +159,26 @@ export function DripScheduleDialog({
     };
 
     return (
-        <MyDialog open={open} onOpenChange={onClose} heading="Schedule day-wise unlock">
+        <MyDialog open={open} onOpenChange={onClose} heading={t('heading')}>
             <div className="space-y-4">
                 {!dripEnabled && (
                     <Alert className="border-amber-200 bg-amber-50">
                         <Info className="size-4 text-amber-600" />
                         <AlertDescription className="text-sm text-amber-900">
-                            Drip conditions are switched off for this institute. The schedule will
-                            save but nothing locks until you enable them in Settings → Course →
-                            Drip Conditions.
-                        </AlertDescription>
-                    </Alert>
-                )}
-
-                {dripEnabled && !enforcing && (
-                    <Alert className="border-neutral-200 bg-neutral-50">
-                        <Info className="size-4 text-neutral-500" />
-                        <AlertDescription className="text-sm">
-                            Preview mode: the schedule saves, but nothing locks for learners until
-                            &ldquo;Apply unlock rules to learners&rdquo; is switched on in
-                            Settings → Course → Drip Conditions.
+                            {t('alerts.dripDisabled')}
                         </AlertDescription>
                     </Alert>
                 )}
 
                 {availableLevels.length === 0 ? (
                     <div className="rounded-lg border-2 border-dashed p-8 text-center text-sm text-muted-foreground">
-                        This course has no content to schedule yet.
+                        {t('emptyState')}
                     </div>
                 ) : (
                     <>
                         <div className="grid gap-3 sm:grid-cols-2">
                             <div className="space-y-1">
-                                <Label>Release one</Label>
+                                <Label>{t('form.releaseOne')}</Label>
                                 <Select
                                     value={level}
                                     onValueChange={(v) =>
@@ -210,7 +199,7 @@ export function DripScheduleDialog({
                                 </Select>
                             </div>
                             <div className="space-y-1">
-                                <Label>Every … days</Label>
+                                <Label>{t('form.everyDays')}</Label>
                                 <Input
                                     type="number"
                                     min={1}
@@ -223,7 +212,7 @@ export function DripScheduleDialog({
                                 />
                             </div>
                             <div className="space-y-1">
-                                <Label>First one opens on day</Label>
+                                <Label>{t('form.firstOneOpensOnDay')}</Label>
                                 <Input
                                     type="number"
                                     min={1}
@@ -234,7 +223,7 @@ export function DripScheduleDialog({
                                 />
                             </div>
                             <div className="space-y-1">
-                                <Label>Counted from</Label>
+                                <Label>{t('form.countedFrom')}</Label>
                                 <Select
                                     value={anchor}
                                     onValueChange={(v) =>
@@ -246,16 +235,16 @@ export function DripScheduleDialog({
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="enrollment">
-                                            Each learner&apos;s enrollment date
+                                            {t('form.anchorEnrollment')}
                                         </SelectItem>
                                         <SelectItem value="session_start">
-                                            The batch start date
+                                            {t('form.anchorSessionStart')}
                                         </SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
                             <div className="space-y-1">
-                                <Label>Opens at</Label>
+                                <Label>{t('form.opensAt')}</Label>
                                 <Input
                                     type="time"
                                     value={unlockTime}
@@ -263,7 +252,7 @@ export function DripScheduleDialog({
                                 />
                             </div>
                             <div className="space-y-1">
-                                <Label>Until then</Label>
+                                <Label>{t('form.untilThen')}</Label>
                                 <Select
                                     value={behavior}
                                     onValueChange={(v) => setBehavior(v as DripConditionBehavior)}
@@ -272,8 +261,8 @@ export function DripScheduleDialog({
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="lock">Show locked</SelectItem>
-                                        <SelectItem value="hide">Hide completely</SelectItem>
+                                        <SelectItem value="lock">{t('form.showLocked')}</SelectItem>
+                                        <SelectItem value="hide">{t('form.hideCompletely')}</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -282,14 +271,13 @@ export function DripScheduleDialog({
                         <Alert className="border-blue-200 bg-blue-50">
                             <Info className="size-4 text-blue-600" />
                             <AlertDescription className="text-sm text-blue-900">
-                                {preview.length} {getLevelDisplayName(level).toLowerCase()}
-                                {preview.length === 1 ? '' : 's'} released over {lastDay} day
-                                {lastDay === 1 ? '' : 's'}, per learner.
+                                {t('preview.summary', {
+                                    count: lastDay,
+                                    items: `${preview.length} ${getLevelDisplayName(level).toLowerCase()}${preview.length === 1 ? '' : 's'}`,
+                                })}
                                 {existingCount > 0 && (
                                     <span className="block text-xs">
-                                        {existingCount} existing rule
-                                        {existingCount === 1 ? '' : 's'} at this level will be
-                                        replaced.
+                                        {t('preview.existingRules', { count: existingCount })}
                                     </span>
                                 )}
                             </AlertDescription>
@@ -299,7 +287,7 @@ export function DripScheduleDialog({
                             <table className="w-full text-sm">
                                 <thead className="sticky top-0 bg-neutral-50 text-left">
                                     <tr>
-                                        <th className="w-24 px-3 py-2 font-medium">Day</th>
+                                        <th className="w-24 px-3 py-2 font-medium">{t('table.day')}</th>
                                         <th className="px-3 py-2 font-medium">
                                             {getLevelDisplayName(level)}
                                         </th>
@@ -309,7 +297,9 @@ export function DripScheduleDialog({
                                     {preview.map((entry) => (
                                         <tr key={entry.id} className="border-t">
                                             <td className="px-3 py-1.5">
-                                                <Badge variant="outline">Day {entry.day}</Badge>
+                                                <Badge variant="outline">
+                                                    {t('table.dayLabel', { day: entry.day })}
+                                                </Badge>
                                             </td>
                                             <td className="px-3 py-1.5 text-neutral-700">
                                                 {entry.name}
@@ -327,7 +317,7 @@ export function DripScheduleDialog({
                                 onClick={handleClear}
                                 disabled={saving || existingCount === 0}
                             >
-                                Clear schedule
+                                {t('actions.clearSchedule')}
                             </MyButton>
                             <div className="flex gap-2">
                                 <MyButton
@@ -335,13 +325,13 @@ export function DripScheduleDialog({
                                     onClick={onClose}
                                     disabled={saving}
                                 >
-                                    Cancel
+                                    {t('actions.cancel')}
                                 </MyButton>
                                 <MyButton
                                     onClick={handleApply}
                                     disabled={saving || preview.length === 0}
                                 >
-                                    {saving ? 'Saving…' : 'Apply schedule'}
+                                    {saving ? t('actions.saving') : t('actions.applySchedule')}
                                 </MyButton>
                             </div>
                         </div>

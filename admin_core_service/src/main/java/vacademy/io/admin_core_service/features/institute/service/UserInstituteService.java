@@ -27,6 +27,10 @@ import vacademy.io.common.institute.entity.module.InstituteSubModule;
 import vacademy.io.common.institute.entity.module.Submodule;
 import vacademy.io.common.institute.repository.SubModuleRepository;
 import vacademy.io.admin_core_service.features.credits.client.CreditClient;
+import vacademy.io.admin_core_service.features.capabilities.service.DisplaySettingsFormat;
+import vacademy.io.admin_core_service.features.institute.setting_history.InstituteSettingWriter;
+import vacademy.io.admin_core_service.features.telleo.service.TelleoDisplaySettings;
+import vacademy.io.admin_core_service.features.voomsales.service.VoomSalesDisplaySettings;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -57,8 +61,24 @@ public class UserInstituteService {
     private InstituteDefaultUserSubscriptionService instituteDefaultUserSubscriptionService;
     @Autowired
     private CreditClient creditClient;
+
+    @Autowired
+    private vacademy.io.admin_core_service.features.product_config.service.PlatformProductService platformProductService;
     @Autowired
     private vacademy.io.admin_core_service.features.audience.service.LeadStatusService leadStatusService;
+    @Autowired
+    private vacademy.io.admin_core_service.features.telleo.service.TelleoTrialService telleoTrialService;
+    @Autowired
+    private InstituteSettingWriter instituteSettingWriter;
+
+    private static boolean isTelleo(String product) {
+        return "telleo".equalsIgnoreCase(product == null ? null : product.trim());
+    }
+
+    /** Set by auth-service on an institute created from a product's one-screen demo. */
+    static final String DEMO_PORTAL_TAG = "signup:demo_portal";
+    /** Set by auth-service on an institute created from a product website's "Buy <plan>". */
+    static final String BUY_TAG = "signup:buy";
 
     public static InstituteInfoDTO getInstituteDetails(Institute institute) {
         InstituteInfoDTO instituteInfoDTO = new InstituteInfoDTO();
@@ -129,7 +149,38 @@ public class UserInstituteService {
                 log.info("[ADMIN-CORE-SERVICE] savedInstitute.staffStrength: {}", savedInstitute.getStaffStrength());
                 log.info("[ADMIN-CORE-SERVICE] savedInstitute.schoolStrength: {}", savedInstitute.getSchoolStrength());
 
+                // A product whose sign-up proves a phone (Telleo): record that phone in THIS
+                // transaction, so a phone that already had a trial rolls the institute back
+                // instead of leaving a second free account.
+                var signupRules = "FREE_TRIAL".equals(savedInstitute.getLeadTag())
+                        ? platformProductService.signupRulesFor(savedInstitute.getProduct()) : null;
+                if (signupRules != null && signupRules.requiresPhone()) {
+                    telleoTrialService.registerTrial(savedInstitute.getId(), instituteDto.getPhone());
+                }
+
                 instituteSettingService.createDefaultSettingsForInstitute(savedInstitute);
+                // Telleo opens on its four pages from the first login, not after the setup questions.
+                if (isTelleo(savedInstitute.getProduct())) {
+                    try {
+                        instituteSettingWriter.putSettingKey(savedInstitute, DisplaySettingsFormat.ADMIN_KEY,
+                                TelleoDisplaySettings.adminEntry(),
+                                InstituteSettingWriter.Actor.platform("telleo-signup", "Telleo four-page dashboard"));
+                    } catch (Exception e) {
+                        log.warn("[telleo] display settings not written for institute {}: {}",
+                                savedInstitute.getId(), e.getMessage());
+                    }
+                }
+                // VoomSales opens on the CRM only: the other sidebar categories start hidden.
+                if (VoomSalesDisplaySettings.isVoomSales(savedInstitute.getProduct())) {
+                    try {
+                        instituteSettingWriter.putSettingKey(savedInstitute, DisplaySettingsFormat.ADMIN_KEY,
+                                VoomSalesDisplaySettings.adminEntry(),
+                                InstituteSettingWriter.Actor.platform("voomsales-signup", "VoomSales CRM-only dashboard"));
+                    } catch (Exception e) {
+                        log.warn("[voomsales] display settings not written for institute {}: {}",
+                                savedInstitute.getId(), e.getMessage());
+                    }
+                }
                 createInstituteSubModulesMapping(allSubModules, savedInstitute);
                 instituteDefaultUserSubscriptionService.createDefaultPaymentOption(institute.getId());
 
@@ -142,8 +193,25 @@ public class UserInstituteService {
                             savedInstitute.getId(), e.getMessage());
                 }
 
-                // Initialize credits for the new institute (200 initial credits)
-                creditClient.initializeCreditsAsync(savedInstitute.getId());
+                // Opening credits. A product can set its own; then this waits, because the first
+                // balance read would otherwise create the wallet at the default amount.
+                // The one-screen demo (auth-service tags it) opens with the product's demo-page amount.
+                boolean demoPortal = instituteDto.getTags() != null
+                        && instituteDto.getTags().contains(DEMO_PORTAL_TAG);
+                // "Buy <plan>" on a product website: the account pays first, so no free credits.
+                boolean buying = instituteDto.getTags() != null && instituteDto.getTags().contains(BUY_TAG)
+                        && savedInstitute.getProduct() != null
+                        && !"vacademy".equalsIgnoreCase(savedInstitute.getProduct())
+                        && platformProductService.find(savedInstitute.getProduct()).isPresent();
+                Integer demoCredits = buying ? Integer.valueOf(0)
+                        : demoPortal
+                        ? platformProductService.demoPortalCreditsFor(savedInstitute.getProduct())
+                        : platformProductService.demoCreditsFor(savedInstitute.getProduct());
+                if (demoCredits != null) {
+                    creditClient.initializeCredits(savedInstitute.getId(), demoCredits);
+                } else {
+                    creditClient.initializeCreditsAsync(savedInstitute.getId());
+                }
 
                 return new InstituteIdAndNameDTO(savedInstitute.getId(), savedInstitute.getInstituteName());
             }
@@ -181,6 +249,15 @@ public class UserInstituteService {
         institute.setLetterHeadFileId(instituteInfo.getLetterHeadFileId());
         institute.setInstituteType(instituteInfo.getType());
         institute.setInstituteThemeCode(instituteInfo.getInstituteThemeCode());
+        // A Telleo workspace wears Telleo's green unless the caller chose a theme.
+        if (!StringUtils.hasText(institute.getInstituteThemeCode()) && isTelleo(instituteInfo.getProduct())) {
+            institute.setInstituteThemeCode(TelleoDisplaySettings.THEME_CODE);
+        }
+        // A VoomSales workspace wears the preset blue unless the caller chose a theme.
+        if (!StringUtils.hasText(institute.getInstituteThemeCode())
+                && VoomSalesDisplaySettings.isVoomSales(instituteInfo.getProduct())) {
+            institute.setInstituteThemeCode(VoomSalesDisplaySettings.THEME_CODE);
+        }
         institute.setBoard(instituteInfo.getBoard());
         institute.setGstDetails(instituteInfo.getGstDetails());
         institute.setAffiliationNumber(instituteInfo.getAffiliationNumber());

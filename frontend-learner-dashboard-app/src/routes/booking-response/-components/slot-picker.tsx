@@ -6,6 +6,7 @@ import { CaretLeft, CaretRight, CircleNotch, GlobeHemisphereEast } from "@phosph
 import { cn } from "@/lib/utils";
 import { MyButton } from "@/components/design-system/button";
 import { handleGetBookingSlots } from "../-services/booking-services";
+import { useTranslation } from "react-i18next";
 
 interface SlotPickerProps {
   instituteId: string;
@@ -54,6 +55,7 @@ const SlotPicker = ({
   onSelectedDayKeyChange,
   duration,
 }: SlotPickerProps) => {
+  const { t } = useTranslation("liveClassGuest");
   const horizonDays = Math.max(1, bookingHorizonDays || 30);
 
   // "Today" as seen in the invitee's selected timezone.
@@ -155,7 +157,7 @@ const SlotPicker = ({
           scale="medium"
           disable={weekOffset === 0}
           onClick={() => onWeekOffsetChange(Math.max(0, weekOffset - 1))}
-          aria-label="Previous days"
+          aria-label={t("bookingResponse.slotPicker.prevDaysAria")}
         >
           <CaretLeft size={16} />
         </MyButton>
@@ -201,7 +203,7 @@ const SlotPicker = ({
           scale="medium"
           disable={!hasNextPage}
           onClick={() => onWeekOffsetChange(weekOffset + 1)}
-          aria-label="Next days"
+          aria-label={t("bookingResponse.slotPicker.nextDaysAria")}
         >
           <CaretRight size={16} />
         </MyButton>
@@ -212,16 +214,17 @@ const SlotPicker = ({
         {slotsLoading ? (
           <div className="flex items-center justify-center gap-2 py-8 text-neutral-500">
             <CircleNotch className="animate-spin" size={20} />
-            <span className="text-body">Loading available times…</span>
+            <span className="text-body">{t("bookingResponse.slotPicker.loading")}</span>
           </div>
         ) : slotsError ? (
           <div className="py-8 text-center text-body text-danger-600">
-            Could not load available times. Please try again.
+            {t("bookingResponse.slotPicker.loadError")}
           </div>
         ) : activeDaySlots.length === 0 ? (
           <div className="py-8 text-center text-body text-neutral-500">
-            No available times on{" "}
-            {format(parseISO(activeDayKey), "EEEE, d MMMM")}. Try another day.
+            {t("bookingResponse.slotPicker.noSlots", {
+              day: format(parseISO(activeDayKey), "EEEE, d MMMM"),
+            })}
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">

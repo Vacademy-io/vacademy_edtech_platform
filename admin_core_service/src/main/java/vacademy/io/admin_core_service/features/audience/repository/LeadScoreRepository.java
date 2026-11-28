@@ -28,12 +28,13 @@ public interface LeadScoreRepository extends JpaRepository<LeadScore, String> {
         UPDATE lead_score ls SET percentile_rank = sub.pct, updated_at = NOW()
         FROM (
             SELECT id,
-                   PERCENT_RANK() OVER (PARTITION BY audience_id ORDER BY raw_score) * 100 as pct
+                   CAST(PERCENT_RANK() OVER (PARTITION BY audience_id ORDER BY raw_score) * 100 AS numeric(5,2)) as pct
             FROM lead_score
             WHERE audience_id = :audienceId
         ) sub
         WHERE ls.id = sub.id
         AND ls.audience_id = :audienceId
+        AND ls.percentile_rank IS DISTINCT FROM sub.pct
         """, nativeQuery = true)
     void recalculatePercentilesForAudience(@Param("audienceId") String audienceId);
 
@@ -50,17 +51,24 @@ public interface LeadScoreRepository extends JpaRepository<LeadScore, String> {
      * {@code audience_id = :audienceId} predicate, so NULL-audience rows were never updated.
      * Without this filter PERCENT_RANK would treat them as one more partition and start
      * writing ranks that the old loop never wrote.
+     *
+     * <p>Both percentile UPDATEs skip rows whose rank is unchanged. They used to rewrite every
+     * row: 111k rows per batch run (several runs per interval, see LeadScoringService), of
+     * which about 10 actually changed -- 2.66 billion updates since 2026-08-03, a 1 GB table for
+     * 111k rows, and a WAL segment every few seconds while it ran. The cast to numeric(5,2) is
+     * the column's own rounding, so comparing against it does not report every row as changed.
      */
     @Modifying
     @Query(value = """
         UPDATE lead_score ls SET percentile_rank = sub.pct, updated_at = NOW()
         FROM (
             SELECT id,
-                   PERCENT_RANK() OVER (PARTITION BY audience_id ORDER BY raw_score) * 100 as pct
+                   CAST(PERCENT_RANK() OVER (PARTITION BY audience_id ORDER BY raw_score) * 100 AS numeric(5,2)) as pct
             FROM lead_score
             WHERE audience_id IS NOT NULL
         ) sub
         WHERE ls.id = sub.id
+        AND ls.percentile_rank IS DISTINCT FROM sub.pct
         """, nativeQuery = true)
     int recalculatePercentilesForAllAudiences();
 

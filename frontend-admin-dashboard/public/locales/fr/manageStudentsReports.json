@@ -1,0 +1,63 @@
+{
+    "actionBar": {
+        "title": "Rapports {{label}}",
+        "checkStatus": "Vérifier le statut",
+        "checking": "Vérification..."
+    },
+    "status": {
+        "processing": "En cours",
+        "completed": "Terminé",
+        "failed": "Échoué"
+    },
+    "error": {
+        "title": "Impossible de charger les rapports",
+        "hint": "Une erreur s'est produite lors du chargement des rapports. Veuillez réessayer."
+    },
+    "empty": {
+        "title": "Aucun rapport pour le moment",
+        "hint": "Générez un nouveau rapport pour analyser la performance de l'élève."
+    },
+    "card": {
+        "createdOn": "Créé le {{date}}",
+        "view": "Afficher",
+        "loading": "Chargement…",
+        "defaultTitle": "Rapport d'analyse"
+    },
+    "pagination": {
+        "pageOf": "{{page}} / {{total}}"
+    },
+    "toast": {
+        "reportDataNotAvailable": "Les données du rapport ne sont pas encore disponibles",
+        "loadDetailsFailed": "Échec du chargement des détails du rapport",
+        "reportsCompleted_one": "{{count}} rapport terminé avec succès",
+        "reportsCompleted_other": "{{count}} rapports terminés avec succès",
+        "reportsCompleted_many": "{{count}} rapports terminés avec succès",
+        "reportsFailed_one": "{{count}} rapport a échoué",
+        "reportsFailed_other": "{{count}} rapports ont échoué",
+        "reportsFailed_many": "{{count}} rapports ont échoué",
+        "reportsPending_one": "{{count}} rapport est toujours en cours de traitement",
+        "reportsPending_other": "{{count}} rapports sont toujours en cours de traitement",
+        "reportsPending_many": "{{count}} rapports sont toujours en cours de traitement",
+        "checkStatusFailed": "Échec de la vérification du statut des rapports"
+    },
+    "learned": {
+        "heading": "Appris des discussions IA",
+        "subtitle": "Ce que le tuteur IA a remarqué en discutant avec cet apprenant. Supprimez ce qui semble faux.",
+        "seenTimes_one": "Vu {{count}} fois",
+        "seenTimes_other": "Vu {{count}} fois",
+        "stated": "Dit par l'apprenant",
+        "dismiss": "Supprimer cette note",
+        "dismissed": "Note supprimée",
+        "dismissFailed": "Impossible de supprimer la note",
+        "kind": {
+            "GOAL": "Objectif",
+            "PREFERENCE": "Préfère",
+            "STRENGTH": "Point fort",
+            "WEAKNESS": "Point faible",
+            "MISCONCEPTION": "Idée fausse",
+            "INTEREST": "Intérêt"
+        },
+        "showAll": "Tout afficher ({{count}})",
+        "showLess": "Afficher moins"
+    }
+}

@@ -1,0 +1,107 @@
+{
+    "gateMeta": {
+        "creativeConcept": {
+            "title": "Direction créative",
+            "blurb": "Le fil conducteur, le ton et la métaphore visuelle de toute la vidéo."
+        },
+        "shotPlan": {
+            "title": "Plan des plans",
+            "blurb": "La liste des plans — types, ordre, rythme, et ce que couvre chaque temps fort."
+        },
+        "styleframe": {
+            "title": "Identité visuelle",
+            "blurb": "La signature visuelle de cette vidéo — polices, mouvement, finitions."
+        },
+        "narration": {
+            "title": "Script de narration",
+            "blurb": "Les mots exacts prononcés avant la génération de l'audio."
+        },
+        "visualCasting": {
+            "title": "Visuel",
+            "blurb": "Quelle image ou quel extrait de banque utiliser pour ce plan."
+        },
+        "shotLook": {
+            "title": "Ambiance du plan",
+            "blurb": "Quel rendu utiliser pour ce plan."
+        },
+        "contactSheet": {
+            "title": "Planche contact",
+            "blurb": "Chaque plan sous forme d'image réelle — approuvez ou renvoyez des plans avec des notes."
+        },
+        "assetRequest": {
+            "title": "Rendre ça authentique",
+            "blurb": "L'IA a demandé des éléments réels — vos captures d'écran, photos et chiffres."
+        },
+        "cast": {
+            "title": "Votre casting",
+            "blurb": "Les portraits des personnages — à approuver avant le tournage d'une scène."
+        },
+        "dailies": {
+            "title": "Rushes",
+            "blurb": "Regardez chaque scène tournée — approuvez-la ou renvoyez-la pour une reprise."
+        },
+        "voice": {
+            "title": "Voix",
+            "blurb": "La voix de narration."
+        },
+        "music": {
+            "title": "Musique de fond",
+            "blurb": "La piste musicale de fond."
+        },
+        "avatar": {
+            "title": "Présentateur",
+            "blurb": "Le présentateur / avatar à l'écran."
+        }
+    },
+    "gatePrompt": {
+        "creativeConcept": "Voici la direction créative — approuvez-la ou affinez-la.",
+        "shotPlan": "Voici le plan des plans — approuvez-le, modifiez un plan, ou laissez-moi décider.",
+        "styleframe": "Approuvez l'identité visuelle ou ajustez le style.",
+        "narration": "Voici le script de narration — modifiez-le, approuvez-le, ou laissez-moi décider.",
+        "visualCasting": "Quel visuel devrions-nous utiliser pour ce plan ?",
+        "shotLook": "Quelle ambiance devrions-nous utiliser pour ce plan ?",
+        "contactSheet": "Tous les plans sont prêts — approuvez la planche contact ou renvoyez des plans.",
+        "assetRequest": "Je pourrais rendre certains plans plus authentiques avec des éléments que vous seul possédez.",
+        "cast": "Découvrez votre casting — approuvez les portraits avant que je tourne les scènes.",
+        "dailies": "Les scènes sont tournées — regardez les rushes et approuvez-les ou renvoyez-les.",
+        "voice": "Quelle voix devrions-nous utiliser ?",
+        "music": "Quelle musique de fond convient ?",
+        "avatar": "Quel présentateur devrait présenter ?"
+    },
+    "ledgerSummary": {
+        "auto": "Laisser l'IA décider pour {{label}}",
+        "autoAll": "Laisser l'IA gérer tous les choix restants pour {{label}}",
+        "select": "{{label}} approuvé(e)",
+        "freeform": "Question : « {{text}} »",
+        "editShotPlan": "Plan des plans modifié",
+        "editStyleframe": "Identité visuelle ajustée",
+        "editNarration": "Script de narration modifié",
+        "editContactSheet": "{{count}} plan(s) renvoyé(s) avec des notes",
+        "editAssetRequestProvided": "{{count}} élément(s) réel(s) fourni(s)",
+        "editAssetRequestSkipped": "Ignoré — l'IA crée tout",
+        "editCastUpdated": "{{count}} portrait(s) mis à jour",
+        "editCastApproved": "Casting approuvé",
+        "editDailiesSent": "{{count}} scène(s) renvoyée(s) pour une reprise",
+        "editDailiesApproved": "Rushes approuvés",
+        "editDefault": "Visuels choisis",
+        "resolved": "{{label}} résolu(e)"
+    },
+    "turnSummary": {
+        "acceptRecommended": "{{label}} approuvé(e) tel(le) que rédigé(e)",
+        "chooseOption": "Option choisie pour {{label}}",
+        "freeform": "Question : « {{text}} »",
+        "auto": "Laisser l'IA décider pour {{label}}",
+        "autoAll": "Laisser l'IA gérer tous les choix restants pour {{label}}",
+        "editShotPlan": "Plan des plans modifié ({{count}} plans)",
+        "editStyleframe": "Identité visuelle ajustée",
+        "editNarration": "Script de narration modifié",
+        "editCreativeConcept": "Direction créative modifiée",
+        "editContactSheet": "{{count}} plan(s) renvoyé(s) avec des notes",
+        "editAssetRequestProvided": "{{count}} élément(s) réel(s) fourni(s)",
+        "editAssetRequestSkipped": "Demandes d'éléments ignorées",
+        "editCast": "{{count}} portrait(s) mis à jour avant le tournage",
+        "editDailies": "{{count}} scène(s) renvoyée(s) pour une reprise",
+        "editDefault": "Visuels choisis pour {{count}} plan(s)",
+        "resolved": "{{label}} résolu(e)"
+    }
+}

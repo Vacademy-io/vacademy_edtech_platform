@@ -30,4 +30,20 @@ public class CourseCertificateDashboardDto {
 
     /** The threshold actually in force here, after course-override resolution. */
     private int thresholdPercent;
+
+    /**
+     * PROGRESS | SCORE | PROGRESS_AND_SCORE. Under a score rule "awaiting" means
+     * "meets the whole rule", and "near" means one test short (or, for an average
+     * rule, within 10 points of the bar).
+     */
+    private String criteriaMode;
+
+    /** ALL | AT_LEAST | AVERAGE; null under a progress-only rule. */
+    private String passRule;
+
+    /** Live tests in this batch the rule counts; null under a progress-only rule. */
+    private Integer testsInRule;
+
+    /** Learners with at least one test whose marks are not final yet; null under a progress-only rule. */
+    private Long learnersAwaitingResults;
 }

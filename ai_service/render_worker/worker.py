@@ -116,8 +116,10 @@ class RenderWorker:
             # rewriting the local timeline copy to file:// srcs removes all
             # network I/O from the capture path — seeks become instant. The
             # S3 timeline is untouched (browser preview keeps remote URLs).
+            # Off the event loop: downloads + seek re-encodes can outlast the
+            # 90 s /health liveness window and get the container killed.
             try:
-                self._prefetch_timeline_videos(timeline_path, work_dir)
+                await asyncio.to_thread(self._prefetch_timeline_videos, timeline_path, work_dir)
             except Exception as exc:
                 logger.warning(f"[MEDIA-PREFETCH] failed ({exc}) — rendering with remote URLs")
 
@@ -619,7 +621,14 @@ class RenderWorker:
 
             # Branding watermark overlay (branding.json is baked into Docker image)
             branding_json = REPO_ROOT / "branding.json"
-            if show_branding and branding_json.exists():
+            # An institute watermark (brand_overrides.watermark) is already a
+            # timeline entry; the platform one sits in the same top-right
+            # corner and printed "Vacademy" across the institute's logo.
+            _has_institute_watermark = any(
+                isinstance(e, dict) and e.get("id") == "branding-watermark"
+                for e in (tl_entries if isinstance(tl_entries, list) else [])
+            )
+            if show_branding and branding_json.exists() and not _has_institute_watermark:
                 base_cmd.extend(["--show-branding", "--branding-json", str(branding_json)])
             else:
                 base_cmd.append("--no-show-branding")
@@ -1223,7 +1232,26 @@ class RenderWorker:
             # promised. Real render-server bug should be filed separately.
             try:
                 _planned_dur = float(total_duration)
-                if _planned_dur > 0.5:
+                # Only re-encode when the container actually overshoots — a
+                # full 1080p re-encode of a 10-min lesson can exceed the 300 s
+                # trim timeout on its own.
+                _actual_dur = 0.0
+                try:
+                    _probe = await asyncio.to_thread(
+                        subprocess.run,
+                        ["ffprobe", "-v", "error", "-show_entries", "format=duration",
+                         "-of", "csv=p=0", str(output_path)],
+                        capture_output=True, text=True, timeout=30,
+                    )
+                    _actual_dur = float((_probe.stdout or "0").strip() or 0.0)
+                except Exception:
+                    _actual_dur = 0.0
+                if _actual_dur and _actual_dur <= _planned_dur + 0.5:
+                    logger.info(
+                        f"[Render worker] output.mp4 is {_actual_dur:.2f}s for a "
+                        f"{_planned_dur:.2f}s plan — no post-trim needed"
+                    )
+                elif _planned_dur > 0.5:
                     _trimmed_path = output_path.with_name("output_trimmed.mp4")
                     _trim_cmd = [
                         "ffmpeg", "-y", "-loglevel", "error",
@@ -1236,7 +1264,12 @@ class RenderWorker:
                         "-movflags", "+faststart",
                         str(_trimmed_path),
                     ]
-                    _trim_res = subprocess.run(
+                    # Off the event loop: re-encoding a 10-min 1080p MP4 takes
+                    # minutes; inline it blocked /health past the liveness
+                    # probe and the container was killed with the MP4 built
+                    # but not uploaded (ITRC sample, 2026-10-23).
+                    _trim_res = await asyncio.to_thread(
+                        subprocess.run,
                         _trim_cmd, check=False, capture_output=True, text=True, timeout=300,
                     )
                     if _trim_res.returncode == 0 and _trimmed_path.exists():
@@ -1260,7 +1293,7 @@ class RenderWorker:
 
             # ── Upload to S3 ──
             s3_key = f"ai-videos/{video_id}/video/output.mp4"
-            video_url = self._upload(output_path, s3_key)
+            video_url = await asyncio.to_thread(self._upload, output_path, s3_key)
             logger.info(f"Uploaded to S3: {video_url}")
 
             if on_progress:
@@ -1564,9 +1597,17 @@ class RenderWorker:
             if max_gap <= 2.0 and kts:
                 return src_path  # dense enough — seeks are cheap already
             out = src_path.with_name(src_path.stem + "_seekable.mp4")
+            # CRF 18 + a 12-frame GOP turned a 37 MB Pexels 1080p clip into
+            # 80-110 MB (13 Mbit/s), and Chrome's page crashed mounting it
+            # ("Target page, context or browser has been closed" before the
+            # first frame) — every retry of that render failed the same way.
+            # Reproduced on the worker 2026-10-12: CRF 26 (29 MB) and CRF 23
+            # capped at 6 Mbit/s (39 MB) render fine. Stock footage is a
+            # background bed; 6 Mbit/s at 1080p is plenty.
             subprocess.run(
                 ["ffmpeg", "-y", "-v", "error", "-i", str(src_path),
-                 "-c:v", "libx264", "-preset", "veryfast", "-crf", "18",
+                 "-c:v", "libx264", "-preset", "veryfast", "-crf", "23",
+                 "-maxrate", "6M", "-bufsize", "12M",
                  "-g", "12", "-keyint_min", "12", "-sc_threshold", "0",
                  "-pix_fmt", "yuv420p", "-movflags", "+faststart",
                  "-c:a", "copy", str(out)],

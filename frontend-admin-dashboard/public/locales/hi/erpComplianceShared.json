@@ -1,0 +1,15 @@
+{
+    "warnings": {
+        "title": "फ़ाइल करने से पहले जांचें"
+    },
+    "skipped": {
+        "defaultNoun": "कर्मचारी",
+        "excludedCount_one": "{{count}} {{noun}} इस फ़ाइल से बाहर रखा गया",
+        "excludedCount_other": "{{count}} {{noun}} इस फ़ाइल से बाहर रखे गए",
+        "fixHint": "नीचे दिया गया कारण ठीक करें और फिर से जनरेट करें — फ़ाइल अभी उन्हें शामिल नहीं करती।",
+        "table": {
+            "employee": "कर्मचारी",
+            "reason": "कारण"
+        }
+    }
+}

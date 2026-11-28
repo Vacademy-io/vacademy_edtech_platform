@@ -1,0 +1,36 @@
+{
+    "empty": {
+        "noData": "इस सबमिशन के लिए कोई टेस्ट-केस डेटा दर्ज नहीं है।"
+    },
+    "verdict": {
+        "accepted": "स्वीकृत",
+        "partial": "आंशिक",
+        "rejected": "अस्वीकृत",
+        "error": "त्रुटि",
+        "timedOut": "समय समाप्त"
+    },
+    "score": {
+        "points": "{{score}} अंक"
+    },
+    "pasteAttempts_one": "{{count}} पेस्ट प्रयास",
+    "pasteAttempts_other": "{{count}} पेस्ट प्रयास",
+    "testCases": {
+        "passedLabel": "उत्तीर्ण टेस्ट केस:",
+        "gradedSuffixHidden": "छिपे हुए",
+        "gradedSuffixSample": "नमूना",
+        "sampleBreakdown": "नमूना {{passed}}/{{total}}",
+        "hiddenTag": "(छिपा हुआ)",
+        "fallbackLabel": "टेस्ट {{number}}"
+    },
+    "runtime": {
+        "timeLabel": "समय:",
+        "memoryLabel": "मेमोरी:",
+        "timeValue": "{{value}} मि.से.",
+        "memoryValue": "{{value}} KB",
+        "timeAllowed": "/ {{value}} मि.से. स्वीकृत",
+        "memoryAllowed": "/ {{value}} KB स्वीकृत"
+    },
+    "sourceCode": {
+        "toggleLabel": "सबमिट किया गया सोर्स कोड दिखाएँ"
+    }
+}

@@ -1,3 +1,4 @@
+import type { TFunction } from 'i18next';
 import {
     SupportedLanguage,
     DEFAULT_CODE,
@@ -107,7 +108,9 @@ const loadPyodideInstance = async (): Promise<any> => {
  */
 export const executePythonWithPyodide = async (
     code: string,
-    stdin: string = ''
+    stdin: string = '',
+    t: TFunction,
+    locale?: string
 ): Promise<CodeExecutionResult> => {
     try {
         // Load Pyodide if not already loaded
@@ -165,9 +168,7 @@ export const executePythonWithPyodide = async (
             // graded test-case runs the footer would pollute the stdout compared
             // against the expected output and cause false failures.
             if (!stdin.length) {
-                stdout(
-                    `\n[Editor (Pyodide: v${pyodideInstance.version}): ${new Date().toLocaleString('en-us')}]`
-                );
+                stdout(`\n[Editor (Pyodide: v${pyodideInstance.version}): ${new Date().toLocaleString(locale)}]`);
             }
         }
 
@@ -178,38 +179,37 @@ export const executePythonWithPyodide = async (
         // Check if code contains input() function
         const needsInput = code.includes('input(');
         if (needsInput) {
-            consoleOutput.push(
-                '\nNote: Interactive input (input()) is not supported in this environment.'
-            );
+            consoleOutput.push(t('output.interactiveInputNotSupported'));
         }
 
         return {
-            output: output.trim() || 'Code executed successfully (no output)',
+            output: output.trim() || t('output.codeExecutedNoOutput'),
             needsInput: false,
             hasError,
         };
     } catch (error) {
         console.error('[CodeEditor] Error loading or initializing Pyodide:', error);
 
-        // Provide more specific error messages
-        let errorMessage = 'Unknown error occurred while loading Pyodide.';
+        // Provide more specific error messages. NOTE: the `.includes(...)`
+        // checks below match against the raw (untranslated) Error thrown
+        // above — those thrown strings are internal matching signals, not
+        // shown to the user, so they intentionally stay in English.
+        let errorMessage = t('errors.unknownPyodideError');
 
         if (error instanceof Error) {
             if (error.message.includes('timed out')) {
-                errorMessage =
-                    'Pyodide loading timed out. This might be due to slow internet connection or CDN issues. Please refresh the page and try again.';
+                errorMessage = t('errors.pyodideTimedOut');
             } else if (error.message.includes('Failed to fetch')) {
-                errorMessage =
-                    'Failed to download Pyodide. Please check your internet connection and try again.';
+                errorMessage = t('errors.pyodideDownloadFailed');
             } else if (error.message.includes('pyodide')) {
-                errorMessage = `Pyodide error: ${error.message}`;
+                errorMessage = t('errors.pyodideError', { message: error.message });
             } else {
-                errorMessage = `Loading error: ${error.message}`;
+                errorMessage = t('errors.loadingError', { message: error.message });
             }
         }
 
         return {
-            output: `Pyodide Loading Error:\n${errorMessage}\n\nPlease try:\n1. Refresh the page\n2. Check your internet connection\n3. Try again in a few moments`,
+            output: t('errors.pyodideLoadingErrorBlock', { errorMessage }),
             needsInput: false,
             hasError: true,
         };
@@ -261,7 +261,8 @@ export const downloadCodeAsFile = (code: string, language: SupportedLanguage): v
  */
 export const executeJavaScriptInBrowser = (
     code: string,
-    stdin: string = ''
+    stdin: string = '',
+    t: TFunction
 ): CodeExecutionResult => {
     const logs: string[] = [];
     const originalLog = console.log;
@@ -274,8 +275,11 @@ export const executeJavaScriptInBrowser = (
         console.error = (...args: unknown[]) => {
             hasError = true;
             logs.push(
-                'ERROR: ' +
-                    args.map((a) => (typeof a === 'string' ? a : JSON.stringify(a))).join(' ')
+                t('output.errorLabel', {
+                    message: args
+                        .map((a) => (typeof a === 'string' ? a : JSON.stringify(a)))
+                        .join(' '),
+                })
             );
         };
         // Provide a minimal stdin shim so problems that read input have something
@@ -289,13 +293,17 @@ export const executeJavaScriptInBrowser = (
         if (result !== undefined) logs.push(String(result));
     } catch (err) {
         hasError = true;
-        logs.push('Error: ' + (err instanceof Error ? err.message : String(err)));
+        logs.push(
+            t('errors.genericError', {
+                message: err instanceof Error ? err.message : String(err),
+            })
+        );
     } finally {
         console.log = originalLog;
         console.error = originalError;
     }
     return {
-        output: logs.join('\n') || '(no output)',
+        output: logs.join('\n') || t('output.noOutputParen'),
         needsInput: false,
         hasError,
     };
@@ -310,11 +318,13 @@ export const executeJavaScriptInBrowser = (
 export const executeCode = async (
     code: string,
     language: SupportedLanguage,
-    options: CodeExecutionOptions = {}
+    options: CodeExecutionOptions = {},
+    t: TFunction,
+    locale?: string
 ): Promise<CodeExecutionResult> => {
     if (!code.trim()) {
         return {
-            output: 'No code to execute. Please write some code first.',
+            output: t('errors.noCodeToExecute'),
             needsInput: false,
         };
     }
@@ -324,11 +334,11 @@ export const executeCode = async (
     if (def.executor === 'pyodide') {
         // Pass stdin through so graded/test-case runs (e.g. AI self-verify,
         // starter-code preview against inputs) feed the program's input().
-        return await executePythonWithPyodide(code, options.stdin);
+        return await executePythonWithPyodide(code, options.stdin, t, locale);
     }
 
     if (def.executor === 'browser') {
-        return executeJavaScriptInBrowser(code, options.stdin);
+        return executeJavaScriptInBrowser(code, options.stdin, t);
     }
 
     // Judge0 path (C / C++ / Java / Go / future)
@@ -351,7 +361,9 @@ export const executeCode = async (
         };
     } catch (err) {
         return {
-            output: `Judge0 error: ${err instanceof Error ? err.message : String(err)}\n\nNote: ce.judge0.com is rate-limited; if you hit a 429, wait and retry.`,
+            output: t('errors.judge0Error', {
+                message: err instanceof Error ? err.message : String(err),
+            }),
             needsInput: false,
             hasError: true,
         };
@@ -364,7 +376,8 @@ export const executeCode = async (
 export const handleUserInputSubmission = (
     userInput: string,
     language: SupportedLanguage,
-    currentOutput: string
+    currentOutput: string,
+    t: TFunction
 ): string => {
     if (!userInput.trim()) {
         return currentOutput;
@@ -375,7 +388,7 @@ export const handleUserInputSubmission = (
 
     // Continue Python simulation after input
     if (language === 'python') {
-        newOutput += `Hello, ${trimmedInput}! Welcome to coding!\nSum of numbers: 15\n\nNote: This is a Python simulation. For real Python execution, you would need a Python interpreter.`;
+        newOutput += t('simulation.pythonWelcome', { name: trimmedInput });
     }
 
     return newOutput;

@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useTranslation } from "react-i18next";
 import { PaymentsModule } from "../-components/PaymentsModule";
 import { ParentFeesAccordion } from "../-components/ParentFeesAccordion";
 import { ParentPageLayout } from "../-components/ParentPageLayout";
@@ -9,6 +10,7 @@ export const Route = createFileRoute("/parent/payment/")({
 });
 
 export default function Page() {
+  const { t } = useTranslation("parent");
   const selectedChild = useParentPortalStore((state) => state.selectedChild);
   const children = useParentPortalStore((state) => state.children);
   const child = selectedChild ?? children[0] ?? null;
@@ -17,8 +19,7 @@ export default function Page() {
     return (
       <div className="text-center py-8">
         <p className="text-muted-foreground">
-          No child selected. Please go to the Parent Dashboard and select a
-          learner.
+          {t("admissionPortal.noChildSelectedGoToDashboard")}
         </p>
       </div>
     );

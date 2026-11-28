@@ -1,0 +1,17 @@
+{
+    "validation": {
+        "titleRequired": "العنوان مطلوب",
+        "startDateRequired": "تاريخ البدء مطلوب",
+        "startTimeRequired": "وقت البدء مطلوب",
+        "durationGreaterThanZero": "يجب أن تكون المدة أكبر من صفر",
+        "linkRequired": "الرابط مطلوب",
+        "invalidUrl": "رابط غير صالح",
+        "fieldLabelRequired": "تسمية الحقل مطلوبة",
+        "fieldLabelTooLong": "تسمية الحقل طويلة جدًا",
+        "timeZoneRequired": "المنطقة الزمنية مطلوبة",
+        "addAtLeastOneSession": "أضف جلسة واحدة على الأقل",
+        "selectTime": "اختر الوقت",
+        "assignAtLeastOneBatch": "خصّص دفعة واحدة على الأقل لهذه الحصة الخاصة.",
+        "emailOrPhoneRequired": "أبقِ البريد الإلكتروني أو رقم الهاتف مطلوبًا — يحتاج التسجيل إلى أحدهما لتحديد هوية المتعلم."
+    }
+}

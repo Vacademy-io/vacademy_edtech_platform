@@ -1,11 +1,12 @@
 import React, { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Plus, Trash2, Info } from 'lucide-react';
+import { Plus, Trash, Info } from '@phosphor-icons/react';
 import { getTerminology } from '@/components/common/layout-container/sidebar/utils';
 import { ContentTerms, RoleTerms, SystemTerms } from '../../NamingSettings';
 import { getCurrencySymbol } from '../utils/utils';
@@ -35,22 +36,26 @@ export const DonationPlanConfiguration: React.FC<DonationPlanConfigurationProps>
     onAddAmount,
     onRemoveAmount,
 }) => {
+    const { t } = useTranslation('settingsDonationPlanConfiguration');
+
     useEffect(() => {
         onAllowCustomAmountChange(allowCustomAmount);
     }, []);
     return (
         <Card>
             <CardHeader>
-                <CardTitle className="text-lg">Donation Configuration</CardTitle>
+                <CardTitle className="text-lg">{t('title')}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
                 <div>
-                    <Label>Suggested Donation Amounts ({getCurrencySymbol(currency)})</Label>
+                    <Label>
+                        {t('suggestedAmounts.label', { currency: getCurrencySymbol(currency) })}
+                    </Label>
                     <div className="mt-1 flex items-center space-x-2">
                         <Input
                             type="number"
                             min="0"
-                            placeholder="Enter amount"
+                            placeholder={t('suggestedAmounts.placeholder')}
                             value={newAmount}
                             onChange={(e) => onNewAmountChange(e.target.value)}
                             onKeyDown={(e) => {
@@ -68,39 +73,37 @@ export const DonationPlanConfiguration: React.FC<DonationPlanConfigurationProps>
                             disabled={!newAmount || isNaN(Number(newAmount))}
                         >
                             <Plus className="mr-2 size-4" />
-                            Add
+                            {t('suggestedAmounts.add')}
                         </Button>
                     </div>
-                    <p className="mt-1 text-xs text-gray-500">
-                        Add suggested amounts that students can choose from
-                    </p>
+                    <p className="mt-1 text-xs text-gray-500">{t('suggestedAmounts.hint')}</p>
 
                     {/* Display current suggested amounts */}
                     {suggestedAmounts && (
                         <div className="mt-3">
                             <Label className="text-sm font-medium">
-                                Current Suggested Amounts:
+                                {t('suggestedAmounts.currentLabel')}
                             </Label>
                             <div className="mt-2 flex flex-wrap gap-2">
                                 {suggestedAmounts
                                     .split(',')
-                                    .map((amount: string, index: number) => (
+                                    .map((amt: string, idx: number) => (
                                         <div
-                                            key={index}
+                                            key={idx}
                                             className="flex items-center gap-2 rounded-md bg-gray-100 px-3 py-1"
                                         >
                                             <span className="text-sm font-medium">
                                                 {getCurrencySymbol(currency)}
-                                                {amount.trim()}
+                                                {amt.trim()}
                                             </span>
                                             <Button
                                                 type="button"
                                                 variant="ghost"
                                                 size="sm"
                                                 className="h-auto p-0 text-red-600 hover:text-red-700"
-                                                onClick={() => onRemoveAmount(index)}
+                                                onClick={() => onRemoveAmount(idx)}
                                             >
-                                                <Trash2 className="size-3" />
+                                                <Trash className="size-3" />
                                             </Button>
                                         </div>
                                     ))}
@@ -110,10 +113,12 @@ export const DonationPlanConfiguration: React.FC<DonationPlanConfigurationProps>
                 </div>
 
                 <div>
-                    <Label>Minimum Donation Amount ({getCurrencySymbol(currency)})</Label>
+                    <Label>
+                        {t('minimumAmount.label', { currency: getCurrencySymbol(currency) })}
+                    </Label>
                     <Input
                         type="number"
-                        placeholder="0 for no minimum"
+                        placeholder={t('minimumAmount.placeholder')}
                         value={minimumAmount}
                         onChange={(e) => onMinimumAmountChange(e.target.value)}
                         className="mt-1"
@@ -126,16 +131,17 @@ export const DonationPlanConfiguration: React.FC<DonationPlanConfigurationProps>
                         checked={allowCustomAmount}
                         onCheckedChange={onAllowCustomAmountChange}
                     />
-                    <Label htmlFor="allowCustomAmount">Allow custom donation amounts</Label>
+                    <Label htmlFor="allowCustomAmount">{t('allowCustomAmount.label')}</Label>
                 </div>
 
                 <Alert>
                     <Info className="size-4" />
                     <AlertDescription>
-                        Donation-based {getTerminology(ContentTerms.Course, SystemTerms.Course)} are
-                        free to access. Coupon codes are not applicable as{' '}
-                        {getTerminology(RoleTerms.Learner, SystemTerms.Learner)} can choose their
-                        contribution amount.
+                        {t('alert.part1')}
+                        {getTerminology(ContentTerms.Course, SystemTerms.Course)}
+                        {t('alert.part2')}
+                        {getTerminology(RoleTerms.Learner, SystemTerms.Learner)}
+                        {t('alert.part3')}
                     </AlertDescription>
                 </Alert>
             </CardContent>

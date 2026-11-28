@@ -78,7 +78,7 @@ export const ChapterSidebarComponent = ({
                             key={index}
                             className={`group flex w-full items-center gap-2 sm:gap-3 rounded-lg transition-all duration-200 px-2 sm:px-3 py-2 sm:py-2.5 hover:cursor-pointer ${
                                 moduleWithChapters.module.id == currentModuleId
-                                    ? "border border-primary-200/80 bg-gradient-to-r from-primary-50/80 to-blue-50/60 text-primary-700 shadow-sm"
+                                    ? "border border-primary-200/80 bg-gradient-to-r from-primary-50/80 to-info-50/60 text-primary-700 shadow-sm"
                                     : "border border-transparent bg-white hover:border-neutral-200 hover:bg-gradient-to-r hover:from-neutral-50/80 hover:to-white text-neutral-600 hover:text-neutral-700 hover:shadow-sm"
                             }`}
                             onClick={() => {

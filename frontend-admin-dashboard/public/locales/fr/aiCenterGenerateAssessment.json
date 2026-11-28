@@ -1,0 +1,49 @@
+{
+    "header": {
+        "title": "Créer un sujet d'examen",
+        "subtitle": "Déposez un fichier PDF, Word ou PowerPoint. Nous rédigerons des questions que vous pourrez modifier avant l'envoi."
+    },
+    "dropzone": {
+        "title": "Déposez votre fichier ici, ou cliquez pour le choisir",
+        "subtitle": "PDF, Word ou PowerPoint — jusqu'à quelques centaines de pages."
+    },
+    "fileCard": {
+        "removeFile": "Supprimer le fichier",
+        "status": {
+            "uploading": "Envoi en cours…",
+            "processing": "Lecture en cours…",
+            "ready": "Prêt à rédiger",
+            "generating": "Rédaction en cours"
+        }
+    },
+    "workingStatus": {
+        "uploading": "Lecture de votre fichier…",
+        "processing": "Préparation de votre document…",
+        "generating": "Rédaction de votre sujet — cela prend généralement environ 30 secondes.",
+        "preparingPages": "Préparation des pages à choisir…"
+    },
+    "errors": {
+        "unsupportedFileType": "Nous ne pouvons pas encore lire les fichiers .{{ext}}. Essayez un PDF, Word ou PowerPoint.",
+        "uploadIncomplete": "L'envoi ne s'est pas terminé. Voulez-vous réessayer ?",
+        "fileUnreadable": "Nous n'avons pas pu lire ce fichier. Essayer un autre fichier ?",
+        "genericReadError": "Une erreur s'est produite pendant la lecture de votre fichier. Réessayer ?",
+        "generateFailed": "Nous n'avons pas pu rédiger de questions à partir de ce fichier. Voulez-vous réessayer ?",
+        "taskFailed": "Nous n'avons pas pu terminer votre sujet. Voulez-vous réessayer ?"
+    },
+    "toolName": "Vsmart Upload",
+    "generatingState": {
+        "draftingTitle": "Rédaction de votre sujet",
+        "draftingSubtitle": "Lecture de votre document et rédaction des questions. Cela prend généralement environ 30 secondes.",
+        "preparingPagesTitle": "Préparation des pages",
+        "preparingPagesSubtitle": "Préparation de votre document pour que vous puissiez choisir."
+    },
+    "questionConfig": {
+        "ctaLabel": "Rédiger mon sujet",
+        "pickPagesLabel": "ou choisir des pages spécifiques →"
+    },
+    "recentFiles": {
+        "title": "Vos brouillons récents",
+        "fallbackLabel": "Brouillon sans titre",
+        "emptyHint": "Vos brouillons apparaîtront ici. Déposez un fichier ci-dessus pour commencer votre premier brouillon."
+    }
+}

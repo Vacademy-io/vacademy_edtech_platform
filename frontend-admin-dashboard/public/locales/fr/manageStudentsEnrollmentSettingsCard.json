@@ -1,0 +1,26 @@
+{
+    "title": "Paramètres d'inscription",
+    "requireApproval": {
+        "label": "Approbation requise",
+        "description": "Activez cette option si vous souhaitez examiner et approuver les demandes d'inscription"
+    },
+    "warning": "Les étudiants verront votre message tant que leur demande d'inscription est en attente d'approbation.",
+    "messageTemplate": {
+        "label": "Modèle de message",
+        "placeholder": "Sélectionner un modèle de message",
+        "options": {
+            "standard": "Message d'approbation standard",
+            "review": "Processus de révision personnalisé",
+            "custom": "Message personnalisé"
+        }
+    },
+    "approvalMessage": {
+        "label": "Message d'approbation",
+        "placeholder": "Saisissez votre message personnalisé...",
+        "templates": {
+            "standard": "Merci de l'intérêt que vous portez à notre cours. Votre demande d'inscription est en cours d'examen par notre équipe. Nous vous informerons dès que votre demande aura été approuvée.",
+            "review": "Votre demande d'inscription a été reçue. Notre équipe examinera votre candidature sous 2 jours ouvrés. Vous recevrez une notification par e-mail avec la décision."
+        }
+    },
+    "markdownHint": "Vous pouvez utiliser le formatage Markdown dans votre message."
+}

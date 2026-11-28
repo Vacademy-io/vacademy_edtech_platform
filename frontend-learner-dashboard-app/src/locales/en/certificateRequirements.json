@@ -1,0 +1,33 @@
+{
+    "title": "Your certificate",
+    "titleReady": "Certificate unlocked",
+    "readyBody": "You have met the requirements — your certificate is being prepared.",
+    "rule": {
+        "all": "Pass all {{total}} tests to get your certificate. {{passed}} passed so far.",
+        "atLeast": "Pass {{required}} of the {{total}} tests to get your certificate. {{passed}} passed so far.",
+        "average": "Reach an average of {{bar}}% across {{total}} tests to get your certificate. You are at {{avg}}%."
+    },
+    "progressAlso": "You also need to complete {{threshold}}% of the course (you are at {{pct}}%).",
+    "awaiting_one": "{{count}} test is waiting for marks.",
+    "awaiting_other": "{{count}} tests are waiting for marks.",
+    "blocker": {
+        "NO_TESTS_FOUND": "The tests for this certificate are not available yet.",
+        "ASSESSMENT_SCORES_UNAVAILABLE": "Some results could not be loaded right now. Check back shortly.",
+        "fallback": "Some results could not be loaded right now."
+    },
+    "untitled": "Untitled test",
+    "score": "Best {{pct}}%",
+    "scoreOfPass": "Best {{pct}}% · pass {{pass}}%",
+    "status": {
+        "PASSED": "Passed",
+        "FAILED": "Not passed yet",
+        "COMPLETED": "Done",
+        "NOT_ATTEMPTED": "Not attempted",
+        "AWAITING_RESULT": "Awaiting marks"
+    },
+    "note": "Your best attempt counts. Test marks count once they are released to you.",
+    "sidebarNote": {
+        "SCORE": "Certificate is awarded for passing the course tests",
+        "PROGRESS_AND_SCORE": "Certificate is awarded for completing the course and passing its tests"
+    }
+}

@@ -34,7 +34,9 @@ public class QueryNodeHandler implements NodeHandler {
             String nodeConfigJson,
             Map<String, NodeTemplate> nodeTemplates,
             int countProcessed) {
-        log.info("QueryNodeHandler.handle() invoked with context: {}, configJson: {}", context, nodeConfigJson);
+        // Keys only: the context can carry a person's contact details or a link meant for them.
+        log.info("QueryNodeHandler.handle() invoked with context keys: {}, configJson: {}", context.keySet(),
+                nodeConfigJson);
 
         String workflowExecutionId = (String) context.get("executionId");
         String nodeId = (String) context.get("currentNodeId");
@@ -92,11 +94,12 @@ public class QueryNodeHandler implements NodeHandler {
                 // only mutations are skipped, with the intent logged.
                 boolean dryRun = Boolean.TRUE.equals(context.get("dryRun"));
                 if (dryRun && MutatingQueryKeys.isMutating(prebuiltKey)) {
-                    log.info("[DRY RUN] Skipping mutating query '{}' (params: {})", prebuiltKey, queryParams);
+                    log.info("[DRY RUN] Skipping mutating query '{}' (param keys: {})", prebuiltKey,
+                            queryParams.keySet());
                     changes.put("dryRun", true);
                     changes.put("skippedMutatingQuery", prebuiltKey);
                 } else {
-                    log.debug("Executing query with key: {}, params: {}", prebuiltKey, queryParams);
+                    log.debug("Executing query with key: {}, param keys: {}", prebuiltKey, queryParams.keySet());
                     Map<String, Object> queryResult = queryService.execute(prebuiltKey, queryParams);
                     if (queryResult != null) {
                         changes.putAll(queryResult);
@@ -140,7 +143,7 @@ public class QueryNodeHandler implements NodeHandler {
             // But for logging purposes, we marked it as FAILED.
         }
 
-        log.info("Query changes map prepared: {}", changes);
+        log.info("Query changes map prepared with keys: {}", changes.keySet());
         return changes;
     }
 

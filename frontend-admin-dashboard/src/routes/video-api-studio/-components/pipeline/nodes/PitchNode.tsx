@@ -1,10 +1,12 @@
 import { memo } from 'react';
 import { NodeProps } from 'reactflow';
-import { Paperclip } from 'lucide-react';
+import { Paperclip } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
 import { BaseNodeShell } from './BaseNodeShell';
 import type { PipelineNodeData } from '../-utils/build-pipeline-graph';
 
 function PitchNodeInner({ data }: NodeProps<PipelineNodeData>) {
+    const { t } = useTranslation('videoApiStudioPitchNode');
     const slot = data.state.pitch;
     const prompt = data.state.prompt || '';
     const refCount = slot.state === 'wrapped' ? slot.data.referenceCount : 0;
@@ -13,11 +15,11 @@ function PitchNodeInner({ data }: NodeProps<PipelineNodeData>) {
         <BaseNodeShell
             kind="pitch"
             state={slot.state}
-            headerMeta={refCount > 0 ? `${refCount} refs` : undefined}
+            headerMeta={refCount > 0 ? t('headerRefs', { count: refCount }) : undefined}
         >
             <div className="space-y-1.5">
-                <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                    The brief
+                <div className="text-2xs uppercase tracking-wider text-muted-foreground">
+                    {t('briefLabel')}
                 </div>
                 {/* break-words guards against long unbroken URLs / fashion brand
                     names from forcing the node wider than NODE_SIZES allows. */}
@@ -25,9 +27,9 @@ function PitchNodeInner({ data }: NodeProps<PipelineNodeData>) {
                     {prompt}
                 </p>
                 {refCount > 0 && (
-                    <div className="flex items-center gap-1 pt-1 text-[11px] text-muted-foreground">
+                    <div className="flex items-center gap-1 pt-1 text-2xs text-muted-foreground">
                         <Paperclip className="size-3" />
-                        {refCount} reference{refCount === 1 ? '' : 's'} attached
+                        {t('referencesAttached', { count: refCount })}
                     </div>
                 )}
             </div>

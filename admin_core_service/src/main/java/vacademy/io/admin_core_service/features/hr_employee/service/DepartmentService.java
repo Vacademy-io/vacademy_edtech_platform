@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
+import vacademy.io.admin_core_service.core.security.HrAccessGuard;
 import vacademy.io.admin_core_service.features.hr_employee.dto.DepartmentDTO;
 import vacademy.io.admin_core_service.features.hr_employee.entity.Department;
 import vacademy.io.admin_core_service.features.hr_employee.repository.DepartmentRepository;
@@ -22,6 +23,9 @@ public class DepartmentService {
 
     @Autowired
     private DepartmentRepository departmentRepository;
+
+    @Autowired
+    private HrAccessGuard hrAccessGuard;
 
     @Transactional
     public String addDepartment(DepartmentDTO dto, String instituteId) {
@@ -44,6 +48,7 @@ public class DepartmentService {
         if (StringUtils.hasText(dto.getParentId())) {
             Department parent = departmentRepository.findById(dto.getParentId())
                     .orElseThrow(() -> new VacademyException("Parent department not found"));
+            hrAccessGuard.requireInstituteMatch(parent.getInstituteId(), instituteId, "Parent department");
             department.setParent(parent);
         }
 
@@ -52,9 +57,10 @@ public class DepartmentService {
     }
 
     @Transactional
-    public String updateDepartment(String id, DepartmentDTO dto) {
+    public String updateDepartment(String id, DepartmentDTO dto, String instituteId) {
         Department department = departmentRepository.findById(id)
                 .orElseThrow(() -> new VacademyException("Department not found"));
+        hrAccessGuard.requireInstituteMatch(department.getInstituteId(), instituteId, "Department");
 
         if (StringUtils.hasText(dto.getName())) {
             department.setName(dto.getName());
@@ -79,6 +85,7 @@ public class DepartmentService {
                 validateNoCycle(id, dto.getParentId());
                 Department parent = departmentRepository.findById(dto.getParentId())
                         .orElseThrow(() -> new VacademyException("Parent department not found"));
+                hrAccessGuard.requireInstituteMatch(parent.getInstituteId(), instituteId, "Parent department");
                 department.setParent(parent);
             }
         }
@@ -144,9 +151,10 @@ public class DepartmentService {
     }
 
     @Transactional
-    public void deactivateDepartment(String id) {
+    public void deactivateDepartment(String id, String instituteId) {
         Department department = departmentRepository.findById(id)
                 .orElseThrow(() -> new VacademyException("Department not found"));
+        hrAccessGuard.requireInstituteMatch(department.getInstituteId(), instituteId, "Department");
 
         department.setStatus("INACTIVE");
         departmentRepository.save(department);

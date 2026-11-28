@@ -1,0 +1,6 @@
+{
+    "loading": "Chargement des invitations…",
+    "placeholder": "Auto (invitation par défaut)",
+    "autoResolveOption": "Résoudre automatiquement l'invitation par défaut",
+    "emptyState": "Aucune invitation active trouvée pour ce cours"
+}

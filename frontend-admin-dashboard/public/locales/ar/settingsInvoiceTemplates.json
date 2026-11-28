@@ -1,0 +1,92 @@
+{
+    "types": {
+        "invoice": {
+            "title": "قوالب فاتورة PDF",
+            "description": "التخطيط المستخدم لعرض فاتورة PDF — العلامة التجارية وجدول البنود والإجماليات."
+        },
+        "invoiceEmail": {
+            "title": "قوالب بريد الفاتورة الإلكتروني",
+            "description": "نص البريد الإلكتروني المرسل إلى المتعلم مع إرفاق فاتورة PDF."
+        }
+    },
+    "actions": {
+        "generateSampleTitle": "إنشاء قالب نموذجي مع تعبئة جميع متغيرات الفاتورة مسبقًا",
+        "generateSample": "إنشاء نموذج",
+        "generating": "جارٍ الإنشاء…",
+        "createTemplate": "إنشاء قالب"
+    },
+    "toasts": {
+        "loadFailed": "فشل تحميل القوالب. يرجى المحاولة مرة أخرى.",
+        "sampleCreated": "تم إنشاء القالب النموذجي — جارٍ فتح المحرر…",
+        "generateSampleFailed": "فشل إنشاء القالب النموذجي. يرجى المحاولة مرة أخرى.",
+        "deleteSuccess": "تم حذف القالب بنجاح!",
+        "deleteFailed": "فشل حذف القالب. يرجى المحاولة مرة أخرى.",
+        "defaultSet": "تم تحديث القالب الافتراضي",
+        "defaultSetFailed": "تعذّر تعيين القالب الافتراضي. يُرجى المحاولة مرة أخرى."
+    },
+    "loading": "جارٍ تحميل القوالب…",
+    "emptyState": {
+        "messagePdf": "لا توجد قوالب فاتورة PDF بعد. سيتم استخدام القالب الافتراضي المدمج حتى تنشئ واحدًا.",
+        "messageEmail": "لا توجد قوالب بريد فاتورة إلكتروني بعد. سيتم استخدام القالب الافتراضي المدمج حتى تنشئ واحدًا.",
+        "createFirst": "أنشئ أول قالب لك"
+    },
+    "table": {
+        "columns": {
+            "name": "الاسم",
+            "subject": "الموضوع",
+            "created": "تاريخ الإنشاء",
+            "actions": "الإجراءات"
+        },
+        "noSubject": "لا يوجد موضوع",
+        "actions": {
+            "preview": "معاينة",
+            "edit": "تعديل",
+            "delete": "حذف",
+            "setDefault": "تعيين كافتراضي"
+        },
+        "defaultBadge": "افتراضي",
+        "defaultBadgeTitle": "يُستخدم لكل فاتورة جديدة"
+    },
+    "pagination": {
+        "templateCount_zero": "{{count}} قالب",
+        "templateCount_one": "{{count}} قالب",
+        "templateCount_two": "{{count}} قالبان",
+        "templateCount_few": "{{count}} قوالب",
+        "templateCount_many": "{{count}} قالبًا",
+        "templateCount_other": "{{count}} قالب",
+        "pageOf": "صفحة {{page}} من {{total}}"
+    },
+    "deleteDialog": {
+        "title": "حذف القالب",
+        "description": "هل أنت متأكد أنك تريد حذف هذا القالب؟ لا يمكن التراجع عن هذا الإجراء.",
+        "cancel": "إلغاء",
+        "deleting": "جارٍ الحذف…",
+        "delete": "حذف"
+    },
+    "builtIn": {
+        "name": "تخطيط الفاتورة المدمج",
+        "description": "تستخدم فواتيرك هذا التخطيط لأنه لا يوجد لديك قالب PDF خاص للفواتير. يحفظ التخصيص نسخة يمكنك تعديلها، وتبقى الفواتير كما هي حتى تغيّرها.",
+        "customize": "تخصيص",
+        "copyName": "Invoice (Standard Layout)",
+        "customized": "تم حفظ النسخة، جارٍ فتح المحرر…",
+        "loadFailed": "تعذّر تحميل التخطيط المدمج. يرجى المحاولة مرة أخرى."
+    },
+    "htmlEditor": {
+        "back": "رجوع",
+        "namePlaceholder": "اسم القالب",
+        "save": "حفظ",
+        "saving": "جارٍ الحفظ…",
+        "tabs": {
+            "colours": "الألوان",
+            "code": "HTML"
+        },
+        "coloursHint": "كل الألوان المستخدمة في هذا القالب. انقر على لون لتغييره في كل مكان.",
+        "noColours": "لا توجد ألوان في هذا القالب.",
+        "themeColour": "لون سمة المؤسسة",
+        "usedIn": "مستخدم في: {{places}}",
+        "applyHint": "يُطبَّق عند إغلاق منتقي اللون.",
+        "codeHint": "تُملأ المتغيرات مثل {{example}} عند إنشاء الفاتورة.",
+        "previewHint": "معاينة. تظهر المتغيرات كما هي مكتوبة.",
+        "previewTitle": "معاينة قالب الفاتورة"
+    }
+}

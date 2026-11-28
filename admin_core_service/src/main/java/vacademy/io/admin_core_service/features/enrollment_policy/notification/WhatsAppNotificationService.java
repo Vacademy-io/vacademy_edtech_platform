@@ -2,6 +2,7 @@ package vacademy.io.admin_core_service.features.enrollment_policy.notification;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import vacademy.io.admin_core_service.features.enrollment_policy.dto.ChannelNotificationDTO;
@@ -9,6 +10,7 @@ import vacademy.io.admin_core_service.features.enrollment_policy.dto.Notificatio
 import vacademy.io.admin_core_service.features.enrollment_policy.dto.WhatsAppNotificationContentDTO;
 import vacademy.io.admin_core_service.features.enrollment_policy.enums.NotificationType;
 import vacademy.io.admin_core_service.features.enrollment_policy.processor.EnrolmentContext;
+import vacademy.io.admin_core_service.features.enrollment_policy.service.EnrollmentTemplateService;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -19,6 +21,9 @@ import java.util.stream.Collectors;
 public class WhatsAppNotificationService implements INotificationService {
 
     // @Autowired private final YourActualWatiService watiService;
+
+    @Autowired(required = false)
+    private EnrollmentTemplateService enrollmentTemplateService;
 
     @Override
     public void sendNotification(EnrolmentContext context, NotificationPolicyDTO policy) {
@@ -50,7 +55,11 @@ public class WhatsAppNotificationService implements INotificationService {
         String learnerName = "Learner"; // TODO: Get from context.getUser().getFullName()...
         String courseName = "Course Name"; // TODO: Get from context.getMapping().getPackageSession()...
         String expiryDate = context.getEndDate() != null ? context.getEndDate().toString() : "N/A";
-        String renewalLink = "https://vacademy.io/renew";
+        // The institute's own learner portal, or empty when it has none (never a platform URL).
+        String portalUrl = enrollmentTemplateService != null
+                ? enrollmentTemplateService.resolveLearnerPortalUrl(context)
+                : null;
+        String renewalLink = portalUrl != null ? portalUrl : "";
 
         // If template name is provided, use it; otherwise use config content
         if (StringUtils.hasText(templateName)) {

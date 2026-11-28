@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { DotsThree } from '@phosphor-icons/react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -20,6 +21,7 @@ export const TrueFalseQuestionPaperTemplatePPTView = ({
     setCurrentQuestionIndex,
     className,
 }: QuestionPaperTemplateFormProps) => {
+    const { t } = useTranslation('assessmentTrueFalsePPTViewQP');
     const { control, getValues, setValue } = form;
 
     const [isDropdownVisible, setIsDropdownVisible] = useState(false); // State to track dropdown visibility
@@ -58,7 +60,9 @@ export const TrueFalseQuestionPaperTemplatePPTView = ({
     };
 
     const handleOptionChange = (optionIndex: number) => {
-        const options = [0, 1, 2, 3];
+        // True / False has two options. Looping over four (copied from the MCQ card) created
+        // empty options 3 and 4, which then failed validation and blocked Save.
+        const options = [0, 1];
 
         // Check current state of the selected option
         const isCurrentlySelected = getValues(
@@ -102,7 +106,9 @@ export const TrueFalseQuestionPaperTemplatePPTView = ({
                         <div className="flex w-full items-center gap-4">
                             <div className="flex size-10 items-center justify-center rounded-full bg-white px-3">
                                 <span className="!p-0 text-sm">
-                                    {optionsType ? formatStructure(optionsType, 'a') : '(a.)'}
+                                    {optionsType
+                                        ? formatStructure(optionsType, 'a')
+                                        : t('optionMarker.fallback', { label: 'a' })}
                                 </span>
                             </div>
                         </div>
@@ -137,7 +143,9 @@ export const TrueFalseQuestionPaperTemplatePPTView = ({
                         <div className="flex w-full items-center gap-4">
                             <div className="flex size-10 items-center justify-center rounded-full bg-white px-3">
                                 <span className="!p-0 text-sm">
-                                    {optionsType ? formatStructure(optionsType, 'b') : '(b.)'}
+                                    {optionsType
+                                        ? formatStructure(optionsType, 'b')
+                                        : t('optionMarker.fallback', { label: 'b' })}
                                 </span>
                             </div>
                         </div>
@@ -185,10 +193,10 @@ export const TrueFalseQuestionPaperTemplatePPTView = ({
                         </DropdownMenuTrigger>
                         <DropdownMenuContent className="mt-1">
                             <DropdownMenuItem onClick={handleDuplicateSlide}>
-                                Duplicate Slide
+                                {t('dropdownMenu.duplicateSlide')}
                             </DropdownMenuItem>
                             <DropdownMenuItem onClick={handleDeleteSlide}>
-                                Delete Slide
+                                {t('dropdownMenu.deleteSlide')}
                             </DropdownMenuItem>
                         </DropdownMenuContent>
                     </DropdownMenu>

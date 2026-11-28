@@ -1,0 +1,27 @@
+{
+    "heading": "Add several holidays",
+    "actions": {
+        "cancel": "Cancel",
+        "importing": "Importing…",
+        "importHolidays": "Import holidays",
+        "removeRow": "Remove this row",
+        "addRow": "Add another row"
+    },
+    "fields": {
+        "name": "Name",
+        "namePlaceholder": "Republic Day",
+        "date": "Date"
+    },
+    "skipNotice": "A date already on the calendar is skipped rather than duplicated — the result message tells you how many. Blank rows are ignored.",
+    "toast": {
+        "imported_one": "{{count}} holiday imported",
+        "imported_other": "{{count}} holidays imported"
+    },
+    "errors": {
+        "importFailed": "Could not import the holidays."
+    },
+    "validation": {
+        "atLeastOne": "Add at least one holiday — a name and a date.",
+        "incompleteRow": "Every row needs both a name and a date. Remove the rows you don't want."
+    }
+}

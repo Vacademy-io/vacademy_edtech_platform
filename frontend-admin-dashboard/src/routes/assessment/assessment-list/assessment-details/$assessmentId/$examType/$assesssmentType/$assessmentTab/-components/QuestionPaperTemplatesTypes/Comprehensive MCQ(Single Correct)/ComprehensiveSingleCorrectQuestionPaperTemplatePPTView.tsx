@@ -11,6 +11,7 @@ import { MainViewQuillEditor } from '@/components/quill/MainViewQuillEditor';
 import { QUESTION_TYPES } from '@/constants/dummy-data';
 import { SectionQuestionPaperFormProps } from '../../../-utils/assessment-question-paper';
 import { formatStructure } from '@/routes/assessment/question-papers/-utils/helper';
+import { useTranslation } from 'react-i18next';
 
 interface ImageDetail {
     imageId: string;
@@ -32,9 +33,10 @@ export const ComprehensiveSingleCorrectQuestionPaperTemplatePPTView = ({
     className,
     selectedSectionIndex,
 }: SectionQuestionPaperFormProps) => {
+    const { t } = useTranslation('assessmentComprehensiveSingleCorrectPPTList');
     const { control, getValues, setValue } = form;
-    const answersType = 'Answer:';
-    const explanationsType = 'Explanation:';
+    const answersType = t('answer.label');
+    const explanationsType = t('explanation.label');
     const optionsType = '';
     const questionsType = '';
 
@@ -79,13 +81,13 @@ export const ComprehensiveSingleCorrectQuestionPaperTemplatePPTView = ({
                     <PopoverContent>
                         <div className="mb-2 flex flex-col gap-4">
                             <div className="flex w-full items-center justify-between">
-                                <h1 className="text-primary-500">Questions Settings</h1>
+                                <h1 className="text-primary-500">{t('header.questionsSettings')}</h1>
                                 <PopoverClose>
                                     <X size={16} />
                                 </PopoverClose>
                             </div>
                             <SelectField
-                                label="Question Type"
+                                label={t('header.questionTypeLabel')}
                                 name={`questions.${currentQuestionIndex}.questionType`}
                                 options={QUESTION_TYPES.map((option, index) => ({
                                     value: option.code,
@@ -99,17 +101,17 @@ export const ComprehensiveSingleCorrectQuestionPaperTemplatePPTView = ({
                             <CustomInput
                                 control={form.control}
                                 name={`sections.${selectedSectionIndex}.questions.${currentQuestionIndex}.questionMark`}
-                                label="Marks"
+                                label={t('header.marksLabel')}
                                 required
                             />
                             <CustomInput
                                 control={form.control}
                                 name={`sections.${selectedSectionIndex}.questions.${currentQuestionIndex}.questionPenalty`}
-                                label="Negative Marking"
+                                label={t('header.negativeMarkingLabel')}
                                 required
                             />
                             <div className="flex flex-col gap-2">
-                                <h1 className="text-sm font-semibold">Time Limit</h1>
+                                <h1 className="text-sm font-semibold">{t('timeLimit.title')}</h1>
                                 <div className="flex items-center gap-4 text-sm">
                                     <CustomInput
                                         control={form.control}
@@ -117,7 +119,7 @@ export const ComprehensiveSingleCorrectQuestionPaperTemplatePPTView = ({
                                         label=""
                                         className="w-10"
                                     />
-                                    <span>hrs</span>
+                                    <span>{t('timeLimit.hrs')}</span>
                                     <span>:</span>
                                     <CustomInput
                                         control={form.control}
@@ -125,7 +127,7 @@ export const ComprehensiveSingleCorrectQuestionPaperTemplatePPTView = ({
                                         label=""
                                         className="w-10"
                                     />
-                                    <span>min</span>
+                                    <span>{t('timeLimit.min')}</span>
                                 </div>
                             </div>
                         </div>
@@ -136,7 +138,7 @@ export const ComprehensiveSingleCorrectQuestionPaperTemplatePPTView = ({
                 `sections.${selectedSectionIndex}.questions.${currentQuestionIndex}.parentRichTextContent`
             ) && (
                 <div className="flex w-full flex-col !flex-nowrap items-start gap-1">
-                    <span>Comprehension Text</span>
+                    <span>{t('comprehensionText')}</span>
                     <FormField
                         control={control}
                         name={`sections.${selectedSectionIndex}.questions.${currentQuestionIndex}.parentRichTextContent`}
@@ -157,7 +159,7 @@ export const ComprehensiveSingleCorrectQuestionPaperTemplatePPTView = ({
             )}
             <div className="flex w-full flex-col !flex-nowrap items-start gap-1">
                 <span>
-                    Question&nbsp;
+                    {t('question.label')}&nbsp;
                     {questionsType
                         ? formatStructure(questionsType, currentQuestionIndex + 1)
                         : currentQuestionIndex + 1}
@@ -191,7 +193,7 @@ export const ComprehensiveSingleCorrectQuestionPaperTemplatePPTView = ({
                         <div className="flex w-full items-center gap-4">
                             <div className="flex size-10 items-center justify-center rounded-full bg-white px-3">
                                 <span className="!p-0 text-sm">
-                                    {optionsType ? formatStructure(optionsType, 'a') : '(a.)'}
+                                    {optionsType ? formatStructure(optionsType, 'a') : t('optionLabels.a')}
                                 </span>
                             </div>
                             {
@@ -244,7 +246,7 @@ export const ComprehensiveSingleCorrectQuestionPaperTemplatePPTView = ({
                         <div className="flex w-full items-center gap-4">
                             <div className="flex size-10 items-center justify-center rounded-full bg-white px-3">
                                 <span className="!p-0 text-sm">
-                                    {optionsType ? formatStructure(optionsType, 'b') : '(b.)'}
+                                    {optionsType ? formatStructure(optionsType, 'b') : t('optionLabels.b')}
                                 </span>
                             </div>
                             {
@@ -299,7 +301,7 @@ export const ComprehensiveSingleCorrectQuestionPaperTemplatePPTView = ({
                         <div className="flex w-full items-center gap-4">
                             <div className="flex size-10 items-center justify-center rounded-full bg-white px-3">
                                 <span className="!p-0 text-sm">
-                                    {optionsType ? formatStructure(optionsType, 'c') : '(c.)'}
+                                    {optionsType ? formatStructure(optionsType, 'c') : t('optionLabels.c')}
                                 </span>
                             </div>
                             {
@@ -352,7 +354,7 @@ export const ComprehensiveSingleCorrectQuestionPaperTemplatePPTView = ({
                         <div className="flex w-full items-center gap-4">
                             <div className="flex size-10 items-center justify-center rounded-full bg-white px-3">
                                 <span className="!p-0 text-sm">
-                                    {optionsType ? formatStructure(optionsType, 'd') : '(d.)'}
+                                    {optionsType ? formatStructure(optionsType, 'd') : t('optionLabels.d')}
                                 </span>
                             </div>
                             {

@@ -150,7 +150,7 @@ done
 
 if [ -z "$RUN_ID" ]; then
     echo "✗ Could not find a workflow run created after $DISPATCH_TS." >&2
-    echo "  Check Actions UI manually: https://github.com/Vacademy-io/vacademy_platform/actions" >&2
+    echo "  Check Actions UI manually: https://github.com/Vacademy-io/vacademy_edtech_platform/actions" >&2
     exit 1
 fi
 
@@ -162,5 +162,5 @@ gh run watch "$RUN_ID" --exit-status
 echo ""
 echo "════════════════════════════════════════════════════════════"
 echo "  ✓ Deploy complete."
-echo "    https://github.com/Vacademy-io/vacademy_platform/actions/runs/$RUN_ID"
+echo "    https://github.com/Vacademy-io/vacademy_edtech_platform/actions/runs/$RUN_ID"
 echo "════════════════════════════════════════════════════════════"

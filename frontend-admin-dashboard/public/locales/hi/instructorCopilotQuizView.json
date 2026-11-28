@@ -1,0 +1,12 @@
+{
+    "noQuestionsAvailable": "कोई क्विज़ प्रश्न उपलब्ध नहीं है।",
+    "questionNotFound": "प्रश्न नहीं मिला।",
+    "questionsCount_one": "{{count}} प्रश्न",
+    "questionsCount_other": "{{count}} प्रश्न",
+    "questionOf": "प्रश्न {{current}} / {{total}}",
+    "options": "विकल्प:",
+    "explanation": "व्याख्या",
+    "tags": "टैग:",
+    "previous": "पिछला",
+    "next": "आगे"
+}

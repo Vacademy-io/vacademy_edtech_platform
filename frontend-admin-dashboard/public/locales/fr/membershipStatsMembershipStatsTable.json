@@ -1,0 +1,17 @@
+{
+    "columns": {
+        "user": "Utilisateur",
+        "userType": "Type d'utilisateur",
+        "joinedOn": "Date d'inscription",
+        "roles": "Rôles"
+    },
+    "newUser": "Nouvel utilisateur",
+    "retainer": "Fidélisé",
+    "noPackages": "Aucun forfait",
+    "errorLoading": "Erreur lors du chargement des statistiques d'adhésion",
+    "noRecordsFound": "Aucun enregistrement trouvé",
+    "tryAdjustingFilters": "Essayez d'ajuster vos filtres pour voir plus de résultats",
+    "showingRange_one": "Affichage de {{start}} - {{end}} sur {{count}} enregistrement",
+    "showingRange_many": "Affichage de {{start}} - {{end}} sur {{count}} d'enregistrements",
+    "showingRange_other": "Affichage de {{start}} - {{end}} sur {{count}} enregistrements"
+}

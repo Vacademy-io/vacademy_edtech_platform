@@ -15,6 +15,8 @@
  *   primary := number | constant | func '(' expr ')' | '(' expr ')'
  */
 
+import i18n from "@/i18n";
+
 export type AngleUnit = "DEG" | "RAD";
 
 /** Display glyphs the keypad inserts, mapped to the tokens the parser reads. */
@@ -70,9 +72,12 @@ function fromRadians(value: number, unit: AngleUnit): number {
 
 function factorial(n: number): number {
   if (!Number.isInteger(n) || n < 0) {
-    throw new CalculatorError("Factorial needs a whole number");
+    throw new CalculatorError(
+      i18n.t("questionTest:calculator.errors.factorialWholeNumber"),
+    );
   }
-  if (n > 170) throw new CalculatorError("Too large");
+  if (n > 170)
+    throw new CalculatorError(i18n.t("questionTest:calculator.errors.tooLarge"));
   let result = 1;
   for (let i = 2; i <= n; i += 1) result *= i;
   return result;
@@ -118,7 +123,10 @@ function tokenize(input: string): Token[] {
         }
       }
       const value = Number(literal);
-      if (!Number.isFinite(value)) throw new CalculatorError("Malformed number");
+      if (!Number.isFinite(value))
+        throw new CalculatorError(
+          i18n.t("questionTest:calculator.errors.malformedNumber"),
+        );
       tokens.push({ kind: "number", value });
       continue;
     }
@@ -151,7 +159,9 @@ function tokenize(input: string): Token[] {
       continue;
     }
 
-    throw new CalculatorError(`Unexpected "${char}"`);
+    throw new CalculatorError(
+      i18n.t("questionTest:calculator.errors.unexpectedChar", { char }),
+    );
   }
 
   return tokens;
@@ -186,7 +196,10 @@ function parse(tokens: Token[], unit: AngleUnit): number {
       if (eat("*")) left *= parseUnary();
       else if (eat("/")) {
         const divisor = parseUnary();
-        if (divisor === 0) throw new CalculatorError("Divide by zero");
+        if (divisor === 0)
+          throw new CalculatorError(
+            i18n.t("questionTest:calculator.errors.divideByZero"),
+          );
         left /= divisor;
       } else return left;
     }
@@ -223,11 +236,15 @@ function parse(tokens: Token[], unit: AngleUnit): number {
         return Math.tan(toRadians(argument, unit));
       case "asin":
         if (argument < -1 || argument > 1)
-          throw new CalculatorError("Out of domain");
+          throw new CalculatorError(
+            i18n.t("questionTest:calculator.errors.outOfDomain"),
+          );
         return fromRadians(Math.asin(argument), unit);
       case "acos":
         if (argument < -1 || argument > 1)
-          throw new CalculatorError("Out of domain");
+          throw new CalculatorError(
+            i18n.t("questionTest:calculator.errors.outOfDomain"),
+          );
         return fromRadians(Math.acos(argument), unit);
       case "atan":
         return fromRadians(Math.atan(argument), unit);
@@ -238,28 +255,42 @@ function parse(tokens: Token[], unit: AngleUnit): number {
       case "tanh":
         return Math.tanh(argument);
       case "sqrt":
-        if (argument < 0) throw new CalculatorError("Out of domain");
+        if (argument < 0)
+          throw new CalculatorError(
+            i18n.t("questionTest:calculator.errors.outOfDomain"),
+          );
         return Math.sqrt(argument);
       case "cbrt":
         return Math.cbrt(argument);
       case "log":
-        if (argument <= 0) throw new CalculatorError("Out of domain");
+        if (argument <= 0)
+          throw new CalculatorError(
+            i18n.t("questionTest:calculator.errors.outOfDomain"),
+          );
         return Math.log10(argument);
       case "ln":
-        if (argument <= 0) throw new CalculatorError("Out of domain");
+        if (argument <= 0)
+          throw new CalculatorError(
+            i18n.t("questionTest:calculator.errors.outOfDomain"),
+          );
         return Math.log(argument);
       case "exp":
         return Math.exp(argument);
       case "abs":
         return Math.abs(argument);
       default:
-        throw new CalculatorError("Unknown function");
+        throw new CalculatorError(
+          i18n.t("questionTest:calculator.errors.unknownFunction"),
+        );
     }
   };
 
   const parsePrimary = (): number => {
     const token = peek();
-    if (!token) throw new CalculatorError("Incomplete expression");
+    if (!token)
+      throw new CalculatorError(
+        i18n.t("questionTest:calculator.errors.incompleteExpression"),
+      );
 
     if (token.kind === "number") {
       cursor += 1;
@@ -275,24 +306,38 @@ function parse(tokens: Token[], unit: AngleUnit): number {
       cursor += 1;
       // A trailing "sin" with no bracket is a half-typed expression, not a
       // syntax error worth shouting about — the caller shows a quiet dash.
-      if (!eat("(")) throw new CalculatorError("Incomplete expression");
+      if (!eat("("))
+        throw new CalculatorError(
+          i18n.t("questionTest:calculator.errors.incompleteExpression"),
+        );
       const argument = parseExpression();
-      if (!eat(")")) throw new CalculatorError("Missing )");
+      if (!eat(")"))
+        throw new CalculatorError(
+          i18n.t("questionTest:calculator.errors.missingParen"),
+        );
       return applyFunction(token.name, argument);
     }
 
     if (token.kind === "op" && token.value === "(") {
       cursor += 1;
       const value = parseExpression();
-      if (!eat(")")) throw new CalculatorError("Missing )");
+      if (!eat(")"))
+        throw new CalculatorError(
+          i18n.t("questionTest:calculator.errors.missingParen"),
+        );
       return value;
     }
 
-    throw new CalculatorError("Incomplete expression");
+    throw new CalculatorError(
+      i18n.t("questionTest:calculator.errors.incompleteExpression"),
+    );
   };
 
   const result = parseExpression();
-  if (cursor !== tokens.length) throw new CalculatorError("Incomplete expression");
+  if (cursor !== tokens.length)
+    throw new CalculatorError(
+      i18n.t("questionTest:calculator.errors.incompleteExpression"),
+    );
   return result;
 }
 
@@ -302,8 +347,14 @@ function parse(tokens: Token[], unit: AngleUnit): number {
  * form would be unreadable.
  */
 export function formatResult(value: number): string {
-  if (Number.isNaN(value)) throw new CalculatorError("Not a number");
-  if (!Number.isFinite(value)) throw new CalculatorError("Out of range");
+  if (Number.isNaN(value))
+    throw new CalculatorError(
+      i18n.t("questionTest:calculator.errors.notANumber"),
+    );
+  if (!Number.isFinite(value))
+    throw new CalculatorError(
+      i18n.t("questionTest:calculator.errors.outOfRange"),
+    );
   if (value === 0) return "0";
 
   const magnitude = Math.abs(value);
@@ -321,7 +372,8 @@ export function evaluateExpression(
   unit: AngleUnit = "DEG"
 ): number {
   const trimmed = expression.trim();
-  if (!trimmed) throw new CalculatorError("Empty");
+  if (!trimmed)
+    throw new CalculatorError(i18n.t("questionTest:calculator.errors.empty"));
 
   const tokens = tokenize(trimmed);
 
@@ -333,7 +385,10 @@ export function evaluateExpression(
     if (token.value === "(") open += 1;
     if (token.value === ")") open -= 1;
   });
-  if (open < 0) throw new CalculatorError("Unbalanced )");
+  if (open < 0)
+    throw new CalculatorError(
+      i18n.t("questionTest:calculator.errors.unbalancedParen"),
+    );
   for (let i = 0; i < open; i += 1) tokens.push({ kind: "op", value: ")" });
 
   return parse(tokens, unit);

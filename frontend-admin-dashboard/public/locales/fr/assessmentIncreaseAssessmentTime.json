@@ -1,0 +1,23 @@
+{
+    "dialog": {
+        "heading": "Augmenter le temps de l'évaluation"
+    },
+    "assessment": {
+        "title": "Évaluation entière",
+        "increaseByLabel": "Augmenter de",
+        "selectSectionPlaceholder": "Sélectionner une section",
+        "doneButton": "Terminé"
+    },
+    "section": {
+        "title": "Section {{index}}",
+        "increaseByLabel": "Augmenter de",
+        "selectSectionPlaceholder": "Sélectionner une section",
+        "doneButton": "Terminé"
+    },
+    "question": {
+        "title": "Question {{index}}",
+        "increaseByLabel": "Augmenter de",
+        "selectSectionPlaceholder": "Sélectionner une section",
+        "doneButton": "Terminé"
+    }
+}

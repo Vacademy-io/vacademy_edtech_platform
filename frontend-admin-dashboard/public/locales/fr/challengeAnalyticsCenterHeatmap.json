@@ -1,0 +1,46 @@
+{
+    "title": "Rapport de performance des centres",
+    "emptyState": "Aucune donnée de centre disponible pour la période sélectionnée",
+    "kpi": {
+        "activeCenters": "Centres actifs",
+        "totalEnrolled": "Total inscrits",
+        "totalInteractions": "Total interactions",
+        "totalOptOuts": "Total désinscriptions"
+    },
+    "distribution": {
+        "title": "Répartition par centre",
+        "subtitle": "Utilisateurs par centre — vue d'ensemble visuelle",
+        "barChartHeading": "Utilisateurs par centre",
+        "pieChartHeading": "Répartition des utilisateurs",
+        "tooltipEnrolled": "Inscrits",
+        "tooltipInteractions": "Interactions",
+        "tooltipOptOuts": "Désinscriptions",
+        "usersLabel": "Utilisateurs"
+    },
+    "table": {
+        "title": "Détails de performance des centres",
+        "subtitlePrefix": "Inscriptions, interactions et désinscriptions par centre.",
+        "shareWord": "Part",
+        "subtitleSuffix": "= pourcentage de ce centre sur le total des inscrits.",
+        "exportCsv": "Exporter en CSV",
+        "center": "Centre",
+        "enrolled": "Inscrits",
+        "shareOfEnrolled": "Part des inscrits",
+        "shareHint": "Part de chaque centre parmi tous les inscrits = inscrits de ce centre ÷ total des inscrits.",
+        "interactions": "Interactions",
+        "avgPerUser": "Moy./Utilisateur",
+        "optOuts": "Désinscriptions",
+        "optOutPercent": "% de désinscription",
+        "status": "Statut",
+        "total": "Total"
+    },
+    "csv": {
+        "center": "Centre",
+        "enrolledUsers": "Utilisateurs inscrits",
+        "totalInteractions": "Total interactions",
+        "avgPerUser": "Moy./Utilisateur",
+        "optOuts": "Désinscriptions",
+        "optOutPercent": "% de désinscription",
+        "status": "Statut"
+    }
+}

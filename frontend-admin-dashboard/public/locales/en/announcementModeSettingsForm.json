@@ -1,0 +1,79 @@
+{
+    "field": {
+        "priority": "Priority",
+        "expiresAt": "Expires at",
+        "position": "Position",
+        "pinStartTime": "Pinned from",
+        "pinEndTime": "Pinned until",
+        "showUntil": "Show until",
+        "isDismissible": "Allow people to dismiss it",
+        "messagePriority": "Message priority",
+        "allowReplies": "Allow replies",
+        "packageSessionId": "Package session id",
+        "streamType": "Stream type",
+        "folderName": "Folder name",
+        "category": "Category",
+        "accessLevel": "Access level",
+        "communityType": "Community type",
+        "tags": "Tags",
+        "taskTitle": "Task title",
+        "estimatedMinutes": "Estimated minutes",
+        "taskDescription": "Task description",
+        "slideIds": "Slide ids",
+        "goLive": "Go live",
+        "deadline": "Deadline",
+        "status": "Status",
+        "reminderBeforeMinutes": "Reminder before (minutes)",
+        "isMandatory": "Mandatory",
+        "autoStatusUpdate": "Update status automatically"
+    },
+    "hint": {
+        "expiresAt": "Leave empty for an alert that never expires.",
+        "pinPriority": "Higher numbers pin above lower ones.",
+        "showUntil": "The overlay stops appearing after this time even if never dismissed. Leave empty for no expiry.",
+        "overlayPriority": "Between 1 and 10.",
+        "commaSeparated": "Comma separated."
+    },
+    "placeholder": {
+        "folderName": "e.g. Circulars",
+        "optional": "Optional",
+        "tags": "announcements, exams",
+        "taskDescription": "What should the learner do?",
+        "slideIds": "slide-id-1, slide-id-2"
+    },
+    "option": {
+        "priority": {
+            "high": "High",
+            "medium": "Medium",
+            "low": "Low"
+        },
+        "position": {
+            "top": "Top",
+            "middle": "Middle",
+            "bottom": "Bottom"
+        },
+        "streamType": {
+            "live": "Live",
+            "recorded": "Recorded",
+            "upcoming": "Upcoming"
+        },
+        "accessLevel": {
+            "students": "Students",
+            "teachers": "Teachers",
+            "everyone": "Everyone"
+        },
+        "communityType": {
+            "school": "School",
+            "class": "Class",
+            "club": "Club"
+        },
+        "status": {
+            "draft": "Draft",
+            "scheduled": "Scheduled",
+            "live": "Live",
+            "completed": "Completed",
+            "overdue": "Overdue",
+            "cancelled": "Cancelled"
+        }
+    }
+}

@@ -1,0 +1,15 @@
+{
+    "trigger": {
+        "questionWise": "Recorriger avec le corrigé (par question)"
+    },
+    "table": {
+        "questionNumber": "N° Q.",
+        "question": "Question"
+    },
+    "toasts": {
+        "revaluateSuccess": "Les questions sélectionnées ont été recorrigées pour tous les étudiants. Les participants doivent vérifier leur e-mail !"
+    },
+    "actions": {
+        "revaluate": "Réévaluer"
+    }
+}

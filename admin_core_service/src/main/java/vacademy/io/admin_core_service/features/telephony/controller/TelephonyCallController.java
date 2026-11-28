@@ -7,7 +7,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import vacademy.io.admin_core_service.core.security.InstituteAccessValidator;
 import vacademy.io.admin_core_service.features.telephony.core.CallOrchestrator;
+import vacademy.io.admin_core_service.features.telephony.core.dto.CallAvailabilityDTO;
 import vacademy.io.admin_core_service.features.telephony.core.dto.CallLogDTO;
 import vacademy.io.admin_core_service.features.telephony.core.dto.CallOptionsResponseDTO;
 import vacademy.io.admin_core_service.features.telephony.core.dto.ConnectCallRequestDTO;
@@ -44,11 +46,34 @@ public class TelephonyCallController {
     @Autowired
     private AiCallResultRepository aiCallResultRepo;
 
+    @Autowired
+    private InstituteAccessValidator instituteAccessValidator;
+
+    /**
+     * Staff of the institute only, with no root bypass — the same guard as the
+     * click-to-AI-call next door ({@code AiCallController}): this dials a phone and can
+     * spend the institute's credits, and the instituteId comes from the request body.
+     */
     @PostMapping("/connect")
     public ResponseEntity<ConnectCallResponseDTO> connect(
             @RequestBody ConnectCallRequestDTO req,
             @RequestAttribute("user") CustomUserDetails user) {
+        instituteAccessValidator.requireInstituteStaff(user, req == null ? null : req.getInstituteId());
         return ResponseEntity.ok(orchestrator.connect(req, user));
+    }
+
+    /**
+     * Should a Call button render for this person, and can they actually dial?
+     *
+     * <p>Split out from {@code /options} because that one throws when calling is
+     * off, which is correct for a picker opened by a deliberate click but wrong
+     * for a page merely deciding whether to show a button. Always 200.
+     */
+    @GetMapping("/availability")
+    public ResponseEntity<CallAvailabilityDTO> availability(
+            @RequestParam("instituteId") String instituteId,
+            @RequestAttribute("user") CustomUserDetails user) {
+        return ResponseEntity.ok(orchestrator.computeAvailability(instituteId, user.getUserId()));
     }
 
     /**
@@ -59,10 +84,13 @@ public class TelephonyCallController {
     @GetMapping("/options")
     public ResponseEntity<CallOptionsResponseDTO> options(
             @RequestParam("instituteId") String instituteId,
-            @RequestParam(value = "userId", required = false) String leadUserId) {
+            @RequestParam(value = "userId", required = false) String leadUserId,
+            @RequestAttribute("user") CustomUserDetails user) {
         if (instituteId == null || instituteId.isBlank()) {
             throw new VacademyException("instituteId is required");
         }
+        // The institute's caller-ID pool is not public: only its own staff may read it.
+        instituteAccessValidator.requireInstituteStaff(user, instituteId);
         return ResponseEntity.ok(orchestrator.computeOptions(instituteId, leadUserId));
     }
 
@@ -85,6 +113,10 @@ public class TelephonyCallController {
         if (instituteId == null || instituteId.isBlank()) {
             throw new VacademyException("instituteId is required");
         }
+        // instituteId scopes the query, but it is the caller's own claim: without this a
+        // signed-in user of any institute could page through another's call history
+        // (numbers, recordings, notes) by passing its id.
+        instituteAccessValidator.requireInstituteStaff(user, instituteId);
         PageRequest pageable = PageRequest.of(page, Math.min(size, 100));
         Page<CallLogDTO> result;
         if (counsellorUserId != null && !counsellorUserId.isBlank()) {

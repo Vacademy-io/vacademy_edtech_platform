@@ -3,6 +3,8 @@
 // topper. Mirrors the score-band chart on the printed report so the on-screen
 // report reads like the official document.
 
+import { useTranslation } from "react-i18next";
+
 interface PerformanceBandProps {
   studentMarks: number | null;
   averageMarks: number | null;
@@ -24,6 +26,7 @@ export function PerformanceBand({
   lowestMarks,
   totalMarks,
 }: PerformanceBandProps) {
+  const { t } = useTranslation("testRecords");
   if (totalMarks == null || totalMarks <= 0 || studentMarks == null) {
     return null;
   }
@@ -57,7 +60,7 @@ export function PerformanceBand({
           <div
             className="absolute top-1 h-6 w-0.5 bg-neutral-500"
             style={{ left: `${avg}%` }}
-            title={`Class average: ${round1(averageMarks!)}`}
+            title={t("common.classAverageValue", { value: round1(averageMarks!) })}
           />
         )}
         {/* Topper marker */}
@@ -65,14 +68,14 @@ export function PerformanceBand({
           <div
             className="absolute top-1 h-6 w-0.5 bg-success-500"
             style={{ left: `${top}%` }}
-            title={`Class topper: ${round1(highestMarks!)}`}
+            title={t("performanceBand.tooltip.classTopper", { value: round1(highestMarks!) })}
           />
         )}
         {/* Your marker — drawn last so it stays on top */}
         <div
           className="absolute top-0 h-8 w-1 rounded-full bg-primary-500"
           style={{ left: `calc(${you}% - 2px)` }}
-          title={`You: ${round1(studentMarks)}`}
+          title={t("performanceBand.tooltip.you", { value: round1(studentMarks) })}
         />
       </div>
 
@@ -91,18 +94,18 @@ export function PerformanceBand({
 
       {/* Legend */}
       <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-1.5 text-caption text-muted-foreground">
-        <LegendItem swatch="bg-primary-500" label="You" value={round1(studentMarks)} />
+        <LegendItem swatch="bg-primary-500" label={t("common.you")} value={round1(studentMarks)} />
         {averageMarks != null && (
           <LegendItem
             swatch="bg-neutral-500"
-            label="Class average"
+            label={t("performanceBand.legend.classAverage")}
             value={round1(averageMarks)}
           />
         )}
         {highestMarks != null && (
           <LegendItem
             swatch="bg-success-500"
-            label="Class topper"
+            label={t("performanceBand.legend.classTopper")}
             value={round1(highestMarks)}
           />
         )}

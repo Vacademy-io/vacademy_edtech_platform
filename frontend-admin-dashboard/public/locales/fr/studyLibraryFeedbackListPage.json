@@ -1,0 +1,67 @@
+{
+    "unknown": "Inconnu",
+    "loading": "Chargement…",
+    "exporting": "Exportation…",
+    "exportCsv": "Exporter en CSV",
+    "header": {
+        "title": "Retours sur les classes en direct",
+        "description": "Consultez les retours des apprenants pour toutes les classes en direct, filtrés par groupe, matière et date."
+    },
+    "columns": {
+        "learner": "Apprenant",
+        "liveClass": "Classe en direct",
+        "subject": "Matière",
+        "date": "Date",
+        "batch": "Groupe",
+        "submitted": "Soumis",
+        "rating": "Note",
+        "feedback": "Retour"
+    },
+    "filters": {
+        "searchPlaceholder": "Rechercher par apprenant ou titre de classe…",
+        "clearSearchAriaLabel": "Effacer la recherche",
+        "batch": "Groupe",
+        "subject": "Matière",
+        "ratingsBelow": "Notes inférieures à",
+        "anyRating": "Toutes",
+        "noBatches": "Aucun groupe",
+        "noSubjects": "Aucune matière",
+        "clearAll": "Tout effacer"
+    },
+    "summary": {
+        "totalResponses": "Total des réponses",
+        "avgRating": "Note moyenne",
+        "lowRatings": "Notes basses",
+        "ratedBelow3": "notées en dessous de 3"
+    },
+    "viewMode": {
+        "detailed": "Détaillé",
+        "simple": "Simple"
+    },
+    "states": {
+        "loadError": "Impossible de charger les retours. Veuillez réessayer.",
+        "emptyTitle": "Aucun retour trouvé",
+        "emptyDescription": "Aucun apprenant n'a soumis de retour pour le groupe, la matière et la période sélectionnés."
+    },
+    "toast": {
+        "noFeedbackToExport": "Aucun retour à exporter pour les filtres actuels.",
+        "exported_one": "{{count}} réponse de retour exportée.",
+        "exported_many": "{{count}} réponses de retour exportées.",
+        "exported_other": "{{count}} réponses de retour exportées.",
+        "exportCapped": "L'export a été limité — affinez les filtres pour exporter les lignes restantes.",
+        "exportFailed": "Impossible d'exporter les retours. Veuillez réessayer."
+    },
+    "csv": {
+        "learner": "Apprenant",
+        "batch": "Groupe",
+        "rating": "Note",
+        "feedback": "Retour",
+        "submitted": "Soumis",
+        "email": "E-mail",
+        "mobile": "Mobile",
+        "liveClass": "Classe en direct",
+        "subject": "Matière",
+        "meetingDate": "Date de la réunion",
+        "submittedAt": "Soumis le"
+    }
+}

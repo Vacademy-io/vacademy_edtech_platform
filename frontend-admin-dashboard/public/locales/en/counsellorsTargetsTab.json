@@ -1,0 +1,41 @@
+{
+    "period": {
+        "week": "Weekly",
+        "month": "Monthly",
+        "custom": "Custom"
+    },
+    "periodOptions": {
+        "week": "Weekly (recurring)",
+        "month": "Monthly (recurring)",
+        "custom": "Custom range"
+    },
+    "progress": {
+        "thisWeek": "This week",
+        "thisMonth": "This month"
+    },
+    "configuredTargets": {
+        "heading": "Configured targets",
+        "loading": "Loading…",
+        "empty": "No targets set. Use “Set targets” on the counsellors list to add one."
+    },
+    "toast": {
+        "removeSuccess": "Target removed",
+        "removeError": "Could not remove target",
+        "saveSuccess": "Target saved",
+        "saveError": "Could not save target"
+    },
+    "form": {
+        "heading": "Add / update target",
+        "metric": "Metric",
+        "timeline": "Timeline",
+        "target": "Target",
+        "targetPlaceholder": "e.g. 50",
+        "from": "From",
+        "to": "To",
+        "save": "Save target",
+        "saving": "Saving…"
+    },
+    "row": {
+        "removeTarget": "Remove target"
+    }
+}

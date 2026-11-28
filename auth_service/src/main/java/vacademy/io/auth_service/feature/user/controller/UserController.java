@@ -8,6 +8,8 @@ import org.springframework.util.StringUtils;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import vacademy.io.auth_service.feature.auth.service.AuthService;
+import vacademy.io.auth_service.feature.user.dto.UsernameAvailabilityRequest;
+import vacademy.io.auth_service.feature.user.service.UserAccountAccessGuard;
 import vacademy.io.auth_service.feature.user.service.UserCredentialUpdateService;
 import vacademy.io.common.auth.dto.*;
 import vacademy.io.common.auth.entity.User;
@@ -15,7 +17,9 @@ import vacademy.io.common.auth.model.CustomUserDetails;
 import vacademy.io.common.auth.service.UserService;
 import vacademy.io.common.exceptions.VacademyException;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Slf4j
@@ -32,6 +36,9 @@ public class UserController {
 
     @Autowired
     private UserCredentialUpdateService userCredentialUpdateService;
+
+    @Autowired
+    private UserAccountAccessGuard userAccountAccessGuard;
 
     // API to create user
     @PostMapping("/internal/create-user")
@@ -52,13 +59,24 @@ public class UserController {
             @RequestParam(name = "instituteId", required = false) String instituteId,
             @RequestParam(name = "isNotify", required = false, defaultValue = "true") boolean isNotify) {
         try {
-            User user = authService.createUser(userDTO, instituteId, isNotify);
-            UserDTO res = new UserDTO(user, userDTO);
-            res.setPassword(user.getPassword());
-            return ResponseEntity.ok(res);
+            return ResponseEntity.ok(toResponse(authService.createOrGetUser(userDTO, instituteId, isNotify), userDTO));
         } catch (Exception e) {
             throw new VacademyException(e.getMessage());
         }
+    }
+
+    /**
+     * The create-or-get answer. The password is included only when the account was created in
+     * this call, so a caller can show or send first-time credentials; an account that already
+     * existed keeps its password to itself.
+     */
+    static UserDTO toResponse(AuthService.AccountResult result, UserDTO request) {
+        User user = result.user();
+        UserDTO res = new UserDTO(user, request);
+        if (result.created()) {
+            res.setPassword(user.getPassword());
+        }
+        return res;
     }
 
     @PostMapping("/internal/create-or-get-existing-learner")
@@ -68,10 +86,8 @@ public class UserController {
             @RequestParam(name = "isNotify", required = false, defaultValue = "true") boolean isNotify,
             @RequestParam(name = "loginUrl", required = false) String loginUrl) {
         try {
-            User user = authService.createUserForLearnerEnrollment(userDTO, instituteId, isNotify, loginUrl);
-            UserDTO res = new UserDTO(user, userDTO);
-            res.setPassword(user.getPassword());
-            return ResponseEntity.ok(res);
+            return ResponseEntity.ok(toResponse(
+                    authService.createOrGetLearnerForEnrollment(userDTO, instituteId, isNotify, loginUrl), userDTO));
         } catch (Exception e) {
             throw new VacademyException(e.getMessage());
         }
@@ -136,6 +152,8 @@ public class UserController {
     @GetMapping("/user-credentials/{userId}")
     public ResponseEntity<UserCredentials> getUserCredentials(@PathVariable String userId,
             @RequestAttribute("user") CustomUserDetails customUserDetails) {
+        // Returns the stored password: only the user, staff of their institute, or a super-admin.
+        userAccountAccessGuard.requireCanViewCredentials(customUserDetails, userId);
         return ResponseEntity.ok(userService.getUserCredentials(userId, customUserDetails));
     }
 
@@ -147,7 +165,14 @@ public class UserController {
     @PostMapping("/users-credential")
     public ResponseEntity<List<UserCredentials>> getUsersCredentials(@RequestBody List<String> userIds,
             @RequestAttribute("user") CustomUserDetails customUserDetails) {
-        return ResponseEntity.ok(userService.getUsersCredentials(userIds));
+        // Plaintext passwords: only for the ids the caller may see one by one through
+        // user-credentials/{userId}; the rest are left out of the list (the UI shows its
+        // "not found" placeholder for them).
+        List<String> allowed = new ArrayList<>(userAccountAccessGuard.loginsCallerMayView(customUserDetails, userIds));
+        if (allowed.isEmpty()) {
+            return ResponseEntity.ok(List.of());
+        }
+        return ResponseEntity.ok(userService.getUsersCredentials(allowed));
     }
 
     @PostMapping("/internal/update/details")
@@ -184,6 +209,47 @@ public class UserController {
         } catch (Exception e) {
             throw new VacademyException(e.getMessage());
         }
+    }
+
+    /**
+     * Add-learner form: may this username be typed for a new learner of {@code instituteId}?
+     * Staff of the institute only. Says yes/no and nothing about who holds the name.
+     */
+    @PostMapping("/username-availability")
+    public ResponseEntity<Map<String, Boolean>> usernameAvailability(
+            @RequestParam("instituteId") String instituteId,
+            @RequestBody UsernameAvailabilityRequest request,
+            @RequestAttribute("user") CustomUserDetails customUserDetails) {
+        userAccountAccessGuard.requireStaffOf(customUserDetails, instituteId);
+        AuthService.UsernameCheck check = authService.checkUsernameForNewLearner(
+                request.username(), request.email(), request.mobileNumber(), instituteId);
+        return ResponseEntity.ok(Map.of("available", check.available(),
+                "existing_learner", check.existingLearner()));
+    }
+
+    /**
+     * Same answer for many rows, for admin-core's bulk-enrol preview (HMAC only). The answers
+     * come back in the order of the rows.
+     */
+    @PostMapping("/internal/usernames-availability")
+    public ResponseEntity<List<Map<String, Boolean>>> usernamesAvailability(
+            @RequestParam("instituteId") String instituteId,
+            @RequestBody List<UsernameAvailabilityRequest> requests) {
+        List<UserDTO> rows = new ArrayList<>();
+        for (UsernameAvailabilityRequest r : requests == null ? List.<UsernameAvailabilityRequest>of() : requests) {
+            UserDTO row = new UserDTO();
+            if (r != null) {
+                row.setUsername(r.username());
+                row.setEmail(r.email());
+                row.setMobileNumber(r.mobileNumber());
+            }
+            rows.add(row);
+        }
+        List<Map<String, Boolean>> answers = new ArrayList<>();
+        for (AuthService.UsernameCheck check : authService.checkUsernamesForNewLearners(rows, instituteId)) {
+            answers.add(Map.of("available", check.available(), "existing_learner", check.existingLearner()));
+        }
+        return ResponseEntity.ok(answers);
     }
 
     @GetMapping("/autosuggest-users")

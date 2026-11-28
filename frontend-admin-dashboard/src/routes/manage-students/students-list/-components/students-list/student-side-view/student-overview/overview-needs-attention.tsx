@@ -11,6 +11,7 @@ import {
     type Icon as PhosphorIcon,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { useTranslation } from 'react-i18next';
 
 type Tone = 'danger' | 'warning' | 'info' | 'success';
 
@@ -83,6 +84,8 @@ export const OverviewNeedsAttention = ({
     /** Callback for the "Review" behind action — jumps to Progress tab. */
     onReviewProgress?: () => void;
 }) => {
+    const { t } = useTranslation('manageStudentsOverviewNeedsAttention');
+
     if (!student) return null;
 
     const items: AttentionItem[] = [];
@@ -93,9 +96,9 @@ export const OverviewNeedsAttention = ({
             id: 'tnc',
             tone: 'warning',
             icon: FileX,
-            title: 'Terms & Conditions not signed',
-            description: 'Required before the first class',
-            actionLabel: 'Send',
+            title: t('items.tnc.title'),
+            description: t('items.tnc.description'),
+            actionLabel: t('actions.send'),
             actionIcon: PaperPlaneTilt,
             onAction: onSendTncReminder,
         });
@@ -107,9 +110,11 @@ export const OverviewNeedsAttention = ({
             id: 'outstanding',
             tone: 'danger',
             icon: CurrencyInr,
-            title: `₹${outstandingAmount.toLocaleString('en-IN')} outstanding`,
-            description: 'Unpaid invoices on file',
-            actionLabel: 'Collect',
+            title: t('items.outstanding.title', {
+                amount: outstandingAmount.toLocaleString('en-IN'),
+            }),
+            description: t('items.outstanding.description'),
+            actionLabel: t('actions.collect'),
             actionIcon: Wallet,
             onAction: onCollect,
         });
@@ -121,12 +126,9 @@ export const OverviewNeedsAttention = ({
             id: 'behind',
             tone: 'warning',
             icon: TrendUp,
-            title:
-                behindCount === 1
-                    ? 'Behind on 1 course'
-                    : `Behind on ${behindCount} courses`,
-            description: 'Active enrolments below 25% progress',
-            actionLabel: 'Review',
+            title: t('items.behind.title', { count: behindCount }),
+            description: t('items.behind.description'),
+            actionLabel: t('actions.review'),
             actionIcon: CaretRight,
             onAction: onReviewProgress,
         });
@@ -140,7 +142,7 @@ export const OverviewNeedsAttention = ({
             <div className="flex items-center gap-2.5 rounded-lg border border-success-200 bg-success-50 px-4 py-3">
                 <CheckCircle className="size-5 shrink-0 text-success-600" weight="fill" />
                 <span className="text-body font-semibold text-success-700">
-                    All clear — nothing needs attention right now.
+                    {t('allClear')}
                 </span>
             </div>
         );
@@ -152,7 +154,7 @@ export const OverviewNeedsAttention = ({
             <div className="flex items-center gap-2 border-b border-border px-4 py-3">
                 <Lightning className="size-4 text-warning-500" weight="fill" />
                 <span className="text-body font-bold text-card-foreground">
-                    Needs attention
+                    {t('heading')}
                 </span>
                 <span className="inline-flex items-center rounded-full bg-warning-50 px-2 py-0.5 text-caption font-bold text-warning-700">
                     {items.length}

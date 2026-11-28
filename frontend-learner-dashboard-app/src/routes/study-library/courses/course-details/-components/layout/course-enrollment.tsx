@@ -1,4 +1,5 @@
 import { GraduationCap } from "@phosphor-icons/react";
+import { useTranslation } from "react-i18next";
 import {
     Select,
     SelectContent,
@@ -7,7 +8,10 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { MyButton } from "@/components/design-system/button";
-import { getTerminology } from "@/components/common/layout-container/sidebar/utils";
+import {
+    getTerminology,
+    getTerminologyPlural,
+} from "@/components/common/layout-container/sidebar/utils";
 import { ContentTerms, RoleTerms, SystemTerms } from "@/types/naming-settings";
 
 interface SessionOption {
@@ -78,6 +82,25 @@ export const CourseEnrollment = ({
     onLevelChange,
     onEnrollmentClick,
 }: CourseEnrollmentProps) => {
+    const { t } = useTranslation("courseDetailsB");
+    const course = getTerminology(ContentTerms.Course, SystemTerms.Course);
+    const courseLower = course.toLocaleLowerCase();
+    const session = getTerminology(ContentTerms.Session, SystemTerms.Session);
+    const sessionLower = session.toLocaleLowerCase();
+    const level = getTerminology(ContentTerms.Level, SystemTerms.Level);
+    const slidesLower = getTerminologyPlural(
+        ContentTerms.Slides,
+        SystemTerms.Slides
+    ).toLocaleLowerCase();
+    const teacherLower = getTerminology(
+        RoleTerms.Teacher,
+        SystemTerms.Teacher
+    ).toLocaleLowerCase();
+    const adminLower = getTerminology(
+        RoleTerms.Admin,
+        SystemTerms.Admin
+    ).toLocaleLowerCase();
+
     if (!showCourseConfiguration) return null;
 
     const safeEnrolledSessions = enrolledSessions || [];
@@ -106,8 +129,7 @@ export const CourseEnrollment = ({
                         />
                     </div>
                     <h3 className="text-base font-bold text-gray-900">
-                        {getTerminology(ContentTerms.Course, SystemTerms.Course)}{" "}
-                        Configuration
+                        {t("courseEnrollment.configuration.title", { course })}
                     </h3>
                 </div>
 
@@ -119,30 +141,22 @@ export const CourseEnrollment = ({
                                 <div className="flex items-center space-x-2">
                                     <div className="w-2 h-2 bg-blue-500 rounded-sm"></div>
                                     <span className="text-sm font-medium text-blue-800">
-                                        {getTerminology(
-                                            ContentTerms.Course,
-                                            SystemTerms.Course
-                                        )}{" "}
-                                        Preview Mode
+                                        {t(
+                                            "courseEnrollment.configuration.previewBadge",
+                                            { course }
+                                        )}
                                     </span>
                                 </div>
                                 <p className="text-xs text-blue-700 mt-1">
-                                    Browse{" "}
-                                    {getTerminology(
-                                        ContentTerms.Course,
-                                        SystemTerms.Course
-                                    ).toLocaleLowerCase()}{" "}
-                                    structure. Enroll to access{" "}
-                                    {getTerminology(
-                                        ContentTerms.Slides,
-                                        SystemTerms.Slides
-                                    ).toLocaleLowerCase()}
-                                    s and materials.
+                                    {t(
+                                        "courseEnrollment.configuration.previewDescription",
+                                        { course: courseLower, slides: slidesLower }
+                                    )}
                                 </p>
                             </div>
                         )}
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 lg:gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-stack lg:gap-4">
                             {/* Session Selector */}
                             {sessionOptions &&
                                 sessionOptions.length > 0 &&
@@ -160,7 +174,12 @@ export const CourseEnrollment = ({
                                             onValueChange={onSessionChange}
                                         >
                                             <SelectTrigger>
-                                                <SelectValue placeholder={`Select ${getTerminology(ContentTerms.Session, SystemTerms.Session)}`} />
+                                                <SelectValue
+                                                    placeholder={t(
+                                                        "courseEnrollment.configuration.selectSession",
+                                                        { session }
+                                                    )}
+                                                />
                                             </SelectTrigger>
                                             <SelectContent>
                                                 {sessionOptions.map((option) => (
@@ -194,7 +213,12 @@ export const CourseEnrollment = ({
                                             disabled={!selectedSession}
                                         >
                                             <SelectTrigger>
-                                                <SelectValue placeholder={`Select ${getTerminology(ContentTerms.Level, SystemTerms.Level)}`} />
+                                                <SelectValue
+                                                    placeholder={t(
+                                                        "courseEnrollment.configuration.selectLevel",
+                                                        { level }
+                                                    )}
+                                                />
                                             </SelectTrigger>
                                             <SelectContent>
                                                 {levelOptions.map((option) => (
@@ -217,38 +241,26 @@ export const CourseEnrollment = ({
                             <div className="w-2 h-2 bg-yellow-500 rounded-sm"></div>
                             <span className="text-sm font-medium text-yellow-800">
                                 {selectedTab === "ALL"
-                                    ? `No ${getTerminology(
-                                          ContentTerms.Session,
-                                          SystemTerms.Session
-                                      ).toLocaleLowerCase()} available for this ${getTerminology(
-                                          ContentTerms.Course,
-                                          SystemTerms.Course
-                                      ).toLocaleLowerCase()}`
-                                    : `You are not enrolled in any ${getTerminology(
-                                          ContentTerms.Session,
-                                          SystemTerms.Session
-                                      ).toLocaleLowerCase()} for this ${getTerminology(
-                                          ContentTerms.Course,
-                                          SystemTerms.Course
-                                      ).toLocaleLowerCase()}`}
+                                    ? t(
+                                          "courseEnrollment.configuration.noSessionsTitleAll",
+                                          { session: sessionLower, course: courseLower }
+                                      )
+                                    : t(
+                                          "courseEnrollment.configuration.noSessionsTitleEnrolled",
+                                          { session: sessionLower, course: courseLower }
+                                      )}
                             </span>
                         </div>
                         <p className="text-xs text-yellow-700 mt-1">
                             {selectedTab === "ALL"
-                                ? `This ${getTerminology(
-                                      ContentTerms.Course,
-                                      SystemTerms.Course
-                                  ).toLocaleLowerCase()} may not have any active ${getTerminology(
-                                      ContentTerms.Session,
-                                      SystemTerms.Session
-                                  ).toLocaleLowerCase()}s configured.`
-                                : `Please contact your ${getTerminology(
-                                      RoleTerms.Teacher,
-                                      SystemTerms.Teacher
-                                  ).toLocaleLowerCase()} or ${getTerminology(
-                                      RoleTerms.Admin,
-                                      SystemTerms.Admin
-                                  ).toLocaleLowerCase()} to get enrolled.`}
+                                ? t(
+                                      "courseEnrollment.configuration.noSessionsDescriptionAll",
+                                      { course: courseLower, session: sessionLower }
+                                  )
+                                : t(
+                                      "courseEnrollment.configuration.noSessionsDescriptionEnrolled",
+                                      { teacher: teacherLower, admin: adminLower }
+                                  )}
                         </p>
                     </div>
                 )}
@@ -260,10 +272,10 @@ export const CourseEnrollment = ({
                     className="relative bg-white border border-gray-200 rounded-md shadow-sm hover:shadow-md transition-all duration-200 p-3 sm:p-4 group animate-fade-in-up"
                     style={{ animationDelay: "0.05s" }}
                 >
-                    <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-md"></div>
+                    <div className="absolute inset-0 bg-gradient-to-br from-success-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-md"></div>
                     <div className="relative flex items-start justify-between gap-3">
                         <div className="flex items-center gap-2">
-                            <div className="p-1.5 bg-gradient-to-br from-emerald-100 to-emerald-200 rounded-md shadow-sm">
+                            <div className="p-1.5 bg-gradient-to-br from-success-100 to-success-200 rounded-md shadow-sm">
                                 <GraduationCap
                                     size={18}
                                     className="text-emerald-600"
@@ -272,11 +284,10 @@ export const CourseEnrollment = ({
                             </div>
                             <div>
                                 <div className="text-sm font-bold text-gray-900">
-                                    Certificate available
+                                    {t("courseEnrollment.certificate.title")}
                                 </div>
                                 <div className="text-xs text-gray-600">
-                                    You can view or download
-                                    your certificate now.
+                                    {t("courseEnrollment.certificate.description")}
                                 </div>
                             </div>
                         </div>
@@ -286,7 +297,7 @@ export const CourseEnrollment = ({
                             rel="noopener noreferrer"
                             className="inline-flex items-center gap-2 bg-emerald-600 text-white hover:bg-emerald-700 px-3 py-1.5 rounded-md text-xs font-medium shadow"
                         >
-                            View Certificate
+                            {t("courseEnrollment.certificate.viewButton")}
                         </a>
                     </div>
                 </div>
@@ -317,7 +328,7 @@ export const CourseEnrollment = ({
                                 className="!min-w-full !w-full text-xs h-8"
                                 onClick={onEnrollmentClick}
                             >
-                                Enroll
+                                {t("courseEnrollment.enrollButton")}
                             </MyButton>
                         </div>
                     );

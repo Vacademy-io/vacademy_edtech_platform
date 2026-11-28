@@ -1,8 +1,9 @@
-import { ENROLL_INVITE_URL, GET_SINGLE_INVITE_DETAILS } from '@/constants/urls';
+import { ENROLL_INVITE_URL, GET_SINGLE_INVITE_DETAILS, UPDATE_INVITE_URL } from '@/constants/urls';
 import authenticatedAxiosInstance from '@/lib/auth/axiosInstance';
 import { InviteLinkFormValues } from '../GenerateInviteLinkSchema';
 import { convertInviteData, PaymentOption, ReferralData } from '../-utils/helper';
 import { getInstituteId } from '@/constants/helper';
+import type { IndividualInviteLinkDetails } from '@/types/study-library/individual-invite-interface';
 
 export interface Course {
     id: string;
@@ -29,6 +30,7 @@ export const handleEnrollInvite = async ({
     instituteLogoFileId,
     inviteId,
     instituteVendor,
+    existingInviteDetails,
 }: {
     data: InviteLinkFormValues;
     selectedCourse: Course | null;
@@ -47,6 +49,12 @@ export const handleEnrollInvite = async ({
     instituteLogoFileId: string;
     inviteId?: string;
     instituteVendor?: { vendor: string; vendor_id: string } | null;
+    /**
+     * The invite being updated, when there is one. convertInviteData reads it to preserve
+     * fields the caller's form does not own — vendor, currency and any setting_json keys
+     * set outside this form. Callers that build an invite from scratch omit it.
+     */
+    existingInviteDetails?: IndividualInviteLinkDetails | null;
 }) => {
     const convertedData = convertInviteData(
         data,
@@ -57,14 +65,19 @@ export const handleEnrollInvite = async ({
         referralProgramDetails,
         instituteLogoFileId,
         inviteId,
-        null,
+        existingInviteDetails ?? null,
         instituteVendor
     );
 
-    // For update, use PUT method; for create, use POST
+    // Create and update are different ROUTES, not just different verbs. EnrollInviteController
+    // maps create to the controller root (@PostMapping) but update to
+    // @PutMapping("/enroll-invite") -- i.e. /v1/enroll-invite/enroll-invite. A PUT to the root
+    // matches no handler, so Spring forwards to /error, which is itself protected, and the auth
+    // entry point answers 403 ACCESS_DENIED. That reads like a permissions problem but is really
+    // a 404, so don't "fix" it by touching the security config.
     const response = await authenticatedAxiosInstance({
         method: inviteId ? 'PUT' : 'POST',
-        url: ENROLL_INVITE_URL,
+        url: inviteId ? UPDATE_INVITE_URL : ENROLL_INVITE_URL,
         data: convertedData,
     });
     return response?.data;

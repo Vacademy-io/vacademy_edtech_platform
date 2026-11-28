@@ -1,0 +1,14 @@
+{
+    "back": "رجوع",
+    "courseDetails": "تفاصيل الدورة",
+    "details": "التفاصيل",
+    "percent": "{{value}}%",
+    "createCourse": "إنشاء الدورة",
+    "createDraftCourse": "إنشاء مسودة الدورة",
+    "generatePageContent": "إنشاء محتوى الصفحة",
+    "generate": "إنشاء",
+    "generatingContent": "جارٍ إنشاء المحتوى...",
+    "pagesProgress": "{{completed}} من {{total}} صفحة",
+    "chapters": "الفصول",
+    "content": "المحتوى"
+}

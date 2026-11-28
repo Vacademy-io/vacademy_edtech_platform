@@ -5,6 +5,7 @@ import authenticatedAxiosInstance from "@/lib/auth/axiosInstance";
 import { AxiosResponse } from "axios";
 import { Check, Tag, X } from "@phosphor-icons/react";
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { ReferRequest } from "../-services/enroll-invite-services";
 
 // Common base interface
@@ -87,6 +88,7 @@ const ReferralCodeComponent = ({
   onUnappliedCodeChange?: (hasUnappliedCode: boolean) => void;
   onReferralApplied?: () => void;
 }) => {
+  const { t } = useTranslation("enrollmentA");
   const [referralCode, setReferralCode] = useState(refCode || "");
   const [isApplying, setIsApplying] = useState(false);
   const [isApplied, setIsApplied] = useState(false);
@@ -108,7 +110,7 @@ const ReferralCodeComponent = ({
 
   const applyReferralCodeInternal = async (codeToApply: string) => {
     if (!codeToApply.trim()) {
-      setError("Please enter a referral code");
+      setError(t("applyReferral.errors.empty"));
       return;
     }
 
@@ -151,14 +153,14 @@ const ReferralCodeComponent = ({
           onReferralApplied();
         }
       } else {
-        setError("Invalid referral code");
+        setError(t("applyReferral.errors.invalid"));
         setCouponVerified(false);
         setIsApplied(false);
         setReferRequest(null);
         if (onUnappliedCodeChange) onUnappliedCodeChange(true);
       }
     } catch {
-      setError("Failed to apply referral code. Please try again.");
+      setError(t("applyReferral.errors.applyFailed"));
       setCouponVerified(false);
       setReferRequest(null);
       setIsApplied(false);
@@ -194,10 +196,10 @@ const ReferralCodeComponent = ({
     };
 
   return (
-    <div className="bg-blue-50 rounded-lg p-4">
-      <div className="flex items-center gap-2 mb-3">
+    <div className="bg-blue-50 rounded-lg p-4 space-y-stack">
+      <div className="flex items-center gap-2">
         <Tag className="w-5 h-5 text-blue-600" />
-        <h3 className="font-semibold text-gray-900 text-lg">Referral Code</h3>
+        <h3 className="font-semibold text-gray-900 text-lg">{t("applyReferral.title")}</h3>
       </div>
 
         <div className="space-y-3">
@@ -205,7 +207,7 @@ const ReferralCodeComponent = ({
             <div className="flex-1">
               <Input
                 type="text"
-                placeholder="Enter referral code"
+                placeholder={t("applyReferral.placeholder")}
                 value={referralCode}
                 onChange={handleInputChange}
                 className="!w-full"
@@ -223,12 +225,12 @@ const ReferralCodeComponent = ({
               {isApplied ? (
                 <>
                   <Check className="w-4 h-4 me-1" />
-                  Applied
+                  {t("applyReferral.applied")}
                 </>
               ) : isApplying ? (
-                "Applying..."
+                t("applyReferral.applying")
               ) : (
-                "Apply"
+                t("applyReferral.apply")
               )}
             </MyButton>
           </div>

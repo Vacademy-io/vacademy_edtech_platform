@@ -1,0 +1,12 @@
+{
+    "toolbar": {
+        "bold": "बोल्ड",
+        "italic": "इटैलिक",
+        "underline": "अंडरलाइन",
+        "bulletList": "बुलेट सूची",
+        "numberedList": "क्रमांकित सूची",
+        "insertLink": "लिंक डालें",
+        "insertImage": "छवि डालें",
+        "linkPrompt": "लिंक URL:"
+    }
+}

@@ -1,0 +1,7 @@
+{
+    "failedToNavigateInitial": "Échec de la navigation vers la page initiale",
+    "navigatedToPage": "Navigation vers la page {{page}} effectuée",
+    "failedToNavigate": "Échec de la navigation vers la page",
+    "noPdfUploaded": "Aucun PDF n'a encore été téléversé pour cette diapositive.",
+    "loadingEllipsis": "Chargement…"
+}

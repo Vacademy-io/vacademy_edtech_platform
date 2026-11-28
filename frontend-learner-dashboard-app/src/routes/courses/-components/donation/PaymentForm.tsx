@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { CardElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import { SiStripe } from "react-icons/si"; // design-lint-ignore: Stripe brand logo (no Phosphor equivalent)
 import { SpinnerGap, Lock } from "@phosphor-icons/react";
@@ -22,6 +23,7 @@ export const PaymentForm = ({
   onSuccess,
   onError
 }: PaymentFormProps) => {
+  const { t } = useTranslation("coursesRouteA");
   const stripe = useStripe();
   const elements = useElements();
   const [isProcessing, setIsProcessing] = useState(false);
@@ -30,13 +32,13 @@ export const PaymentForm = ({
 
   const handleSubmit = async () => {
     if (!stripe || !elements) {
-      onError("Stripe is not loaded. Please refresh the page.");
+      onError(t("donation.paymentForm.errors.stripeNotLoaded"));
       return;
     }
 
     const cardElement = elements.getElement(CardElement);
     if (!cardElement) {
-      onError("Card element not found.");
+      onError(t("donation.paymentForm.errors.cardElementNotFound"));
       return;
     }
 
@@ -54,7 +56,7 @@ export const PaymentForm = ({
       });
 
       if (paymentMethodError) {
-        setCardError(paymentMethodError.message || "Payment method creation failed.");
+        setCardError(paymentMethodError.message || t("donation.paymentForm.errors.paymentMethodCreationFailed"));
         setIsProcessing(false);
         return;
       }
@@ -85,10 +87,10 @@ export const PaymentForm = ({
         onError(result.message);
       } else {
         // Generic error fallback
-        onError(result.message || "Payment processing failed");
+        onError(result.message || t("donation.paymentForm.errors.paymentProcessingFailed"));
       }
     } catch (error) {
-      onError(error instanceof Error ? error.message : "Payment failed. Please try again.");
+      onError(error instanceof Error ? error.message : t("donation.paymentForm.errors.paymentFailedRetry"));
     } finally {
       setIsProcessing(false);
     }
@@ -145,24 +147,24 @@ export const PaymentForm = ({
           {isProcessing ? (
             <>
               <SpinnerGap size={18} className="animate-spin" />
-              Processing...
+              {t("donation.paymentForm.processing")}
             </>
           ) : (
             <>
               <Lock size={18} />
-              Donate Now
+              {t("donation.paymentForm.donateNow")}
             </>
           )}
         </MyButton>
       </div>
-      
+
       {/* Security Message */}
       <div className="text-xs text-gray-500 text-center flex items-center justify-center gap-1">
         <Lock size={14} className="inline-block me-1" />
-        Secure payment powered by
+        {t("donation.paymentForm.securePaymentBy")}
         <span className="font-semibold flex items-center gap-1 ms-1">
-          <SiStripe size={16} className="text-indigo-600" /> 
-          Stripe
+          <SiStripe size={16} className="text-indigo-600" />
+          {t("donation.paymentForm.stripeBrand")}
         </span>
       </div>
     </div>

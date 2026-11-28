@@ -1,0 +1,15 @@
+{
+    "unpublishSuccess": "Diapositive dépubliée avec succès !",
+    "errorUnpublishQuestion": "Erreur lors de la dépublication de la diapositive de question",
+    "errorUnpublishGeneric": "Erreur lors de la dépublication de la diapositive",
+    "errorVideoDataMissing": "Les données de la diapositive vidéo sont manquantes.",
+    "quizUnpublishSuccess": "Quiz dépublié avec succès !",
+    "errorUnpublishQuiz": "Échec de la dépublication du quiz",
+    "errorAudioDataMissing": "Les données de la diapositive audio sont manquantes.",
+    "errorScormDataMissing": "Les données de la diapositive SCORM sont manquantes.",
+    "scormUnpublishSuccess": "Diapositive SCORM dépubliée avec succès !",
+    "errorUnpublishScorm": "Erreur lors de la dépublication de la diapositive SCORM",
+    "errorAssessmentDataMissing": "Les données de la diapositive d'évaluation sont manquantes.",
+    "assessmentUnpublishSuccess": "Diapositive d'évaluation dépubliée avec succès !",
+    "errorUnpublishAssessment": "Erreur lors de la dépublication de la diapositive d'évaluation"
+}

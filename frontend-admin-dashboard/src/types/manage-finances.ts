@@ -1,3 +1,4 @@
+import type { OfflinePaymentDetails } from '@/services/offline-payment-modes';
 // ─── Search / Filter DTO ────────────────────────────────────────────────────
 export interface FeeSearchFilterDTO {
     page: number; // 0-indexed
@@ -89,6 +90,8 @@ export interface AllocateSelectedRequest {
     student_fee_payment_ids: string[];
     amount: number;
     remarks?: string;
+    /** How it was paid (mode, option, reference, proof). */
+    payment_details?: OfflinePaymentDetails | null;
 }
 
 // ─── Adjustment History (Pay Installments dialog) ──────────────────────────

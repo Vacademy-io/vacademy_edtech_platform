@@ -1,0 +1,46 @@
+{
+    "header": {
+        "title": "Reuse Existing Questions",
+        "subtitle": "Drop a question paper (PDF, Word, or PowerPoint). We'll pull the questions out and turn them into an editable set."
+    },
+    "dropzone": {
+        "instruction": "Drop your question paper here, or click to choose",
+        "hint": "PDF, Word, or PowerPoint with existing questions inside."
+    },
+    "fileCard": {
+        "removeAriaLabel": "Remove file",
+        "status": {
+            "uploading": "Uploading…",
+            "processing": "Reading…",
+            "ready": "Ready to extract",
+            "generating": "Extracting questions",
+            "done": "Done"
+        }
+    },
+    "workingLabel": {
+        "uploading": "Reading your file…",
+        "processing": "Getting your document ready…",
+        "generating": "Pulling questions out — a few minutes for a long paper."
+    },
+    "generatingState": {
+        "title": "Pulling questions out",
+        "subtitle": "Reading every question, its options, passages and the printed answer key. A long paper with solutions can take 2–3 minutes."
+    },
+    "questionConfig": {
+        "ctaLabel": "Extract questions"
+    },
+    "recentFiles": {
+        "title": "Your recent extractions",
+        "emptyHint": "Your extractions will appear here. Drop a question paper above to start.",
+        "fallbackLabel": "Untitled extraction"
+    },
+    "productName": "Vsmart Extract",
+    "errors": {
+        "unsupportedFormat": "We can't read .{{ext}} files yet. Try PDF, Word, or PowerPoint.",
+        "uploadFailed": "Upload didn't complete. Want to try again?",
+        "processFailed": "We couldn't read this file. Try a different one?",
+        "readFailed": "Something went wrong while reading your file. Try again?",
+        "extractionFailed": "We couldn't finish this extraction. Want to try again?",
+        "generateFailed": "We couldn't pull questions out of this file. Try a different one?"
+    }
+}

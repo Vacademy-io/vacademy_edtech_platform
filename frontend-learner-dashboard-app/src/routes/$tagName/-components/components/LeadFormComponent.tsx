@@ -1,8 +1,18 @@
-import React, { useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useQuery } from "@tanstack/react-query";
-import { CheckCircle, PaperPlaneTilt } from "@phosphor-icons/react";
+import { useTranslation } from "react-i18next";
+import { CheckCircle, PaperPlaneTilt, X } from "@phosphor-icons/react";
 import { CustomFieldRenderer } from "@/components/common/custom-fields/CustomFieldRenderer";
-import { getFieldRenderType } from "@/components/common/enroll-by-invite/-utils/custom-field-helpers";
+import { getFieldVerification } from "@/components/common/enroll-by-invite/-utils/custom-field-helpers";
+import { FieldVerification } from "@/routes/product-pages/$productPageCode/-components/FieldVerification";
+import {
+  FieldRenderType,
+  dependentFieldKeys,
+  getFieldRenderType,
+  parseDropdownOptions,
+  resolveDependentField,
+} from "@/components/common/enroll-by-invite/-utils/custom-field-helpers";
 import {
   extractRespondentIdentity,
   handleGetAudienceCampaign,
@@ -21,6 +31,7 @@ import {
 import { usePostSubmitRedirect } from "@/routes/audience-response/-utils/use-post-submit-redirect";
 import { isSpamSubmission } from "../../-utils/website-lead";
 import { emitLeadCaptured } from "../../-utils/catalogue-tracking";
+import { useSiteT } from "../../-utils/catalogue-locale";
 
 /**
  * Lead Form — an Audience campaign's form rendered natively on a catalogue
@@ -51,10 +62,22 @@ interface LeadFormProps {
   successMessage?: string;
   /** 'card' wraps the fields in an elevated card; 'bare' for modal/column use. */
   layout?: "card" | "bare";
+  /** 2 = short fields side by side from tablet up; long ones (message, address) keep the full row. */
+  columns?: 1 | 2;
+  /** 'chips' shows a short single-choice list (≤ 8 options) as pill buttons instead of a dropdown. */
+  choiceStyle?: "dropdown" | "chips";
+  /** 'popup' thanks the visitor in a dialog over the form instead of replacing it. */
+  successDisplay?: "inline" | "popup";
   align?: "center" | "left";
   backgroundColor?: string;
   /** 'section' renders the full catalogue section; 'embedded' just the form. */
   variant?: "section" | "embedded";
+  /**
+   * Fired once the visitor's submission is accepted (the gated-resource modal
+   * unlocks on it). Carries the email/phone they typed when a lead was really
+   * created, so later freebie downloads can be tied to that lead.
+   */
+  onSubmitted?: (identity?: { email: string; mobileNumber: string }) => void;
   instituteId?: string;
   isPreviewMode?: boolean;
 }
@@ -75,12 +98,20 @@ export const LeadFormComponent: React.FC<LeadFormProps> = ({
   submitLabel,
   successMessage,
   layout = "card",
+  columns = 1,
+  choiceStyle = "dropdown",
+  successDisplay = "inline",
   align = "center",
   backgroundColor,
   variant = "section",
   instituteId,
   isPreviewMode = false,
+  onSubmitted,
 }) => {
+  const { t } = useTranslation("coursePlayerB");
+  // Field labels come live from the CRM campaign, so they are translated at
+  // display only — keys, ids and the submitted values never are.
+  const siteT = useSiteT();
   const { data: campaign, isLoading, isError } = useQuery({
     ...handleGetAudienceCampaign({
       instituteId: instituteId || "",
@@ -94,7 +125,33 @@ export const LeadFormComponent: React.FC<LeadFormProps> = ({
   const [done, setDone] = useState(false);
   const [error, setError] = useState("");
   const [respondent, setRespondent] = useState<PostSubmitTokens>({});
+  // The VALUE that was verified per field, not a boolean — editing a verified
+  // number has to re-arm the gate. Same contract as the checkout form.
+  const [verifiedValues, setVerifiedValues] = useState<Record<string, string>>({});
   const mountedAt = useRef(Date.now());
+  const twoCol = columns === 2;
+  const popupSuccess = successDisplay === "popup";
+  // The popup is `fixed`, so it portals out of any transformed ancestor onto
+  // the [data-catalogue-theme] wrapper that carries the catalogue tokens.
+  const rootRef = useRef<HTMLDivElement>(null);
+  const [portalHost, setPortalHost] = useState<HTMLElement | null>(null);
+  useEffect(() => {
+    const node = rootRef.current;
+    if (node) setPortalHost((node.closest("[data-catalogue-theme]") as HTMLElement) || document.body);
+  }, [done]);
+  useEffect(() => {
+    if (!done || !popupSuccess) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      setValues({});
+      setHoneypot("");
+      setRespondent({});
+      setError("");
+      setDone(false);
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [done, popupSuccess]);
 
   const fields: FormFieldDef[] = useMemo(() => {
     const raw = campaign?.institute_custom_fields || [];
@@ -161,7 +218,7 @@ export const LeadFormComponent: React.FC<LeadFormProps> = ({
     if (!isPreviewMode) return null;
     return section(
       <div className="catalogue-card rounded-catalogue-lg border border-dashed border-catalogue-border p-8 text-center text-sm text-catalogue-text-muted">
-        Pick an audience campaign in the properties panel — its form fields render here.
+        {t("leadForm.emptyConfig")}
       </div>
     );
   }
@@ -170,8 +227,8 @@ export const LeadFormComponent: React.FC<LeadFormProps> = ({
     return section(
       <div className="catalogue-card-elevated space-y-4 p-6" aria-busy="true">
         {Array.from({ length: 3 }, (_, i) => (
-          <div key={i}>
-            <div className="catalogue-skeleton-shimmer mb-2 h-4 w-1/3 rounded" />
+          <div className="space-y-2" key={i}>
+            <div className="catalogue-skeleton-shimmer h-4 w-1/3 rounded-catalogue-xs" />
             <div className="catalogue-skeleton-shimmer h-10 w-full rounded-catalogue-md" />
           </div>
         ))}
@@ -184,8 +241,8 @@ export const LeadFormComponent: React.FC<LeadFormProps> = ({
     return section(
       <div className="catalogue-card rounded-catalogue-lg border border-dashed border-catalogue-border p-8 text-center text-sm text-catalogue-text-muted">
         {isError
-          ? "Couldn't load this campaign. Check that it is ACTIVE and belongs to this institute."
-          : "This campaign has no form fields yet — add them in Audience Manager."}
+          ? t("leadForm.errorLoad")
+          : t("leadForm.emptyFields")}
       </div>
     );
   }
@@ -195,15 +252,37 @@ export const LeadFormComponent: React.FC<LeadFormProps> = ({
     if (isPreviewMode) return;
     setError("");
 
-    const missing = fields.filter((f) => f.mandatory && !(values[f.key] || "").trim());
+    // A dependent dropdown with nothing to offer for the chosen parent is
+    // hidden, so it cannot be required either.
+    const missing = fields.filter(
+      (f) =>
+        f.mandatory &&
+        resolveDependentField(f.config, (k) => values[k]).kind !== "empty" &&
+        !(values[f.key] || "").trim()
+    );
     if (missing.length > 0) {
-      setError(`Please fill in: ${missing.map((f) => f.name).join(", ")}`);
+      setError(t("leadForm.missingFields", { fields: missing.map((f) => siteT(f.name)).join(", ") }));
+      return;
+    }
+
+    // Checked here as well as in the UI — a hidden button is not a guarantee.
+    const unverified = fields.filter(
+      (f) =>
+        getFieldVerification(f.config) &&
+        (values[f.key] || "").trim() &&
+        verifiedValues[f.key] !== values[f.key],
+    );
+    if (unverified.length > 0) {
+      setError(`Please verify: ${unverified.map((f) => siteT(f.name)).join(", ")}`);
       return;
     }
 
     // Spam verdicts show the normal success state — never tell a bot it lost.
+    // onSubmitted still fires: a fast autofill can trip the timer, and what it
+    // unlocks (public resource links) is not worth stranding a real parent.
     if (isSpamSubmission(honeypot, mountedAt.current)) {
       setDone(true);
+      onSubmitted?.();
       return;
     }
 
@@ -225,14 +304,26 @@ export const LeadFormComponent: React.FC<LeadFormProps> = ({
       // and in the redirect query string.
       setRespondent(extractRespondentIdentity(formValues));
       setDone(true);
+      onSubmitted?.({
+        email: payload.user_dto?.email || "",
+        mobileNumber: payload.user_dto?.mobile_number || "",
+      });
     } catch {
-      setError("Something went wrong — please try again.");
+      setError(t("leadForm.genericError"));
     } finally {
       setSubmitting(false);
     }
   };
 
-  if (done) {
+  const resetForm = () => {
+    setValues({});
+    setHoneypot("");
+    setRespondent({});
+    setError("");
+    setDone(false);
+  };
+
+  const successCard = done ? (() => {
     // Campaigns that never opened the Post Submit Configuration card keep the
     // exact block this section rendered before the feature existed — no
     // heading, catalogue check icon, original fallback copy. Imposing default
@@ -240,9 +331,9 @@ export const LeadFormComponent: React.FC<LeadFormProps> = ({
     const untouched = isDefaultPostSubmitConfiguration(postSubmitConfig);
 
     if (untouched) {
-      return section(
+      return (
         <div
-          className="catalogue-card-elevated flex flex-col items-center gap-3 p-8 text-center"
+          className="catalogue-card-elevated flex flex-col items-center gap-stack p-8 text-center"
           role="status"
         >
           <CheckCircle
@@ -251,7 +342,7 @@ export const LeadFormComponent: React.FC<LeadFormProps> = ({
             aria-hidden="true"
           />
           <p className="text-base font-semibold text-catalogue-text-primary">
-            {successMessage || "Thank you! We've received your details."}
+            {successMessage || t("leadForm.defaultThankYou")}
           </p>
         </div>
       );
@@ -273,23 +364,15 @@ export const LeadFormComponent: React.FC<LeadFormProps> = ({
       postSubmitTokens
     );
     const body =
-      successMessage || configuredMessage || "Thank you! We've received your details.";
+      successMessage || configuredMessage || t("leadForm.defaultThankYou");
     const actionButtons = resolvePostSubmitButtons(postSubmitConfig, postSubmitTokens);
     const anotherLabel =
       applyPostSubmitTokens(postSubmitConfig.anotherResponseText, postSubmitTokens) ||
-      "Submit another response";
+      t("leadForm.defaultAnotherResponse");
 
-    const resetForm = () => {
-      setValues({});
-      setHoneypot("");
-      setRespondent({});
-      setError("");
-      setDone(false);
-    };
-
-    return section(
+    return (
       <div
-        className="catalogue-card-elevated flex flex-col items-center gap-3 p-8 text-center"
+        className="catalogue-card-elevated flex flex-col items-center gap-stack p-8 text-center"
         role="status"
       >
         <CheckCircle
@@ -312,12 +395,11 @@ export const LeadFormComponent: React.FC<LeadFormProps> = ({
         )}
         {redirectUrl && secondsLeft !== null && (
           <p className="text-sm text-catalogue-text-muted">
-            Redirecting in {secondsLeft}
-            {secondsLeft === 1 ? " second" : " seconds"}…
+            {t("leadForm.redirectingIn", { count: secondsLeft })}
           </p>
         )}
         {(actionButtons.length > 0 || postSubmitConfig.allowAnotherResponse) && (
-          <div className="mt-2 flex flex-col flex-wrap justify-center gap-3 sm:flex-row">
+          <div className="mt-2 flex flex-col flex-wrap justify-center gap-stack sm:flex-row">
             {actionButtons.map((button) => (
               <a
                 key={button.id}
@@ -349,36 +431,129 @@ export const LeadFormComponent: React.FC<LeadFormProps> = ({
         )}
       </div>
     );
-  }
+  })() : null;
+
+  if (done && !popupSuccess) return section(successCard);
 
   const formBody = (
-    <form onSubmit={handleSubmit} className="space-y-4" noValidate>
-      {fields.map((f) => (
-        <div key={f.id}>
-          <label className="mb-1.5 block text-sm font-medium text-catalogue-text-secondary">
-            {f.name}
-            {f.mandatory && <span className="ms-1 text-catalogue-brand-ink">*</span>}
-          </label>
+    <form onSubmit={handleSubmit} className={twoCol ? "grid gap-4 sm:grid-cols-2" : "space-y-4"} noValidate>
+      {fields.map((f) => {
+        // A checkbox carries its own label beside the box, and the renderer
+        // prints `name` there — pass the human label, not the field key, and
+        // skip the label above so the question is not shown twice.
+        const renderType = getFieldRenderType(f.key, f.type);
+        const isCheckbox = renderType === FieldRenderType.CHECKBOX;
+        // Cascading dropdown (e.g. Course → Query): options follow the parent's value.
+        const dependent = resolveDependentField(f.config, (k) => values[k]);
+        if (dependent.kind === "empty") return null;
+        const parentName =
+          dependent.kind === "waiting"
+            ? siteT(fields.find((p) => p.key === dependent.parentFieldKey)?.name || "")
+            : "";
+        const setFieldValue = (v: string) =>
+          setValues((prev) => {
+            const next = { ...prev, [f.key]: v };
+            // A changed parent invalidates whatever its dependents held.
+            if (prev[f.key] !== v) dependentFieldKeys(f.key, fields).forEach((k) => delete next[k]);
+            return next;
+          });
+        const chipOptions =
+          choiceStyle === "chips" &&
+          dependent.kind !== "waiting" &&
+          (renderType === FieldRenderType.DROPDOWN || renderType === FieldRenderType.RADIO)
+            ? dependent.kind === "ready"
+              ? dependent.options
+              : parseDropdownOptions(f.config)
+            : null;
+        const asChips = !!chipOptions && chipOptions.length > 0 && chipOptions.length <= 8;
+        const fullRow =
+          asChips || isCheckbox || renderType === FieldRenderType.TEXTAREA;
+        return (
+        <div key={f.id} className={twoCol && fullRow ? "sm:col-span-2" : undefined}>
+          {!isCheckbox && (
+            <label className="mb-1.5 block text-sm font-medium text-catalogue-text-secondary">
+              {siteT(f.name)}
+              {f.mandatory && <span className="ms-1 text-catalogue-brand-ink">*</span>}
+            </label>
+          )}
+          {asChips ? (
+            <div role="radiogroup" aria-label={siteT(f.name)} className="flex flex-wrap gap-2">
+              {chipOptions!.map((opt, idx) => {
+                const selected = (values[f.key] || "") === opt.value;
+                return (
+                  <button
+                    key={opt._id ?? idx}
+                    type="button"
+                    role="radio"
+                    aria-checked={selected}
+                    onClick={() => setFieldValue(opt.value)}
+                    className={`rounded-full border px-4 py-1.5 text-sm font-medium transition ${
+                      selected
+                        ? "border-primary-500 bg-primary-500 text-white"
+                        : "border-catalogue-border text-catalogue-text-primary hover:bg-catalogue-interactive-hover"
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                );
+              })}
+            </div>
+          ) : (
           <CustomFieldRenderer
-            type={getFieldRenderType(f.key, f.type)}
-            name={f.key}
+            type={renderType}
+            // A checkbox prints `name` as its visible label; every other type
+            // uses it as the field's id, so that one stays the stored key.
+            name={isCheckbox ? siteT(f.name) : f.key}
             value={values[f.key] || ""}
-            onChange={(v: string) => setValues((prev) => ({ ...prev, [f.key]: v }))}
+            onChange={setFieldValue}
             config={f.config}
+            options={dependent.kind === "ready" ? dependent.options : undefined}
+            disabled={dependent.kind === "waiting"}
             required={f.mandatory}
             // Without this the renderer falls back to `Enter ${name}` where
             // name is the raw field KEY — visitors saw "Enter full_name" and
             // "Enter details_inst_<uuid>". Use the human label.
-            placeholder={`Enter ${f.name.toLowerCase()}`}
+            placeholder={
+              dependent.kind === "waiting" && parentName
+                ? t("leadForm.selectParentFirst", { name: parentName.toLowerCase() })
+                : t("leadForm.placeholderPrefix", { name: siteT(f.name).toLowerCase() })
+            }
           />
+          )}
+          {/* Same gate the product-page checkout uses, driven by the same
+              per-field config — so a form built here can ask a visitor to prove
+              they own the number before the lead is accepted. */}
+          {(() => {
+            const verification = getFieldVerification(f.config);
+            if (!verification || !instituteId) return null;
+            return (
+              <div className="mt-2">
+                <FieldVerification
+                  verification={verification}
+                  value={values[f.key] || ""}
+                  instituteId={instituteId}
+                  label={siteT(f.name)}
+                  verified={
+                    !!values[f.key] && verifiedValues[f.key] === values[f.key]
+                  }
+                  onVerified={(verifiedValue) => {
+                    setVerifiedValues((prev) => ({ ...prev, [f.key]: verifiedValue }));
+                    setError("");
+                  }}
+                  disabled={isPreviewMode}
+                />
+              </div>
+            );
+          })()}
         </div>
-      ))}
+        );
+      })}
 
       {/* Honeypot — visually hidden from humans, irresistible to bots.
           aria-hidden + tabIndex -1 keep it out of assistive tech and tabbing. */}
       <div className="sr-only" aria-hidden="true">
         <label>
-          Company website
+          {t("leadForm.companyWebsite")}
           <input
             type="text"
             tabIndex={-1}
@@ -390,7 +565,7 @@ export const LeadFormComponent: React.FC<LeadFormProps> = ({
       </div>
 
       {error && (
-        <p className="rounded-catalogue-md bg-warning-50 px-4 py-2.5 text-sm text-catalogue-text-secondary" role="alert">
+        <p className={`rounded-catalogue-md bg-warning-50 px-4 py-2.5 text-sm text-catalogue-text-secondary ${twoCol ? "sm:col-span-2" : ""}`} role="alert">
           {error}
         </p>
       )}
@@ -398,20 +573,49 @@ export const LeadFormComponent: React.FC<LeadFormProps> = ({
       <button
         type="submit"
         disabled={submitting}
-        className="catalogue-btn catalogue-btn-primary w-full justify-center disabled:cursor-not-allowed disabled:opacity-60"
+        className={`catalogue-btn catalogue-btn-primary w-full justify-center disabled:cursor-not-allowed disabled:opacity-60 ${twoCol ? "sm:col-span-2" : ""}`}
       >
-        {submitting ? "Sending…" : submitLabel || "Submit"}
+        {submitting ? t("leadForm.sending") : submitLabel || t("leadForm.submit")}
         {!submitting && <PaperPlaneTilt className="size-4" weight="bold" aria-hidden="true" />}
       </button>
     </form>
   );
 
+  const successPopup =
+    done && popupSuccess && portalHost
+      ? createPortal(
+          <div
+            // z-70: above the z-60 basket bar and z-50 dialogs (as the document viewer).
+            className="fixed inset-0 z-70 flex items-center justify-center bg-black/50 p-4"
+            role="dialog"
+            aria-modal="true"
+            onClick={(e) => e.target === e.currentTarget && resetForm()}
+          >
+            <div className="relative w-full max-w-md">
+              <button
+                type="button"
+                onClick={resetForm}
+                className="absolute end-3 top-3 z-10 rounded-full p-1.5 text-catalogue-text-muted transition hover:bg-catalogue-interactive-hover"
+                aria-label={t("leadForm.close")}
+              >
+                <X className="size-5" aria-hidden="true" />
+              </button>
+              {successCard}
+            </div>
+          </div>,
+          portalHost
+        )
+      : null;
+
   return section(
-    layout === "card" ? (
-      <div className="catalogue-card-elevated relative p-6 sm:p-8">{formBody}</div>
-    ) : (
-      <div className="relative">{formBody}</div>
-    )
+    <div ref={rootRef}>
+      {layout === "card" ? (
+        <div className="catalogue-card-elevated relative p-6 sm:p-8">{formBody}</div>
+      ) : (
+        <div className="relative">{formBody}</div>
+      )}
+      {successPopup}
+    </div>
   );
 };
 

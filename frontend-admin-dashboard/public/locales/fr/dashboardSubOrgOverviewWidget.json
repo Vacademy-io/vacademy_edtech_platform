@@ -1,0 +1,26 @@
+{
+    "header": {
+        "title": "Aperçu des {{plural}}",
+        "subtitle": "Votre réseau de {{singular}} en un coup d'œil"
+    },
+    "manage": "Gérer",
+    "stats": {
+        "total": {
+            "label": "Total des {{plural}}",
+            "subtitle": "{{plural}} enregistrées"
+        },
+        "active": {
+            "label": "Actives",
+            "subtitle": "Avec un forfait actif"
+        },
+        "learners": {
+            "label": "Apprenants",
+            "subtitle": "Inscrits dans les {{plural}}"
+        },
+        "seats": {
+            "label": "Places",
+            "subtitleOccupied": "Occupées sur la capacité",
+            "subtitleNoCap": "Aucun plafond configuré"
+        }
+    }
+}

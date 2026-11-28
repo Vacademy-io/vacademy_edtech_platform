@@ -1,0 +1,16 @@
+{
+    "form": {
+        "sessionNameLabel": "Nom de {{term}}",
+        "sessionNamePlaceholder": "Ex. 2024-2025",
+        "startDateLabel": "Date de début",
+        "startDatePlaceholder": "AAAA-MM-JJ",
+        "selectLevelsHeading": "Sélectionner les niveaux des cours"
+    },
+    "toast": {
+        "courseAddedSuccess": "{{term}} ajouté avec succès",
+        "courseAddFailed": "Échec de l'ajout de {{term}}"
+    },
+    "button": {
+        "addCourse": "Ajouter {{term}}"
+    }
+}

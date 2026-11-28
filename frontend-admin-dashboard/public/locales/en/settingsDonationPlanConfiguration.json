@@ -1,0 +1,22 @@
+{
+    "title": "Donation Configuration",
+    "suggestedAmounts": {
+        "label": "Suggested Donation Amounts ({{currency}})",
+        "placeholder": "Enter amount",
+        "add": "Add",
+        "hint": "Add suggested amounts that students can choose from",
+        "currentLabel": "Current Suggested Amounts:"
+    },
+    "minimumAmount": {
+        "label": "Minimum Donation Amount ({{currency}})",
+        "placeholder": "0 for no minimum"
+    },
+    "allowCustomAmount": {
+        "label": "Allow custom donation amounts"
+    },
+    "alert": {
+        "part1": "Donation-based ",
+        "part2": " are free to access. Coupon codes are not applicable as ",
+        "part3": " can choose their contribution amount."
+    }
+}

@@ -1,0 +1,11 @@
+{
+    "tabs": {
+        "problem": "Problem",
+        "testCases_one": "Test Cases ({{count}})",
+        "testCases_other": "Test Cases ({{count}})",
+        "settings": "Settings",
+        "starterCode": "Starter Code",
+        "submissions": "Submissions"
+    },
+    "problemPlaceholder": "Describe the problem. Include constraints, input/output format, and examples."
+}

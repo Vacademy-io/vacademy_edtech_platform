@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -56,6 +57,7 @@ interface CourseInReviewResponse {
 }
 
 export const CourseInReviewTab: React.FC = () => {
+    const { t } = useTranslation('studyLibraryCourseInReviewTab');
     const navigate = useNavigate();
     const [reviewCourses, setReviewCourses] = useState<CourseInReviewResponse[]>([]);
     const [roles, setRoles] = useState<string[] | undefined>([]);
@@ -85,11 +87,11 @@ export const CourseInReviewTab: React.FC = () => {
     const withdrawMutation = useMutation({
         mutationFn: withdrawFromReview,
         onSuccess: () => {
-            toast.success('Course withdrawn from review');
+            toast.success(t('withdrawSuccess'));
             refetch();
         },
         onError: (error: Error) => {
-            toast.error(error.message || 'Failed to withdraw from review');
+            toast.error(error.message || t('withdrawFailed'));
         },
     });
 
@@ -141,9 +143,9 @@ export const CourseInReviewTab: React.FC = () => {
     if (error) {
         return (
             <div className="flex h-40 flex-col items-center justify-center text-red-500">
-                <p>Error loading courses</p>
+                <p>{t('errorLoadingCourses')}</p>
                 <MyButton onClick={() => refetch()} buttonType="secondary" className="mt-2">
-                    Retry
+                    {t('retry')}
                 </MyButton>
             </div>
         );
@@ -153,9 +155,9 @@ export const CourseInReviewTab: React.FC = () => {
         <div className="space-y-6">
             {/* Header */}
             <div>
-                <h3 className="mb-2 text-lg font-semibold">Courses In Review</h3>
+                <h3 className="mb-2 text-lg font-semibold">{t('coursesInReview')}</h3>
                 <p className="text-gray-600">
-                    These courses are currently being reviewed by administrators.
+                    {t('reviewedByAdminsNote')}
                 </p>
             </div>
 
@@ -164,9 +166,9 @@ export const CourseInReviewTab: React.FC = () => {
                 <Card>
                     <CardContent className="flex flex-col items-center justify-center py-12">
                         <Clock size={48} className="mb-4 text-gray-400" />
-                        <h3 className="mb-2 text-lg font-semibold">No courses in review</h3>
+                        <h3 className="mb-2 text-lg font-semibold">{t('emptyState.title')}</h3>
                         <p className="text-gray-600">
-                            You don&apos;t have any courses currently under review.
+                            {t('emptyState.description')}
                         </p>
                     </CardContent>
                 </Card>
@@ -186,9 +188,11 @@ export const CourseInReviewTab: React.FC = () => {
                                         <CardDescription className="mt-1">
                                             <div className="flex items-center gap-2 text-sm">
                                                 <Clock size={14} />
-                                                Submitted{' '}
-                                                {formatDistanceToNow(new Date(course.updatedAt), {
-                                                    addSuffix: true,
+                                                {t('submitted', {
+                                                    time: formatDistanceToNow(
+                                                        new Date(course.updatedAt),
+                                                        { addSuffix: true }
+                                                    ),
                                                 })}
                                             </div>
                                         </CardDescription>
@@ -198,11 +202,11 @@ export const CourseInReviewTab: React.FC = () => {
                                             variant="default"
                                             className="bg-orange-100 text-orange-800"
                                         >
-                                            In Review
+                                            {t('inReview')}
                                         </Badge>
                                         {course.packageEntity.originalCourseId && (
                                             <Badge variant="outline" className="text-xs">
-                                                Update
+                                                {t('update')}
                                             </Badge>
                                         )}
                                     </div>
@@ -218,7 +222,7 @@ export const CourseInReviewTab: React.FC = () => {
                                         className="w-full justify-center"
                                     >
                                         <Eye size={16} className="mr-1" />
-                                        View Course
+                                        {t('viewCourse')}
                                     </MyButton>
 
                                     {/* Withdraw from Review Button */}
@@ -230,8 +234,8 @@ export const CourseInReviewTab: React.FC = () => {
                                     >
                                         <ArrowLeft size={16} className="mr-1" />
                                         {withdrawMutation.isPending
-                                            ? 'Withdrawing...'
-                                            : 'Withdraw from Review'}
+                                            ? t('withdrawing')
+                                            : t('withdrawFromReview')}
                                     </MyButton>
                                 </div>
                             </CardContent>
@@ -246,11 +250,9 @@ export const CourseInReviewTab: React.FC = () => {
                     <div className="flex items-start gap-3">
                         <Clock size={20} className="mt-0.5 text-blue-600" />
                         <div>
-                            <h4 className="mb-1 font-semibold text-blue-900">Review Process</h4>
+                            <h4 className="mb-1 font-semibold text-blue-900">{t('reviewProcess.title')}</h4>
                             <p className="text-sm text-blue-700">
-                                Once submitted, your courses will be reviewed by administrators. You
-                                can withdraw courses from review at any time if you need to make
-                                changes.
+                                {t('reviewProcess.description')}
                             </p>
                         </div>
                     </div>

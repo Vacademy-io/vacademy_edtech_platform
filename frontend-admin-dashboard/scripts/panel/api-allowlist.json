@@ -1,0 +1,70 @@
+{
+    "_doc": "Reviewed, guarded uses of APIs Chrome 66 lacks (and CDN strings) in dist-panel. Each entry: api (the verifier's API label, or 'cdn:<host>'), chunkPattern (regex on the emitted file name) and/or contentPattern (regex the chunk content must contain, for hash-named chunks), and a one-line reason. Add an entry ONLY after reading the guarded use in the emitted chunk. 'seededFromCritique' entries were pre-seeded from the Phase 0 critique and still need that read once their chunk exists; the verifier lists unused entries as INFO.",
+    "entries": [
+        {
+            "api": "Intl.RelativeTimeFormat",
+            "contentPattern": "relativetime:",
+            "reason": "i18next's built-in Formatter constructs Intl.RelativeTimeFormat lazily, only for `{{x, relativetime}}` interpolations; no panel string uses that formatter (read in the emitted entry chunk)."
+        },
+        {
+            "api": "Intl.ListFormat",
+            "contentPattern": "relativetime:",
+            "reason": "Same i18next Formatter: Intl.ListFormat (Chrome 72) is built only for `{{x, list}}` interpolations, which no panel string uses."
+        },
+        {
+            "api": "canvas.roundRect",
+            "contentPattern": "excalidraw",
+            "reason": "Excalidraw fork: every .roundRect( call is behind an `ctx.roundRect ? … : rect/strokeRect` ternary (read in the emitted whiteboard and shared collision chunks), and index.tsx:91 also imports canvas-roundrect-polyfill."
+        },
+        {
+            "api": "replaceChildren",
+            "contentPattern": "excalidraw",
+            "reason": "Excalidraw fork: polyfill.ts:26 installs Element.prototype.replaceChildren when missing; polyfill() runs at excalidraw index.tsx:23 import time, before any call (read in the emitted chunk)."
+        },
+        {
+            "api": "crypto.randomUUID",
+            "contentPattern": "pdfjs|PDFJS|pdf\\.js",
+            "reason": "pdfjs legacy build: `typeof crypto<\"u\"&&typeof crypto.randomUUID==\"function\"` guard with a getRandomValues fallback (read in PanelPdfViewer and pdf.worker chunks)."
+        },
+        {
+            "api": "cdn:esm.sh",
+            "contentPattern": "excalidraw",
+            "reason": "Excalidraw font loader's ASSETS_FALLBACK_URL constant; bundled fonts resolve to local ./assets URLs first, and the panel subset-main stub never walks the URL list for SVG export."
+        },
+        {
+            "api": "canvas.roundRect",
+            "chunkPattern": "^assets/PanelPdfViewer-",
+            "contentPattern": "path2dPolyfill|CanvasRenderingContext2D",
+            "reason": "path2d-polyfill (pdfjs-dist 3.11 legacy): the only .roundRect( replays an 'RR' command recorded by its own Path2D polyfill, which installs only when Path2D is missing (Chrome 66 has Path2D) - read in the emitted chunk."
+        },
+        {
+            "api": "replaceChildren",
+            "chunkPattern": "^assets/PanelPdfViewer-",
+            "contentPattern": "pdfjs|PDFJS|pdf\\.js",
+            "reason": "pdf.js FreeTextEditor (annotation editor) only; @react-pdf-viewer 3.12 never enables annotationEditorMode, so the panel PDF viewer never constructs it."
+        },
+        {
+            "api": "OffscreenCanvas",
+            "chunkPattern": "^assets/PanelPdfViewer-",
+            "contentPattern": "isOffscreenCanvasSupported",
+            "reason": "pdf.js main thread: the text-layer use is guarded by FeatureTest.isOffscreenCanvasSupported (typeof OffscreenCanvas); the rest are StampEditor / _isSVGFittingCanvas (annotation editor, never enabled). PanelPdfViewer passes isOffscreenCanvasSupported:false when OffscreenCanvas is missing."
+        },
+        {
+            "api": "OffscreenCanvas",
+            "chunkPattern": "^assets/pdf\\.worker-",
+            "contentPattern": "isOffscreenCanvasSupported",
+            "reason": "pdf.js worker: evaluatorOptions.isOffscreenCanvasSupported &&= FeatureTest.isOffscreenCanvasSupported (legacy pdf.worker.js:5452); image decode/resize (44627-45046), FakeUnicodeFont (8965, 9963) and generateImages (7691) all check it; StampAnnotation.createImage is annotation saving only."
+        },
+        {
+            "api": "OffscreenCanvas",
+            "chunkPattern": "(^|/)(pica|image-blob-reduce\\.esm)-",
+            "contentPattern": "worker_offscreen_canvas_support",
+            "reason": "pica / image-blob-reduce feature-detect `typeof OffscreenCanvas>\"u\"` before use and the in-worker path runs only when that detection passed; loaded only by Excalidraw's image-insert resize, and image tools are off on panels."
+        },
+        {
+            "api": "ResizeObserverEntry.borderBoxSize",
+            "contentPattern": "\"borderBoxSize\"in ",
+            "reason": "@radix-ui/react-use-size guards `\"borderBoxSize\" in entry` and falls back to offsetWidth/offsetHeight (read in the emitted whiteboard chunk)."
+        }
+    ]
+}

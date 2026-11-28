@@ -1,0 +1,15 @@
+{
+    "trigger": {
+        "questionWise": "Question Wise"
+    },
+    "table": {
+        "questionNumber": "Q.No.",
+        "question": "Question"
+    },
+    "toasts": {
+        "revaluateSuccess": "The selected questions have been re-marked for all students. Participants need to check their email!"
+    },
+    "actions": {
+        "revaluate": "Revaluate"
+    }
+}

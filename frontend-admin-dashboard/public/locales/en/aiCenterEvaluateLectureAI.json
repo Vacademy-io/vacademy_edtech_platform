@@ -1,0 +1,43 @@
+{
+    "header": {
+        "title": "Lecture Coach",
+        "subtitle": "Drop a recording of a lecture you taught. We'll give you a clear, constructive review."
+    },
+    "dropzone": {
+        "instruction": "Drop your recording here, or click to choose",
+        "formats": "MP3, WAV, FLAC, AAC, or M4A."
+    },
+    "fileStatus": {
+        "uploading": "Uploading…",
+        "listening": "Listening…",
+        "reviewing": "Reviewing…",
+        "done": "Done",
+        "removeFile": "Remove file"
+    },
+    "workingLabels": {
+        "uploading": "Uploading your recording…",
+        "processing": "Listening to your lecture…",
+        "generating": "Reviewing pacing, engagement, and clarity — usually takes ~1 minute."
+    },
+    "errors": {
+        "unsupportedFormat": "We can't read .{{extension}} files. Try MP3, WAV, FLAC, AAC, or M4A.",
+        "uploadIncomplete": "Upload didn't complete. Want to try again?",
+        "readFailed": "Something went wrong reading your recording. Try again?",
+        "generateFailed": "We couldn't review this recording. Try a different file?",
+        "taskFailed": "We couldn't finish this review. Want to try again?"
+    },
+    "generating": {
+        "title": "Reviewing your lecture",
+        "subtitle": "Listening for pacing, engagement, and clarity. Usually ~1 minute."
+    },
+    "draftingDone": {
+        "title": "Here's your lecture review",
+        "subtitle": "Open it to see what went well and where you can adjust."
+    },
+    "recentFiles": {
+        "title": "Your recent reviews",
+        "fallbackLabel": "Lecture review",
+        "emptyHint": "Your lecture reviews will appear here. Drop a recording above to get one."
+    },
+    "productName": "Vsmart Feedback"
+}

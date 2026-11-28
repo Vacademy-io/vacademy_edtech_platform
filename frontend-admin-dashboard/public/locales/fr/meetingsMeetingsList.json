@@ -1,0 +1,16 @@
+{
+    "untitledMeeting": "Réunion",
+    "hostedBy": "Organisée par",
+    "with": "avec",
+    "join": "Rejoindre",
+    "errorTitle": "Impossible de charger les réunions",
+    "errorDescription": "Une erreur est survenue lors du chargement de ce calendrier. Réessayez.",
+    "status": {
+        "confirmed": "Confirmée",
+        "pending": "En attente",
+        "completed": "Terminée",
+        "noShow": "Absence",
+        "cancelled": "Annulée",
+        "rescheduled": "Reprogrammée"
+    }
+}

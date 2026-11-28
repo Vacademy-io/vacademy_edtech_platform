@@ -1,0 +1,83 @@
+{
+    "dialog": {
+        "title": "Importation en masse des admissions",
+        "description": "Téléchargez le CSV, choisissez éventuellement une classe, prévisualisez et confirmez l'importation"
+    },
+    "steps": {
+        "label": "Étape {{number}}"
+    },
+    "upload": {
+        "templateHint": "Téléchargez le modèle CSV et importez les réponses des apprenants complétées",
+        "downloadTemplateButton": "Télécharger le modèle",
+        "clickToUpload": "Cliquez pour importer un fichier `.csv`",
+        "rowsSummary": "Lignes valides : {{validCount}} | Lignes ignorées : {{skippedCount}}"
+    },
+    "classStep": {
+        "description": "Sélectionnez la classe/le groupe requis pour soumettre les admissions. Si vous passez cette étape, la première option disponible sera utilisée.",
+        "noClassOption": "Aucune classe sélectionnée"
+    },
+    "preview": {
+        "summary_one": "Aperçu de {{count}} ligne valide",
+        "summary_many": "Aperçu de {{count}} de lignes valides",
+        "summary_other": "Aperçu de {{count}} lignes valides",
+        "columns": {
+            "studentName": "Nom de l'élève",
+            "gender": "Genre",
+            "dateOfBirth": "Date de naissance",
+            "fatherName": "Nom du père",
+            "fatherEmail": "E-mail du père",
+            "fatherMobile": "Mobile du père",
+            "motherName": "Nom de la mère",
+            "motherEmail": "E-mail de la mère",
+            "motherMobile": "Mobile de la mère",
+            "guardianName": "Nom du tuteur",
+            "guardianMobile": "Mobile du tuteur",
+            "status": "Statut",
+            "source": "Source"
+        }
+    },
+    "actions": {
+        "back": "Retour",
+        "cancel": "Annuler",
+        "next": "Suivant",
+        "confirmImport": "Confirmer l'importation",
+        "importing": "Importation en cours..."
+    },
+    "errors": {
+        "onlyCsvSupported": "Seuls les fichiers .csv sont pris en charge",
+        "missingColumns": "Colonne(s) requise(s) manquante(s) : {{columns}}",
+        "failedToParseCsv": "Échec de l'analyse du CSV",
+        "instituteNotLoaded": "Détails de l'établissement non chargés",
+        "sessionRequired": "La session est requise",
+        "selectClassRequired": "Veuillez sélectionner une classe/un groupe"
+    },
+    "toast": {
+        "importSuccess_one": "{{count}} admission importée ({{failedCount}} en échec)",
+        "importSuccess_many": "{{count}} d'admissions importées ({{failedCount}} en échec)",
+        "importSuccess_other": "{{count}} admissions importées ({{failedCount}} en échec)",
+        "importError": "Échec de l'importation des admissions"
+    },
+    "genderLabel": {
+        "MALE": "Masculin",
+        "FEMALE": "Féminin",
+        "OTHER": "Autre"
+    },
+    "statusLabel": {
+        "NEW": "Nouveau",
+        "CONTACTED": "Contacté",
+        "QUALIFIED": "Qualifié",
+        "NOT_ELIGIBLE": "Non éligible",
+        "FOLLOW_UP": "Suivi",
+        "CLOSED": "Fermé",
+        "CONVERTED": "Converti",
+        "ADMITTED": "Admis"
+    },
+    "sourceLabel": {
+        "WEBSITE": "Site web",
+        "GOOGLE_ADS": "Google Ads",
+        "FACEBOOK": "Facebook",
+        "INSTAGRAM": "Instagram",
+        "REFERRAL": "Parrainage",
+        "OTHER": "Autre"
+    }
+}

@@ -1,10 +1,11 @@
-import { forwardRef, useEffect, useState } from 'react';
+import { forwardRef, useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'sonner';
-import { Loader2 } from 'lucide-react';
-import { Eye, EyeSlash } from '@phosphor-icons/react';
+import { CircleNotch, Eye, EyeSlash } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 
 import {
     Dialog,
@@ -46,29 +47,35 @@ interface Props {
 }
 
 // Two schemas — required-secrets on create, optional on edit.
-const createSchema = z.object({
-    label: z.string().trim().min(1, 'Required'),
-    zoomAccountId: z.string().trim().min(1, 'Required'),
-    s2sClientId: z.string().trim().min(1, 'Required'),
-    s2sClientSecret: z.string().trim().min(1, 'Required'),
-    // SDK credentials are optional — leave blank to use the platform-owned Meeting SDK app.
-    sdkClientKey: z.string().trim().optional(),
-    sdkClientSecret: z.string().trim().optional(),
-    webhookVerificationToken: z.string().trim().optional(),
-    setAsDefault: z.boolean().optional(),
-});
-const editSchema = createSchema.extend({
-    s2sClientSecret: z.string().trim().optional(),
-    sdkClientSecret: z.string().trim().optional(),
-});
+const buildCreateSchema = (t: TFunction) =>
+    z.object({
+        label: z.string().trim().min(1, t('validation.required')),
+        zoomAccountId: z.string().trim().min(1, t('validation.required')),
+        s2sClientId: z.string().trim().min(1, t('validation.required')),
+        s2sClientSecret: z.string().trim().min(1, t('validation.required')),
+        // SDK credentials are optional — leave blank to use the platform-owned Meeting SDK app.
+        sdkClientKey: z.string().trim().optional(),
+        sdkClientSecret: z.string().trim().optional(),
+        webhookVerificationToken: z.string().trim().optional(),
+        setAsDefault: z.boolean().optional(),
+    });
+const buildEditSchema = (t: TFunction) =>
+    buildCreateSchema(t).extend({
+        s2sClientSecret: z.string().trim().optional(),
+        sdkClientSecret: z.string().trim().optional(),
+    });
 
-type FormValues = z.infer<typeof createSchema>;
+type FormValues = z.infer<ReturnType<typeof buildCreateSchema>>;
 
 export function AddZoomAccountDialog({ open, onOpenChange, mode, account, onSaved }: Props) {
+    const { t } = useTranslation('settingsAddZoomAccount');
     const [submitting, setSubmitting] = useState(false);
     const [showS2sSecret, setShowS2sSecret] = useState(false);
     const [showSdkSecret, setShowSdkSecret] = useState(false);
     const [showWebhookToken, setShowWebhookToken] = useState(false);
+
+    const createSchema = useMemo(() => buildCreateSchema(t), [t]);
+    const editSchema = useMemo(() => buildEditSchema(t), [t]);
 
     const {
         register,
@@ -133,12 +140,14 @@ export function AddZoomAccountDialog({ open, onOpenChange, mode, account, onSave
                 mode === 'create'
                     ? await createZoomAccount(payload)
                     : await updateZoomAccount(account!.id, payload);
-            toast.success(`Zoom account ${mode === 'create' ? 'added' : 'updated'}`);
+            toast.success(
+                mode === 'create' ? t('toasts.accountAdded') : t('toasts.accountUpdated')
+            );
             onSaved(saved);
             onOpenChange(false);
         } catch (err: unknown) {
             console.error(err);
-            toast.error(extractError(err) ?? 'Failed to save Zoom account');
+            toast.error(extractError(err) ?? t('toasts.saveFailed'));
         } finally {
             setSubmitting(false);
         }
@@ -151,15 +160,17 @@ export function AddZoomAccountDialog({ open, onOpenChange, mode, account, onSave
         try {
             const result = await testZoomConnection(account.id);
             if (result.ok) {
+                const email = result.accountEmail ?? t('toasts.unknownAccount');
                 toast.success(
-                    `Connected as ${result.accountEmail ?? 'unknown'}` +
-                        (result.planType ? ` (${result.planType})` : '')
+                    result.planType
+                        ? t('toasts.connectedWithPlan', { email, planType: result.planType })
+                        : t('toasts.connected', { email })
                 );
             } else {
-                toast.error(result.error ?? 'Connection failed');
+                toast.error(result.error ?? t('toasts.connectionFailed'));
             }
         } catch (err) {
-            toast.error(extractError(err) ?? 'Connection test failed');
+            toast.error(extractError(err) ?? t('toasts.connectionTestFailed'));
         } finally {
             setSubmitting(false);
         }
@@ -169,19 +180,15 @@ export function AddZoomAccountDialog({ open, onOpenChange, mode, account, onSave
         <Dialog open={open} onOpenChange={onOpenChange}>
             {/* Cap dialog height at 90vh and stack vertically so the form body
                 scrolls while the header + footer stay pinned. */}
-            <DialogContent className="flex max-h-[90vh] w-[calc(100vw-2rem)] max-w-2xl flex-col gap-0 p-0 sm:w-full">
+            <DialogContent className="flex max-h-dialog-tall w-dialog-md flex-col gap-0 p-0 sm:w-full">
                 <DialogHeader className="shrink-0 border-b border-neutral-100 px-6 pb-4 pt-6">
                     <DialogTitle>
-                        {mode === 'create' ? 'Add Zoom account' : 'Edit Zoom account'}
+                        {mode === 'create' ? t('dialog.titleCreate') : t('dialog.titleEdit')}
                     </DialogTitle>
                     <DialogDescription>
-                        Paste your Server-to-Server OAuth app credentials from the Zoom Marketplace.
-                        A per-account Meeting SDK app is optional (see below). Apps must live in the
-                        same Zoom account.{' '}
+                        {t('dialog.description')}{' '}
                         {mode === 'edit' && (
-                            <span className="text-amber-600">
-                                Leave secret fields blank to keep the existing values.
-                            </span>
+                            <span className="text-amber-600">{t('dialog.editWarning')}</span>
                         )}
                     </DialogDescription>
                 </DialogHeader>
@@ -192,72 +199,69 @@ export function AddZoomAccountDialog({ open, onOpenChange, mode, account, onSave
                 >
                     <div className="grid flex-1 gap-4 overflow-y-auto px-6 py-4">
                     <Field
-                        label="Label"
+                        label={t('fields.label.label')}
                         id="label"
-                        placeholder="e.g. Main academy account"
+                        placeholder={t('fields.label.placeholder')}
                         error={errors.label?.message}
                         {...register('label')}
                     />
 
-                    <Section title="S2S OAuth credentials">
+                    <Section title={t('sections.s2sCredentials.title')}>
                         <Field
-                            label="Zoom Account ID"
+                            label={t('fields.zoomAccountId.label')}
                             id="zoomAccountId"
                             placeholder={mode === 'edit' && account ? account.zoomAccountIdMasked : ''}
                             error={errors.zoomAccountId?.message}
                             {...register('zoomAccountId')}
                         />
                         <Field
-                            label="S2S Client ID"
+                            label={t('fields.s2sClientId.label')}
                             id="s2sClientId"
                             placeholder={mode === 'edit' && account ? account.s2sClientIdMasked : ''}
                             error={errors.s2sClientId?.message}
                             {...register('s2sClientId')}
                         />
                         <SecretField
-                            label="S2S Client Secret"
+                            label={t('fields.s2sClientSecret.label')}
                             id="s2sClientSecret"
                             visible={showS2sSecret}
                             onToggle={() => setShowS2sSecret((v) => !v)}
                             error={errors.s2sClientSecret?.message}
-                            placeholder={mode === 'edit' ? 'Leave blank to keep existing' : ''}
+                            placeholder={mode === 'edit' ? t('fields.common.leaveBlankToKeepExisting') : ''}
                             {...register('s2sClientSecret')}
                         />
                     </Section>
 
-                    <Section title="Meeting SDK credentials (optional)">
+                    <Section title={t('sections.sdkCredentials.title')}>
                         <p className="text-xs text-neutral-500">
-                            Leave blank to use a platform-provided shared Meeting SDK app. For
-                            anonymous learner joins, the Meeting SDK app must belong to this same Zoom
-                            account — add your own SDK app here unless your platform has a shared one
-                            configured.
+                            {t('sections.sdkCredentials.description')}
                         </p>
                         <Field
-                            label="SDK Client Key"
+                            label={t('fields.sdkClientKey.label')}
                             id="sdkClientKey"
                             placeholder={mode === 'edit' && account ? (account.sdkClientKeyMasked ?? '') : ''}
                             error={errors.sdkClientKey?.message}
                             {...register('sdkClientKey')}
                         />
                         <SecretField
-                            label="SDK Client Secret"
+                            label={t('fields.sdkClientSecret.label')}
                             id="sdkClientSecret"
                             visible={showSdkSecret}
                             onToggle={() => setShowSdkSecret((v) => !v)}
                             error={errors.sdkClientSecret?.message}
-                            placeholder={mode === 'edit' ? 'Leave blank to keep existing' : ''}
+                            placeholder={mode === 'edit' ? t('fields.common.leaveBlankToKeepExisting') : ''}
                             {...register('sdkClientSecret')}
                         />
                     </Section>
 
-                    <Section title="Webhook (optional — required later for attendance/recordings)">
+                    <Section title={t('sections.webhook.title')}>
                         <SecretField
-                            label="Webhook Verification Token"
+                            label={t('fields.webhookToken.label')}
                             id="webhookVerificationToken"
                             visible={showWebhookToken}
                             onToggle={() => setShowWebhookToken((v) => !v)}
                             error={errors.webhookVerificationToken?.message}
-                            placeholder="Copy from Zoom Marketplace → your S2S app → Feature → Event Subscriptions"
+                            placeholder={t('fields.webhookToken.placeholder')}
                             {...register('webhookVerificationToken')}
                         />
                     </Section>
@@ -265,10 +269,10 @@ export function AddZoomAccountDialog({ open, onOpenChange, mode, account, onSave
                     <div className="flex items-center justify-between rounded-md border border-neutral-200 px-3 py-2.5">
                         <div>
                             <div className="text-sm font-medium text-neutral-800">
-                                Set as default account
+                                {t('setDefault.title')}
                             </div>
                             <div className="text-xs text-neutral-500">
-                                The default is preselected when admins create a new Zoom meeting.
+                                {t('setDefault.description')}
                             </div>
                         </div>
                         <Switch
@@ -288,7 +292,7 @@ export function AddZoomAccountDialog({ open, onOpenChange, mode, account, onSave
                                     disabled={submitting}
                                     onClick={onTestConnection}
                                 >
-                                    Test connection
+                                    {t('footer.testConnection')}
                                 </Button>
                             )}
                         </div>
@@ -300,7 +304,7 @@ export function AddZoomAccountDialog({ open, onOpenChange, mode, account, onSave
                                 disabled={submitting}
                                 onClick={() => onOpenChange(false)}
                             >
-                                Cancel
+                                {t('footer.cancel')}
                             </Button>
                             <Button
                                 type="submit"
@@ -309,9 +313,9 @@ export function AddZoomAccountDialog({ open, onOpenChange, mode, account, onSave
                                 className="bg-primary-500 hover:bg-primary-600"
                             >
                                 {submitting && (
-                                    <Loader2 className="mr-2 size-4 animate-spin" />
+                                    <CircleNotch className="me-2 size-4 animate-spin" />
                                 )}
-                                {mode === 'create' ? 'Add account' : 'Save changes'}
+                                {mode === 'create' ? t('footer.addAccount') : t('footer.saveChanges')}
                             </Button>
                         </div>
                     </DialogFooter>
@@ -364,6 +368,7 @@ const SecretField = forwardRef<HTMLInputElement, SecretFieldProps>(function Secr
     props,
     ref
 ) {
+    const { t } = useTranslation('settingsAddZoomAccount');
     const { label, error, id, visible, onToggle, ...rest } = props;
     return (
         <div>
@@ -381,7 +386,7 @@ const SecretField = forwardRef<HTMLInputElement, SecretFieldProps>(function Secr
                 />
                 <button
                     type="button"
-                    aria-label={visible ? 'Hide' : 'Show'}
+                    aria-label={visible ? t('common.hide') : t('common.show')}
                     className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-neutral-400 hover:text-neutral-700"
                     onClick={onToggle}
                 >

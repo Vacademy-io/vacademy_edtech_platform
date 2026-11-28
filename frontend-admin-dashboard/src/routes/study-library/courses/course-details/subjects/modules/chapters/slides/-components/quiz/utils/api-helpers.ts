@@ -1,5 +1,12 @@
 import { UploadQuestionPaperFormType } from '@/routes/assessment/question-papers/-components/QuestionPaperUpload';
 import { QuizSlidePayload, QuizSlideQuestion } from '../../../-hooks/use-slides';
+import { toleranceEntry } from '@/routes/assessment/question-papers/-utils/numeric-tolerance';
+import {
+    buildCbeSlideFields,
+    cbeConfigFromEvaluationJson,
+    isCbeQuestionType,
+} from '@/routes/assessment/question-papers/-utils/cbe-question';
+import { CBE_QUESTION_TYPE, CBE_RESPONSE_TYPE, cbeTotalMarks } from '@/components/cbe/types';
 import { Slide } from '../types';
 
 // Helper function to create option structure
@@ -41,6 +48,8 @@ const getQuestionResponseConfig = (
             return { questionResponseType: 'TEXT', evaluationType: 'MANUAL' };
         case 'ONE_WORD':
             return { questionResponseType: 'TEXT', evaluationType: 'AUTO' };
+        case CBE_QUESTION_TYPE:
+            return { questionResponseType: CBE_RESPONSE_TYPE, evaluationType: 'AUTO' };
         default:
             return { questionResponseType: 'OPTION', evaluationType: 'AUTO' };
     }
@@ -75,6 +84,9 @@ const transformOptionsByType = (
             return pick(question.cmultipleChoiceOptions || []);
         case 'TRUE_FALSE':
             return pick(question.trueFalseOptions || []);
+        case CBE_QUESTION_TYPE:
+            // Answered in a spreadsheet / document, never by picking an option.
+            return [];
         default:
             return pick(question.singleChoiceOptions || []);
     }
@@ -123,9 +135,45 @@ const createAutoEvaluationJson = (question: any, transformedOptions?: any[]): st
             return JSON.stringify({ correctAnswers: question.validAnswers });
         }
     } else if (question.validAnswers && question.validAnswers.length > 0) {
-        return JSON.stringify({ correctAnswers: question.validAnswers });
+        const isNumeric = question.questionType === 'NUMERIC' || question.questionType === 'CNUMERIC';
+        return JSON.stringify({
+            correctAnswers: question.validAnswers,
+            // Optional ± tolerance; left out when unset so other keys stay as they were.
+            ...(isNumeric ? toleranceEntry(question.numericTolerance) : {}),
+        });
     }
     return '';
+};
+
+/**
+ * The CBE fields of a quiz question payload (null for any other type). The question may be
+ * in form shape (`cbeConfig`, `cbeSecretStatus`) or straight from the slide JSON (redacted
+ * `auto_evaluation_json` only), as Save Draft / Publish can rebuild from either.
+ * `auto_evaluation_json` is always the redacted config; the solution half is sent only when
+ * the editor holds it, so a question whose solution was never loaded keeps the stored one.
+ */
+export const cbeQuizQuestionFields = (
+    question: any
+): { auto_evaluation_json: string; evaluation_secret_json?: string; marks: number } | null => {
+    if (!isCbeQuestionType(question?.questionType ?? question?.question_type)) return null;
+    const formConfig = cbeConfigFromEvaluationJson(question.cbeConfig);
+    const storedConfig = cbeConfigFromEvaluationJson(question.auto_evaluation_json);
+    const config = formConfig ?? storedConfig;
+    if (!config) {
+        // Nothing readable to send: keep whatever the slide already stores.
+        return {
+            auto_evaluation_json: question.auto_evaluation_json || '',
+            marks: typeof question.marks === 'number' ? question.marks : 0,
+        };
+    }
+    const fields = buildCbeSlideFields(config, formConfig ? question.cbeSecretStatus : undefined);
+    return {
+        auto_evaluation_json: fields.auto_evaluation_json,
+        ...(fields.evaluation_secret_json !== undefined
+            ? { evaluation_secret_json: fields.evaluation_secret_json }
+            : {}),
+        marks: cbeTotalMarks(config),
+    };
 };
 
 // Helper function to calculate question time in milliseconds
@@ -160,7 +208,16 @@ const createQuestionStructure = (
     let explanationTextId = '';
     let explanationTextDataId = '';
 
-    if (
+    if (isCbeQuestionType(question.questionType)) {
+        // Spreadsheet & Written Response: the scenario (learner's left pane) is the passage.
+        parentRichTextContent =
+            question.parentRichTextContent ?? question.parent_rich_text?.content ?? '';
+        parentRichTextId =
+            question.parent_rich_text?.id || question.parentRichTextId || crypto.randomUUID();
+        textContent = question.questionName || question.questionText || question.text?.content || '';
+        textId = question.text?.id || question.textId || crypto.randomUUID();
+        textDataId = question.text_data?.id || question.textDataId || crypto.randomUUID();
+    } else if (
         question.questionType === 'CMCQS' ||
         question.questionType === 'CMCQM' ||
         question.questionType === 'CNUMERIC'
@@ -192,6 +249,8 @@ const createQuestionStructure = (
     explanationTextDataId =
         question.explanation_text_data?.id || question.explanationTextDataId || crypto.randomUUID();
 
+    const cbe = cbeQuizQuestionFields(question);
+
     const questionStructure = {
         id: question.id || crypto.randomUUID(),
         parent_rich_text: {
@@ -219,17 +278,24 @@ const createQuestionStructure = (
         access_level: 'INSTITUTE',
         // Prefer freshly computed value; fall back to existing backend value to preserve correct answers
         // for backend-format passthrough (where option arrays are absent so computed value would be empty)
-        auto_evaluation_json: createAutoEvaluationJson(question, options) || (question as any).auto_evaluation_json || '',
+        auto_evaluation_json: cbe
+            ? cbe.auto_evaluation_json
+            : createAutoEvaluationJson(question, options) || (question as any).auto_evaluation_json || '',
+        ...(cbe?.evaluation_secret_json !== undefined
+            ? { evaluation_secret_json: cbe.evaluation_secret_json }
+            : {}),
         evaluation_type: evaluationType,
         question_time_in_millis: calculateQuestionTimeInMillis(question),
         question_order: questionOrder,
         quiz_slide_id: '', // This will be set by the caller
         can_skip: question.canSkip || (question as any).can_skip || false,
         new_question: true, // Added for backend compatibility
-        // Always null — the quiz-level marks_per_question is the single source of truth.
+        // Null — the quiz-level marks_per_question is the single source of truth.
         // There is no per-question marks editor in the UI, so sending null ensures the
-        // backend uses the quiz-level default consistently.
-        marks: null,
+        // backend uses the quiz-level default consistently. A Spreadsheet & Written
+        // Response question is the exception: it is worth the sum of its parts' marks,
+        // which is also what the AI marks it out of.
+        marks: cbe ? cbe.marks : null,
         // Handle both camelCase (form-format) and snake_case (backend-format) negative_marking
         negative_marking: (question.negativeMarking ?? (question as any).negative_marking) != null
             ? (question.negativeMarking ?? (question as any).negative_marking)
@@ -280,8 +346,10 @@ export interface QuizSettings {
     timeLimitInMinutes?: number | null;
     marksPerQuestion?: number;
     negativeMarking?: number;
+    partialMarking?: boolean;
     passPercentage?: number | null;
     reAttemptCount?: number | null;
+    showAnswerAfterEachQuestion?: boolean;
 }
 
 // Helper function to create quiz slide payload for API
@@ -325,6 +393,11 @@ export const createQuizSlidePayload = (
                 settings?.negativeMarking !== undefined
                     ? settings.negativeMarking
                     : (activeItem.quiz_slide?.negative_marking ?? 0),
+            // null = "unchanged": the server keeps the stored setting
+            partial_marking:
+                settings?.partialMarking !== undefined
+                    ? settings.partialMarking
+                    : (activeItem.quiz_slide?.partial_marking ?? null),
             pass_percentage:
                 settings?.passPercentage !== undefined
                     ? settings.passPercentage
@@ -333,6 +406,11 @@ export const createQuizSlidePayload = (
                 settings?.reAttemptCount !== undefined
                     ? settings.reAttemptCount
                     : ((activeItem.quiz_slide as any)?.re_attempt_count ?? null),
+            // null = "unchanged": the server keeps the stored setting
+            show_answer_after_each_question:
+                settings?.showAnswerAfterEachQuestion !== undefined
+                    ? settings.showAnswerAfterEachQuestion
+                    : activeItem.quiz_slide?.show_answer_after_each_question ?? null,
             questions: transformedQuestions,
         },
         is_loaded: true,

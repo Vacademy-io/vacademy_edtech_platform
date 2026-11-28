@@ -1,8 +1,12 @@
 import React, { ChangeEvent, FormEvent } from "react";
+import { useTranslation } from "react-i18next";
 import { FaTwitter, FaFacebookF, FaInstagram, FaYoutube } from "react-icons/fa"; // design-lint-ignore: social brand logos (no Phosphor equivalent)
 import { Preferences } from "@capacitor/preferences";
+import { ContentTerms, SystemTerms } from "@/types/naming-settings";
+import { getTerminologyPlural } from "@/components/common/layout-container/sidebar/utils";
 
 const Footer: React.FC = () => {
+  const { t } = useTranslation("coursesRouteA");
   const [name, setName] = React.useState<string>("");
   const [email, setEmail] = React.useState<string>("");
 
@@ -16,9 +20,9 @@ const Footer: React.FC = () => {
   return (
     <footer className="bg-blue-900 text-white">
       <div className="bg-blue-900 p-10 grid grid-cols-1 md:grid-cols-4 gap-8">
-        <div>
-          <img src="/images/logo2.jpg" alt="Logo" className="mb-4" />
-          <p className="mb-4">Empowering children through education</p>
+        <div className="space-y-4">
+          <img src="/images/logo2.jpg" alt={t("footer.logoAlt")} />
+          <p>{t("footer.tagline")}</p>
           <div className="flex gap-4 text-xl">
             <FaTwitter className="hover:text-blue-500 cursor-pointer" />
             <FaFacebookF className="hover:text-blue-600 cursor-pointer" />
@@ -27,51 +31,51 @@ const Footer: React.FC = () => {
           </div>
         </div>
 
-        <div>
-          <h2 className="font-bold text-lg mb-3">Quick Links</h2>
+        <div className="space-y-stack">
+          <h2 className="font-bold text-lg">{t("footer.quickLinks")}</h2>
           <ul className="space-y-1">
             <li>
               <a href="https://codecircle.org/" className="hover:text-blue-400 transition">
-                Home
+                {t("header.nav.home")}
               </a>
             </li>
             <li>
               <a href="https://codecircle.org/about.html" className="hover:text-blue-400 transition">
-                About
+                {t("header.nav.about")}
               </a>
             </li>
             <li>
               <a href="https://codecircle.org/impact/stories.html" className="hover:text-blue-400 transition">
-                Impact
+                {t("header.nav.impact")}
               </a>
             </li>
             <li>
               <a href="https://learner-stgcodecircle.org/courses" className="hover:text-blue-400 transition">
-                Courses
+                {getTerminologyPlural(ContentTerms.Course, SystemTerms.Course)}
               </a>
             </li>
             <li>
               <a href="https://codecircle.org/get-involved.html" className="hover:text-blue-400 transition">
-                Get Involved
+                {t("header.nav.getInvolved")}
               </a>
             </li>
             <li>
               <a href="https://codecircle.org/contact.html" className="hover:text-blue-400 transition">
-                Contact
+                {t("header.nav.contact")}
               </a>
             </li>
           </ul>
         </div>
 
         <div>
-          <h2 className="font-bold text-lg mb-3">Contact Us</h2>
+          <h2 className="font-bold text-lg mb-3">{t("footer.contactUs")}</h2>
           <p>
             <a href="https://codecircle.org" className="hover:text-blue-400">
-              Codecircle.org
+              {t("footer.websiteLabel")}
             </a>
           </p>
           <p>
-            Email:{" "}
+            {t("footer.emailLabel")}{" "}
             <a
               href="mailto:support@codecircle.org"
               className="hover:text-blue-400"
@@ -81,16 +85,16 @@ const Footer: React.FC = () => {
           </p>
         </div>
 
-        <div>
-          <h2 className="font-bold text-lg mb-3">
-            Subscribe to our Newsletter
+        <div className="space-y-stack">
+          <h2 className="font-bold text-lg">
+            {t("footer.newsletterTitle")}
           </h2>
-          <form onSubmit={handleSubscribe}>
+          <form className="space-y-2" onSubmit={handleSubscribe}>
             <input
               type="text"
-              placeholder="Your name"
-              aria-label="Your name"
-              className="w-full mb-2 p-2 border rounded text-gray-800"
+              placeholder={t("footer.namePlaceholder")}
+              aria-label={t("footer.namePlaceholder")}
+              className="w-full p-2 border rounded text-gray-800"
               value={name}
               onChange={(e: ChangeEvent<HTMLInputElement>) =>
                 setName(e.target.value)
@@ -98,9 +102,9 @@ const Footer: React.FC = () => {
             />
             <input
               type="email"
-              placeholder="Your email"
-              aria-label="Your email"
-              className="w-full mb-2 p-2 border rounded text-gray-800"
+              placeholder={t("footer.emailPlaceholder")}
+              aria-label={t("footer.emailPlaceholder")}
+              className="w-full p-2 border rounded text-gray-800"
               value={email}
               onChange={(e: ChangeEvent<HTMLInputElement>) =>
                 setEmail(e.target.value)
@@ -110,14 +114,14 @@ const Footer: React.FC = () => {
               type="submit"
               className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
             >
-              Subscribe
+              {t("footer.subscribeButton")}
             </button>
           </form>
         </div>
       </div>
 
       <div className="border-t-2 border-gray-700 h-20 flex flex-col items-center justify-center text-sm text-white gap-2">
-        <p>© 2025 Codecircle.org. All rights reserved</p>
+        <p>{t("footer.copyright")}</p>
         <p className="flex gap-2">
           <button
             onClick={async () => {
@@ -139,7 +143,7 @@ const Footer: React.FC = () => {
             className="underline hover:text-blue-300"
             type="button"
           >
-            Privacy Policy
+            {t("footer.privacyPolicy")}
           </button>
           |
           <button
@@ -162,7 +166,7 @@ const Footer: React.FC = () => {
             className="underline hover:text-blue-300"
             type="button"
           >
-            Terms of Service
+            {t("footer.termsOfService")}
           </button>
         </p>
       </div>

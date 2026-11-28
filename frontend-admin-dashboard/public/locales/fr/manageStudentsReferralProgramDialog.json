@@ -1,0 +1,30 @@
+{
+    "dialog": {
+        "title": "Sélectionner un programme de parrainage",
+        "description": "Choisissez un programme de parrainage pour ce cours"
+    },
+    "badge": {
+        "default": "Par défaut"
+    },
+    "refereeBenefit": {
+        "label": "Avantage du filleul :",
+        "freeDays_one": "{{count}} jour gratuit",
+        "freeDays_many": "{{count}} jours gratuits",
+        "freeDays_other": "{{count}} jours gratuits",
+        "bonusContent": "Contenu bonus",
+        "genericOff": "{{value}} de réduction"
+    },
+    "referrerTiers": {
+        "label": "Paliers du parrain :"
+    },
+    "programSettings": {
+        "label": "Paramètres du programme :",
+        "vestingPeriod": "Période d'acquisition",
+        "combineOffers": "Combiner les offres",
+        "yes": "Oui",
+        "no": "Non"
+    },
+    "actions": {
+        "addNewReferral": "+ Ajouter un nouveau programme de parrainage"
+    }
+}

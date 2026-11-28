@@ -1,5 +1,6 @@
 import { UseFormReturn } from 'react-hook-form';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { FormField, FormItem, FormLabel, FormControl } from '@/components/ui/form';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
@@ -21,6 +22,7 @@ const ADMIN_PERMISSION_OPTIONS = ['FULL', 'CREATE_COURSE'] as const;
  * cap. Persisted to setting_json.setting.SUB_ORG_SETTING.
  */
 const SubOrgSettingsCard = ({ form }: SubOrgSettingsCardProps) => {
+    const { t } = useTranslation('manageStudentsSubOrgSettingsCard');
     const enabled = form.watch('subOrgSettings.enabled');
     const authRoles = form.watch('subOrgSettings.authRoles') ?? [];
     const allowedTeamRoles = form.watch('subOrgSettings.allowedTeamRoles') ?? [];
@@ -52,7 +54,7 @@ const SubOrgSettingsCard = ({ form }: SubOrgSettingsCardProps) => {
         <Card className="rounded-sm bg-neutral-50/50 shadow-none">
             <CardHeader className="border-b bg-neutral-100/50 p-4">
                 <CardTitle className="text-base font-semibold text-neutral-800">
-                    Sub-organization Settings
+                    {t('title')}
                 </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6 p-4">
@@ -63,13 +65,9 @@ const SubOrgSettingsCard = ({ form }: SubOrgSettingsCardProps) => {
                         <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
                             <div className="space-y-0.5">
                                 <FormLabel className="text-sm font-semibold">
-                                    Sub-org invite
+                                    {t('toggle.label')}
                                 </FormLabel>
-                                <p className="text-xs text-neutral-500">
-                                    Enrolling via this invite into a sub-org-associated batch
-                                    creates a sub-organization. Configure its admin roles,
-                                    permissions and seat limit below.
-                                </p>
+                                <p className="text-xs text-neutral-500">{t('toggle.description')}</p>
                             </div>
                             <FormControl>
                                 <Switch checked={field.value} onCheckedChange={field.onChange} />
@@ -83,11 +81,9 @@ const SubOrgSettingsCard = ({ form }: SubOrgSettingsCardProps) => {
                         {/* Admin auth roles */}
                         <div className="space-y-2">
                             <FormLabel className="text-sm font-semibold">
-                                Admin roles (auth service)
+                                {t('authRoles.label')}
                             </FormLabel>
-                            <p className="text-xs text-neutral-500">
-                                Roles assigned to the user who joins via this invite.
-                            </p>
+                            <p className="text-xs text-neutral-500">{t('authRoles.description')}</p>
                             <div className="flex flex-wrap gap-2 rounded-md border bg-white p-2">
                                 {rolesList.map((role) => (
                                     <label
@@ -109,7 +105,9 @@ const SubOrgSettingsCard = ({ form }: SubOrgSettingsCardProps) => {
                                     </label>
                                 ))}
                                 {rolesList.length === 0 && (
-                                    <span className="text-xs text-neutral-400">No roles found</span>
+                                    <span className="text-xs text-neutral-400">
+                                        {t('common.noRolesFound')}
+                                    </span>
                                 )}
                             </div>
                         </div>
@@ -117,11 +115,10 @@ const SubOrgSettingsCard = ({ form }: SubOrgSettingsCardProps) => {
                         {/* Allowed team roles */}
                         <div className="space-y-2">
                             <FormLabel className="text-sm font-semibold">
-                                Allowed team roles
+                                {t('allowedTeamRoles.label')}
                             </FormLabel>
                             <p className="text-xs text-neutral-500">
-                                Roles the sub-org admin can assign to their own team. Leave empty
-                                to allow any custom role.
+                                {t('allowedTeamRoles.description')}
                             </p>
                             <div className="flex flex-wrap gap-2 rounded-md border bg-white p-2">
                                 {rolesList.map((role) => (
@@ -144,7 +141,9 @@ const SubOrgSettingsCard = ({ form }: SubOrgSettingsCardProps) => {
                                     </label>
                                 ))}
                                 {rolesList.length === 0 && (
-                                    <span className="text-xs text-neutral-400">No roles found</span>
+                                    <span className="text-xs text-neutral-400">
+                                        {t('common.noRolesFound')}
+                                    </span>
                                 )}
                             </div>
                         </div>
@@ -152,10 +151,10 @@ const SubOrgSettingsCard = ({ form }: SubOrgSettingsCardProps) => {
                         {/* Admin permissions */}
                         <div className="space-y-2">
                             <FormLabel className="text-sm font-semibold">
-                                Admin permissions
+                                {t('adminPermissions.label')}
                             </FormLabel>
                             <p className="text-xs text-neutral-500">
-                                What the sub-org admin can do. Leave empty to grant FULL access.
+                                {t('adminPermissions.description')}
                             </p>
                             <div className="flex flex-wrap gap-2 rounded-md border bg-white p-2">
                                 {ADMIN_PERMISSION_OPTIONS.map((perm) => (
@@ -174,7 +173,7 @@ const SubOrgSettingsCard = ({ form }: SubOrgSettingsCardProps) => {
                                                 )
                                             }
                                         />
-                                        {perm}
+                                        {t(`adminPermissions.options.${perm}`)}
                                     </label>
                                 ))}
                             </div>
@@ -187,13 +186,13 @@ const SubOrgSettingsCard = ({ form }: SubOrgSettingsCardProps) => {
                             render={({ field }) => (
                                 <FormItem>
                                     <FormLabel className="text-sm font-semibold">
-                                        Seat limit
+                                        {t('seatLimit.label')}
                                     </FormLabel>
                                     <FormControl>
                                         <Input
                                             type="number"
                                             min={1}
-                                            placeholder="e.g. 10"
+                                            placeholder={t('seatLimit.placeholder')}
                                             value={field.value ?? ''}
                                             onChange={(e) =>
                                                 field.onChange(
@@ -205,8 +204,7 @@ const SubOrgSettingsCard = ({ form }: SubOrgSettingsCardProps) => {
                                         />
                                     </FormControl>
                                     <p className="text-xs text-neutral-500">
-                                        Maximum members in the sub-org. Leave blank for no
-                                        explicit cap.
+                                        {t('seatLimit.description')}
                                     </p>
                                 </FormItem>
                             )}

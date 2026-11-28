@@ -4,12 +4,12 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ArrowSquareOut, GraduationCap, Student } from '@phosphor-icons/react';
 import {
-    getUserRoles,
     getTokenFromCookie,
     generateSSOUrl,
     canAccessLearnerPlatform,
 } from '@/lib/auth/sessionUtility';
 import { TokenKey } from '@/constants/auth/tokens';
+import { getRolesForCurrentInstitute } from '@/lib/auth/instituteUtils';
 import { useInstituteDetailsStore } from '@/stores/students/students-list/useInstituteDetailsStore';
 
 interface SSOSwitcherProps {
@@ -25,9 +25,14 @@ export function SSOSwitcher({ variant = 'button', className = '' }: SSOSwitcherP
     React.useEffect(() => {
         const accessToken = getTokenFromCookie(TokenKey.accessToken);
         if (accessToken) {
-            const roles = getUserRoles(accessToken);
+            // The switch lands on THIS institute's learner portal, so it only makes sense
+            // when the user is a learner here — a STUDENT role in another institute
+            // doesn't count.
+            const roles = getRolesForCurrentInstitute();
             setUserRoles(roles);
-            setCanSwitchToLearner(canAccessLearnerPlatform(accessToken));
+            setCanSwitchToLearner(
+                canAccessLearnerPlatform(accessToken) && roles.includes('STUDENT')
+            );
         }
     }, []);
 

@@ -1,0 +1,37 @@
+{
+    "menu": {
+        "openMenu": "فتح القائمة",
+        "edit": "تعديل",
+        "addResponse": "إضافة رد",
+        "bulkImportCsv": "استيراد جماعي (CSV)",
+        "sendMessage": "إرسال رسالة",
+        "configureWorkflow": "إعداد سير العمل",
+        "viewLinkedWorkflows": "عرض مسارات العمل المرتبطة",
+        "bookingSettings": "إعدادات الحجز",
+        "shareQrCode": "مشاركة رمز QR",
+        "copyShortLink": "نسخ الرابط المختصر",
+        "apiIntegration": "تكامل API",
+        "getEmbedCode": "الحصول على كود التضمين",
+        "delete": "حذف"
+    },
+    "deleteDialog": {
+        "title": "حذف {{term}}",
+        "description": "هل أنت متأكد أنك تريد حذف الحملة \"{{campaignName}}\"؟ لا يمكن التراجع عن هذا الإجراء.",
+        "cancel": "إلغاء",
+        "deleting": "جارٍ الحذف...",
+        "confirm": "حذف"
+    },
+    "toast": {
+        "deleteSuccess": "تم حذف الحملة بنجاح",
+        "deleteError": "فشل حذف الحملة",
+        "editComingSoon": "ميزة تعديل الحملة قادمة قريبًا",
+        "campaignIdMissing": "معرّف الحملة مفقود",
+        "shortLinkCopied": "تم نسخ الرابط المختصر",
+        "shortLinkCopyFailed": "تم إنشاء الرابط المختصر، لكن تعذّر نسخه",
+        "shortLinkFailed": "تعذّر إنشاء رابط مختصر"
+    },
+    "defaults": {
+        "campaignName": "حملة",
+        "thisCampaign": "هذه الحملة"
+    }
+}

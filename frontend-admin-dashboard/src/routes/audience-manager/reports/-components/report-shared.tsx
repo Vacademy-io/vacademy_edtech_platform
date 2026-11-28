@@ -6,6 +6,8 @@
  * Everything here is purely presentational; data fetching stays in the tabs.
  */
 import { useId, useState, type ReactNode } from 'react';
+import { format, parseISO } from 'date-fns';
+import { useTranslation } from 'react-i18next';
 import {
     CaretDown,
     CaretRight,
@@ -42,6 +44,9 @@ export interface ReportTabProps {
      *  "clean" lead-based tabs (whose queries join audience_response) honour it;
      *  the shared bar hides the picker on tabs where it can't filter cleanly. */
     audienceId?: string;
+    /** Drill to one counsellor: sets the shared counsellor filter (undefined clears it)
+     *  and, when `tab` is given, opens that report. Same filter the bar's picker sets. */
+    onCounsellorFilter?: (userId: string | undefined, name?: string, tab?: string) => void;
 }
 
 // ── Formatters ─────────────────────────────────────────────────────────
@@ -105,6 +110,45 @@ export function fmtCurrencyCompact(n: number | null | undefined, currency?: stri
     }
 }
 
+// ── Dates ──────────────────────────────────────────────────────────────
+// The rest of the admin app shows dates as dd/mm/yyyy, so every report does too.
+// Inputs are the API's ISO strings: a plain day ("2026-10-04"), an institute-local
+// time ("2026-10-04T14:30") or a full timestamp ("2026-10-04T09:00:00Z"). parseISO
+// reads the first two as local time, so a plain day never shifts by a timezone.
+
+function parseReportDate(value: string | null | undefined): Date | null {
+    if (!value) return null;
+    const d = parseISO(value);
+    return Number.isNaN(d.getTime()) ? null : d;
+}
+
+/** "04/10/2026"; em-dash when missing. */
+export function fmtDay(value: string | null | undefined): string {
+    const d = parseReportDate(value);
+    return d ? format(d, 'dd/MM/yyyy') : '—';
+}
+
+/** "04/10" — chart axis ticks, where the year is already in the filter bar. */
+export function fmtDayShort(value: string | null | undefined): string {
+    const d = parseReportDate(value);
+    return d ? format(d, 'dd/MM') : '';
+}
+
+/** "02:30 PM" — the time half of a timestamp, for two-line date cells. */
+export function fmtTime(value: string | null | undefined): string {
+    const d = parseReportDate(value);
+    return d ? format(d, 'hh:mm a') : '';
+}
+
+/** "04/10/2026, 02:30 PM"; a value that carries no time of day ("2026-10-04" or
+ *  exactly midnight) shows the date alone. Em-dash when missing. */
+export function fmtDateTime(value: string | null | undefined): string {
+    const d = parseReportDate(value);
+    if (!d) return '—';
+    const dateOnly = value!.length <= 10 || (d.getHours() === 0 && d.getMinutes() === 0);
+    return format(d, dateOnly ? 'dd/MM/yyyy' : 'dd/MM/yyyy, hh:mm a');
+}
+
 /** Days with one decimal ("3.5d"); em-dash when unknown. */
 export function fmtDays(d: number | null | undefined): string {
     if (d == null || Number.isNaN(d)) return '—';
@@ -127,7 +171,11 @@ export function tatMetClass(rate: number | null | undefined): string {
     return 'text-red-600 font-medium';
 }
 
-/** Tier → static Tailwind bg-class. Static enumeration so Tailwind keeps the classes. */
+/**
+ * Tier → static Tailwind bg-class, for the legacy trio only. Callers pass the institute's
+ * catalog colour as `colorHex`, which takes precedence; this is the fallback for a tier with
+ * no colour set. Static enumeration so Tailwind keeps the classes.
+ */
 export function tierBgClass(tier: string): string {
     switch (tier) {
         case 'HOT':
@@ -180,6 +228,15 @@ export function KpiCard({
     loading,
     onClick,
 }: KpiCardProps) {
+    // A coloured stripe on the left ties each number to its meaning at a glance.
+    const toneToAccentClass: Record<NonNullable<KpiCardProps['tone']>, string> = {
+        default: 'border-l-neutral-300',
+        primary: 'border-l-primary-500',
+        success: 'border-l-success-500',
+        warning: 'border-l-warning-500',
+        danger: 'border-l-danger-500',
+        info: 'border-l-info-500',
+    };
     const toneToIconClass: Record<NonNullable<KpiCardProps['tone']>, string> = {
         default: 'bg-neutral-100 text-neutral-600',
         primary: 'bg-blue-100 text-blue-600',
@@ -191,8 +248,9 @@ export function KpiCard({
     return (
         <div
             className={cn(
-                'group flex flex-col gap-3 rounded-xl border border-neutral-200 bg-white p-5 shadow-sm transition-shadow hover:shadow-md',
-                onClick && 'cursor-pointer hover:border-primary-200'
+                'group flex min-w-0 flex-col gap-2 rounded-xl border border-l-4 border-neutral-200 bg-white p-4 shadow-sm transition-shadow duration-200 hover:shadow-md',
+                toneToAccentClass[tone],
+                onClick && 'cursor-pointer'
             )}
             onClick={onClick}
             role={onClick ? 'button' : undefined}
@@ -208,14 +266,14 @@ export function KpiCard({
                     : undefined
             }
         >
-            <div className="flex items-start justify-between">
-                <span className="text-xs font-medium uppercase tracking-wide text-neutral-500">
+            <div className="flex items-start justify-between gap-2">
+                <span className="min-w-0 text-sm font-medium leading-snug text-neutral-600">
                     {label}
                 </span>
                 {icon && (
                     <div
                         className={cn(
-                            'flex size-10 items-center justify-center rounded-lg',
+                            'flex size-9 shrink-0 items-center justify-center rounded-lg',
                             toneToIconClass[tone]
                         )}
                     >
@@ -226,10 +284,12 @@ export function KpiCard({
             {loading ? (
                 <span className="h-8 w-24 animate-pulse rounded bg-neutral-100" />
             ) : (
-                <span className="text-3xl font-bold tracking-tight text-neutral-900">{value}</span>
+                <span className="text-3xl font-bold tabular-nums tracking-tight text-neutral-900">
+                    {value}
+                </span>
             )}
             {(sub || onClick) && (
-                <span className="flex items-center justify-between text-xs text-neutral-500">
+                <span className="flex items-center justify-between gap-2 text-xs leading-relaxed text-neutral-500">
                     {sub}
                     {onClick && (
                         <CaretRight
@@ -266,9 +326,13 @@ export function ReportSection({
                 className
             )}
         >
-            <div className="flex flex-wrap items-center justify-between gap-2">
-                <div className="flex items-center gap-2">
-                    {icon && <span className="text-neutral-500">{icon}</span>}
+            <div className="-mx-5 flex flex-wrap items-center justify-between gap-2 border-b border-neutral-100 px-5 pb-4">
+                <div className="flex items-center gap-2.5">
+                    {icon && (
+                        <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary-50 text-primary-600">
+                            {icon}
+                        </span>
+                    )}
                     <h2 className="text-base font-semibold text-neutral-900">{title}</h2>
                 </div>
                 {actions}
@@ -289,9 +353,11 @@ export function BreakdownCard({
 }) {
     return (
         <div className="flex flex-col gap-4 rounded-xl border border-neutral-200 bg-white p-5 shadow-sm">
-            <div className="flex items-center gap-2">
-                <span className="text-neutral-500">{icon}</span>
-                <h3 className="text-sm font-semibold text-neutral-900">{title}</h3>
+            <div className="-mx-5 flex items-center gap-2.5 border-b border-neutral-100 px-5 pb-4">
+                <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary-50 text-primary-600">
+                    {icon}
+                </span>
+                <h3 className="text-base font-semibold text-neutral-900">{title}</h3>
             </div>
             <div className="flex flex-col gap-3">{children}</div>
         </div>
@@ -317,6 +383,7 @@ export function BreakdownBar({
     colorClass,
     onClick,
 }: BreakdownBarProps) {
+    const { t } = useTranslation('audienceManagerReportShared');
     const pct = total > 0 ? Math.min(100, (count / total) * 100) : 0;
     const cpct = converted != null && total > 0 ? Math.min(100, (converted / total) * 100) : 0;
     return (
@@ -340,11 +407,15 @@ export function BreakdownBar({
             }
         >
             <div className="flex items-center justify-between text-sm">
-                <span className="truncate text-neutral-700">{label}</span>
-                <span className="flex items-center gap-1 font-medium text-neutral-900">
+                <span className="truncate text-neutral-800" title={label}>
+                    {label}
+                </span>
+                <span className="flex shrink-0 items-center gap-1 font-semibold tabular-nums text-neutral-900">
                     {count}
                     {converted != null && (
-                        <span className="ml-1 text-xs text-green-700">({converted} conv.)</span>
+                        <span className="ms-1 text-xs text-green-700">
+                            {t('breakdownBar.converted', { count: converted })}
+                        </span>
                     )}
                     {onClick && (
                         <CaretRight
@@ -386,22 +457,25 @@ export function BreakdownBar({
 
 // ── Loading / empty / error states ─────────────────────────────────────
 
-export function EmptyHint({ message = 'No data in this range.' }: { message?: string }) {
+export function EmptyHint({ message }: { message?: string }) {
+    const { t } = useTranslation('audienceManagerReportShared');
     return (
-        <div className="flex h-32 items-center justify-center text-sm text-neutral-400">
-            {message}
+        <div className="flex h-32 flex-col items-center justify-center gap-2 text-center text-sm text-neutral-500">
+            <ChartBar size={24} className="text-neutral-300" />
+            {message ?? t('emptyHint.default')}
         </div>
     );
 }
 
 /** Skeleton for a whole tab — KPI strip + a table block. */
 export function ReportTabSkeleton() {
+    const { t } = useTranslation('audienceManagerReportShared');
     const id = useId();
     return (
         <div
             className="flex animate-pulse flex-col gap-4"
             aria-busy="true"
-            aria-label="Loading report"
+            aria-label={t('skeleton.ariaLabel')}
         >
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 {[0, 1, 2, 3].map((i) => (
@@ -430,6 +504,7 @@ export function ReportTabSkeleton() {
  * failure, and offers a retry for the latter.
  */
 export function ReportErrorState({ error, onRetry }: { error: unknown; onRetry?: () => void }) {
+    const { t } = useTranslation('audienceManagerReportShared');
     const deployPending = isReportEndpointMissing(error);
     return (
         <div className="flex flex-col items-center gap-3 rounded-xl border border-neutral-200 bg-white px-6 py-12 text-center shadow-sm">
@@ -439,18 +514,18 @@ export function ReportErrorState({ error, onRetry }: { error: unknown; onRetry?:
             <div className="flex flex-col gap-1">
                 <p className="text-sm font-semibold text-neutral-800">
                     {deployPending
-                        ? 'This report needs the latest backend — deploy pending'
-                        : "Couldn't load this report"}
+                        ? t('errorState.deployPendingTitle')
+                        : t('errorState.genericTitle')}
                 </p>
                 <p className="max-w-md text-xs text-neutral-500">
                     {deployPending
-                        ? 'The endpoint powering this tab is not on this environment yet. It will light up automatically after the next backend deploy.'
-                        : 'Something went wrong while fetching the data. Check your connection and try again.'}
+                        ? t('errorState.deployPendingBody')
+                        : t('errorState.genericBody')}
                 </p>
             </div>
             {!deployPending && onRetry && (
                 <Button size="sm" variant="outline" onClick={onRetry}>
-                    Retry
+                    {t('errorState.retry')}
                 </Button>
             )}
         </div>
@@ -462,12 +537,13 @@ export function ReportErrorState({ error, onRetry }: { error: unknown; onRetry?:
 export function ExportCsvButton({
     onClick,
     disabled,
-    label = 'Export CSV',
+    label,
 }: {
     onClick: () => void;
     disabled?: boolean;
     label?: string;
 }) {
+    const { t } = useTranslation('audienceManagerReportShared');
     return (
         <Button
             size="sm"
@@ -477,7 +553,7 @@ export function ExportCsvButton({
             disabled={disabled}
         >
             <DownloadSimple size={14} />
-            {label}
+            {label ?? t('export.defaultLabel')}
         </Button>
     );
 }
@@ -491,13 +567,14 @@ export function ExportWithColumnPickerButton({
     filename,
     getHeadersAndRows,
     disabled,
-    label = 'Export CSV',
+    label,
 }: {
     filename: string;
     getHeadersAndRows: () => { headers: string[]; rows: CsvCell[][] };
     disabled?: boolean;
     label?: string;
 }) {
+    const { t } = useTranslation('audienceManagerReportShared');
     const [open, setOpen] = useState(false);
     const [headers, setHeaders] = useState<string[]>([]);
     const [rows, setRows] = useState<CsvCell[][]>([]);
@@ -539,12 +616,12 @@ export function ExportWithColumnPickerButton({
                 disabled={disabled}
             >
                 <DownloadSimple size={14} />
-                {label}
+                {label ?? t('export.defaultLabel')}
             </Button>
             <Dialog open={open} onOpenChange={setOpen}>
                 <DialogContent className="sm:max-w-sm">
                     <DialogHeader>
-                        <DialogTitle>Choose export columns</DialogTitle>
+                        <DialogTitle>{t('export.dialogTitle')}</DialogTitle>
                     </DialogHeader>
                     <div className="flex flex-col gap-3 py-1">
                         <div className="flex items-center gap-1.5 text-xs">
@@ -553,7 +630,7 @@ export function ExportWithColumnPickerButton({
                                 onClick={() => setSelected(new Set(headers))}
                                 className="text-primary-600 hover:underline"
                             >
-                                Select all
+                                {t('export.selectAll')}
                             </button>
                             <span className="text-neutral-300">·</span>
                             <button
@@ -561,7 +638,7 @@ export function ExportWithColumnPickerButton({
                                 onClick={() => setSelected(new Set())}
                                 className="text-primary-600 hover:underline"
                             >
-                                Deselect all
+                                {t('export.deselectAll')}
                             </button>
                         </div>
                         <div className="flex max-h-64 flex-col gap-0.5 overflow-y-auto rounded-md border border-neutral-200 p-2">
@@ -581,19 +658,18 @@ export function ExportWithColumnPickerButton({
                     </div>
                     <DialogFooter className="items-center sm:justify-between">
                         <span className="text-xs text-neutral-500">
-                            {selected.size} / {headers.length} columns
+                            {t('export.columnsSelected', {
+                                selected: selected.size,
+                                total: headers.length,
+                            })}
                         </span>
                         <div className="flex gap-2">
                             <Button variant="outline" size="sm" onClick={() => setOpen(false)}>
-                                Cancel
+                                {t('export.cancel')}
                             </Button>
-                            <Button
-                                size="sm"
-                                onClick={handleExport}
-                                disabled={selected.size === 0}
-                            >
+                            <Button size="sm" onClick={handleExport} disabled={selected.size === 0}>
                                 <DownloadSimple size={14} className="mr-1" />
-                                Export
+                                {t('export.export')}
                             </Button>
                         </div>
                     </DialogFooter>
@@ -625,9 +701,9 @@ export function SortableHeader<K extends string>({
     return (
         <th
             className={cn(
-                'cursor-pointer select-none py-2 pr-3 transition-colors hover:text-neutral-700',
+                'cursor-pointer select-none py-3 pr-3 transition-colors hover:text-neutral-900',
                 align === 'right' ? 'text-right' : 'text-left',
-                active && 'text-neutral-700'
+                active && 'text-primary-600'
             )}
             onClick={() => onClick(sortKey)}
         >
@@ -642,4 +718,16 @@ export function SortableHeader<K extends string>({
             </span>
         </th>
     );
+}
+
+/**
+ * Recent Leads filters for one source row. A row named after a campaign type (see the backend's
+ * ReportSourceSql) filters on that type; any other row filters on its source.
+ */
+export function sourceDrillSearch(row: {
+    source_type: string | null;
+    campaign_type?: string | null;
+}): { source?: string; campaignType?: string } {
+    if (row.campaign_type) return { campaignType: row.campaign_type };
+    return { source: row.source_type ?? undefined };
 }

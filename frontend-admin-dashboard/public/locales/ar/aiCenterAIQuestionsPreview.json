@@ -1,0 +1,36 @@
+{
+    "instituteLogoAlt": "الشعار",
+    "noResponseDialog": {
+        "title": "تعذر تحميل الأسئلة",
+        "message": "لم نتمكن من إنشاء الأسئلة لك. يرجى المحاولة مرة أخرى.",
+        "retryNow": "أعد المحاولة الآن"
+    },
+    "toast": {
+        "noDataExists": "لا توجد بيانات!",
+        "incompleteQuestions": "بعض أسئلتك غير مكتملة أو تحتاج إلى انتباه!"
+    },
+    "trigger": {
+        "retrying": "جارٍ إعادة المحاولة...",
+        "retry": "إعادة المحاولة",
+        "loading": "جارٍ التحميل…",
+        "viewQuestions": "عرض الأسئلة"
+    },
+    "header": {
+        "saving": "جارٍ الحفظ...",
+        "saveChanges": "حفظ التغييرات",
+        "close": "إغلاق",
+        "moreTagsBadge_zero": "+{{count}}",
+        "moreTagsBadge_one": "+{{count}}",
+        "moreTagsBadge_two": "+{{count}}",
+        "moreTagsBadge_few": "+{{count}}",
+        "moreTagsBadge_many": "+{{count}}",
+        "moreTagsBadge_other": "+{{count}}"
+    },
+    "questionCard": {
+        "duplicate": "تكرار",
+        "delete": "حذف"
+    },
+    "content": {
+        "noQuestionsExist": "لا توجد أسئلة."
+    }
+}

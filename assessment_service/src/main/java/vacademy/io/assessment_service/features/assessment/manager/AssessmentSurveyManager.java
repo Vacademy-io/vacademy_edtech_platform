@@ -7,6 +7,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
+import vacademy.io.assessment_service.features.question_core.util.CbeConfigRedactor;
 import vacademy.io.assessment_service.features.assessment.dto.AssessmentQuestionPreviewDto;
 import vacademy.io.assessment_service.features.assessment.dto.survey_dto.*;
 import vacademy.io.assessment_service.features.assessment.dto.survey_dto.request.IndividualResponseRequestFilter;
@@ -357,7 +358,9 @@ public class AssessmentSurveyManager {
                                 .defaultQuestionTimeMins(question.getDefaultQuestionTimeMins())
                                 .mediaId(question.getMediaId())
                                 .optionsJson(question.getOptionsJson())
-                                .autoEvaluationJson(question.getAutoEvaluationJson())
+                                // Learner-facing (the caller's own survey report): no CBE solution.
+                                .autoEvaluationJson(CbeConfigRedactor.redact(question.getAutoEvaluationJson(),
+                                                question.getQuestionType()))
                                 .studentAnswer(studentAnswer)
                                 .questionMarks(questionMarks)
                                 .build();

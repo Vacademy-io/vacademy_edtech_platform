@@ -1,0 +1,19 @@
+{
+    "title": {
+        "generated": "Clé API générée",
+        "create": "Créer une nouvelle clé API"
+    },
+    "description": {
+        "generated": "Copiez votre clé API maintenant. Vous ne pourrez plus la revoir !",
+        "create": "Donnez un nom à votre clé API pour vous aider à l'identifier plus tard."
+    },
+    "keyNameLabel": "Nom de la clé",
+    "keyNamePlaceholder": "ex. Clé de production, Clé de développement",
+    "cancelButton": "Annuler",
+    "generatingButton": "Génération en cours...",
+    "generateButton": "Générer la clé",
+    "saveKeyWarningTitle": "⚠️ Enregistrez cette clé maintenant !",
+    "saveKeyWarningDescription": "C'est la seule fois où vous verrez la clé complète. Conservez-la en lieu sûr.",
+    "yourApiKeyLabel": "Votre clé API",
+    "doneButton": "Terminé"
+}

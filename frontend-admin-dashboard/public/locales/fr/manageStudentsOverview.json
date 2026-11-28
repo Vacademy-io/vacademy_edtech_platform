@@ -1,0 +1,66 @@
+{
+    "toast": {
+        "copiedToClipboard": "{{field}} copié dans le presse-papiers !",
+        "copyFailed": "Échec de la copie de {{field}}"
+    },
+    "password": {
+        "notFound": "mot de passe introuvable"
+    },
+    "empty": {
+        "noOverviewData": "Aucune donnée de synthèse disponible"
+    },
+    "errors": {
+        "fetchStudentDetails": "Erreur lors de la récupération des détails de l'étudiant"
+    },
+    "fallback": {
+        "notAvailable": "N/D"
+    },
+    "sections": {
+        "customFields": "Champs personnalisés",
+        "termsAndConditions": "Conditions générales",
+        "accountCredentials": "Identifiants du compte",
+        "generalDetails": "Détails généraux",
+        "referralDetails": "Détails de parrainage",
+        "contactInformation": "Coordonnées",
+        "locationDetails": "Détails de localisation",
+        "guardianDetails": "Coordonnées du parent/tuteur"
+    },
+    "fields": {
+        "status": "Statut",
+        "signedOn": "Signé le",
+        "signedPdf": "PDF signé",
+        "enrollmentNo": "N° d'inscription",
+        "gender": "Genre",
+        "school": "École",
+        "country": "Pays",
+        "state": "État/Région",
+        "city": "Ville",
+        "pincode": "Code postal",
+        "address": "Adresse",
+        "mobileNo": "N° de mobile",
+        "emailId": "Adresse e-mail",
+        "fatherName": "Nom du père/tuteur",
+        "fatherMobileNo": "N° de mobile du père/tuteur",
+        "fatherEmailId": "E-mail du père/tuteur",
+        "motherName": "Nom de la mère/tutrice",
+        "motherMobileNo": "N° de mobile de la mère/tutrice",
+        "motherEmailId": "E-mail de la mère/tutrice",
+        "username": "Nom d'utilisateur",
+        "password": "Mot de passe",
+        "attendance": "Présence",
+        "count": "Nombre"
+    },
+    "status": {
+        "signed": "Signé",
+        "notSigned": "Non signé"
+    },
+    "actions": {
+        "download": "Télécharger"
+    },
+    "otherContacts": {
+        "heading": "Autres coordonnées",
+        "hint": "Numéros et e-mails donnés par cette personne dans d'autres demandes.",
+        "phone": "Téléphone",
+        "email": "E-mail"
+    }
+}

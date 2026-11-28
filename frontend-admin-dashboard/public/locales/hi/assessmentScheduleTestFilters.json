@@ -1,0 +1,11 @@
+{
+    "trigger": {
+        "ariaLabelSelected": "{{label}}: {{selection}}",
+        "ariaLabelEmpty": "{{label}} के अनुसार फ़िल्टर करें",
+        "clearAriaLabel": "{{label}} फ़िल्टर हटाएं"
+    },
+    "search": {
+        "placeholder": "{{label}} खोजें...",
+        "noResults": "कोई परिणाम नहीं मिला।"
+    }
+}

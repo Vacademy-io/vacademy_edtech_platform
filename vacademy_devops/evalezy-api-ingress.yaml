@@ -1,0 +1,236 @@
+# evalezy-api-ingress: public host for the AI Evaluation partner API
+# (docs/AI_EVALUATION_PUBLIC_API.md section 1 decision 3a, section 7 base URL,
+# section 16 T1.46).
+#
+#   https://api.evalezy.com/v1/<rest>  ->  assessment-service:8074
+#                                          /assessment-service/open/evaluation/v1/<rest>
+#   anything else on api.evalezy.com    ->  404 (ingress-nginx default backend)
+#
+# DRAFT. DO NOT APPLY until "Before apply" below is done. Applying it is safe
+# at any time once the DNS record exists: before assessment_service ships the
+# facade (or while assessment.open-api.enabled=false) every /v1 call just gets
+# Spring's 401/403/404, the same as the identical path on backend-stage today.
+#
+# Deliberately NOT part of the `vac` Helm release (same pattern as
+# internal-paths-block.yaml and analytics-api.yaml): nothing in CI applies this
+# file, and enabling it must never involve a `helm upgrade` of `vac` (prod's
+# overlay renders vacademy-secrets with blanks/"not-configured" and resets every
+# image to :latest). Apply / roll back by hand:
+#   kubectl apply  -f vacademy_devops/evalezy-api-ingress.yaml
+#   kubectl delete -f vacademy_devops/evalezy-api-ingress.yaml
+#   (then, optionally: kubectl delete secret evalezy-api-tls)
+#
+# ---------------------------------------------------------------------------
+# Why it is scoped this way
+# ---------------------------------------------------------------------------
+# - Own host, own Ingress, own TLS secret. Nothing here names
+#   backend-stage.vacademy.io or vacademy-tls-secret, so the helm-managed
+#   vacademy-services-ingress and the cert for the prod host are never touched.
+# - ingress-nginx applies use-regex to EVERY path of the HOST it is set on
+#   (across all Ingresses for that host). Because this Ingress is the only one
+#   for api.evalezy.com (plus cert-manager's temporary HTTP-01 solver Ingress),
+#   regex matching is confined to this host. backend-stage.vacademy.io keeps its
+#   plain Prefix locations. rewrite-target is per-Ingress, so it does not touch
+#   the solver path either.
+# - Path regex  ^/v1/([^;]*)$  (ingress-nginx adds the ^, matching is
+#   case-insensitive):
+#     * nginx matches locations against the NORMALISED URI (percent-decoded,
+#       "." and ".." segments resolved, slashes merged), so /v1/../x and
+#       /v1/%2e%2e/x become /x, which does not match and gets 404. The rewrite
+#       result therefore always stays under /assessment-service/open/evaluation/v1/
+#       and can never reach /assessment-service/internal/**.
+#     * ';' is refused (404) because Tomcat strips ";params" before resolving
+#       ".." ("/v1/..;/..;/internal" is the classic nginx-to-Tomcat traversal).
+#       Spring's StrictHttpFirewall also rejects ';', so this is defence in depth.
+#     * The query string is not part of the match and is passed through unchanged.
+# - No limit-rps / limit-connections here: the live controller does not trust
+#   CF-Connecting-IP (no use-forwarded-headers / real-ip-header in the live
+#   ConfigMap), so behind Cloudflare the client address nginx sees is a
+#   Cloudflare edge IP and a per-IP limit would throttle unrelated partners
+#   together. Rate limits live in assessment_service (spec 11.5).
+# - No CORS annotations: keys are server-to-server only (spec T1.33); a browser
+#   on another origin gets no CORS headers by design.
+# - proxy-body-size 10m: JSON only on this host. Answer sheets go straight to S3
+#   with presigned PUT URLs (spec 7.5) and never pass through nginx. A typed
+#   submission (answers <= 20,000 chars each) or a candidate upsert batch stays
+#   well under 10 MB. Cloudflare itself caps a proxied request at 100 s and
+#   100 MB (Free/Pro plans).
+# - No snippets: the live controller runs allow-snippet-annotations=false.
+#
+# ---------------------------------------------------------------------------
+# How backend-stage.vacademy.io gets TLS today (read from the repo; confirm
+# with the read-only checks below before apply)
+# ---------------------------------------------------------------------------
+# - DNS: Cloudflare A record(s), Proxied (orange cloud): see
+#   vacademy_devops/hetzner/cloudflare-dns-flip.sh (PATCHes type=A,
+#   proxied=true) and VacademyAiAnswerUrls.java ("Cloudflare-proxied" webhook
+#   host). The A content is the public IP of the k3s node(s) that run the
+#   ingress-nginx controller pod: the controller binds hostPort 80/443
+#   (hetzner/bring-up-k3s.sh, "Patching ingress-nginx controller to use hostPort").
+# - Origin cert: cert-manager + Let's Encrypt HTTP-01. The helm Ingress carries
+#   cert-manager.io/cluster-issuer: vacademy-stage-letsencrypt-prod-cert-issuer
+#   and tls.secretName vacademy-tls-secret (vacademy-services/templates/ingress.yaml,
+#   cloud-prod branch). It is NOT a Cloudflare Origin CA cert.
+# This file does the same for the new host: cert-manager ingress-shim creates
+# Certificate "evalezy-api-tls" from the annotation, solves HTTP-01 through the
+# same controller, and stores the cert in secret "evalezy-api-tls".
+#
+# ---------------------------------------------------------------------------
+# Before apply (founder / operator)
+# ---------------------------------------------------------------------------
+# 0. Read-only checks (expected results in brackets):
+#      kubectl get clusterissuer vacademy-stage-letsencrypt-prod-cert-issuer
+#        [READY True. If it is missing or not ready, check
+#         `kubectl get clusterissuer` and put the issuer that actually signs
+#         vacademy-tls-secret into the annotation below, e.g. letsencrypt-prod
+#         from hetzner/bring-up-k3s.sh.]
+#      kubectl get certificate vacademy-tls-secret -n default -o wide
+#        [READY True, i.e. backend-stage really is cert-manager managed]
+#      kubectl get secret vacademy-tls-secret -n default -o jsonpath='{.data.tls\.crt}' \
+#        | base64 -d | openssl x509 -noout -issuer -enddate
+#        [issuer is Let's Encrypt. If it says "CloudFlare Origin" instead, the
+#         live setup is an Origin CA cert: see "Fallback" at the end.]
+#      kubectl get ingress -A | grep -i evalezy
+#        [nothing: no other Ingress may claim api.evalezy.com]
+#      kubectl -n ingress-nginx get deploy ingress-nginx-controller -o jsonpath='{..image}'
+#        [the controller image; this file was written against v1.11.x. On
+#         v1.12+ ImplementationSpecific + use-regex is still accepted; only
+#         Prefix/Exact paths are strictly validated]
+#      kubectl -n ingress-nginx get pods -o wide
+#        [note the NODE(s) running the controller: those public IPs are the
+#         only ones listening on 80/443]
+#
+# 1. Cloudflare DNS (zone evalezy.com), created by the founder:
+#      Type:    A
+#      Name:    api            (i.e. api.evalezy.com)
+#      IPv4:    EXACTLY the content of the A record(s) of backend-stage.vacademy.io
+#               in the vacademy.io zone (Cloudflare dashboard > vacademy.io > DNS).
+#               If backend-stage has several A records (or an AAAA), create the
+#               same set. Do not look it up with dig: the record is proxied, so
+#               dig returns Cloudflare anycast IPs, not the origin.
+#      Proxy:   DNS only (grey cloud) for the FIRST certificate issuance, then
+#               Proxied (orange cloud) for good; see step 3.
+#      TTL:     Auto
+#    Why an A record and not a CNAME to backend-stage.vacademy.io (spec T1.46
+#    says CNAME): the two hostnames live in different Cloudflare zones. A
+#    DNS-only CNAME would resolve to backend-stage's Cloudflare anycast IPs,
+#    and Cloudflare would then receive Host: api.evalezy.com on the vacademy.io
+#    zone, which does not serve it. A proxied cross-zone CNAME depends on
+#    Cloudflare account settings I could not verify offline. An A record to the
+#    same origin is exactly how backend-stage itself is set up, with no
+#    cross-zone behaviour involved.
+#    If evalezy.com is NOT a Cloudflare zone, create the same A record at the
+#    DNS host (it is then always "DNS only"): TLS still works through
+#    Let's Encrypt, but partners hit the origin directly with no Cloudflare WAF.
+#
+# 2. kubectl apply -f vacademy_devops/evalezy-api-ingress.yaml, then wait for
+#    the certificate (usually under 2 minutes):
+#      kubectl get certificate evalezy-api-tls -n default -w      [READY True]
+#    If it stays False: kubectl describe certificate evalezy-api-tls;
+#    kubectl get challenges -A; kubectl describe challenge <name>.
+#    The usual cause is that http://api.evalezy.com/.well-known/acme-challenge/...
+#    does not reach the origin on port 80 (record still proxied with SSL mode
+#    "Full (strict)" and no valid origin cert yet, or the A record points at a
+#    node without a controller pod).
+#
+# 3. Once READY True, in the Cloudflare dashboard (zone evalezy.com):
+#    a. Switch the api record to Proxied (orange cloud).
+#    b. Configuration Rule, hostname equals api.evalezy.com:
+#         SSL: Full (strict)       (the origin now has a valid LE cert; scoping
+#                                   it to the hostname leaves the evalezy.com
+#                                   landing site's mode alone)
+#         Browser Integrity Check: Off
+#                                  (partners call from ERP servers, curl, Java,
+#                                   Python; BIC challenges unusual user agents)
+#    c. Bot Fight Mode (Security > Bots): it is zone-wide on the Free plan and
+#       challenges non-browser clients, which is every partner. Keep it OFF for
+#       evalezy.com, or on Pro+ add a WAF skip rule for api.evalezy.com.
+#    d. Cache Rule, hostname equals api.evalezy.com: Bypass cache. Cloudflare
+#       does not cache JSON or extension-less paths by default, but
+#       /v1/submissions/{id}/checked-copy returns a PDF per partner; never let
+#       an edge cache hold it.
+#    Renewal then needs nothing: cert-manager renews ~30 days before expiry over
+#    HTTP-01, which Cloudflare forwards to the origin (with "Always Use HTTPS"
+#    on, Let's Encrypt follows the redirect to https and the origin answers
+#    the challenge there with its still-valid cert).
+#
+# ---------------------------------------------------------------------------
+# Verify after apply (and again after step 3)
+# ---------------------------------------------------------------------------
+#   H=https://api.evalezy.com
+#   # Routed to Spring (JSON body, not nginx's HTML 404):
+#   curl -s -w '\n%{http_code}\n' $H/v1/exams
+#     -> before the facade ships / flag off: 401, 403 or 404 with a JSON body
+#        from assessment_service (same as
+#        https://backend-stage.vacademy.io/assessment-service/open/evaluation/v1/exams)
+#     -> after: 401 {"error":{"code":"missing_api_key",...}}
+#   curl -s -w '\n%{http_code}\n' -H 'X-API-Key: vak_eval_000000000000000000000000000000000000000000000000' $H/v1/exams
+#     -> after the facade ships: 401 invalid_api_key
+#   curl -s -o /dev/null -w '%{http_code}\n' $H/v1/openapi.json
+#     -> after the facade ships: 200 (permitAll in assessment_service)
+#   # Everything else is 404 from nginx, never a backend:
+#   for p in / /v1 /v2/exams /assessment-service/open/evaluation/v1/exams \
+#            /admin-core-service/internal/api-keys/v1/verify /assessment-service/internal/x \
+#            /ai-service/credits/v1/balance '/v1/..;/..;/..;/internal/x' \
+#            '/v1/x;/../../internal' /v1/%2e%2e/%2e%2e/assessment-service/internal/x; do
+#     printf '%-60s %s\n' "$p" "$(curl -s -o /dev/null -w '%{http_code}' --path-as-is "$H$p")"
+#   done
+#     -> every line 404 (the %2e%2e one may come back 404 from Spring instead
+#        if Cloudflare re-encodes it; it must never be 2xx or a Signature error)
+#   # Proxied through Cloudflare (after step 3):
+#   curl -sI $H/v1/exams | grep -i -E '^(server|cf-ray):'    -> server: cloudflare, a cf-ray
+#   # Origin cert valid without Cloudflare (no -k):
+#   curl -s -o /dev/null -w '%{http_code} %{ssl_verify_result}\n' \
+#     --resolve api.evalezy.com:443:<controller-node-ip> $H/v1/exams   -> Spring status, 0
+#   # The prod host is untouched (compare with the same commands BEFORE apply):
+#   curl -s -o /dev/null -w '%{http_code}\n' https://backend-stage.vacademy.io/assessment-service/actuator/health
+#   kubectl -n ingress-nginx exec deploy/ingress-nginx-controller -- \
+#     sh -c "awk '/server_name backend-stage.vacademy.io/,/## end server backend-stage.vacademy.io/' /etc/nginx/nginx.conf | grep -c 'location ~'"
+#     -> same count as before apply (expected 0: backend-stage has no regex locations)
+#   kubectl -n ingress-nginx exec deploy/ingress-nginx-controller -- \
+#     sh -c "awk '/server_name api.evalezy.com/,/## end server api.evalezy.com/' /etc/nginx/nginx.conf | grep -E 'location|rewrite'"
+#     -> location ~* "^/v1/([^;]*)$" with rewrite to /assessment-service/open/evaluation/v1/$1
+#
+# ---------------------------------------------------------------------------
+# Fallback: Cloudflare Origin CA instead of cert-manager
+# ---------------------------------------------------------------------------
+# Only if step 0 shows backend-stage uses a Cloudflare Origin CA cert, or
+# HTTP-01 cannot be made to work. Cloudflare > evalezy.com > SSL/TLS > Origin
+# Server > Create certificate for api.evalezy.com (RSA, 15 years), then:
+#   kubectl create secret tls evalezy-api-tls -n default --cert=origin.pem --key=origin-key.pem
+# delete the cert-manager.io/cluster-issuer annotation below before apply, and
+# keep the record Proxied with SSL "Full (strict)" from the start (an Origin CA
+# cert is trusted only by Cloudflare, so the --resolve check above then needs -k).
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: evalezy-api
+  namespace: default
+  labels:
+    app: evalezy-api
+  annotations:
+    cert-manager.io/cluster-issuer: vacademy-stage-letsencrypt-prod-cert-issuer
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    nginx.ingress.kubernetes.io/rewrite-target: /assessment-service/open/evaluation/v1/$1
+    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "10"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "120"
+    # checked-copy streams a PDF of up to ~18 MB through assessment_service
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "120"
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - api.evalezy.com
+      secretName: evalezy-api-tls
+  rules:
+    - host: api.evalezy.com
+      http:
+        paths:
+          - path: /v1/([^;]*)$
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: assessment-service
+                port:
+                  number: 8074

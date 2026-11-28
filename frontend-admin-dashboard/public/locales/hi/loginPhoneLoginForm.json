@@ -1,0 +1,29 @@
+{
+    "whatsappLabel": "व्हाट्सएप नंबर",
+    "sendingOtp": "ओटीपी भेजा जा रहा है...",
+    "sendOtpWhatsapp": "ओटीपी भेजें (व्हाट्सएप)",
+    "toast": {
+        "otpSent": "ओटीपी व्हाट्सएप पर सफलतापूर्वक भेजा गया",
+        "accountNotFound": "खाता नहीं मिला। कृपया जारी रखने के लिए साइन अप करें।",
+        "sendOtpFailedFallback": "व्हाट्सएप के माध्यम से ओटीपी भेजने में विफल",
+        "sendOtpFailedGeneric": "ओटीपी भेजने में विफल। कृपया फिर से प्रयास करें।",
+        "loginMissingCredentials": "लॉगिन सफल रहा, लेकिन सत्र प्रमाण-पत्र गायब हैं।",
+        "loginProcessingError": "लॉगिन डेटा संसाधित करने में त्रुटि",
+        "invalidOtpFallback": "अमान्य ओटीपी",
+        "invalidOtpDescription": "कृपया अपना ओटीपी जांचें और फिर से प्रयास करें।",
+        "invalidOtpGenericDescription": "कृपया फिर से प्रयास करें",
+        "fillAllOtpFields": "कृपया सभी ओटीपी फ़ील्ड भरें"
+    },
+    "checkWhatsapp": "अपना व्हाट्सएप देखें",
+    "codeSentTo": "हमने 6 अंकों का कोड भेजा है",
+    "backToPhoneEntry": "फोन प्रविष्टि पर वापस जाएं",
+    "resendIn_one": "{{count}} सेकंड में फिर से भेजें",
+    "resendIn_other": "{{count}} सेकंड में फिर से भेजें",
+    "resendCode": "कोड फिर से भेजें",
+    "verifying": "सत्यापित किया जा रहा है...",
+    "verifyAndSignIn": "सत्यापित करें और साइन इन करें",
+    "useEmailOtp": "ईमेल ओटीपी का उपयोग करें",
+    "useUsernamePassword": "यूज़रनेम और पासवर्ड का उपयोग करें",
+    "noAccount": "खाता नहीं है?",
+    "signUpHere": "यहां साइन अप करें"
+}

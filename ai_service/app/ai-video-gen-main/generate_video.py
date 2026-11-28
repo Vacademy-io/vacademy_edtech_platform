@@ -511,6 +511,17 @@ def _path_to_data_uri(path: Path) -> str:
     return f"data:{mime};base64,{encoded}"
 
 
+# Media that stays a file:// URL instead of being inlined as a data URI. The
+# page is file:// with --allow-file-access-from-files, and the frame loop waits
+# for every <img> of a newly mounted shot to load, so nothing needs inlining —
+# and a data URI rides inside the shot HTML, adding ~1.33x the image size to
+# what the page has to parse when the shot mounts.
+_MEDIA_KEEP_AS_FILE_URL = frozenset({
+    ".mp4", ".webm", ".mov", ".m4v", ".ogv", ".mp3", ".wav", ".m4a", ".ogg",
+    ".png", ".jpg", ".jpeg", ".webp", ".gif", ".svg", ".avif",
+})
+
+
 def _convert_file_urls_to_data_uris(html: str) -> str:
     """Convert file:// URLs in img src attributes to data URIs."""
     import re
@@ -526,6 +537,13 @@ def _convert_file_urls_to_data_uris(html: str) -> str:
         
         try:
             path = Path(file_path)
+            # Video/audio stay file:// — the page is file:// with
+            # --allow-file-access-from-files, so they load and seek directly.
+            # Inlined, the render worker's prefetched lesson-teacher clip
+            # (62 MB webm for a 10-min lesson) became an 83 MB string that
+            # __updateSnippets re-sent every frame: 0.02 fps.
+            if path.suffix.lower() in _MEDIA_KEEP_AS_FILE_URL:
+                return match.group(0)
             if path.exists():
                 data_uri = _path_to_data_uri(path)
                 return f'src={quote_char}{data_uri}{quote_char}'
@@ -1463,6 +1481,7 @@ def render_video_from_json(
         print(f"DEBUG: Rendering frame range [{_render_start}, {_render_end}) of {total_frames} total")
 
         _prev_active_ids = set()
+        _mounted_ids: set = set()
         _crossfade_duration: float = float(opts.get("crossfade_duration", 0.0))
         _frame_progress_start = time.time()
         _frame_progress_chunk_size = max(1, _render_end - _render_start)
@@ -1474,7 +1493,22 @@ def render_video_from_json(
             if show_branding and branding_entry:
                 active.append(branding_entry)
             # Update DOM for overlays (part of batch, but snippets need to run first for segment-change detection)
-            page.evaluate("async (entries) => await window.__updateSnippets(entries)", active)
+            # The dispatcher reads an entry's html only when it mounts the
+            # snippet, and unmounts every snippet missing from the list — so an
+            # entry needs its html exactly when it was not sent last frame.
+            # Re-sending ~50 KB of shot HTML per active entry on every frame
+            # was most of the per-frame cost.
+            _send = [
+                e if e.get("id") not in _mounted_ids else {k: v for k, v in e.items() if k != "html"}
+                for e in active
+            ]
+            # The page reports what it actually mounted, so a shot whose mount
+            # failed gets its html again next frame instead of never mounting.
+            _mounted_ids = set(page.evaluate(
+                "async (entries) => { await window.__updateSnippets(entries);"
+                " return Array.from((window.__activeSnippets || new Map()).keys()); }",
+                _send,
+            ) or [])
 
             # Wait for images/fonts/annotations to load when active segments change
             _cur_active_ids = {e["id"] for e in active}
@@ -1849,6 +1883,32 @@ def render_video_from_json(
                         position_css = f"top:{int(height * 0.037)}px; bottom:auto;"
                     else:
                         position_css = f"bottom:{int(height * 0.074)}px; top:auto;"
+                    # Lesson mode: while a teacher overlay is on screen its
+                    # entry_meta.caption_box keeps captions on the board side
+                    # (or above a portrait teacher band) instead of across
+                    # the teacher's face (lesson_mode.caption_box). The
+                    # caption host is always full-viewport (dispatcher
+                    # __updateCaption), so the pill itself is re-centred.
+                    _cap_x, _cap_w, _cap_cy = 0, width, None
+                    _lesson_cb = None
+                    for _e in active:
+                        _em = _e.get("entry_meta")
+                        if (isinstance(_em, dict) and _em.get("kind") in ("lesson_band", "lesson_teacher")
+                                and isinstance(_em.get("caption_box"), dict)):
+                            # The caption band wins over a teacher entry's box.
+                            if _lesson_cb is None or _em.get("kind") == "lesson_band":
+                                _lesson_cb = _em["caption_box"]
+                    if _lesson_cb is not None:
+                        try:
+                            _cap_x = max(0, int(_lesson_cb.get("x", 0)))
+                            _cap_w = max(1, min(width - _cap_x, int(_lesson_cb.get("w", width))))
+                            if _lesson_cb.get("cy") is not None:
+                                _cap_cy = int(_lesson_cb["cy"])
+                                position_css = ""
+                            elif _lesson_cb.get("bottom") is not None and cap_position != "top":
+                                position_css = f"bottom:{int(_lesson_cb['bottom'])}px; top:auto;"
+                        except (TypeError, ValueError):
+                            _cap_x, _cap_w, _cap_cy = 0, width, None
                     font_size = int(style.get("font_size", 20))
                     font_color = str(style.get("font_color", "#FFFFFF"))
                     font_weight = int(style.get("font_weight", 400))
@@ -1917,10 +1977,24 @@ def render_video_from_json(
                         content_html = " ".join(_spans)
                     else:
                         content_html = raw_text if allow_html else _html_escape(raw_text)
+                    if _cap_cy is not None:
+                        # Lesson caption band: centred in the band, whatever
+                        # the number of lines.
+                        _pill_box_css = (
+                            f"left:{_cap_x + _cap_w // 2}px; top:{_cap_cy}px; "
+                            f"transform:translate(-50%,-50%); max-width:{int(_cap_w * 0.9)}px; "
+                        )
+                    elif (_cap_x, _cap_w) == (0, width):
+                        _pill_box_css = "left:50%; transform:translateX(-50%); max-width:85%; "
+                    else:
+                        _pill_box_css = (
+                            f"left:{_cap_x + _cap_w // 2}px; transform:translateX(-50%); "
+                            f"max-width:{int(_cap_w * 0.85)}px; "
+                        )
                     html = (
                         f'<div style="width:100%; height:100%; position:relative;">'
-                        f'<div style="position:absolute; left:50%; transform:translateX(-50%); '
-                        f'max-width:85%; padding:10px 20px; border-radius:8px; '
+                        f'<div style="position:absolute; {_pill_box_css}'
+                        f'padding:10px 20px; border-radius:8px; '
                         f'background:{style["background_color"]}; text-align:center; '
                         f'font-family:{font_family_css}; '
                         f'font-size:{font_size}px; font-weight:{font_weight}; color:{font_color}; '

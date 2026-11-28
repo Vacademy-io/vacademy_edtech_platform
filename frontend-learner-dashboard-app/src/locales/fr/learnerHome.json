@@ -1,0 +1,67 @@
+{
+  "carousel": {
+    "roleCarousel": "carrousel",
+    "roleSlide": "diapositive",
+    "label": "À la une",
+    "play": "Lire les diapositives",
+    "pause": "Mettre les diapositives en pause",
+    "slideOf": "{{n}} sur {{count}}",
+    "previous": "Diapositive précédente",
+    "next": "Diapositive suivante",
+    "chooseSlide": "Choisir une diapositive",
+    "showSlide": "Afficher la diapositive {{n}} sur {{count}}",
+    "openSlide": "Ouvrir la bannière {{n}} sur {{count}}"
+  },
+  "shortcuts": {
+    "label": "Raccourcis"
+  },
+  "shelf": {
+    "seeAll": "Tout voir",
+    "enrolled": "Inscrit",
+    "free": "Gratuit"
+  },
+  "notice": {
+    "dismiss": "Masquer l’avis",
+    "readOn": "Lu le {{date}}",
+    "read": "Lu",
+    "ackDefault": "J’ai lu ceci",
+    "dismissFailed": "Impossible de masquer l’avis. Veuillez réessayer.",
+    "ackFailed": "Impossible d’enregistrer votre lecture. Veuillez réessayer."
+  },
+  "event": {
+    "liveNow": "En direct",
+    "startsOn": "Commence le {{when}}",
+    "startsInDays": "Commence dans {{days}} j {{hours}} h",
+    "startsInHours": "Commence dans {{hours}} h {{minutes}} min",
+    "startsInMinutes": "Commence dans {{minutes}} min",
+    "startsInSeconds": "Commence dans {{seconds}} s",
+    "register": "S’inscrire",
+    "join": "Rejoindre"
+  },
+  "builtin": {
+    "HERO": "Accueil et cours en direct",
+    "PINS": "Annonces",
+    "NOTEBOOK_REVIEW": "Révision du carnet",
+    "COMPANIONS": "Compagnons d’étude",
+    "TODAY_TASKS": "Tâches du jour",
+    "CONTINUE_LEARNING": "Continuer l’apprentissage",
+    "ENROLLED_COURSES": "Mes cours",
+    "STATS_ROW": "Nombre de cours, de classes et de tests",
+    "LEARNING_ANALYTICS": "Progrès d’apprentissage",
+    "MY_MEMBERSHIP": "Mon abonnement",
+    "MY_BOOKS": "Mes livres",
+    "MY_ORDERS": "Mes commandes",
+    "UPCOMING_LIVE_CLASSES": "Prochains cours en direct",
+    "THIS_WEEK_ATTENDANCE": "Présence de la semaine",
+    "MY_MENTORS": "Mes mentors",
+    "GET_APP": "Obtenir l’application",
+    "GAMIFICATION": "Points et badges",
+    "RAISE_QUERY": "Poser une question",
+    "EXPLORE_BUTTONS": "Boutons Explorer",
+    "placeholderNote": "Affiche les informations propres à chaque apprenant"
+  },
+  "preview": {
+    "header": "Salutation et date",
+    "waiting": "En attente du brouillon de l’éditeur…"
+  }
+}

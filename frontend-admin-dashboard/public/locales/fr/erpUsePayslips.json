@@ -1,0 +1,5 @@
+{
+    "blockedCancelled": "Ce cycle a été annulé, il n'y a donc aucun bulletin de paie à émettre pour lui. Créez plutôt un nouveau cycle pour ce mois.",
+    "blockedNotProcessed": "Les bulletins de paie sont générés à partir des écritures calculées, le cycle doit donc d'abord être traité. Traitez-le depuis la barre d'actions ci-dessus, puis revenez.",
+    "generatedFallback": "Bulletins de paie générés."
+}

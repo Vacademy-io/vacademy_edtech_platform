@@ -8,17 +8,21 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import vacademy.io.notification_service.features.announcements.dto.CreateAnnouncementRequest;
+import vacademy.io.notification_service.features.announcements.security.InternalClientGuard;
 import vacademy.io.notification_service.features.announcements.service.AnnouncementService;
 import vacademy.io.notification_service.features.announcements.service.AnnouncementRecoveryService;
 
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Service-to-service announcement endpoints (other services raise bell alerts through
+ * {@code /multiple}). Every call must carry the service's clientName + Signature headers.
+ */
 @RestController
 @RequestMapping("/notification-service/v1/announcements/admin")
 @RequiredArgsConstructor
 @Slf4j
-@CrossOrigin(origins = "*") // For internal service communication
 @Validated
 public class AnnouncementInternalController {
 
@@ -28,8 +32,15 @@ public class AnnouncementInternalController {
     @Autowired
     private AnnouncementRecoveryService recoveryService;
 
+    @Autowired
+    private InternalClientGuard internalClientGuard;
+
     @PostMapping("/multiple")
-    public ResponseEntity<String> createAnnouncements(@Valid @RequestBody List<CreateAnnouncementRequest> requests) {
+    public ResponseEntity<String> createAnnouncements(
+            @RequestHeader(value = "clientName", required = false) String clientName,
+            @RequestHeader(value = "Signature", required = false) String signature,
+            @Valid @RequestBody List<CreateAnnouncementRequest> requests) {
+        internalClientGuard.requireInternalClient(clientName, signature);
 
         for(CreateAnnouncementRequest request:requests){
             try {
@@ -51,7 +62,11 @@ public class AnnouncementInternalController {
      * @return Recovery status with pending/delivered/failed message counts
      */
     @PostMapping("/{announcementId}/restart")
-    public ResponseEntity<Map<String, Object>> restartAnnouncement(@PathVariable String announcementId) {
+    public ResponseEntity<Map<String, Object>> restartAnnouncement(
+            @RequestHeader(value = "clientName", required = false) String clientName,
+            @RequestHeader(value = "Signature", required = false) String signature,
+            @PathVariable String announcementId) {
+        internalClientGuard.requireInternalClient(clientName, signature);
         log.info("=== RESTART ENDPOINT CALLED ===");
         log.info("Received request to restart announcement: {}", announcementId);
         log.info("Request path: /notification-service/v1/announcements/admin/{}/restart", announcementId);
@@ -92,7 +107,11 @@ public class AnnouncementInternalController {
      * @return Status breakdown with message counts and progress
      */
     @GetMapping("/{announcementId}/recovery-status")
-    public ResponseEntity<Map<String, Object>> getRecoveryStatus(@PathVariable String announcementId) {
+    public ResponseEntity<Map<String, Object>> getRecoveryStatus(
+            @RequestHeader(value = "clientName", required = false) String clientName,
+            @RequestHeader(value = "Signature", required = false) String signature,
+            @PathVariable String announcementId) {
+        internalClientGuard.requireInternalClient(clientName, signature);
         log.info("=== RECOVERY STATUS ENDPOINT CALLED ===");
         log.info("Received request to get recovery status for announcement: {}", announcementId);
         log.info("Request path: /notification-service/v1/announcements/admin/{}/recovery-status", announcementId);

@@ -5,12 +5,15 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import io.netty.channel.ChannelOption;
 import org.springframework.http.MediaType;
+import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Mono;
+import reactor.netty.http.client.HttpClient;
 import vacademy.io.common.auth.dto.UserDTO;
 import vacademy.io.common.exceptions.VacademyException;
 import vacademy.io.common.payment.dto.CashfreeRequestDTO;
@@ -39,6 +42,14 @@ public class CashfreePaymentManager implements PaymentServiceStrategy {
     private static final String CASHFREE_PRODUCTION_API_BASE = "https://api.cashfree.com/pg";
 
     private final WebClient webClient;
+    /**
+     * Same as {@link #webClient} with a 5 s connect and 10 s response timeout, for the order
+     * read-back that confirms webhooks ({@link #fetchOrder}). Create-order keeps {@link #webClient}.
+     */
+    private final WebClient boundedWebClient;
+
+    static final int CHECK_CONNECT_TIMEOUT_MS = 5_000;
+    static final java.time.Duration CHECK_RESPONSE_TIMEOUT = java.time.Duration.ofSeconds(10);
     private final ObjectMapper objectMapper;
 
     /**
@@ -53,6 +64,11 @@ public class CashfreePaymentManager implements PaymentServiceStrategy {
     private String defaultReturnUrl;
 
     public CashfreePaymentManager(WebClient.Builder webClientBuilder, ObjectMapper objectMapper) {
+        this.boundedWebClient = webClientBuilder.clone()
+                .clientConnector(new ReactorClientHttpConnector(HttpClient.create()
+                        .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, CHECK_CONNECT_TIMEOUT_MS)
+                        .responseTimeout(CHECK_RESPONSE_TIMEOUT)))
+                .build();
         this.webClient = webClientBuilder.build();
         this.objectMapper = objectMapper;
     }
@@ -128,7 +144,47 @@ public class CashfreePaymentManager implements PaymentServiceStrategy {
         }
     }
 
-    private Map<String, Object> buildOrderPayload(UserDTO user, PaymentInitiationRequestDTO request) {
+    /**
+     * Reads an order back from Cashfree: {@code GET {baseUrl}/orders/{order_id}} with the
+     * same credentials and API version as create-order. Used to confirm a webhook's claim
+     * against the gateway before a payment is marked paid. Throws on any error, including
+     * a missing order, so the caller can tell "not paid" from "could not ask". 5 s connect and
+     * 10 s response timeout, 15 s overall.
+     */
+    public CashfreeOrderStatus fetchOrder(String orderId, Map<String, Object> paymentGatewaySpecificData) {
+        if (!StringUtils.hasText(orderId)) {
+            throw new VacademyException("Cashfree order id is required");
+        }
+        if (paymentGatewaySpecificData == null) {
+            throw new VacademyException("Cashfree configuration is missing.");
+        }
+        String appId = (String) paymentGatewaySpecificData.get("clientId");
+        String secretKey = (String) paymentGatewaySpecificData.get("clientSecret");
+        String baseUrl = (String) paymentGatewaySpecificData.get("baseUrl");
+        if (!StringUtils.hasText(baseUrl)) {
+            baseUrl = CASHFREE_PRODUCTION_API_BASE;
+        }
+        if (!StringUtils.hasText(appId) || !StringUtils.hasText(secretKey)) {
+            throw new VacademyException("Cashfree clientId or clientSecret is missing in configuration.");
+        }
+
+        CashfreeOrderStatus order = boundedWebClient.get()
+                .uri(baseUrl + "/orders/{orderId}", orderId)
+                .header("x-client-id", appId)
+                .header("x-client-secret", secretKey)
+                .header("x-api-version", "2025-01-01")
+                .retrieve()
+                .bodyToMono(CashfreeOrderStatus.class)
+                .onErrorResume(WebClientResponseException.class, ex -> Mono.error(new VacademyException(
+                        "Cashfree get order failed with status " + ex.getStatusCode().value())))
+                .block(java.time.Duration.ofSeconds(15));
+        if (order == null || !StringUtils.hasText(order.getOrderStatus())) {
+            throw new VacademyException("Empty response from Cashfree get order API.");
+        }
+        return order;
+    }
+
+    Map<String, Object> buildOrderPayload(UserDTO user, PaymentInitiationRequestDTO request) {
         Map<String, Object> payload = new HashMap<>();
         payload.put("order_id", request.getOrderId());
         payload.put("order_amount", request.getAmount());
@@ -336,6 +392,46 @@ public class CashfreePaymentManager implements PaymentServiceStrategy {
 
         public void setOrderStatus(String orderStatus) {
             this.orderStatus = orderStatus;
+        }
+    }
+
+    /** The fields of Cashfree's order entity that the webhook check compares. */
+    @com.fasterxml.jackson.annotation.JsonIgnoreProperties(ignoreUnknown = true)
+    public static class CashfreeOrderStatus {
+        @JsonProperty("order_id")
+        private String orderId;
+        @JsonProperty("order_status")
+        private String orderStatus;
+        @JsonProperty("order_amount")
+        private java.math.BigDecimal orderAmount;
+        @JsonProperty("order_currency")
+        private String orderCurrency;
+
+        public CashfreeOrderStatus() {
+        }
+
+        public CashfreeOrderStatus(String orderId, String orderStatus, java.math.BigDecimal orderAmount,
+                String orderCurrency) {
+            this.orderId = orderId;
+            this.orderStatus = orderStatus;
+            this.orderAmount = orderAmount;
+            this.orderCurrency = orderCurrency;
+        }
+
+        public String getOrderId() {
+            return orderId;
+        }
+
+        public String getOrderStatus() {
+            return orderStatus;
+        }
+
+        public java.math.BigDecimal getOrderAmount() {
+            return orderAmount;
+        }
+
+        public String getOrderCurrency() {
+            return orderCurrency;
         }
     }
 }

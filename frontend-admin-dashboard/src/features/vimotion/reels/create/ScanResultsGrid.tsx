@@ -146,7 +146,7 @@ export function ScanResultsGrid({
 
             {/* Sticky action bar — only when selection is non-empty */}
             {selectedCount > 0 && (
-                <div className="pointer-events-none fixed inset-x-0 bottom-0 z-30 flex justify-center px-6 pb-6">
+                <div data-assistant-fab="avoid-phone" className="pointer-events-none fixed inset-x-0 bottom-0 z-30 flex justify-center px-6 pb-6">
                     <div className="pointer-events-auto flex items-center gap-4 rounded-2xl border border-neutral-200 bg-white px-5 py-3 shadow-xl">
                         <div className="text-sm">
                             <p className="font-medium text-neutral-900">

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { Cross2Icon } from "@radix-ui/react-icons";
 import { MyButton } from "@/components/design-system/button";
@@ -6,7 +7,10 @@ import { SpinnerGap, User, Envelope, Phone, CaretRight, CheckCircle } from "@pho
 import PhoneInput from "react-phone-input-2";
 import "react-phone-input-2/lib/bootstrap.css";
 import { isValidPhoneValue } from "@/lib/phone-validation";
-import { getCachedPreferredCountries } from "@/services/domain-routing";
+import {
+    phoneFieldHasInput,
+    usePreferredPhoneCountries,
+} from "@/hooks/use-preferred-phone-countries";
 import { getAccessToken, isTokenExpired } from "@/lib/auth/sessionUtility";
 import { Preferences } from "@capacitor/preferences";
 import {
@@ -20,7 +24,7 @@ import {
     INSTITUTE_ID,
 } from "@/constants/urls";
 import { getTerminology } from "@/components/common/layout-container/sidebar/utils";
-import { RoleTerms, SystemTerms } from "@/types/naming-settings";
+import { ContentTerms, RoleTerms, SystemTerms } from "@/types/naming-settings";
 import { getBooksPreferenceFieldId } from "../../-services/custom-fields-service";
 import { toast } from "sonner";
 import axios from "axios";
@@ -28,10 +32,39 @@ import { performFullAuthCycle } from "@/services/auth-cycle-service";
 import { loginEnrolledUser } from "@/services/signup-api";
 import { AddressForm, AddressFormHandle } from "./AddressForm";
 import {
-    ResolvedCharge,
+    ChargeLine,
     buildChargeEnrollmentEntries,
     sumChargeAmounts,
 } from "../../-utils/additional-charges-util";
+import {
+    DEPOSIT_MISSING_TOKEN,
+    DEPOSIT_NOT_DUE_TOKEN,
+    InvitePlan,
+    RentMembershipLine,
+    buildRentV2Payload,
+    findDepositErrorToken,
+    invitePlanOf,
+    planDepositRetry,
+    rentBooksPreferenceValue,
+    rentMembershipPrice,
+    rentOrderAmount,
+    rentRequestedBookPackageSessionIds,
+} from "../../-utils/rent-checkout-payload";
+import { clearPendingCheckout, useCartStore } from "../../-stores/cart-store";
+import { pollPaymentOutcome } from "../../-utils/payment-confirmation";
+import { releaseStockHold } from "@/components/common/enroll-by-invite/-services/enroll-invite-services";
+
+/**
+ * Notes the order whose payment is still to be confirmed, with when it was
+ * started and which cart it came from, so the cart page can finish the check
+ * after a reload (and empty the right cart) and give up on an order that never
+ * settles.
+ */
+const markPendingOrder = (orderId: string, cartMode: "buy" | "rent") => {
+    localStorage.setItem("pendingOrderId", orderId);
+    localStorage.setItem("pendingOrderCreatedAt", String(Date.now()));
+    localStorage.setItem("pendingCartMode", cartMode);
+};
 
 interface CheckoutFormProps {
     open: boolean;
@@ -41,7 +74,26 @@ interface CheckoutFormProps {
     items: any[];
     membershipPlan?: any;
     isRentMode?: boolean;
-    additionalCharges?: ResolvedCharge[];
+    /** The charges this order pays: buy-mode shipping, or the rent-mode charges still due. */
+    additionalCharges?: ChargeLine[];
+    /** Rent only: the catalogue links a rent-mode charge (even one this learner no longer
+     *  owes), so the order goes through the v2 multi-item endpoint. False keeps the v1 call. */
+    rentChargesLinked?: boolean;
+    /** Rent only: every rent-mode charge the catalogue links, due or not. A checkout the
+     *  server answers "deposit missing" adds the once-per-user ones left out back from here. */
+    linkedRentCharges?: ChargeLine[];
+    /** Rent only: the server said the learner already paid these once-per-user charges, so
+     *  the cart stops showing them. */
+    onRentChargesWaived?: (chargeKeys: string[]) => void;
+    /** Rent only: the server said the learner still owes these once-per-user charges (the
+     *  cart had them as paid), so the cart shows them again. */
+    onRentChargesDue?: (chargeKeys: string[]) => void;
+    /** The storefront catalogue tag the learner is on. A buy checkout (and a rent one with
+     *  charges) sends it so the server checks the charges against that catalogue. */
+    catalogueTag?: string;
+    /** The page editor's preview: nothing is sent (no real enrolment,
+     *  payment, lead or paid WhatsApp OTP from an editor trying the cart). */
+    isPreviewMode?: boolean;
 }
 
 export const CheckoutForm: React.FC<CheckoutFormProps> = ({
@@ -53,7 +105,21 @@ export const CheckoutForm: React.FC<CheckoutFormProps> = ({
     membershipPlan,
     isRentMode = false,
     additionalCharges = [],
+    rentChargesLinked = false,
+    linkedRentCharges = [],
+    onRentChargesWaived,
+    onRentChargesDue,
+    catalogueTag,
+    isPreviewMode = false,
 }) => {
+    const { t } = useTranslation("coursePlayerB");
+    const { t: tPreview } = useTranslation("coursePlayerA");
+    /** True (and says so) when this is the editor's preview: send nothing. */
+    const heldInPreview = (): boolean => {
+        if (!isPreviewMode) return false;
+        toast.info(tPreview("courseCataloguePage.previewFormNotSent"));
+        return true;
+    };
     const [email, setEmail] = useState("");
     const [fullName, setFullName] = useState("");
     const [phone, setPhone] = useState("");
@@ -68,6 +134,9 @@ export const CheckoutForm: React.FC<CheckoutFormProps> = ({
     }>({});
     const addressFormRef = React.useRef<AddressFormHandle>(null);
     const [loading, setLoading] = useState(false);
+    // True once Razorpay accepted a payment that the server has not confirmed yet:
+    // the learner must not pay a second time while it settles.
+    const [awaitingConfirmation, setAwaitingConfirmation] = useState(false);
     const [isInitializing, setIsInitializing] = useState(false);
     const [phoneOtpSent, setPhoneOtpSent] = useState(false);
     const [isPhoneVerified, setIsPhoneVerified] = useState(false);
@@ -79,29 +148,54 @@ export const CheckoutForm: React.FC<CheckoutFormProps> = ({
     const [emailError, setEmailError] = useState("");
     const [phoneError, setPhoneError] = useState("");
 
-    // Institute-configured preferred countries (sourced from domain routing).
-    // First entry is the default selected country; the full list orders the dropdown.
-    const preferredCountries = React.useMemo(() => {
-        const cached = getCachedPreferredCountries();
-        return cached.length > 0 ? cached : ["in", "us", "gb", "au", "ae"];
-    }, []);
-    const defaultPhoneCountry = preferredCountries[0] ?? "in";
+    // What this phone field starts on: the institute's configured preferred
+    // countries, or — when it configured none, or the portal is on GEO_FIRST —
+    // the country the visitor is opening this page from.
+    //
+    // A hook rather than a one-shot read: these pages are public and routinely
+    // render before domain routing replies, which used to leave the field on the
+    // platform fallback (+91) for every visitor. It takes the institute's answer
+    // whenever it lands, and never once a number has been typed into the box.
+    const { defaultCountry: defaultPhoneCountry, preferredCountries } =
+        usePreferredPhoneCountries({ freeze: phoneFieldHasInput(phone) });
     const [nameError, setNameError] = useState("");
 
-    const [paymentPlanData, setPaymentPlanData] = useState<any>(null);
+    // The invite's resolved plan (what `plan_id` sends), with its price, read when the dialog opens.
+    const [paymentPlanData, setPaymentPlanData] = useState<InvitePlan | null>(null);
     // Per-item plan data: maps enrollInviteId -> { planId, paymentOptionId }
     const [perItemPlanData, setPerItemPlanData] = useState<Record<string, { planId: string; paymentOptionId: string }>>({});
     const otpInputRef = React.useRef<HTMLInputElement>(null);
 
+    const clearCart = useCartStore((state) => state.clearCart);
+
+    // What the labels count: copies in buy mode (4 copies of one book are 4 items),
+    // titles in rent mode (a rented book has no quantity).
+    const itemCount = isRentMode
+        ? items.length
+        : items.reduce((sum, item) => sum + (item.quantity || 1), 0);
+
     const targetInviteId = membershipPlan?.enrollInviteId ||
         (items.length > 0 ? items[0]?.enrollInviteId : null);
+
+    // What the order costs. A rent order with charges (v2) prices its membership line from the
+    // plan actually sent — the invite's plan, read when this dialog opened — not the price the
+    // cart remembered when the plan was picked (it may be stale, or not that plan's). Every
+    // other checkout keeps the cart's total, exactly as before.
+    const isRentV2 = isRentMode && rentChargesLinked;
+    const cartPlanPrice = totalAmount - sumChargeAmounts(additionalCharges);
+    const summaryPlanPrice = isRentV2
+        ? rentMembershipPrice(paymentPlanData?.actualPrice, cartPlanPrice)
+        : cartPlanPrice;
+    const summaryTotal = isRentV2 ? rentOrderAmount(summaryPlanPrice, additionalCharges) : totalAmount;
+    const formatRupees = (amount: number) =>
+        `₹${Number.isInteger(amount) ? amount : amount.toFixed(2)}`;
 
     // Add validation
     useEffect(() => {
         if (!open || !targetInviteId) {
             if (open && !targetInviteId) {
                 console.error("[CheckoutForm] No valid enrollInviteId found");
-                toast.error("Missing enrollment information");
+                toast.error(t("checkoutForm.toast.missingEnrollmentInfo"));
             }
             return;
         }
@@ -193,30 +287,23 @@ export const CheckoutForm: React.FC<CheckoutFormProps> = ({
         )
             .then(results => {
                 const perItemData: Record<string, { planId: string; paymentOptionId: string }> = {};
-                let firstPlanData: any = null;
+                let firstPlanData: InvitePlan | null = null;
 
                 for (const result of results) {
                     if (!result) continue;
                     const { inviteId, data } = result;
 
-                    if (data.package_session_to_payment_options?.length > 0) {
-                        const firstOption = data.package_session_to_payment_options[0];
-                        const plans = firstOption.payment_option.payment_plans;
-                        if (plans?.length > 0) {
-                            perItemData[inviteId] = {
-                                planId: plans[0].id,
-                                paymentOptionId: firstOption.payment_option.id,
-                            };
+                    // The invite's first option's first plan, with its price.
+                    const invitePlan = invitePlanOf(data, inviteId);
+                    if (invitePlan) {
+                        perItemData[inviteId] = {
+                            planId: invitePlan.planId,
+                            paymentOptionId: invitePlan.paymentOptionId,
+                        };
 
-                            // Use first result as the shared paymentPlanData (for vendorId, rent mode, etc.)
-                            if (!firstPlanData) {
-                                firstPlanData = {
-                                    planId: plans[0].id,
-                                    paymentOptionId: firstOption.payment_option.id,
-                                    enrollInviteId: firstOption.enroll_invite_id || data.id,
-                                    vendorId: data.vendor_id || "RAZORPAY"
-                                };
-                            }
+                        // Use first result as the shared paymentPlanData (for vendorId, rent mode, etc.)
+                        if (!firstPlanData) {
+                            firstPlanData = invitePlan;
                         }
                     }
                 }
@@ -229,7 +316,7 @@ export const CheckoutForm: React.FC<CheckoutFormProps> = ({
             })
             .catch(err => {
                 console.error("[CheckoutForm] Failed to fetch enrollment details:", err);
-                toast.error("Failed to load payment options. Please try again.");
+                toast.error(t("checkoutForm.toast.loadPaymentOptionsFailed"));
             })
             .finally(() => {
                 setIsInitializing(false);
@@ -246,8 +333,9 @@ export const CheckoutForm: React.FC<CheckoutFormProps> = ({
     const validatePhone = (phone: string): boolean => isValidPhoneValue(phone);
 
     const handleSendPhoneOTP = async () => {
+        if (heldInPreview()) return;
         if (!phone.trim() || !validatePhone(phone)) {
-            setPhoneError("Valid phone number is required to send OTP");
+            setPhoneError(t("checkoutForm.errors.phoneRequiredOtp"));
             return;
         }
 
@@ -265,18 +353,19 @@ export const CheckoutForm: React.FC<CheckoutFormProps> = ({
             );
 
             setPhoneOtpSent(true);
-            toast.success("OTP sent to your WhatsApp");
+            toast.success(t("checkoutForm.toast.otpSentWhatsapp"));
         } catch (error) {
             console.error("Failed to send WhatsApp OTP:", error);
-            toast.error("Failed to send OTP. Please try again");
+            toast.error(t("checkoutForm.toast.otpSendFailed"));
         } finally {
             setIsLoadingPhoneOtp(false);
         }
     };
 
     const handleVerifyPhoneOTP = async () => {
+        if (heldInPreview()) return;
         if (!otp.trim()) {
-            toast.error("Please enter the OTP");
+            toast.error(t("checkoutForm.errors.otpRequired"));
             return;
         }
 
@@ -298,16 +387,17 @@ export const CheckoutForm: React.FC<CheckoutFormProps> = ({
             setPhoneOtpSent(false);
             setOtp("");
             setPhoneError("");
-            toast.success("Phone verified successfully");
+            toast.success(t("checkoutForm.toast.phoneVerified"));
         } catch (error) {
             console.error("Failed to verify WhatsApp OTP:", error);
-            toast.error("Invalid OTP. Please try again");
+            toast.error(t("checkoutForm.toast.otpInvalid"));
         } finally {
             setIsVerifyingPhoneOtp(false);
         }
     };
 
     const handleCheckout = async () => {
+        if (heldInPreview()) return;
         let hasErrors = false;
         setEmailError("");
         setPhoneError("");
@@ -315,21 +405,21 @@ export const CheckoutForm: React.FC<CheckoutFormProps> = ({
 
         if (showFullForm) {
             if (!fullName.trim()) {
-                setNameError("Full name is required");
+                setNameError(t("checkoutForm.errors.fullNameRequired"));
                 hasErrors = true;
             }
             if (!email.trim() || !validateEmail(email)) {
-                setEmailError("Valid email is required");
+                setEmailError(t("checkoutForm.errors.emailRequired"));
                 hasErrors = true;
             }
             if (!phone.trim() || !validatePhone(phone)) {
-                setPhoneError("Valid phone number is required");
+                setPhoneError(t("checkoutForm.errors.phoneRequired"));
                 hasErrors = true;
             }
         }
 
         if (!isPhoneVerified) {
-            setPhoneError("Phone verification is required");
+            setPhoneError(t("checkoutForm.errors.phoneVerificationRequired"));
             hasErrors = true;
         }
         // AddressForm renders its own field-level errors when validate() runs.
@@ -342,11 +432,12 @@ export const CheckoutForm: React.FC<CheckoutFormProps> = ({
         const addressValue = addressFormRef.current!.getValue();
 
         setLoading(true);
+        // The payment log the enroll call creates (its `payment_response.order_id`).
+        // The stock for the order is held from then until it is paid or released.
+        let paymentLogId: string | null = null;
+        let razorpayOpened = false;
         try {
             const orderId = `book_order_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-
-            // Store order_id in localStorage for verification on return
-            localStorage.setItem("pendingOrderId", orderId);
 
             // Common user payload
             const userPayload = {
@@ -370,77 +461,173 @@ export const CheckoutForm: React.FC<CheckoutFormProps> = ({
             const redirectUrl = window.location.href;
 
             let response;
+            // What Razorpay is told the order costs when the server's answer omits it.
+            let orderAmount = totalAmount;
 
             if (isRentMode) {
-                // ============ RENT MODE: Use v1 API with custom_field_values ============
                 console.log("[CheckoutForm] Processing RENT mode checkout");
 
                 // Fetch the "Books Preference" custom field ID
                 const booksPreferenceFieldId = await getBooksPreferenceFieldId(instituteId);
 
                 if (!booksPreferenceFieldId) {
-                    throw new Error("Unable to find Books Preference custom field. Please contact support.");
+                    throw new Error(t("checkoutForm.errors.booksPreferenceMissing"));
                 }
 
                 // Build the books preference value - only the book names (titles)
-                const bookNames = items.map(item => item.title || item.name || "Unknown Book");
-                const booksPreferenceValue = bookNames.join(", ");
+                const booksPreferenceValue = rentBooksPreferenceValue(items);
 
                 console.log("[CheckoutForm] Books preference value (names only):", booksPreferenceValue);
 
-                // Use membership plan for Rent mode
-                const sessionIds = membershipPlan?.packageSessionId
-                    ? [membershipPlan.packageSessionId]
-                    : [];
+                // The rent package session of each chosen book: the server holds one
+                // of each while the learner pays. De-duplicated, blanks dropped.
+                const requestedBookPackageSessionIds = rentRequestedBookPackageSessionIds(items);
 
-                const rentPayload = {
-                    user: {
+                if (rentChargesLinked) {
+                    // ============ RENT MODE WITH CHARGES: v2 API, membership + charge entries ============
+                    // The membership must enroll by real ids: the server prices the order from them.
+                    // ...and those ids must be this plan's invite (not one read for an earlier pick).
+                    if (
+                        !membershipPlan?.packageSessionId ||
+                        !paymentPlanData?.planId ||
+                        !paymentPlanData?.paymentOptionId ||
+                        paymentPlanData.inviteId !== targetInviteId
+                    ) {
+                        throw new Error(t("checkoutForm.toast.loadPaymentOptionsFailed"));
+                    }
+                    const membership: RentMembershipLine = {
+                        packageSessionId: membershipPlan.packageSessionId,
+                        planId: paymentPlanData.planId,
+                        paymentOptionId: paymentPlanData.paymentOptionId,
+                        enrollInviteId: paymentPlanData.enrollInviteId || membershipPlan.enrollInviteId,
+                        // The price of the plan sent (the server checks the line against it).
+                        price: summaryPlanPrice,
+                    };
+                    const rentUser = {
                         ...userPayload,
                         username: email.split('@')[0],
                         mobile_number: phone,
                         root_user: true,
-                    },
-                    institute_id: instituteId,
-                    subject_id: "",
-                    vendor_id: "RAZORPAY",
-                    learner_package_session_enroll: {
-                        package_session_ids: sessionIds,
-                        plan_id: paymentPlanData?.planId || membershipPlan?.id || items[0]?.id,
-                        payment_option_id: paymentPlanData?.paymentOptionId || "default",
-                        enroll_invite_id: paymentPlanData?.enrollInviteId || membershipPlan?.enrollInviteId || items[0]?.enrollInviteId || items[0]?.id,
-                        payment_initiation_request: {
-                            amount: totalAmount,
-                            currency: "INR",
-                            description: `Rent subscription for ${items.length} books`,
-                            charge_automatically: true,
-                            institute_id: instituteId,
-                            order_id: orderId,
-                            redirect_url: redirectUrl,
-                            razorpay_request: {
-                                redirect_url: redirectUrl
+                    };
+                    const submitRentOrder = (charges: ChargeLine[]) => {
+                        const payload = buildRentV2Payload({
+                            user: rentUser,
+                            instituteId,
+                            catalogueTag,
+                            membership,
+                            booksPreferenceFieldId,
+                            books: items,
+                            charges,
+                            redirectUrl,
+                        });
+                        orderAmount = payload.payment_initiation_request.amount;
+                        console.log("[CheckoutForm] Sending RENT (v2) Checkout Payload:", payload);
+                        return axios.post(ENROLLMENT_PAYMENT_INITIATION_V2, payload, {
+                            headers: {
+                                "Content-Type": "application/json",
+                                "clientId": instituteId,
+                                "X-Institute-Id": instituteId
                             }
-                        },
-                        custom_field_values: [
-                            {
-                                custom_field_id: booksPreferenceFieldId,
-                                value: booksPreferenceValue
-                            }
-                        ],
-                    },
-                };
+                        });
+                    };
 
-                console.log("[CheckoutForm] Sending RENT Checkout Payload:", rentPayload);
-
-                response = await axios.post(
-                    ENROLLMENT_PAYMENT_INITIATION,
-                    rentPayload,
-                    {
-                        headers: {
-                            "clientId": instituteId,
-                            "X-Institute-Id": instituteId
+                    try {
+                        response = await submitRentOrder(additionalCharges);
+                    } catch (firstError) {
+                        // The server decides whether a once-per-user charge is due, for the person
+                        // the typed phone / email belong to. When it disagrees with the cart, fix the
+                        // charges and place the order again — once per click, whichever way it
+                        // disagreed. A second refusal goes to the error handling below.
+                        const retry = planDepositRetry(
+                            findDepositErrorToken(firstError),
+                            additionalCharges,
+                            linkedRentCharges,
+                        );
+                        if (!retry) throw firstError;
+                        const changedKeys = retry.changed.map((charge) => charge.key);
+                        const total = formatRupees(rentOrderAmount(membership.price, retry.charges));
+                        if (retry.token === DEPOSIT_NOT_DUE_TOKEN) {
+                            onRentChargesWaived?.(changedKeys);
+                            toast.info(
+                                t("checkoutForm.toast.chargeNotDue", {
+                                    label: retry.changed.map((charge) => charge.label).join(", "),
+                                    total,
+                                }),
+                                { duration: 6000 },
+                            );
+                        } else {
+                            onRentChargesDue?.(changedKeys);
+                            const values = {
+                                label: retry.changed.map((charge) => charge.label).join(", "),
+                                amount: formatRupees(sumChargeAmounts(retry.changed)),
+                                total,
+                            };
+                            toast.info(
+                                retry.changed.every((charge) => charge.refundable)
+                                    ? t("checkoutForm.toast.chargeAddedRefundable", values)
+                                    : t("checkoutForm.toast.chargeAdded", values),
+                                { duration: 8000 },
+                            );
                         }
+                        response = await submitRentOrder(retry.charges);
                     }
-                );
+                } else {
+                    // ============ RENT MODE: Use v1 API with custom_field_values ============
+                    // Use membership plan for Rent mode
+                    const sessionIds = membershipPlan?.packageSessionId
+                        ? [membershipPlan.packageSessionId]
+                        : [];
+
+                    const rentPayload = {
+                        user: {
+                            ...userPayload,
+                            username: email.split('@')[0],
+                            mobile_number: phone,
+                            root_user: true,
+                        },
+                        institute_id: instituteId,
+                        subject_id: "",
+                        vendor_id: "RAZORPAY",
+                        learner_package_session_enroll: {
+                            package_session_ids: sessionIds,
+                            plan_id: paymentPlanData?.planId || membershipPlan?.id || items[0]?.id,
+                            payment_option_id: paymentPlanData?.paymentOptionId || "default",
+                            enroll_invite_id: paymentPlanData?.enrollInviteId || membershipPlan?.enrollInviteId || items[0]?.enrollInviteId || items[0]?.id,
+                            requested_book_package_session_ids: requestedBookPackageSessionIds,
+                            payment_initiation_request: {
+                                amount: totalAmount,
+                                currency: "INR",
+                                description: `Rent subscription for ${items.length} books`,
+                                charge_automatically: true,
+                                institute_id: instituteId,
+                                order_id: orderId,
+                                redirect_url: redirectUrl,
+                                razorpay_request: {
+                                    redirect_url: redirectUrl
+                                }
+                            },
+                            custom_field_values: [
+                                {
+                                    custom_field_id: booksPreferenceFieldId,
+                                    value: booksPreferenceValue
+                                }
+                            ],
+                        },
+                    };
+
+                    console.log("[CheckoutForm] Sending RENT Checkout Payload:", rentPayload);
+
+                    response = await axios.post(
+                        ENROLLMENT_PAYMENT_INITIATION,
+                        rentPayload,
+                        {
+                            headers: {
+                                "clientId": instituteId,
+                                "X-Institute-Id": instituteId
+                            }
+                        }
+                    );
+                }
             } else {
                 // ============ BUY MODE: Use v2 API with learner_package_session_enrollments array ============
                 console.log("[CheckoutForm] Processing BUY mode checkout");
@@ -453,7 +640,9 @@ export const CheckoutForm: React.FC<CheckoutFormProps> = ({
                         package_session_id: item.packageSessionId || item.id,
                         plan_id: itemPlan?.planId || paymentPlanData?.planId || item.planId || item.id,
                         payment_option_id: itemPlan?.paymentOptionId || paymentPlanData?.paymentOptionId || item.paymentOptionId || "default",
-                        enroll_invite_id: item.enrollInviteId || item.id
+                        enroll_invite_id: item.enrollInviteId || item.id,
+                        // Copies of this book; the server prices unit price x this.
+                        requested_quantity: item.quantity || 1,
                     };
                 });
 
@@ -474,6 +663,7 @@ export const CheckoutForm: React.FC<CheckoutFormProps> = ({
                     user: userPayload,
                     institute_id: instituteId,
                     vendor_id: "RAZORPAY",
+                    ...(catalogueTag ? { catalogue_tag: catalogueTag } : {}),
                     learner_package_session_enrollments: learnerPackageSessionEnrollments,
                     payment_initiation_request: {
                         amount: calculatedTotalAmount,
@@ -503,16 +693,16 @@ export const CheckoutForm: React.FC<CheckoutFormProps> = ({
 
             console.log("Checkout response data:", response.data);
 
-            // Update local storage if backend returned a different order/transaction ID
-            // Check multiple possible locations for the authoritative ID
+            // The authoritative order ID is the payment log's; the Razorpay order ID is
+            // only a fallback for the note kept for the cart page's later check.
+            paymentLogId = response.data?.payment_response?.order_id || null;
             const backendOrderId =
-                response.data?.payment_response?.order_id ||
+                paymentLogId ||
                 response.data?.payment_response?.response_data?.razorpayOrderId;
 
-            if (backendOrderId && backendOrderId !== orderId) {
-                console.log("Backend generated different Order ID. Updating localStorage:", backendOrderId);
-                localStorage.setItem("pendingOrderId", backendOrderId);
-            }
+            // Noted only now that the server has accepted the order (a refused one,
+            // such as an out-of-stock 409, leaves nothing behind to verify later).
+            markPendingOrder(backendOrderId || orderId, isRentMode ? "rent" : "buy");
 
             // Handle automatic login BEFORE redirection or finishing
             const userUsername = response.data?.user?.username;
@@ -572,29 +762,72 @@ export const CheckoutForm: React.FC<CheckoutFormProps> = ({
                         const script = document.createElement("script");
                         script.src = "https://checkout.razorpay.com/v1/checkout.js";
                         script.onload = () => resolve();
-                        script.onerror = () => reject(new Error("Failed to load Razorpay SDK"));
+                        script.onerror = () => reject(new Error(t("checkoutForm.errors.razorpaySdkLoadFailed")));
                         document.body.appendChild(script);
                     });
                 }
+                // Set when Razorpay reports a payment, so the dismiss that follows it
+                // never gives back stock the learner has just paid for.
+                let paymentSubmitted = false;
                 const options = {
                     key: razorpayKeyId,
-                    amount: response.data?.payment_response?.response_data?.amountDue || (totalAmount * 100),
+                    amount: response.data?.payment_response?.response_data?.amountDue || (orderAmount * 100),
                     currency: response.data?.payment_response?.response_data?.currency || "INR",
-                    name: "Checkout",
-                    description: "Course Enrollment",
+                    name: t("checkoutForm.header.title"),
+                    description: t("checkoutForm.razorpayDescription", {
+                        course: getTerminology(ContentTerms.Course, SystemTerms.Course),
+                    }),
                     order_id: razorpayOrderId,
+                    // Matches the 30 minutes the server holds the stock for an unpaid order.
+                    timeout: 1800,
                     handler: async function (razorpayResponse: any) {
                         console.log("Razorpay payment success:", razorpayResponse);
-                        toast.success("Payment successful!");
-                        
-                        // Wait for a brief moment for backend to process
-                        setTimeout(() => {
-                            if (directAccessToken && directRefreshToken) {
-                                window.location.href = `${targetDashboardUrl}?accessToken=${directAccessToken}&refreshToken=${directRefreshToken}`;
-                            } else {
-                                window.location.href = targetDashboardUrl;
+                        paymentSubmitted = true;
+
+                        // Razorpay only says the learner finished paying. The order is paid
+                        // once the gateway webhook marks the payment log PAID, so wait for
+                        // that before clearing the cart or sending the learner on. Keep the
+                        // button locked meanwhile: the learner must not pay twice.
+                        setLoading(true);
+                        const statusToastId = toast.loading(t("checkoutForm.toast.confirmingPayment"));
+                        // Razorpay accepted a payment, so an earlier failed attempt in the
+                        // same window must not end the wait (see failedIsFinal).
+                        const outcome = paymentLogId
+                            ? await pollPaymentOutcome(paymentLogId, { failedIsFinal: false })
+                            : "pending";
+
+                        if (outcome === "paid") {
+                            try {
+                                await clearCart(isRentMode ? "rent" : "buy");
+                            } catch (clearError) {
+                                console.error("[CheckoutForm] Could not clear the cart after payment:", clearError);
                             }
-                        }, 1000);
+                            clearPendingCheckout();
+                            toast.success(t("checkoutForm.toast.paymentSuccessful"), { id: statusToastId });
+
+                            setTimeout(() => {
+                                if (directAccessToken && directRefreshToken) {
+                                    window.location.href = `${targetDashboardUrl}?accessToken=${directAccessToken}&refreshToken=${directRefreshToken}`;
+                                } else {
+                                    window.location.href = targetDashboardUrl;
+                                }
+                            }, 1000);
+                            return;
+                        }
+
+                        // Not paid: the cart stays and nobody is redirected.
+                        setLoading(false);
+                        if (outcome === "failed") {
+                            toast.error(t("checkoutForm.toast.paymentFailed"), { id: statusToastId });
+                        } else {
+                            // Still settling. pendingOrderId stays, so the cart page finishes
+                            // the check (clears the cart and signs the learner in) when it is paid.
+                            setAwaitingConfirmation(true);
+                            toast.info(t("checkoutForm.toast.paymentPending"), {
+                                id: statusToastId,
+                                duration: 10000,
+                            });
+                        }
                     },
                     prefill: {
                         name: fullName,
@@ -606,22 +839,32 @@ export const CheckoutForm: React.FC<CheckoutFormProps> = ({
                     },
                     modal: {
                         ondismiss: function() {
+                            // After a payment the handler above owns what happens next.
+                            if (paymentSubmitted) return;
+                            // Give the stock held for this unpaid order back straight away.
+                            // Fire and forget: it never throws, and the server expires the
+                            // hold on its own after 30 minutes anyway.
+                            void releaseStockHold(paymentLogId);
                             setLoading(false);
-                            toast.info("Payment cancelled");
+                            toast.info(t("checkoutForm.toast.paymentCancelled"));
                         }
                     }
                 };
 
                 const rzp = new (window as any).Razorpay(options);
+                razorpayOpened = true;
                 rzp.open();
             } else if (response.data && (response.data.responseCode === "SUCCESS" || response.data.status === "SUCCESS")) {
-                toast.success("Checkout successful!");
+                toast.success(t("checkoutForm.toast.checkoutSuccessful"));
+                // Nothing left to pay: the order is placed, so the cart is done with.
+                try {
+                    await clearCart(isRentMode ? "rent" : "buy");
+                } catch (clearError) {
+                    console.error("[CheckoutForm] Could not clear the cart after checkout:", clearError);
+                }
                 // Clean up credentials storage as we are doing direct redirect with tokens potentially
                 localStorage.removeItem("pendingUserEmail");
-                localStorage.removeItem("pendingUserPassword");
-                localStorage.removeItem("pendingOrderId");
-                localStorage.removeItem("pendingAccessToken");
-                localStorage.removeItem("pendingRefreshToken");
+                clearPendingCheckout();
 
                 if (directAccessToken && directRefreshToken) {
                     window.location.href = `${targetDashboardUrl}?accessToken=${directAccessToken}&refreshToken=${directRefreshToken}`;
@@ -634,7 +877,21 @@ export const CheckoutForm: React.FC<CheckoutFormProps> = ({
             }
         } catch (error: any) {
             console.error("Checkout failed:", error);
-            const errorMessage = error.response?.data?.ex || error.response?.data?.message || error.message || "Checkout failed. Please try again.";
+            // The order exists but the payment window never opened: nothing will
+            // pay it, so give its stock back and forget it.
+            if (paymentLogId && !razorpayOpened) {
+                void releaseStockHold(paymentLogId);
+                clearPendingCheckout();
+            }
+            // A rent order the server still says is missing a once-per-user charge after the one
+            // automatic resubmit (or with none left out to add back): no further retry.
+            if (isRentMode && rentChargesLinked && findDepositErrorToken(error) === DEPOSIT_MISSING_TOKEN) {
+                toast.error(t("checkoutForm.toast.chargeMissing"));
+                return;
+            }
+            // The server explains a refusal in `ex`: "Only N left" for a 409 out of
+            // stock, the quantity or shipping problem for a 400.
+            const errorMessage = error.response?.data?.ex || error.response?.data?.message || error.message || t("checkoutForm.toast.checkoutFailedDefault");
             toast.error(errorMessage);
         } finally {
             setLoading(false);
@@ -645,16 +902,16 @@ export const CheckoutForm: React.FC<CheckoutFormProps> = ({
         <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
             <DialogPrimitive.Portal>
                 <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm" />
-                <DialogPrimitive.Content className="fixed start-1/2 top-1/2 z-50 w-pct-95 max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-xl bg-white p-0 shadow-2xl focus:outline-none overflow-hidden flex flex-col max-h-screen-90">
+                <DialogPrimitive.Content className="fixed start-1/2 top-1/2 z-50 w-pct-95 max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-catalogue-lg bg-white p-0 shadow-2xl focus:outline-none overflow-hidden flex flex-col max-h-screen-90">
 
                     {/* Compact Header */}
-                    <div className="bg-primary-600 px-5 py-2 text-white flex justify-between items-center shrink-0">
+                    <div className="border-b border-gray-200 px-4 py-3 text-gray-900 flex justify-between items-center shrink-0">
                         <div>
-                            <h2 className="text-lg font-bold">Checkout</h2>
-                            <p className="text-sm text-black font-medium leading-tight">Complete your information</p>
+                            <h2 className="text-lg font-bold">{t("checkoutForm.header.title")}</h2>
+                            <p className="text-sm text-gray-600 font-medium leading-tight">{t("checkoutForm.header.subtitle")}</p>
                         </div>
                         <button
-                            className="p-1.5 rounded-full hover:bg-white/10 transition-colors"
+                            className="p-1.5 rounded-full text-gray-500 hover:bg-gray-100 hover:text-gray-900 transition-colors"
                             onClick={() => onOpenChange(false)}
                         >
                             <Cross2Icon className="h-5 w-5" />
@@ -665,12 +922,12 @@ export const CheckoutForm: React.FC<CheckoutFormProps> = ({
                         {isInitializing ? (
                             <div className="flex flex-col items-center justify-center py-10 space-y-3">
                                 <SpinnerGap className="h-8 w-8 text-primary-500 animate-spin" />
-                                <p className="text-sm text-gray-500 font-medium">Preparing checkout...</p>
+                                <p className="text-sm text-gray-500 font-medium">{t("checkoutForm.loading")}</p>
                             </div>
                         ) : (
                             <>
                                 {!showFullForm && (
-                                    <div className="bg-primary-50 p-3 rounded-xl border border-primary-100 flex items-start gap-3 mb-2">
+                                    <div className="bg-primary-50 p-3 rounded-catalogue-lg border border-primary-100 flex items-start gap-3 mb-2">
                                         <div className="bg-primary-100 p-2 rounded-full mt-0.5 shrink-0">
                                             <User className="h-4 w-4 text-primary-600" />
                                         </div>
@@ -687,14 +944,14 @@ export const CheckoutForm: React.FC<CheckoutFormProps> = ({
                                         {/* Name */}
                                         <div className="space-y-1">
                                             <label className="text-caption font-bold text-gray-900 uppercase flex items-center gap-1.5">
-                                                <User className="h-3 w-3" /> Full Name
+                                                <User className="h-3 w-3" /> {t("checkoutForm.labels.fullName")}
                                             </label>
                                     <input
                                         type="text"
                                         value={fullName}
                                         onChange={(e) => setFullName(e.target.value)}
-                                        className={`w-full px-3 py-2 bg-gray-50 border rounded-lg transition-all focus:bg-white focus:ring-2 text-sm font-medium ${nameError ? "border-red-300 focus:ring-red-50" : "border-gray-200 focus:ring-primary-50 focus:border-primary-400"}`}
-                                        placeholder="Enter your name"
+                                        className={`w-full px-3 py-2 bg-gray-50 border rounded-catalogue-md transition-all focus:bg-white focus:ring-2 text-sm font-medium ${nameError ? "border-red-300 focus:ring-red-50" : "border-gray-200 focus:ring-primary-50 focus:border-primary-400"}`}
+                                        placeholder={t("checkoutForm.placeholders.name")}
                                     />
                                     {nameError && <p className="text-red-500 text-caption font-semibold">{nameError}</p>}
                                 </div>
@@ -702,14 +959,14 @@ export const CheckoutForm: React.FC<CheckoutFormProps> = ({
                                 {/* Email */}
                                 <div className="space-y-1">
                                     <label className="text-caption font-bold text-gray-900 uppercase flex items-center gap-1.5">
-                                        <Envelope className="h-3 w-3" /> Email Address
+                                        <Envelope className="h-3 w-3" /> {t("checkoutForm.labels.emailAddress")}
                                     </label>
                                     <input
                                         type="email"
                                         value={email}
                                         onChange={(e) => setEmail(e.target.value)}
-                                        className={`w-full px-3 py-2 bg-gray-50 border rounded-lg transition-all focus:bg-white focus:ring-2 text-sm font-medium ${emailError ? "border-red-300 focus:ring-red-50" : "border-gray-200 focus:ring-primary-50 focus:border-primary-400"}`}
-                                        placeholder="email@example.com"
+                                        className={`w-full px-3 py-2 bg-gray-50 border rounded-catalogue-md transition-all focus:bg-white focus:ring-2 text-sm font-medium ${emailError ? "border-red-300 focus:ring-red-50" : "border-gray-200 focus:ring-primary-50 focus:border-primary-400"}`}
+                                        placeholder={t("checkoutForm.placeholders.email")}
                                     />
                                     {emailError && <p className="text-red-500 text-caption font-semibold">{emailError}</p>}
                                 </div>
@@ -717,7 +974,7 @@ export const CheckoutForm: React.FC<CheckoutFormProps> = ({
                                 {/* Phone */}
                                 <div className="space-y-1">
                                     <label className="text-caption font-bold text-gray-900 uppercase flex items-center gap-1.5">
-                                        <Phone className="h-3 w-3" /> Phone Number (WhatsApp)
+                                        <Phone className="h-3 w-3" /> {t("checkoutForm.labels.phoneWhatsapp")}
                                     </label>
                                     <div className="flex gap-2">
                                         <div className="relative flex-1">
@@ -731,10 +988,10 @@ export const CheckoutForm: React.FC<CheckoutFormProps> = ({
                                                     setPhone(value);
                                                     if (phoneOtpSent) setPhoneOtpSent(false);
                                                 }}
-                                                inputClass={`!w-full !px-3 !py-2 !ps-12 !h-10 !bg-gray-50 !border ${phoneError ? "!border-red-300" : "!border-gray-200"} !rounded-lg !text-sm !font-medium focus:!bg-white focus:!ring-2 focus:!ring-primary-50 ${isPhoneVerified ? "!text-green-700 !bg-green-50/50 !border-green-200" : ""}`}
+                                                inputClass={`!w-full !px-3 !py-2 !ps-12 !h-10 !bg-gray-50 !border ${phoneError ? "!border-red-300" : "!border-gray-200"} !rounded-catalogue-md !text-sm !font-medium focus:!bg-white focus:!ring-2 focus:!ring-primary-50 ${isPhoneVerified ? "!text-green-700 !bg-green-50/50 !border-green-200" : ""}`}
                                                 containerClass="!w-full"
-                                                buttonClass={`!rounded-s-lg !border-gray-200 !bg-gray-50 !w-10 ${isPhoneVerified ? "!bg-green-50/50 !border-green-200" : ""}`}
-                                                dropdownClass="!rounded-lg !shadow-xl"
+                                                buttonClass={`!rounded-s-catalogue-md !border-gray-200 !bg-gray-50 !w-10 ${isPhoneVerified ? "!bg-green-50/50 !border-green-200" : ""}`}
+                                                dropdownClass="!rounded-catalogue-md !shadow-xl"
                                             />
                                             {isPhoneVerified && <CheckCircle className="absolute end-2.5 top-2.5 h-4 w-4 text-green-500 z-10" />}
                                         </div>
@@ -747,7 +1004,7 @@ export const CheckoutForm: React.FC<CheckoutFormProps> = ({
                                                 onClick={handleSendPhoneOTP}
                                                 disabled={isLoadingPhoneOtp || !phone || phoneOtpSent}
                                             >
-                                                {isLoadingPhoneOtp ? <SpinnerGap className="h-3.5 w-3.5 animate-spin" /> : phoneOtpSent ? "Sent" : "Verify"}
+                                                {isLoadingPhoneOtp ? <SpinnerGap className="h-3.5 w-3.5 animate-spin" /> : phoneOtpSent ? t("checkoutForm.buttons.sent") : t("checkoutForm.buttons.verify")}
                                             </MyButton>
                                         )}
                                     </div>
@@ -761,8 +1018,8 @@ export const CheckoutForm: React.FC<CheckoutFormProps> = ({
                                                 type="text"
                                                 value={otp}
                                                 onChange={(e) => setOtp(e.target.value)}
-                                                className="flex-1 px-3 py-1.5 bg-white border border-primary-300 rounded-lg text-sm font-bold tracking-wider-2 text-center focus:ring-2 focus:ring-primary-50"
-                                                placeholder="------"
+                                                className="flex-1 px-3 py-1.5 bg-white border border-primary-300 rounded-catalogue-md text-sm font-bold tracking-wider-2 text-center focus:ring-2 focus:ring-primary-50"
+                                                placeholder={t("checkoutForm.placeholders.otp")}
                                                 maxLength={6}
                                                 autoFocus
                                             />
@@ -774,7 +1031,7 @@ export const CheckoutForm: React.FC<CheckoutFormProps> = ({
                                                 onClick={handleVerifyPhoneOTP}
                                                 disabled={isVerifyingPhoneOtp || otp.length < 4}
                                             >
-                                                {isVerifyingPhoneOtp ? <SpinnerGap className="h-3.5 w-3.5 animate-spin" /> : "Verify OTP"}
+                                                {isVerifyingPhoneOtp ? <SpinnerGap className="h-3.5 w-3.5 animate-spin" /> : t("checkoutForm.buttons.verifyOtp")}
                                             </MyButton>
                                         </div>
                                     )}
@@ -790,32 +1047,33 @@ export const CheckoutForm: React.FC<CheckoutFormProps> = ({
 
                                 {/* Compact Summary */}
                                 {additionalCharges.length > 0 ? (
-                                    <div className="bg-gray-50 rounded-xl p-3 border border-gray-100 space-y-1">
+                                    <div className="bg-gray-50 rounded-catalogue-lg p-3 border border-gray-100 space-y-1">
                                         <div className="flex justify-between text-xs text-gray-700">
-                                            <span>Subtotal ({items.length} {items.length === 1 ? "item" : "items"})</span>
-                                            <span className="font-medium">₹{(totalAmount - sumChargeAmounts(additionalCharges)).toFixed(2)}</span>
+                                            {/* Rent: the line before the charges is the membership plan, not the books. */}
+                                            <span>{isRentMode && membershipPlan?.title ? membershipPlan.title : t("checkoutForm.summary.subtotalCount", { count: itemCount })}</span>
+                                            <span className="font-medium">₹{summaryPlanPrice.toFixed(2)}</span>
                                         </div>
                                         {additionalCharges.map((charge) => (
                                             <div key={charge.key} className="flex justify-between text-xs text-gray-700">
-                                                <span>{charge.label}</span>
+                                                <span>{charge.refundable ? t("cart.rentCharge.refundableLabel", { label: charge.label }) : charge.label}</span>
                                                 <span className="font-medium">₹{charge.amount.toFixed(2)}</span>
                                             </div>
                                         ))}
                                         <div className="flex justify-between items-center pt-1.5 border-t border-gray-200">
-                                            <span className="text-caption text-gray-500 font-bold uppercase tracking-tight">Order Total</span>
-                                            <span className="text-base font-black text-primary-600">₹{totalAmount.toFixed(2)}</span>
+                                            <span className="text-caption text-gray-500 font-bold uppercase tracking-tight">{t("checkoutForm.summary.orderTotal")}</span>
+                                            <span className="text-base font-black text-primary-600">₹{summaryTotal.toFixed(2)}</span>
                                         </div>
                                     </div>
                                 ) : (
-                                    <div className="bg-gray-50 rounded-xl p-3 border border-gray-100 flex items-center justify-between">
+                                    <div className="bg-gray-50 rounded-catalogue-lg p-3 border border-gray-100 flex items-center justify-between">
                                         <div className="flex flex-col">
-                                            <span className="text-caption text-gray-500 font-bold uppercase tracking-tight">Order Total</span>
-                                            <span className="text-base font-black text-primary-600">₹{totalAmount.toFixed(0)}</span>
+                                            <span className="text-caption text-gray-500 font-bold uppercase tracking-tight">{t("checkoutForm.summary.orderTotal")}</span>
+                                            <span className="text-base font-black text-primary-600">₹{summaryTotal.toFixed(0)}</span>
                                         </div>
                                         <div className="text-end">
-                                            <span className="text-caption text-gray-400 font-medium block">{items.length} Items</span>
+                                            <span className="text-caption text-gray-400 font-medium block">{t("checkoutForm.summary.itemsCount", { count: itemCount })}</span>
                                             <span className="text-caption text-green-600 font-bold flex items-center justify-end gap-1">
-                                                <span className="w-1 h-1 bg-green-500 rounded-full" /> Secure
+                                                <span className="w-1 h-1 bg-green-500 rounded-full" /> {t("checkoutForm.summary.secure")}
                                             </span>
                                         </div>
                                     </div>
@@ -830,21 +1088,26 @@ export const CheckoutForm: React.FC<CheckoutFormProps> = ({
                             buttonType="primary"
                             scale="large"
                             layoutVariant="default"
-                            className="w-full h-11 text-base font-bold shadow-lg shadow-primary-100 active:scale-[0.98] transition-all rounded-lg flex items-center justify-center gap-2"
+                            className="w-full h-11 text-base font-bold shadow-lg shadow-primary-100 active:scale-[0.98] transition-all rounded-catalogue-md flex items-center justify-center gap-2"
                             onClick={handleCheckout}
-                            disabled={loading || isInitializing || !isPhoneVerified}
+                            disabled={loading || isInitializing || !isPhoneVerified || awaitingConfirmation}
                         >
                             {loading ? (
                                 <SpinnerGap className="animate-spin h-5 w-5" />
                             ) : (
                                 <>
-                                    <span>Proceed to Payment</span>
+                                    <span>{t("checkoutForm.buttons.proceedToPayment")}</span>
                                     <CaretRight className="h-4 w-4" />
                                 </>
                             )}
                         </MyButton>
+                        {awaitingConfirmation && (
+                            <p role="status" className="text-center text-caption text-muted-foreground mt-2 font-medium">
+                                {t("checkoutForm.awaitingConfirmation")}
+                            </p>
+                        )}
                         {!isPhoneVerified && (
-                            <p className="text-center text-caption text-red-400 mt-2 font-bold">WhatsApp verification required to continue</p>
+                            <p className="text-center text-caption text-red-400 mt-2 font-bold">{t("checkoutForm.whatsappRequired")}</p>
                         )}
                     </div>
                 </DialogPrimitive.Content>

@@ -1,0 +1,16 @@
+{
+    "emailTemplate": "Email template",
+    "manageTemplates": "Manage templates",
+    "writeFromScratch": "Write from scratch — use the content above",
+    "templateAppliedHint": "Applying a template replaced the title and content on step 1. Edit them there if you need to.",
+    "defaultContentHint": "The subject and body come from the title and content on step 1.",
+    "sendFrom": "Send from",
+    "noSenderTitle": "No verified sender address",
+    "noSenderDescription": "Email cannot go out until this institute has at least one verified sending address.",
+    "configureSending": "Configure sending",
+    "chooseSender": "Choose a sender address",
+    "searchTemplates": "Search your email templates",
+    "subject": "Subject",
+    "usesAnnouncementTitle": "Uses the announcement title",
+    "subjectHint": "Leave blank to reuse the announcement title."
+}

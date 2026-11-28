@@ -54,8 +54,13 @@ jobs:
         with:
           node-version: "20"
 
+      # Pin pnpm: an unpinned install now pulls a pnpm that fails with
+      # ERR_PNPM_IGNORED_BUILDS on CI (esbuild/sharp/canvas build scripts not
+      # approved). 10.17.0 is what build-zoe-appx.yml uses and is known-good here.
       - name: Install pnpm
-        run: npm install -g pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@10.17.0 --activate
 
       - name: Install web deps
         run: pnpm install --frozen-lockfile || pnpm install

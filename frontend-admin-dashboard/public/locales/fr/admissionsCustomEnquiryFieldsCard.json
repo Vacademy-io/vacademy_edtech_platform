@@ -1,0 +1,10 @@
+{
+    "header": {
+        "title": "Informations complémentaires",
+        "description": "Détails obligatoires et facultatifs pour cette demande"
+    },
+    "placeholder": {
+        "select": "Sélectionnez {{fieldName}}",
+        "enter": "Saisissez {{fieldName}}"
+    }
+}

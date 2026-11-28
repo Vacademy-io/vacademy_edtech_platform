@@ -1,0 +1,73 @@
+{
+    "trigger": {
+        "label": "Exporter les rapports (ZIP)"
+    },
+    "dialog": {
+        "heading": "Exporter les rapports (ZIP)"
+    },
+    "description": {
+        "bulk_one": "Génère un ZIP des rapports PDF pour la {{count}} soumission sélectionnée.",
+        "bulk_many": "Génère un ZIP des rapports PDF pour les {{count}} soumissions sélectionnées.",
+        "bulk_other": "Génère un ZIP des rapports PDF pour les {{count}} soumissions sélectionnées.",
+        "all": "Génère un ZIP des rapports PDF pour toutes les soumissions correspondant au filtre actuel."
+    },
+    "regenerateLabel": "Régénérer les rapports même si un rapport existe déjà pour un élève",
+    "startButton": "Démarrer l'export",
+    "starting": "Démarrage…",
+    "toasts": {
+        "alreadyRunning": "Un export est déjà en cours pour cet examen — sa progression est affichée.",
+        "exportStarted_one": "Export démarré pour {{count}} soumission.",
+        "exportStarted_many": "Export démarré pour {{count}} soumissions.",
+        "exportStarted_other": "Export démarré pour {{count}} soumissions.",
+        "startFailed": "Échec du démarrage de l'export. Veuillez réessayer.",
+        "resuming": "Reprise de l'export…",
+        "resumeFailed": "Échec de la reprise de l'export.",
+        "cancelled": "Export annulé.",
+        "cancelFailed": "Échec de l'annulation de l'export.",
+        "downloadNotReady": "Le lien de téléchargement n'est pas encore prêt. Veuillez réessayer dans un instant.",
+        "downloadFailed": "Échec de la préparation du téléchargement."
+    },
+    "defaultFileName": "Rapports d'examen",
+    "progress": {
+        "summary": "{{completed}} sur {{total}} terminé(s)",
+        "failedCount": "{{count}} échec(s)",
+        "skippedCount": "{{count}} ignoré(s)"
+    },
+    "warnings": {
+        "contextDrift": "Les statistiques de la classe ont été recalculées en cours d'export — certains rapports de ce ZIP peuvent indiquer des chiffres légèrement différents des autres.",
+        "staleItems_one": "{{count}} rapport a été généré avant la mise à jour de la tentative de l'élève (par ex. une réévaluation). Régénérez l'export pour le mettre à jour.",
+        "staleItems_many": "{{count}} rapports ont été générés avant la mise à jour de la tentative de l'élève (par ex. une réévaluation). Régénérez l'export pour les mettre à jour.",
+        "staleItems_other": "{{count}} rapports ont été générés avant la mise à jour de la tentative de l'élève (par ex. une réévaluation). Régénérez l'export pour les mettre à jour."
+    },
+    "failures": {
+        "count_one": "{{count}} échec",
+        "count_many": "{{count}} échecs",
+        "count_other": "{{count}} échecs",
+        "detail_one": "{{reason}} ({{count}} nouvelle tentative)",
+        "detail_many": "{{reason}} ({{count}} nouvelles tentatives)",
+        "detail_other": "{{reason}} ({{count}} nouvelles tentatives)"
+    },
+    "downloadZip": "Télécharger le ZIP",
+    "continueButton": "Continuer ({{count}} restant(s))",
+    "downloadCompleted": "Télécharger les {{count}} terminé(s)",
+    "cancelButton": "Annuler",
+    "startNewExport": "Démarrer un nouvel export",
+    "zipContentsNote": {
+        "prefix": "Après avoir extrait le ZIP, ouvrez",
+        "suffix": "pour consulter et ouvrir le rapport de chaque élève.",
+        "csvNote": "(index.csv contient la même liste sous forme de données de tableur.)"
+    },
+    "recentExports": {
+        "title": "Exports récents",
+        "completedCount": "{{completed}}/{{total}} terminé(s)",
+        "view": "Voir"
+    },
+    "statusChips": {
+        "completed": "Terminé",
+        "partial": "Partiel",
+        "failed": "Échoué",
+        "cancelled": "Annulé",
+        "inProgress": "En cours",
+        "queued": "En attente"
+    }
+}

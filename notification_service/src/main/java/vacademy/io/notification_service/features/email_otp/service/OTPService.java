@@ -1,5 +1,6 @@
 package vacademy.io.notification_service.features.email_otp.service;
 
+import vacademy.io.common.core.internal_api_wrapper.ProductConfigClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,8 +12,8 @@ import vacademy.io.notification_service.features.email_otp.entity.EmailOtp;
 import vacademy.io.notification_service.features.email_otp.repository.OtpRepository;
 import vacademy.io.notification_service.service.EmailService;
 
+import java.security.SecureRandom;
 import java.util.Optional;
-import java.util.concurrent.ThreadLocalRandom;
 
 @Service
 public class OTPService {
@@ -28,16 +29,54 @@ public class OTPService {
     @Autowired
     OriginInstituteResolver originInstituteResolver;
 
+    @Autowired
+    ProductConfigClient productConfigClient;
+
+    /**
+     * At most this many OTP emails to one address in {@link #OTP_WINDOW_MINUTES}. The public
+     * send-email-otp endpoint needs no login, so without it anyone could flood an inbox through
+     * our SES. Generous for a real user resending a code.
+     */
+    static final int MAX_OTP_EMAILS_PER_WINDOW = 5;
+    static final int OTP_WINDOW_MINUTES = 10;
+
+    /** Wrong entries allowed per code; after this the code no longer verifies. */
+    public static final int MAX_WRONG_ATTEMPTS = 5;
+
+    private static final SecureRandom RANDOM = new SecureRandom();
+
     public static String generateOTP(int length) {
-        ThreadLocalRandom random = ThreadLocalRandom.current();
         StringBuilder otp = new StringBuilder();
         for (int i = 0; i < length; i++) {
-            otp.append(random.nextInt(10));
+            otp.append(RANDOM.nextInt(10));
         }
         return otp.toString();
     }
 
+    /**
+     * Checks an entered code against a stored, unexpired OTP. Each check first takes one
+     * attempt (atomically, so parallel checks cannot exceed the limit); a correct code gives
+     * the attempt back and marks the OTP verified. Once {@link #MAX_WRONG_ATTEMPTS} wrong
+     * entries are used up, the OTP stops verifying and a new one has to be requested.
+     */
+    public static boolean checkCode(OtpRepository otpRepository, EmailOtp storedOtp, String enteredCode) {
+        if (otpRepository.takeVerifyAttempt(storedOtp.getId(), MAX_WRONG_ATTEMPTS) == 0) {
+            log.warn("OTP {} has no attempts left", storedOtp.getId());
+            return false;
+        }
+        if (storedOtp.getOtp() != null && storedOtp.getOtp().equals(enteredCode)) {
+            otpRepository.markVerified(storedOtp.getId());
+            return true;
+        }
+        return false;
+    }
+
     public Boolean sendEmailOtp(String to, String subject, String service, String name, String instituteId) {
+        return sendEmailOtp(to, subject, service, name, instituteId, null);
+    }
+
+    public Boolean sendEmailOtp(String to, String subject, String service, String name, String instituteId,
+            String product) {
         // Signup and resend flows call /v1/send-email-otp straight from the browser and several
         // omitted the instituteId query param, which silently downgraded a white-labelled portal's
         // OTP to the platform sender and Vacademy branding. Recover it from the request host when
@@ -46,9 +85,15 @@ public class OTPService {
         if (!StringUtils.hasText(instituteId)) {
             instituteId = originInstituteResolver.resolveInstituteId();
         }
+        if (to != null && otpRepository.countRecentForEmail(to.trim(), OTP_WINDOW_MINUTES) >= MAX_OTP_EMAILS_PER_WINDOW) {
+            log.warn("OTP email to {} not sent: {} already sent in the last {} minutes", to,
+                    MAX_OTP_EMAILS_PER_WINDOW, OTP_WINDOW_MINUTES);
+            return false;
+        }
         EmailOtp otp = createNewOTP(to, service);
         try {
-            emailService.sendEmailOtp(to, subject, service, name, otp.getOtp(), instituteId);
+            OtpBrand brand = productConfigClient.get(product).map(OtpBrand::of).orElse(null);
+            emailService.sendEmailOtp(to, subject, service, name, otp.getOtp(), instituteId, brand);
         } catch (Exception e) {
             return false;
         }
@@ -84,10 +129,8 @@ public class OTPService {
             }
 
             // Validate OTP
-            if (emailOtp.getOtp().equals(otp)) {
+            if (checkCode(otpRepository, emailOtp, otp)) {
                 log.info("EMAIL OTP VERIFIED SUCCESSFULLY - Email: {}", email);
-                emailOtp.setIsVerified("true");
-                otpRepository.save(emailOtp);
                 return true;
             } else {
                 log.warn("EMAIL OTP MISMATCH - Email: {}", email);

@@ -1,0 +1,35 @@
+{
+    "header": {
+        "title": "Mappage du modèle",
+        "templateBody": "Corps du modèle",
+        "noBodyContent": "Aucun contenu de corps"
+    },
+    "errors": {
+        "loadFields": "Échec du chargement des champs disponibles",
+        "saveMapping": "Échec de l'enregistrement du mappage du modèle. Veuillez réessayer."
+    },
+    "mappings": {
+        "sectionTitle": "Mapper les valeurs dynamiques",
+        "vacademyDataField": "Champ de données Vacademy",
+        "dataCategory": "Catégorie de données",
+        "selectCategoryPlaceholder": "Sélectionner une catégorie de données...",
+        "field": "Champ",
+        "selectFieldPlaceholder": "Sélectionner un champ...",
+        "mappedTo": "Mappé à :"
+    },
+    "preview": {
+        "title": "Aperçu du message WhatsApp",
+        "completeAllToSeePreview": "Terminez tous les mappages pour voir l'aperçu complet"
+    },
+    "completionStatus": {
+        "title": "État d'achèvement",
+        "mapped": "mappé",
+        "pending": "en attente",
+        "allComplete": "Tous les mappages sont terminés !"
+    },
+    "footer": {
+        "cancel": "Annuler",
+        "saving": "Enregistrement...",
+        "saveMapping": "Enregistrer le mappage"
+    }
+}

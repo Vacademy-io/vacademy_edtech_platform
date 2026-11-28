@@ -1,0 +1,9 @@
+{
+    "window": {
+        "last24h": "Dernières 24h",
+        "last7Days": "7 derniers jours",
+        "last30Days": "30 derniers jours"
+    },
+    "refresh": "Actualiser",
+    "windowHint": "S'applique à toutes les cartes de cet onglet."
+}

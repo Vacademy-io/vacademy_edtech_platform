@@ -1,6 +1,7 @@
 import { useRouter } from '@tanstack/react-router';
 import { DotsSixVertical } from '@phosphor-icons/react';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { MenuOptions } from './module-menu-options';
 import { MyDialog } from '@/components/design-system/dialog';
 import { AddModulesForm } from './add-modules-form';
@@ -22,6 +23,7 @@ interface ModuleCardProps {
 
 // Update the ModuleCard component
 export const ModuleCard = ({ module, onDelete, onEdit }: ModuleCardProps) => {
+    const { t } = useTranslation('studyLibraryModuleCard');
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
     const [isOfflineDialogOpen, setIsOfflineDialogOpen] = useState(false);
     // No Offline Availability action while the institute master switch is off —
@@ -104,7 +106,7 @@ export const ModuleCard = ({ module, onDelete, onEdit }: ModuleCardProps) => {
                     />
                 ) : (
                     <div className="flex size-full w-full items-center justify-center rounded-lg bg-neutral-100">
-                        <span className="text-neutral-400">No Image</span>
+                        <span className="text-neutral-400">{t('noImage')}</span>
                     </div>
                 )}
 
@@ -131,7 +133,9 @@ export const ModuleCard = ({ module, onDelete, onEdit }: ModuleCardProps) => {
 
             <MyDialog
                 trigger={<></>}
-                heading={`Edit ${getTerminology(ContentTerms.Module, SystemTerms.Module)}`}
+                heading={t('editHeading', {
+                    term: getTerminology(ContentTerms.Module, SystemTerms.Module),
+                })}
                 dialogWidth="w-[400px]"
                 open={isEditDialogOpen}
                 onOpenChange={setIsEditDialogOpen}

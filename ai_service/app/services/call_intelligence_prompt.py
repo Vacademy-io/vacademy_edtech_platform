@@ -18,8 +18,8 @@ from typing import Any, Dict, List, Optional
 
 # Bumped on any change to the output contract below. Stored on every row so old
 # analyses remain interpretable when the schema evolves.
-SCHEMA_VERSION = "1.0"
-PROMPT_VERSION = "ci-1.0"
+SCHEMA_VERSION = "1.1"   # 1.1: + `update` (two-line call update for the call log)
+PROMPT_VERSION = "ci-1.1"
 
 DEFAULT_QUALITIES = ["rapport", "needs_discovery", "objection_handling", "next_step_secured"]
 
@@ -85,6 +85,8 @@ def build_prompt(
             "confidence": 0.0,
         },
         "general_summary": "string — 2-4 neutral sentences",
+        "update": "string — the call in at most TWO short lines (max 160 characters total): "
+                  "what happened, then what happens next. Plain words, no labels.",
         "action_items": [
             {"text": "string", "owner": "CALLER|LEAD|UNSPECIFIED", "due_hint": "string|null",
              "priority": "HIGH|MEDIUM|LOW"}

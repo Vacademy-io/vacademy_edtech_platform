@@ -1,0 +1,56 @@
+{
+    "kpi": {
+        "callsAnalyzed": {
+            "label": "المكالمات التي تم تحليلها"
+        },
+        "avgCallerRating": {
+            "label": "متوسط تقييم المتصل",
+            "sub": "مدى نجاح الفريق في تحقيق هدفه"
+        },
+        "avgOutcomeRating": {
+            "label": "متوسط تقييم النتيجة",
+            "sub": "كيف كانت المكالمة بالنسبة للعميل المحتمل"
+        },
+        "positiveSentiment": {
+            "label": "الشعور الإيجابي",
+            "sub_zero": "{{positive}} من {{count}} عميل محتمل",
+            "sub_one": "{{positive}} من {{count}} عميل محتمل واحد",
+            "sub_two": "{{positive}} من {{count}} عميلين محتملين",
+            "sub_few": "{{positive}} من {{count}} عملاء محتملين",
+            "sub_many": "{{positive}} من {{count}} عميلاً محتملاً",
+            "sub_other": "{{positive}} من {{count}} عميل محتمل"
+        }
+    },
+    "breakdown": {
+        "callOutcomesTitle": "نتائج المكالمات",
+        "leadSentimentTitle": "شعور العملاء المحتملين"
+    },
+    "section": {
+        "teamCallQualityTitle": "الفريق — جودة المكالمات"
+    },
+    "table": {
+        "counsellor": "المستشار",
+        "calls": "المكالمات",
+        "avgCaller": "متوسط المتصل",
+        "avgOutcome": "متوسط النتيجة"
+    },
+    "emptyHint": {
+        "noAnalyzedCalls": "لا توجد مكالمات تم تحليلها ضمن هذا النطاق. فعّل ذكاء إدارة علاقات العملاء (CRM Intelligence) وحلّل المكالمات لملء هذا التقرير.",
+        "noPerCounsellorData": "لا توجد بيانات لكل مستشار ضمن هذا النطاق."
+    },
+    "status": {
+        "connectedPositive": "إيجابية",
+        "connectedNeutral": "محايدة",
+        "connectedNegative": "سلبية",
+        "callbackRequested": "طُلب معاودة الاتصال",
+        "notInterested": "غير مهتم",
+        "informationOnly": "استعلام فقط",
+        "noClearOutcome": "لا نتيجة واضحة",
+        "wrongNumber": "رقم خاطئ"
+    },
+    "sentiment": {
+        "positive": "إيجابي",
+        "neutral": "محايد",
+        "negative": "سلبي"
+    }
+}

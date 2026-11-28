@@ -1,0 +1,30 @@
+{
+    "heading": "Modifier le statut d'emploi",
+    "fallbackEmployeeLabel": "Cet employé",
+    "notSet": "non défini",
+    "currentStatus": "Actuellement {{status}} pour <1>{{name}}</1>.",
+    "actions": {
+        "cancel": "Annuler",
+        "updating": "Mise à jour…",
+        "updateStatus": "Mettre à jour le statut"
+    },
+    "fields": {
+        "newStatus": "Nouveau statut",
+        "lastWorkingDate": "Dernier jour de travail",
+        "exitReason": "Motif de départ",
+        "exitReasonPlaceholder": "ex. Démission pour un nouveau poste"
+    },
+    "exitNotice": "Ceci met fin à l'emploi. Le dernier jour de travail et le motif alimentent le solde de tout compte, les deux sont donc obligatoires.",
+    "toast": {
+        "exitStatusUpdated": "{{name}} est maintenant {{status}}. Son solde de tout compte peut être préparé dans la Paie.",
+        "statusUpdated": "Statut mis à jour vers {{status}}"
+    },
+    "errors": {
+        "updateFailed": "Impossible de modifier le statut d'emploi"
+    },
+    "validation": {
+        "pickStatus": "Choisissez un statut",
+        "lastWorkingDateRequired": "Un dernier jour de travail est requis pour régler les sommes dues",
+        "exitReasonRequired": "Indiquez pourquoi l'emploi a pris fin"
+    }
+}

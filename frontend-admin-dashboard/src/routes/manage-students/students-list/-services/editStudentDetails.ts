@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { EditStudentDetailsFormValues } from '../-components/students-list/student-side-view/student-overview/EditStudentDetails';
 import authenticatedAxiosInstance from '@/lib/auth/axiosInstance';
 import { EDIT_LEARNER_DETAILS } from '@/constants/urls';
@@ -9,6 +10,7 @@ import { getCustomFieldSettingsFromCache } from '@/services/custom-field-setting
 export const useEditStudentDetails = () => {
     const queryClient = useQueryClient();
     const { selectedStudent } = useStudentSidebar();
+    const { t } = useTranslation('manageStudentsEditStudentDetailsService');
     return useMutation({
         mutationFn: (data: EditStudentDetailsFormValues) => {
             // Get custom field IDs from cache to distinguish system vs custom fields
@@ -61,14 +63,14 @@ export const useEditStudentDetails = () => {
             return authenticatedAxiosInstance.put(`${EDIT_LEARNER_DETAILS}`, payload);
         },
         onSuccess: () => {
-            toast.success('Student details updated successfully');
+            toast.success(t('updateSuccess'));
             queryClient.invalidateQueries({ queryKey: ['students'] });
             queryClient.invalidateQueries({
                 queryKey: ['GET_USER_CREDENTIALS', selectedStudent?.user_id || ''],
             });
         },
         onError: () => {
-            toast.error('Failed to update student details');
+            toast.error(t('updateError'));
         },
     });
 };

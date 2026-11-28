@@ -8,6 +8,8 @@ import { cn } from '@/lib/utils';
 import { BadgeVisual } from '@/routes/settings/-constants/badge-icon-map';
 import { isLibraryToken } from '@/routes/settings/-constants/badge-library';
 import { getCourseLeaderboardAdmin, type LeaderboardEntry } from '@/services/leaderboard';
+import { getTerminology } from '@/components/common/layout-container/sidebar/utils';
+import { ContentTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
 
 /** Per-place accent tones (gold / silver / bronze) — design tokens only. */
 const PLACE = {
@@ -268,7 +270,12 @@ export function LeaderboardShareDialog({
     const handleShare = () => {
         if (!shareUrl) return;
         if (typeof navigator !== 'undefined' && navigator.share) {
-            navigator.share({ title: 'Course Leaderboard', url: shareUrl }).catch(() => {});
+            navigator
+                .share({
+                    title: `${getTerminology(ContentTerms.Course, SystemTerms.Course)} Leaderboard`,
+                    url: shareUrl,
+                })
+                .catch(() => {});
         } else {
             handleCopy();
         }
@@ -283,7 +290,7 @@ export function LeaderboardShareDialog({
                     <DialogHeader>
                         <DialogTitle className="flex items-center gap-2 text-white">
                             <Crown weight="fill" className="size-5" />
-                            Course Leaderboard
+                            {getTerminology(ContentTerms.Course, SystemTerms.Course)} Leaderboard
                         </DialogTitle>
                     </DialogHeader>
                     <p className="mt-1 flex items-center gap-1.5 text-caption text-white/85">

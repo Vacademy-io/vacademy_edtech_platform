@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
@@ -62,6 +63,7 @@ const updateSchoolSettings = async (settingData: any) => {
 };
 
 export default function SchoolSettings({ isTab }: SchoolSettingsProps) {
+    const { t } = useTranslation('settingsSchool');
     const queryClient = useQueryClient();
 
     // Fetch current settings
@@ -86,11 +88,11 @@ export default function SchoolSettings({ isTab }: SchoolSettingsProps) {
     const updateMutation = useMutation({
         mutationFn: updateSchoolSettings,
         onSuccess: () => {
-            toast.success('School settings updated successfully');
+            toast.success(t('toasts.updateSuccess'));
             queryClient.invalidateQueries({ queryKey: ['school-settings'] });
         },
         onError: (error: any) => {
-            toast.error(error?.response?.data?.message || 'Failed to update settings');
+            toast.error(error?.response?.data?.message || t('toasts.updateFailed'));
         },
     });
 
@@ -106,17 +108,15 @@ export default function SchoolSettings({ isTab }: SchoolSettingsProps) {
     };
 
     if (isLoading) {
-        return <div className="p-4">Loading...</div>;
+        return <div className="p-4">{t('loading')}</div>;
     }
 
     return (
         <div className="space-y-6">
             <Card>
                 <CardHeader>
-                    <CardTitle className="text-lg">School Settings</CardTitle>
-                    <CardDescription>
-                        Configure school-wide settings for enquiry management and operations
-                    </CardDescription>
+                    <CardTitle className="text-lg">{t('header.title')}</CardTitle>
+                    <CardDescription>{t('header.description')}</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
                     <Counsellor
@@ -130,7 +130,7 @@ export default function SchoolSettings({ isTab }: SchoolSettingsProps) {
                             onClick={handleSave}
                             disabled={updateMutation.isPending}
                         >
-                            {updateMutation.isPending ? 'Saving...' : 'Save Changes'}
+                            {updateMutation.isPending ? t('actions.saving') : t('actions.save')}
                         </MyButton>
                     </div>
                 </CardContent>

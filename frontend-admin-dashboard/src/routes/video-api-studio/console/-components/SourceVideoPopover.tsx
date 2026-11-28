@@ -1,8 +1,9 @@
 import { useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Film, ImageIcon, Loader2, Mic, Monitor, Upload } from 'lucide-react';
+import { FilmStrip as Film, Image as ImageIcon, CircleNotch as Loader2, Microphone as Mic, Monitor, UploadSimple as Upload } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 import { useFileUpload } from '@/hooks/use-file-upload';
 import { getUserId } from '@/utils/userDetails';
@@ -24,7 +25,13 @@ const ACCEPTED_VIDEO_TYPES = ['video/mp4', 'video/webm', 'video/quicktime', 'vid
 const ACCEPTED_IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/webp'];
 const MAX_VIDEO_SIZE_BYTES = 500 * 1024 * 1024; // 500MB
 const MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
-const MAX_SELECTED_SOURCES = 10;
+// Mirrors the server caps (MAX_INPUT_ASSETS / MAX_INPUT_VIDEOS) and the
+// composer's. Videos are the expensive kind — a large download plus an index
+// job each — while an image costs one metadata JSON, so a screenshot-led
+// walkthrough gets the wider ceiling. A flat 10 here capped an image run at
+// half the assets the server would happily accept.
+const MAX_SELECTED_ASSETS = 20;
+const MAX_SELECTED_VIDEOS = 5;
 
 export function SourceVideoPopover({
     apiKey,
@@ -35,6 +42,7 @@ export function SourceVideoPopover({
     onRefresh,
     disabled,
 }: SourceVideoPopoverProps) {
+    const { t } = useTranslation('videoApiStudioSourceVideoPopover');
     const fileInputRef = useRef<HTMLInputElement>(null);
     const { uploadFile, getPublicUrl } = useFileUpload();
 
@@ -46,7 +54,14 @@ export function SourceVideoPopover({
 
     const availableVideos = indexedVideos.filter((v) => !selectedIds.includes(v.id));
     const totalActive = selectedIds.length + processingVideos.length;
-    const atSelectionLimit = selectedIds.length >= MAX_SELECTED_SOURCES;
+    const atSelectionLimit = selectedIds.length >= MAX_SELECTED_ASSETS;
+    const selectedVideoCount = selectedIds.filter(
+        (id) => indexedVideos.find((v) => v.id === id)?.kind !== 'image'
+    ).length;
+    const atVideoLimit = selectedVideoCount >= MAX_SELECTED_VIDEOS;
+    // An image never trips the video cap, so a run of screenshots keeps going
+    // after five videos would have stopped.
+    const isBlocked = (kind?: string) => atSelectionLimit || (kind !== 'image' && atVideoLimit);
 
     const handleFilePick = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -55,20 +70,20 @@ export function SourceVideoPopover({
 
         if (ACCEPTED_VIDEO_TYPES.includes(file.type)) {
             if (file.size > MAX_VIDEO_SIZE_BYTES) {
-                toast.error('Video too large. Max 500MB.');
+                toast.error(t('errors.videoTooLarge'));
                 return;
             }
             setPendingKind('video');
             setPendingMode('demo');
         } else if (ACCEPTED_IMAGE_TYPES.includes(file.type)) {
             if (file.size > MAX_IMAGE_SIZE_BYTES) {
-                toast.error('Image too large. Max 10MB.');
+                toast.error(t('errors.imageTooLarge'));
                 return;
             }
             setPendingKind('image');
             setPendingMode('photo');
         } else {
-            toast.error('Unsupported format. Use MP4/WebM/MOV or PNG/JPEG/WebP.');
+            toast.error(t('errors.unsupportedFormat'));
             return;
         }
 
@@ -88,25 +103,29 @@ export function SourceVideoPopover({
                 sourceId: 'ADMIN',
                 publicUrl: true,
             });
-            if (!fileId) throw new Error('Upload failed');
+            if (!fileId) throw new Error(t('errors.uploadFailed'));
 
             const sourceUrl = await getPublicUrl(fileId);
-            if (!sourceUrl) throw new Error('Failed to get URL');
+            if (!sourceUrl) throw new Error(t('errors.urlFailed'));
 
             const { createInputAsset } = await import('../../-services/input-asset');
-            await createInputAsset(apiKey, {
-                name: pendingName.trim(),
-                kind: pendingKind,
-                mode: pendingMode,
-                source_url: sourceUrl,
-            });
+            await createInputAsset(
+                apiKey,
+                {
+                    name: pendingName.trim(),
+                    kind: pendingKind,
+                    mode: pendingMode,
+                    source_url: sourceUrl,
+                },
+                t
+            );
 
-            toast.success(`"${pendingName}" uploaded — indexing started`);
+            toast.success(t('success.uploaded', { name: pendingName }));
             setPendingFile(null);
             setPendingName('');
             onRefresh();
         } catch (err) {
-            toast.error(err instanceof Error ? err.message : 'Upload failed');
+            toast.error(err instanceof Error ? err.message : t('errors.uploadFailed'));
         } finally {
             setIsUploading(false);
         }
@@ -124,15 +143,15 @@ export function SourceVideoPopover({
                     variant="ghost"
                     size="icon"
                     className="size-8 text-muted-foreground hover:text-indigo-600"
-                    title="Add a source video clip"
-                    aria-label="Add source video"
+                    title={t('trigger.title')}
+                    aria-label={t('trigger.ariaLabel')}
                     disabled={disabled || !apiKey}
                 >
                     <Film className="size-4" />
                     {totalActive > 0 && (
                         <Badge
                             variant="default"
-                            className="absolute -right-1 -top-1 size-3.5 min-w-3.5 justify-center px-1 text-[9px]"
+                            className="absolute -end-1 -top-1 size-3.5 min-w-3.5 justify-center px-1 text-2xs"
                         >
                             {totalActive}
                         </Badge>
@@ -140,23 +159,23 @@ export function SourceVideoPopover({
                 </Button>
             </PopoverTrigger>
             <PopoverContent
-                className="w-[calc(100vw-2rem)] max-w-[320px] p-3"
+                className="w-[calc(100vw-2rem)] max-w-xs p-3" /* design-lint-ignore: mobile-viewport popover clamp, no token exists (same pattern as add-event-dialog.tsx) */
                 align="start"
                 collisionPadding={16}
             >
                 <div className="space-y-3">
                     <div>
-                        <p className="text-xs font-semibold">Source videos</p>
-                        <p className="text-[10px] text-muted-foreground">
-                            Demo footage or podcast audio used inside the generated video.
+                        <p className="text-xs font-semibold">{t('heading.title')}</p>
+                        <p className="text-2xs text-muted-foreground">
+                            {t('heading.description')}
                         </p>
                     </div>
 
                     {/* Processing — currently being indexed */}
                     {processingVideos.length > 0 && (
                         <div className="space-y-1.5">
-                            <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-                                Processing
+                            <p className="text-2xs font-medium uppercase tracking-wider text-muted-foreground">
+                                {t('processing.label')}
                             </p>
                             {processingVideos.map((v) => (
                                 <div
@@ -184,15 +203,15 @@ export function SourceVideoPopover({
                     {/* Available — completed and not yet selected */}
                     {availableVideos.length > 0 && (
                         <div className="space-y-1">
-                            <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-                                Available
+                            <p className="text-2xs font-medium uppercase tracking-wider text-muted-foreground">
+                                {t('available.label')}
                             </p>
                             <div className="max-h-40 space-y-0.5 overflow-y-auto">
                                 {availableVideos.map((v) => (
                                     <button
                                         key={v.id}
                                         type="button"
-                                        disabled={atSelectionLimit}
+                                        disabled={isBlocked(v.kind)}
                                         onClick={() => onAddVideo(v.id)}
                                         className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
                                     >
@@ -204,9 +223,9 @@ export function SourceVideoPopover({
                                         )}
                                         <span className="flex-1 truncate">{v.name}</span>
                                         <span className="shrink-0 text-muted-foreground">
-                                            {v.mode}
+                                            {t(`modes.${v.mode}`)}
                                             {v.duration_seconds
-                                                ? ` · ${Math.round(v.duration_seconds)}s`
+                                                ? ` · ${t('available.durationSeconds', { seconds: Math.round(v.duration_seconds) })}`
                                                 : ''}
                                         </span>
                                     </button>
@@ -219,12 +238,14 @@ export function SourceVideoPopover({
                         processingVideos.length === 0 &&
                         indexedVideos.length > 0 && (
                             <p className="py-1 text-center text-xs text-muted-foreground">
-                                All available videos selected.
+                                {t('available.allSelected')}
                             </p>
                         )}
-                    {atSelectionLimit && (
+                    {(atSelectionLimit || atVideoLimit) && (
                         <p className="text-xs text-muted-foreground">
-                            Max {MAX_SELECTED_SOURCES} sources.
+                            {t('limit.message', {
+                                count: atSelectionLimit ? MAX_SELECTED_ASSETS : MAX_SELECTED_VIDEOS,
+                            })}
                         </p>
                     )}
 
@@ -245,23 +266,25 @@ export function SourceVideoPopover({
                                     value={pendingName}
                                     onChange={(e) => setPendingName(e.target.value)}
                                     className="w-full rounded-md border px-2 py-1 text-xs focus:border-indigo-400 focus:outline-none"
-                                    placeholder="Video name"
+                                    placeholder={t('upload.namePlaceholder')}
                                 />
                                 <div className="flex flex-wrap items-center gap-1">
-                                    <span className="text-[10px] text-muted-foreground">Type:</span>
+                                    <span className="text-2xs text-muted-foreground">
+                                        {t('upload.typeLabel')}
+                                    </span>
                                     {pendingKind === 'video' ? (
                                         <>
                                             <ModeButton
                                                 active={pendingMode === 'demo'}
                                                 onClick={() => setPendingMode('demo')}
                                                 Icon={Monitor}
-                                                label="Demo"
+                                                label={t('modes.demo')}
                                             />
                                             <ModeButton
                                                 active={pendingMode === 'podcast'}
                                                 onClick={() => setPendingMode('podcast')}
                                                 Icon={Mic}
-                                                label="Podcast"
+                                                label={t('modes.podcast')}
                                             />
                                         </>
                                     ) : (
@@ -271,7 +294,7 @@ export function SourceVideoPopover({
                                                 active={pendingMode === m}
                                                 onClick={() => setPendingMode(m)}
                                                 Icon={ImageIcon}
-                                                label={m.charAt(0).toUpperCase() + m.slice(1)}
+                                                label={t(`modes.${m}`)}
                                             />
                                         ))
                                     )}
@@ -288,7 +311,7 @@ export function SourceVideoPopover({
                                         ) : (
                                             <Upload className="size-3" />
                                         )}
-                                        {isUploading ? 'Uploading…' : 'Upload & Index'}
+                                        {isUploading ? t('upload.uploading') : t('upload.confirm')}
                                     </button>
                                     <button
                                         type="button"
@@ -296,7 +319,7 @@ export function SourceVideoPopover({
                                         disabled={isUploading}
                                         className="rounded-md border px-2 py-1.5 text-xs text-muted-foreground hover:bg-muted disabled:opacity-50"
                                     >
-                                        Cancel
+                                        {t('upload.cancel')}
                                     </button>
                                 </div>
                             </div>
@@ -307,7 +330,7 @@ export function SourceVideoPopover({
                                 className="flex w-full items-center justify-center gap-1.5 rounded-md border border-dashed p-2 text-xs text-muted-foreground transition-colors hover:border-indigo-400 hover:bg-indigo-50/50 hover:text-indigo-700 dark:hover:bg-indigo-950/30"
                             >
                                 <Upload className="size-3.5" />
-                                Upload video (≤500MB) or image (≤10MB)
+                                {t('upload.dropCta')}
                             </button>
                         )}
                     </div>

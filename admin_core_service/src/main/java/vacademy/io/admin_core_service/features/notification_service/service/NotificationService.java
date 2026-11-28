@@ -9,6 +9,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import vacademy.io.admin_core_service.features.notification.constants.NotificationConstant;
+import vacademy.io.admin_core_service.features.notification.dto.MessageOrigin;
 import vacademy.io.admin_core_service.features.notification.dto.NotificationDTO;
 import vacademy.io.admin_core_service.features.notification.dto.NotificationToUserDTO;
 import vacademy.io.admin_core_service.features.notification.dto.UnifiedSendRequest;
@@ -106,9 +107,10 @@ public class NotificationService {
                 .options(UnifiedSendRequest.SendOptions.builder()
                         .emailSubject(dto.getSubject())
                         .emailBody(dto.getBody())
-                        .emailType("UTILITY_EMAIL")
+                        .emailType(dto.getEmailType() != null ? dto.getEmailType() : "UTILITY_EMAIL")
                         .source(dto.getSource())
                         .sourceId(dto.getSourceId())
+                        .logTemplateName(dto.getTemplateName())
                         .build())
                 .build());
     }
@@ -120,6 +122,16 @@ public class NotificationService {
     public UnifiedSendResponse sendHtmlEmailViaUnified(
             String to, String subject, String body, String instituteId,
             String fromEmail, String fromName, String emailType) {
+        return sendHtmlEmailViaUnified(to, subject, body, instituteId, fromEmail, fromName, emailType, "html-email");
+    }
+
+    /**
+     * As above with the caller's source, which notification-service uses for CC rules and email
+     * billing (e.g. our own invoices to an institute are never charged to it).
+     */
+    public UnifiedSendResponse sendHtmlEmailViaUnified(
+            String to, String subject, String body, String instituteId,
+            String fromEmail, String fromName, String emailType, String source) {
 
         return sendUnified(UnifiedSendRequest.builder()
                 .instituteId(instituteId != null ? instituteId : "")
@@ -132,7 +144,7 @@ public class NotificationService {
                         .emailType(emailType != null ? emailType : "UTILITY_EMAIL")
                         .fromEmail(fromEmail)
                         .fromName(fromName)
-                        .source("html-email")
+                        .source(source)
                         .build())
                 .build());
     }
@@ -174,15 +186,25 @@ public class NotificationService {
      * Maps the legacy Map<phone, Map<key,value>> format to recipients with variables.
      */
     public UnifiedSendResponse sendWhatsappViaUnified(WhatsappRequest request, String instituteId) {
+        return sendWhatsappViaUnified(request, instituteId, null);
+    }
+
+    /**
+     * As {@link #sendWhatsappViaUnified(WhatsappRequest, String)}, recording who is sending
+     * (e.g. a workflow) so the WhatsApp Inbox and the student timeline can show it.
+     */
+    public UnifiedSendResponse sendWhatsappViaUnified(WhatsappRequest request, String instituteId,
+                                                      MessageOrigin origin) {
         List<UnifiedSendRequest.Recipient> recipients = new java.util.ArrayList<>();
 
         log.info("sendWhatsappViaUnified: template={}, userDetails={}, headerParams={}, headerVideoParams={}, buttonUrlParams={}, buttonIndexParams={}, headerType={}",
                 request.getTemplateName(),
                 request.getUserDetails() != null ? request.getUserDetails().size() : 0,
-                request.getHeaderParams() != null ? request.getHeaderParams().keySet() : "null",
-                request.getHeaderVideoParams() != null ? request.getHeaderVideoParams().keySet() : "null",
-                request.getButtonUrlParams() != null ? request.getButtonUrlParams().keySet() : "null",
-                request.getButtonIndexParams() != null ? request.getButtonIndexParams().keySet() : "null",
+                // Sizes only: the keys of these maps are phone numbers.
+                request.getHeaderParams() != null ? request.getHeaderParams().size() : "null",
+                request.getHeaderVideoParams() != null ? request.getHeaderVideoParams().size() : "null",
+                request.getButtonUrlParams() != null ? request.getButtonUrlParams().size() : "null",
+                request.getButtonIndexParams() != null ? request.getButtonIndexParams().size() : "null",
                 request.getHeaderType());
 
         if (request.getUserDetails() != null) {
@@ -233,6 +255,9 @@ public class NotificationService {
         if (request.getHeaderType() != null) {
             optsBuilder.headerType(request.getHeaderType());
         }
+        if (origin != null) {
+            optsBuilder.originType(origin.type()).originId(origin.id()).originName(origin.name());
+        }
 
         return sendUnified(UnifiedSendRequest.builder()
                 .instituteId(instituteId)
@@ -248,9 +273,14 @@ public class NotificationService {
      * Bridge: List<WhatsappRequest> (batch) → unified send. Sends each request sequentially.
      */
     public void sendWhatsappViaUnified(List<WhatsappRequest> requests, String instituteId) {
+        sendWhatsappViaUnified(requests, instituteId, null);
+    }
+
+    /** Batch form of {@link #sendWhatsappViaUnified(WhatsappRequest, String, MessageOrigin)}. */
+    public void sendWhatsappViaUnified(List<WhatsappRequest> requests, String instituteId, MessageOrigin origin) {
         for (WhatsappRequest request : requests) {
             try {
-                sendWhatsappViaUnified(request, instituteId);
+                sendWhatsappViaUnified(request, instituteId, origin);
             } catch (Exception e) {
                 log.error("Failed to send WhatsApp batch for template {}: {}",
                         request.getTemplateName(), e.getMessage());
@@ -310,6 +340,44 @@ public class NotificationService {
      * Bridge: List<AttachmentNotificationDTO> → unified send with attachments.
      * Converts base64 attachments from old DTO format to new Recipient.attachments format.
      */
+    /**
+     * One email to each address from a given sender (a product's own verified address), with one
+     * attachment when {@code attachmentBase64} is set.
+     */
+    public UnifiedSendResponse sendEmailWithOptionalAttachmentViaUnified(List<String> to, String subject, String body,
+            String instituteId, String fromEmail, String fromName, String emailType, String source, String sourceId,
+            String attachmentName, String attachmentBase64) {
+        List<UnifiedSendRequest.Recipient> recipients = new java.util.ArrayList<>();
+        for (String email : to) {
+            List<UnifiedSendRequest.Attachment> attachments = new java.util.ArrayList<>();
+            if (attachmentBase64 != null && attachmentName != null) {
+                attachments.add(UnifiedSendRequest.Attachment.builder()
+                        .filename(attachmentName)
+                        .contentBase64(attachmentBase64)
+                        .build());
+            }
+            recipients.add(UnifiedSendRequest.Recipient.builder()
+                    .email(email)
+                    .variables(new java.util.HashMap<>())
+                    .attachments(attachments)
+                    .build());
+        }
+        return sendUnified(UnifiedSendRequest.builder()
+                .instituteId(instituteId != null ? instituteId : "")
+                .channel("EMAIL")
+                .recipients(recipients)
+                .options(UnifiedSendRequest.SendOptions.builder()
+                        .emailSubject(subject)
+                        .emailBody(body)
+                        .emailType(emailType)
+                        .source(source)
+                        .sourceId(sourceId)
+                        .fromEmail(fromEmail)
+                        .fromName(fromName)
+                        .build())
+                .build());
+    }
+
     public UnifiedSendResponse sendAttachmentEmailViaUnified(
             List<AttachmentNotificationDTO> dtos, String instituteId) {
 
@@ -379,6 +447,19 @@ public class NotificationService {
             String instituteId, List<String> userIds, String title, String body,
             String createdBy, String createdByName, String createdByRole,
             Map<String, Object> alertSettings) {
+        createSystemAlertAnnouncement(instituteId, userIds, title, body, createdBy,
+                createdByName, createdByRole, alertSettings, null, null);
+    }
+
+    /**
+     * As above, but tagging the announcement with what it is ABOUT so it can be
+     * found and switched off later — a lead-assignment alert that must stay on
+     * the bell until the counsellor has actually worked that lead.
+     */
+    public void createSystemAlertAnnouncement(
+            String instituteId, List<String> userIds, String title, String body,
+            String createdBy, String createdByName, String createdByRole,
+            Map<String, Object> alertSettings, String entity, String entityId) {
         if (instituteId == null || instituteId.isEmpty()) return;
         if (userIds == null || userIds.isEmpty()) return;
 
@@ -420,6 +501,10 @@ public class NotificationService {
         payload.put("instituteId", instituteId);
         payload.put("createdBy", createdBy != null && !createdBy.isEmpty() ? createdBy : "system");
         payload.put("createdByName", createdByName != null ? createdByName : "System");
+        if (entity != null && !entity.isBlank() && entityId != null && !entityId.isBlank()) {
+            payload.put("entity", entity);
+            payload.put("entityId", entityId);
+        }
         payload.put("createdByRole", createdByRole != null ? createdByRole : "ADMIN");
         payload.put("recipients", recipients);
         payload.put("modes", List.of(mode));
@@ -434,6 +519,33 @@ public class NotificationService {
         } catch (Exception e) {
             log.warn("System alert announcement dispatch failed (institute={}, users={}): {}",
                     instituteId, recipients.size(), e.getMessage());
+        }
+    }
+
+    /**
+     * Switch off the still-active system alerts raised about one entity.
+     *
+     * The lead-assignment bell is not dismissible on purpose — it is meant to
+     * stay until the counsellor works the lead — so this is the only way it
+     * comes down. Best-effort like every other call here: a notification-service
+     * blip must never fail the activity that triggered it.
+     */
+    public void deactivateSystemAlertsForEntity(String instituteId, String entity, String entityId) {
+        if (instituteId == null || instituteId.isBlank()
+                || entity == null || entity.isBlank()
+                || entityId == null || entityId.isBlank()) {
+            return;
+        }
+        try {
+            String route = NotificationConstant.SYSTEM_ALERT_DEACTIVATE_BY_ENTITY
+                    + "?instituteId=" + java.net.URLEncoder.encode(instituteId, java.nio.charset.StandardCharsets.UTF_8)
+                    + "&entity=" + java.net.URLEncoder.encode(entity, java.nio.charset.StandardCharsets.UTF_8)
+                    + "&entityId=" + java.net.URLEncoder.encode(entityId, java.nio.charset.StandardCharsets.UTF_8);
+            internalClientUtils.makeHmacRequest(
+                    clientName, HttpMethod.PUT.name(), notificationServerBaseUrl, route, null);
+        } catch (Exception e) {
+            log.warn("Could not clear system alerts for {} {} (institute={}): {}",
+                    entity, entityId, instituteId, e.getMessage());
         }
     }
 

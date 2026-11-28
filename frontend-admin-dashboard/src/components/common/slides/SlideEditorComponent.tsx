@@ -63,7 +63,7 @@ import { AssemblyAI } from 'assemblyai';
 import { ASSEMBLYAI_API_KEY } from '@/config/assemblyai';
 import { TranscriptModal } from './components/TranscriptModal';
 import { createNewSlide } from './utils/util';
-import { AiGeneratingLoader, aiSteps, pptSteps } from './AiGeneratingLoader';
+import { AiGeneratingLoader, aiSteps, pptSteps, finishSessionSteps } from './AiGeneratingLoader';
 import { SlideRegenerateModal } from './components/SlideRegenerateModal';
 import { RecommendationOverlay, RecommendationToast } from './components/RecommendationUI';
 import { PRODUCT_NAME } from '@/config/branding';
@@ -281,12 +281,17 @@ const SlidesEditorComponent = ({
         }
     }, [metaData.title, isEditingTitle]);
 
-    // Effect to auto-open session options modal if autoStartLive is true
+    // Effect to auto-open session options modal if autoStartLive is true.
+    // Open it only once: `slides` changes again during a live session (quick question, AI
+    // recommendation) and after it ends, and re-opening the modal then would cover the class.
+    const autoStartLiveHandledRef = useRef<string | null>(null);
     useEffect(() => {
+        if (autoStartLiveHandledRef.current === (presentationId || '')) return;
         if (searchParams && typeof searchParams.autoStartLive === 'string' && searchParams.autoStartLive === 'true') {
             // Ensure slides are loaded before opening the modal
             // This check might need to be more robust based on your slide loading logic
             if (slides && slides.length > 0) {
+                autoStartLiveHandledRef.current = presentationId || '';
                 setShowSessionOptionsModal(true);
                 // Optional: Clean up the query parameter from URL if desired, though this can be complex
                 // router.history.replace({ search: '...' });
@@ -295,7 +300,7 @@ const SlidesEditorComponent = ({
             }
             // If slides are still loading, the modal will open once they are loaded by other effects or user action.
         }
-    }, [searchParams, slides, isLoadingPresentation, isRefetchingPresentation]);
+    }, [searchParams, slides, isLoadingPresentation, isRefetchingPresentation, presentationId]);
 
     const showTranscript = () => {
         if (transcriptResult) {
@@ -1949,7 +1954,7 @@ const SlidesEditorComponent = ({
                             <AiGeneratingLoader
                                 title="Finalizing Session..."
                                 description="Generating full session transcript. This may take up to a minute, please don't close this window."
-                                steps={[{ text: 'Ending session on server...' }, { text: 'Transcribing audio...' }, { text: 'Sending summary...' }]}
+                                steps={finishSessionSteps}
                             />
                         ) : (
                             <>

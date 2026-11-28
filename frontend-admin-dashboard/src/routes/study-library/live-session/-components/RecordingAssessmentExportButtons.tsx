@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { DownloadSimple, CircleNotch, CaretDown } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 import { MyButton } from '@/components/design-system/button';
@@ -62,6 +63,7 @@ export function RecordingAssessmentExportButtons({
     questions,
     title,
 }: RecordingAssessmentExportButtonsProps) {
+    const { t } = useTranslation('studyLibraryLiveSessionRecordingAssessmentExportButtons');
     const instituteLogo = useInstituteLogoStore((s) => s.instituteLogo);
     const instituteName = useInstituteDetailsStore(
         (s) => s.instituteDetails?.institute_name ?? ''
@@ -107,7 +109,7 @@ export function RecordingAssessmentExportButtons({
     const studentPagesRef = useRef<HTMLDivElement>(null);
     const answerPagesRef = useRef<HTMLDivElement>(null);
 
-    const safeTitle = title?.trim() || 'Assessment';
+    const safeTitle = title?.trim() || t('defaultTitle');
     const filenameBase = slugify(safeTitle);
     const todayFormatted = formatToday();
 
@@ -141,7 +143,7 @@ export function RecordingAssessmentExportButtons({
         try {
             await job.exportToPdf();
         } catch (err) {
-            const msg = (err as Error)?.message ?? 'Could not generate PDF';
+            const msg = (err as Error)?.message ?? t('errors.couldNotGeneratePdf');
             if (msg !== 'PDF generation cancelled') {
                 setLastError(msg);
                 toast.error(msg);
@@ -159,16 +161,16 @@ export function RecordingAssessmentExportButtons({
                     {logoDataUrl ? (
                         <img
                             src={logoDataUrl}
-                            alt="Institute logo"
+                            alt={t('header.instituteLogoAlt')}
                             className="max-h-12 max-w-32 object-contain"
                         />
                     ) : null}
                     <div className="font-serif text-base font-semibold tracking-wide text-neutral-900">
-                        {instituteName || 'Institute'}
+                        {instituteName || t('header.instituteFallback')}
                     </div>
                 </div>
                 <div className="text-xs font-medium uppercase tracking-widest text-neutral-600">
-                    {variant === 'answers' ? 'Answer Key' : 'Question Paper'}
+                    {variant === 'answers' ? t('header.answerKey') : t('header.questionPaper')}
                 </div>
             </div>
 
@@ -181,13 +183,13 @@ export function RecordingAssessmentExportButtons({
                 )}
                 {showHeaderInfoStrip && (
                     <div className="mt-2 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-xs text-neutral-600">
-                        <span>{mappedQuestions.length} Questions</span>
+                        <span>{t('header.questionsCount', { count: mappedQuestions.length })}</span>
                         {totalMarks > 0 && (
                             <>
                                 <span aria-hidden className="text-neutral-300">
                                     ·
                                 </span>
-                                <span>{totalMarks} Marks</span>
+                                <span>{t('header.marksCount', { count: totalMarks })}</span>
                             </>
                         )}
                         <span aria-hidden className="text-neutral-300">
@@ -204,27 +206,37 @@ export function RecordingAssessmentExportButtons({
 
     const renderStudentDetails = () => (
         <section
-            aria-label="Student details"
+            aria-label={t('studentDetails.ariaLabel')}
             className="mb-6 grid grid-cols-2 gap-x-10 gap-y-3 border-y border-neutral-200 py-4 text-sm"
         >
-            {(['Name', 'Roll No.', 'Class / Batch', 'Date'] as const).map(
-                (label) => (
-                    <div key={label} className="flex items-baseline gap-2">
-                        <span className="font-medium text-neutral-700">
-                            {label}:
-                        </span>
-                        <span className="grow border-b border-neutral-400" />
-                    </div>
-                )
-            )}
+            {(
+                [
+                    t('studentDetails.fields.name'),
+                    t('studentDetails.fields.rollNo'),
+                    t('studentDetails.fields.classBatch'),
+                    t('studentDetails.fields.date'),
+                ] as const
+            ).map((label) => (
+                <div key={label} className="flex items-baseline gap-2">
+                    <span className="font-medium text-neutral-700">{label}:</span>
+                    <span className="grow border-b border-neutral-400" />
+                </div>
+            ))}
         </section>
     );
+
+    // Reused verbatim by both the student and answer-key export dialogs so the
+    // header-info-strip preview stays identical between them.
+    const headerInfoDescription =
+        t('header.questionsCount', { count: mappedQuestions.length }) +
+        (totalMarks > 0 ? ` · ${t('header.marksCount', { count: totalMarks })}` : '') +
+        ` · ${todayFormatted}`;
 
     const footerLabel = (() => {
         const parts: string[] = [];
         if (instituteName) parts.push(instituteName);
         if (showFooterDate) parts.push(todayFormatted);
-        if (showFooterConfidential) parts.push('Confidential');
+        if (showFooterConfidential) parts.push(t('footer.confidential'));
         return parts.join(' · ');
     })();
 
@@ -254,7 +266,7 @@ export function RecordingAssessmentExportButtons({
                         ) : (
                             <DownloadSimple className="size-3.5" />
                         )}
-                        Export PDF
+                        {t('actions.exportPdf')}
                         {isBusy && activeProgress > 0
                             ? ` ${activeProgress}%`
                             : ''}
@@ -262,7 +274,7 @@ export function RecordingAssessmentExportButtons({
                     </MyButton>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
-                    <DropdownMenuLabel>Choose a version</DropdownMenuLabel>
+                    <DropdownMenuLabel>{t('dropdown.chooseVersion')}</DropdownMenuLabel>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem
                         onSelect={(e) => {
@@ -272,7 +284,7 @@ export function RecordingAssessmentExportButtons({
                         disabled={isBusy}
                     >
                         <DownloadSimple className="mr-2 size-3.5" />
-                        Student version
+                        {t('dropdown.studentVersion')}
                     </DropdownMenuItem>
                     <DropdownMenuItem
                         onSelect={(e) => {
@@ -282,13 +294,13 @@ export function RecordingAssessmentExportButtons({
                         disabled={isBusy}
                     >
                         <DownloadSimple className="mr-2 size-3.5" />
-                        Answer key
+                        {t('dropdown.answerKey')}
                     </DropdownMenuItem>
                 </DropdownMenuContent>
             </DropdownMenu>
 
             <ExportOptionsDialog
-                heading="Export Student PDF"
+                heading={t('dialog.exportStudentPdf')}
                 open={studentDialogOpen}
                 onOpenChange={setStudentDialogOpen}
                 onConfirm={() => {
@@ -298,39 +310,36 @@ export function RecordingAssessmentExportButtons({
                 rows={[
                     {
                         id: 'include-student-details',
-                        label: 'Include student details fields',
-                        description:
-                            'Adds a fill-in strip on page 1 — Name, Roll No., Class / Batch, Date. Turn off for a cleaner practice handout.',
+                        label: t('dialog.rows.includeStudentDetails.label'),
+                        description: t('dialog.rows.includeStudentDetails.description'),
                         checked: includeStudentDetails,
                         onChange: setIncludeStudentDetails,
                     },
                     {
                         id: 'show-title',
-                        label: 'Show assessment title',
-                        description: `Hides the large centred title (currently "${safeTitle}") on every page. The letterhead + variant badge remain.`,
+                        label: t('dialog.rows.showTitle.label'),
+                        description: t('dialog.rows.showTitle.description', { title: safeTitle }),
                         checked: showTitle,
                         onChange: setShowTitle,
                     },
                     {
                         id: 'show-header-info',
-                        label: 'Show header info strip',
-                        description: `${mappedQuestions.length} Questions${totalMarks > 0 ? ` · ${totalMarks} Marks` : ''} · ${todayFormatted}`,
+                        label: t('dialog.rows.showHeaderInfo.label'),
+                        description: headerInfoDescription,
                         checked: showHeaderInfoStrip,
                         onChange: setShowHeaderInfoStrip,
                     },
                     {
                         id: 'show-footer-date',
-                        label: 'Show date in footer',
-                        description:
-                            'Prints the export date alongside the institute name in the page footer.',
+                        label: t('dialog.rows.showFooterDate.label'),
+                        description: t('dialog.rows.showFooterDate.description'),
                         checked: showFooterDate,
                         onChange: setShowFooterDate,
                     },
                     {
                         id: 'show-footer-confidential',
-                        label: 'Show "Confidential" in footer',
-                        description:
-                            'Adds a Confidential label to the page footer. Useful for exams; remove for casual practice handouts.',
+                        label: t('dialog.rows.showFooterConfidential.label'),
+                        description: t('dialog.rows.showFooterConfidential.descriptionLong'),
                         checked: showFooterConfidential,
                         onChange: setShowFooterConfidential,
                     },
@@ -338,7 +347,7 @@ export function RecordingAssessmentExportButtons({
             />
 
             <ExportOptionsDialog
-                heading="Export Answer Key PDF"
+                heading={t('dialog.exportAnswerKeyPdf')}
                 open={answerDialogOpen}
                 onOpenChange={setAnswerDialogOpen}
                 onConfirm={() => {
@@ -348,31 +357,29 @@ export function RecordingAssessmentExportButtons({
                 rows={[
                     {
                         id: 'ak-show-title',
-                        label: 'Show assessment title',
-                        description: `Hides the large centred title (currently "${safeTitle}") on every page. The letterhead + variant badge remain.`,
+                        label: t('dialog.rows.showTitle.label'),
+                        description: t('dialog.rows.showTitle.description', { title: safeTitle }),
                         checked: showTitle,
                         onChange: setShowTitle,
                     },
                     {
                         id: 'ak-show-header-info',
-                        label: 'Show header info strip',
-                        description: `${mappedQuestions.length} Questions${totalMarks > 0 ? ` · ${totalMarks} Marks` : ''} · ${todayFormatted}`,
+                        label: t('dialog.rows.showHeaderInfo.label'),
+                        description: headerInfoDescription,
                         checked: showHeaderInfoStrip,
                         onChange: setShowHeaderInfoStrip,
                     },
                     {
                         id: 'ak-show-footer-date',
-                        label: 'Show date in footer',
-                        description:
-                            'Prints the export date alongside the institute name in the page footer.',
+                        label: t('dialog.rows.showFooterDate.label'),
+                        description: t('dialog.rows.showFooterDate.description'),
                         checked: showFooterDate,
                         onChange: setShowFooterDate,
                     },
                     {
                         id: 'ak-show-footer-confidential',
-                        label: 'Show "Confidential" in footer',
-                        description:
-                            'Adds a Confidential label to the page footer.',
+                        label: t('dialog.rows.showFooterConfidential.label'),
+                        description: t('dialog.rows.showFooterConfidential.descriptionShort'),
                         checked: showFooterConfidential,
                         onChange: setShowFooterConfidential,
                     },
@@ -465,6 +472,7 @@ function ExportOptionsDialog({
     onConfirm,
     rows,
 }: ExportOptionsDialogProps) {
+    const { t } = useTranslation('studyLibraryLiveSessionRecordingAssessmentExportButtons');
     return (
         <MyDialog
             heading={heading}
@@ -477,19 +485,17 @@ function ExportOptionsDialog({
                         buttonType="secondary"
                         onClick={() => onOpenChange(false)}
                     >
-                        Cancel
+                        {t('dialog.cancel')}
                     </MyButton>
                     <MyButton type="button" onClick={onConfirm}>
                         <DownloadSimple className="size-3.5" />
-                        Export PDF
+                        {t('actions.exportPdf')}
                     </MyButton>
                 </>
             }
         >
             <div className="flex flex-col gap-3 text-sm text-neutral-700">
-                <p className="text-xs text-neutral-500">
-                    Tick the sections you want in the exported PDF.
-                </p>
+                <p className="text-xs text-neutral-500">{t('dialog.tickSectionsHint')}</p>
                 {rows.map((row) => (
                     <div
                         key={row.id}

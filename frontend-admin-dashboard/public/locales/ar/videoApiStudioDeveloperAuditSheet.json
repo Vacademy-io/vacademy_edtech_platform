@@ -1,0 +1,83 @@
+{
+    "sheet": {
+        "title": "تدقيق المطورين",
+        "internalBadge": "داخلي",
+        "pipelineBadge": "خط الأنابيب {{version}}",
+        "targetBadge": "الهدف: {{stage}}",
+        "copyAuditButton": "نسخ التدقيق الكامل بصيغة JSON",
+        "copySuccess": "تم نسخ تدقيق JSON إلى الحافظة",
+        "copyError": "فشل النسخ"
+    },
+    "section": {
+        "configuration": "الإعدادات",
+        "routingDecisions": "قرارات التوجيه",
+        "modelsAndCosts": "النماذج والتكاليف",
+        "pipelinePath": "مسار خط الأنابيب",
+        "perShotLedger": "سجل اللقطات ({{count}})",
+        "artifactsAndCurl": "الأصول وأوامر curl",
+        "rawJson": "بيانات JSON الخام"
+    },
+    "routing": {
+        "noSnapshot": "لا توجد لقطة توجيه نيّة محفوظة (فيديو قديم).",
+        "none": "لا شيء"
+    },
+    "models": {
+        "aiVideoHeading": "فيديو الذكاء الاصطناعي (Veo)"
+    },
+    "pipelinePath": {
+        "shotIndex": "لقطة {{index}}",
+        "shotCount_zero": "({{count}} لقطة)",
+        "shotCount_one": "(لقطة واحدة {{count}})",
+        "shotCount_two": "(لقطتان {{count}})",
+        "shotCount_few": "({{count}} لقطات)",
+        "shotCount_many": "({{count}} لقطة)",
+        "shotCount_other": "({{count}} لقطة)"
+    },
+    "synthesizedPath": {
+        "noLiveLog": "لا يوجد سجل أحداث حي لهذا التشغيل (تم التحميل من السجل). المسار مُركَّب من الحالة المحفوظة.",
+        "reviewModeStopped": "تشغيل في وضع المراجعة — توقف عند {{stage}}.",
+        "filmingStage_zero": "التصوير ({{count}} لقطة)",
+        "filmingStage_one": "التصوير (لقطة واحدة {{count}})",
+        "filmingStage_two": "التصوير (لقطتان {{count}})",
+        "filmingStage_few": "التصوير ({{count}} لقطات)",
+        "filmingStage_many": "التصوير ({{count}} لقطة)",
+        "filmingStage_other": "التصوير ({{count}} لقطة)"
+    },
+    "shotLedger": {
+        "empty": "لا توجد بيانات لكل لقطة بعد.",
+        "header": {
+            "type": "النوع",
+            "intent": "النيّة",
+            "background": "الخلفية",
+            "audio": "الصوت",
+            "duration": "المدة",
+            "words": "الكلمات",
+            "veoCredits": "رصيد Veo",
+            "veoRequest": "طلب Veo"
+        },
+        "audioPolicy": {
+            "intrinsic": "ذاتي",
+            "narrate": "سرد"
+        }
+    },
+    "artifacts": {
+        "shotMetaCount_zero": "timeline.meta.shots[] يحتوي على {{count}} إدخال لكل لقطة",
+        "shotMetaCount_one": "timeline.meta.shots[] يحتوي على إدخال واحد لكل لقطة ({{count}})",
+        "shotMetaCount_two": "timeline.meta.shots[] يحتوي على إدخالين لكل لقطة ({{count}})",
+        "shotMetaCount_few": "timeline.meta.shots[] يحتوي على {{count}} إدخالات لكل لقطة",
+        "shotMetaCount_many": "timeline.meta.shots[] يحتوي على {{count}} إدخالًا لكل لقطة",
+        "shotMetaCount_other": "timeline.meta.shots[] يحتوي على {{count}} إدخال لكل لقطة"
+    },
+    "kvGrid": {
+        "empty": "(لا شيء)"
+    },
+    "urlRow": {
+        "notPresent": "غير متوفر",
+        "copyLabel": "نسخ",
+        "openInNewTab": "فتح في تبويب جديد"
+    },
+    "copy": {
+        "copyTitle": "نسخ: {{value}}",
+        "copyButtonTitle": "نسخ"
+    }
+}

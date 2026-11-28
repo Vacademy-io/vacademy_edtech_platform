@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { getInstituteId } from '@/constants/helper';
 import { SlideGeneration } from '../../../shared/types';
 import { generateCourseOutline, CourseOutlineRequest } from '../services/courseApiService';
@@ -6,21 +7,22 @@ import { transformApiResponseToSlides } from '../utils/transformApiResponse';
 import { buildApiPayload } from '../utils/buildApiPayload';
 
 export function useCourseGeneration() {
+    const { t } = useTranslation('studyLibraryAiCopilotUseCourseGeneration');
     const [slides, setSlides] = useState<SlideGeneration[]>([]);
     const [isGenerating, setIsGenerating] = useState(true);
-    const [generationProgress, setGenerationProgress] = useState<string>('Initializing...');
+    const [generationProgress, setGenerationProgress] = useState<string>(t('initializing'));
     const [courseMetadata, setCourseMetadata] = useState<any>(null);
     const [error, setError] = useState<Error | null>(null);
 
     const generate = useCallback(async (courseConfig: any) => {
         try {
             setIsGenerating(true);
-            setGenerationProgress('Initializing...');
+            setGenerationProgress(t('initializing'));
             setError(null);
 
             const instituteId = getInstituteId();
             if (!instituteId) {
-                throw new Error('Institute ID not found');
+                throw new Error(t('instituteIdNotFound'));
             }
 
             // Build API payload
@@ -54,7 +56,7 @@ export function useCourseGeneration() {
             
             setSlides(generatedSlides);
             setIsGenerating(false);
-            setGenerationProgress('Complete!');
+            setGenerationProgress(t('complete'));
         } catch (err) {
             console.error('=== Error Generating Course Outline ===');
             console.error('Error:', err);
@@ -64,10 +66,10 @@ export function useCourseGeneration() {
             }
             setSlides([]);
             setIsGenerating(false);
-            setError(err instanceof Error ? err : new Error('Unknown error'));
+            setError(err instanceof Error ? err : new Error(t('unknownError')));
             throw err;
         }
-    }, []);
+    }, [t]);
 
     return {
         slides,

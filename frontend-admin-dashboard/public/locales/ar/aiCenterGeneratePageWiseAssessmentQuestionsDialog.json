@@ -1,0 +1,23 @@
+{
+    "trigger": {
+        "extracting": "جارٍ الاستخراج…",
+        "extractCopiedQuestions": "استخراج الأسئلة المنسوخة"
+    },
+    "header": {
+        "instituteLogoAlt": "شعار المؤسسة"
+    },
+    "generateMore": {
+        "triggerLabel": "إنشاء المزيد",
+        "dialogTitle": "إنشاء المزيد من الأسئلة",
+        "inputPlaceholder": "أدخل المواضيع لإنشاء الأسئلة",
+        "submitLabel": "إنشاء الأسئلة"
+    },
+    "closeButton": "إغلاق",
+    "pageActions": {
+        "duplicate": "تكرار",
+        "delete": "حذف"
+    },
+    "emptyState": {
+        "noQuestions": "لا توجد أسئلة."
+    }
+}

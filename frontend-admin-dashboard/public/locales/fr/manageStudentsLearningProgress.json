@@ -1,0 +1,32 @@
+{
+    "emptyState": {
+        "learnerUnavailable": "Détails de l'apprenant indisponibles",
+        "noCourseContent": "Aucun contenu de cours pour le moment",
+        "noCourseContentHint": "Aucune matière n'a encore été créée pour ce groupe."
+    },
+    "errorState": {
+        "title": "Impossible de charger la progression",
+        "hint": "Une erreur s'est produite lors du chargement de la progression de cet apprenant."
+    },
+    "batchPicker": {
+        "label": "Voir la progression pour"
+    },
+    "hero": {
+        "courseFallback": "Cours",
+        "percentComplete": "{{percent}} % terminé",
+        "behindOn_one": "En retard sur {{count}} {{term}}",
+        "behindOn_many": "En retard sur {{count}} {{term}}s",
+        "behindOn_other": "En retard sur {{count}} {{term}}s"
+    },
+    "actions": {
+        "learningTimeline": "Chronologie d'apprentissage",
+        "learningProgress": "Progression d'apprentissage"
+    },
+    "courseContent": {
+        "heading": "Contenu du cours",
+        "selectSubject": "Sélectionner {{term}}",
+        "noModules": "Aucun {{moduleTerm}} pour cette {{subjectTerm}}.",
+        "noChapters": "Aucun chapitre dans ce {{moduleTerm}}.",
+        "moduleLabel": "{{moduleTerm}} : {{moduleName}}"
+    }
+}

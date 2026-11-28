@@ -1,0 +1,22 @@
+{
+    "header": {
+        "title": "نشاط اليوم",
+        "subtitle": "ملخص فوري لتفاعل المستخدمين"
+    },
+    "stats": {
+        "uniqueUsers": "المستخدمون الفريدون",
+        "sessions": "الجلسات",
+        "apiCalls": "استدعاءات واجهة البرمجة",
+        "activityTime": "وقت النشاط",
+        "avgSession": "متوسط الجلسة",
+        "peakHour": "ساعة الذروة"
+    },
+    "suffix": {
+        "hours": "س",
+        "minutes": "د",
+        "oclock": ":00"
+    },
+    "error": {
+        "widgetName": "ملخص النشاط"
+    }
+}

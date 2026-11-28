@@ -7,6 +7,8 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
+import i18n from "@/i18n";
 import { SignupSettings } from "@/config/signup/defaultSignupSettings";
 import { useUnifiedRegistration } from "@/components/common/auth/signup/hooks/use-unified-registration";
 import { FcGoogle } from "react-icons/fc"; // design-lint-ignore: brand logo, no phosphor equivalent
@@ -33,12 +35,12 @@ interface CredentialsFormData {
 }
 
 const credentialsSchema = z.object({
-  fullName: z.string().min(2, "Full name must be at least 2 characters"),
-  username: z.string().min(3, "Username must be at least 3 characters"),
-  password: z.string().min(8, "Password must be at least 8 characters"),
+  fullName: z.string().min(2, i18n.t("authExtraB:common.fullNameMinLength")),
+  username: z.string().min(3, i18n.t("authExtraB:common.usernameMinLength")),
+  password: z.string().min(8, i18n.t("authExtraB:common.passwordMinLength")),
   confirmPassword: z.string(),
 }).refine((data) => data.password === data.confirmPassword, {
-  message: "Passwords don't match",
+  message: i18n.t("authExtraB:common.passwordsDontMatch"),
   path: ["confirmPassword"],
 });
 
@@ -50,6 +52,7 @@ export function GoogleSignupProvider({
   onBackToProviders,
   className = ""
 }: GoogleSignupProviderProps) {
+  const { t } = useTranslation("authExtraB");
   const { isRegistering, registerUser: registerUserUnified } = useUnifiedRegistration();
   const [currentStep, setCurrentStep] = useState<"button" | "credentials" | "processing">("button");
   const [googleProfile, setGoogleProfile] = useState<GoogleProfile | null>(null);
@@ -93,7 +96,7 @@ export function GoogleSignupProvider({
       }
     } catch (error) {
       console.error("Google OAuth error:", error);
-      toast.error("Failed to authenticate with Google");
+      toast.error(t("googleSignup.toast.oauthFailed"));
       setCurrentStep("button");
     }
   };
@@ -118,7 +121,7 @@ export function GoogleSignupProvider({
       onSignupSuccess?.();
     } catch (error) {
       console.error("Direct registration error:", error);
-      toast.error("Failed to register user");
+      toast.error(t("common.registerFailed"));
       setCurrentStep("button");
     }
   };
@@ -147,7 +150,7 @@ export function GoogleSignupProvider({
       onSignupSuccess?.();
     } catch (error) {
       console.error("Registration error:", error);
-      toast.error("Failed to register user");
+      toast.error(t("common.registerFailed"));
     }
   };
 
@@ -161,9 +164,9 @@ export function GoogleSignupProvider({
   if (currentStep === "processing") {
     return (
       <div className={`flex items-center justify-center p-8 ${className}`}>
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto mb-4"></div>
-          <p className="text-gray-600">Connecting to Google...</p>
+        <div className="text-center space-y-4">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
+          <p className="text-gray-600">{t("googleSignup.connecting")}</p>
         </div>
       </div>
     );
@@ -188,9 +191,9 @@ export function GoogleSignupProvider({
         className="text-center space-y-3"
       >
         <div className="space-y-1">
-          <h3 className="text-lg font-semibold text-gray-900">Complete Your Profile</h3>
+          <h3 className="text-lg font-semibold text-gray-900">{t("common.completeYourProfileTitle")}</h3>
           <p className="text-sm text-gray-600">
-            We've got your name from Google. Please set your username and password.
+            {t("googleSignup.credentialsStep.subtitle")}
           </p>
         </div>
       </motion.div>
@@ -202,11 +205,11 @@ export function GoogleSignupProvider({
           transition={{ delay: 0.2 }}
           className="space-y-2"
         >
-          <Label htmlFor="fullName" className="text-sm font-medium text-gray-700">Full Name</Label>
+          <Label htmlFor="fullName" className="text-sm font-medium text-gray-700">{t("common.fullNameLabel")}</Label>
           <Input
             id="fullName"
             {...credentialsForm.register("fullName")}
-            placeholder="Your full name"
+            placeholder={t("common.fullNamePlaceholder")}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             readOnly
           />
@@ -218,11 +221,11 @@ export function GoogleSignupProvider({
           transition={{ delay: 0.3 }}
           className="space-y-2"
         >
-          <Label htmlFor="username" className="text-sm font-medium text-gray-700">Username *</Label>
+          <Label htmlFor="username" className="text-sm font-medium text-gray-700">{t("common.usernameLabel")}</Label>
           <Input
             id="username"
             {...credentialsForm.register("username")}
-            placeholder="Choose a username"
+            placeholder={t("common.usernamePlaceholder")}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
           {credentialsForm.formState.errors.username && (
@@ -236,13 +239,13 @@ export function GoogleSignupProvider({
           transition={{ delay: 0.4 }}
           className="space-y-2"
         >
-          <Label htmlFor="password" className="text-sm font-medium text-gray-700">Password *</Label>
+          <Label htmlFor="password" className="text-sm font-medium text-gray-700">{t("common.passwordLabel")}</Label>
           <div className="relative">
             <Input
               id="password"
               type={showPassword ? "text" : "password"}
               {...credentialsForm.register("password")}
-              placeholder="Create a password"
+              placeholder={t("common.passwordPlaceholder")}
               className="w-full px-3 py-2 pe-10 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
             <button
@@ -273,13 +276,13 @@ export function GoogleSignupProvider({
           transition={{ delay: 0.5 }}
           className="space-y-2"
         >
-          <Label htmlFor="confirmPassword" className="text-sm font-medium text-gray-700">Confirm Password *</Label>
+          <Label htmlFor="confirmPassword" className="text-sm font-medium text-gray-700">{t("common.confirmPasswordLabel")}</Label>
           <div className="relative">
             <Input
               id="confirmPassword"
               type={showConfirmPassword ? "text" : "password"}
               {...credentialsForm.register("confirmPassword")}
-              placeholder="Confirm your password"
+              placeholder={t("common.confirmPasswordPlaceholder")}
               className="w-full px-3 py-2 pe-10 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
             <button
@@ -316,14 +319,14 @@ export function GoogleSignupProvider({
             onClick={handleBackToProviders}
             className="flex-1 border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-gray-400"
           >
-            Back
+            {t("common.back")}
           </Button>
-          <Button 
-            type="submit" 
+          <Button
+            type="submit"
             className="flex-1 bg-gray-900 hover:bg-black text-white font-medium py-3 px-4 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md"
             disabled={isRegistering}
           >
-            {isRegistering ? "Creating Account..." : "Create Account"}
+            {isRegistering ? t("common.creatingAccount") : t("common.createAccount")}
           </Button>
         </motion.div>
       </form>
@@ -346,9 +349,9 @@ export function GoogleSignupProvider({
       type="button"
     >
           <FcGoogle className="w-5 h-5" />
-        Continue with Google
+        {t("googleSignup.button")}
     </motion.button>
-        
+
         {/* Test button for direct registration */}
         <Button
           onClick={() => handleDirectRegistration({
@@ -358,16 +361,16 @@ export function GoogleSignupProvider({
           className="w-full flex items-center justify-center gap-3 px-4 py-3 border border-blue-200 rounded-md bg-blue-50 text-blue-700 font-medium hover:bg-blue-100 hover:border-blue-300 hover:shadow-sm transition-all duration-200 group"
           type="button"
         >
-          🧪 Test Direct Registration
+          {t("googleSignup.testButton")}
         </Button>
-        
+
         {onBackToProviders && (
           <Button
             onClick={onBackToProviders}
             variant="ghost"
             className="w-full text-gray-600 hover:text-gray-800"
           >
-            ← Back to options
+            {t("googleSignup.backToOptions")}
           </Button>
         )}
       </motion.div>

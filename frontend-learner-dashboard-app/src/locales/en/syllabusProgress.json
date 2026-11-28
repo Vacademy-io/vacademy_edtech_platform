@@ -1,0 +1,64 @@
+{
+  "page": {
+    "title": "My syllabus",
+    "subtitle": "Your class syllabus, week by week, as your teacher marks it."
+  },
+  "nav": {
+    "mySyllabus": "My syllabus"
+  },
+  "course": {
+    "progressLabel": "Syllabus progress",
+    "blocksDone": "{{done}} of {{total}} done",
+    "onWeeks": "You are on Weeks {{from}}–{{to}}",
+    "onWeek": "You are on Week {{week}}",
+    "onBlock": "You are on {{label}}",
+    "allDone": "You have completed the whole syllabus",
+    "notStarted": "Your teacher hasn't marked any weeks yet",
+    "noBlocks": "No weeks have been added to this syllabus yet."
+  },
+  "trimester": {
+    "label": "Trimester {{number}}",
+    "other": "Other weeks",
+    "summary": "{{done}}/{{total}} done"
+  },
+  "block": {
+    "weeks": "Weeks {{from}}–{{to}}",
+    "week": "Week {{week}}",
+    "month": "Month {{month}}",
+    "fallback": "Block {{order}}",
+    "current": "You are here",
+    "pointsProgress": "{{done}} of {{total}} points covered",
+    "pointDone": "Covered",
+    "pointPending": "Not covered yet",
+    "noPoints": "No topics listed for this block."
+  },
+  "status": {
+    "completed": "Completed",
+    "completedOn": "Completed {{date}}",
+    "inProgress": "In progress",
+    "skipped": "Skipped",
+    "notStarted": "Not started"
+  },
+  "note": {
+    "from": "Note from {{name}}",
+    "fallback": "Teacher's note"
+  },
+  "empty": {
+    "title": "No syllabus to show yet",
+    "description": "When your teacher starts tracking your class syllabus, your progress will appear here."
+  },
+  "error": {
+    "title": "Couldn't load your syllabus"
+  },
+  "card": {
+    "title": "My syllabus",
+    "open": "View syllabus",
+    "stagesLabel": "Stages of your course",
+    "currentStage": "(your stage)",
+    "thisWeek": "This week · {{label}}",
+    "blocksDone_one": "{{done}} of {{count}} week block done · {{percent}}%",
+    "blocksDone_other": "{{done}} of {{count}} week blocks done · {{percent}}%",
+    "morePoints_one": "+{{count}} more topic",
+    "morePoints_other": "+{{count}} more topics"
+  }
+}

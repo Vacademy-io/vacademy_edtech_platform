@@ -1,0 +1,42 @@
+{
+    "validation": {
+        "notApplicable": "लागू नहीं",
+        "fieldRequired": {
+            "message": "{{field}} आवश्यक है",
+            "resolution": "कृपया {{field}} के लिए एक मान दर्ज करें"
+        },
+        "invalidValue": {
+            "message": "{{field}} के लिए अमान्य मान",
+            "resolution": "मान इनमें से एक होना चाहिए: {{options}}"
+        },
+        "invalidDate": {
+            "message": "{{field}} के लिए अमान्य दिनांक प्रारूप",
+            "resolution": "दिनांक इस प्रारूप में होनी चाहिए: {{format}}"
+        },
+        "invalidFormat": {
+            "message": "{{field}} के लिए अमान्य प्रारूप",
+            "resolution": "कृपया प्रारूप जांचें"
+        }
+    },
+    "errors": {
+        "unknownError": "अज्ञात त्रुटि"
+    },
+    "emptyState": {
+        "noData": "कोई अपलोड किया गया डेटा नहीं मिला!"
+    },
+    "editingMode": {
+        "label": "संपादन मोड सक्षम करें",
+        "hint": "संपादित करने के लिए सेल पर क्लिक करें"
+    },
+    "summary": {
+        "foundIssuesInRows": "{{rows}} में {{issues}} मिलीं",
+        "issuesCount_one": "{{count}} सत्यापन समस्या",
+        "issuesCount_other": "{{count}} सत्यापन समस्याएं",
+        "rowsCount_one": "{{count}} पंक्ति",
+        "rowsCount_other": "{{count}} पंक्तियां"
+    },
+    "buttons": {
+        "downloadErrorCases": "त्रुटि मामले डाउनलोड करें",
+        "downloadValidData": "मान्य डेटा डाउनलोड करें"
+    }
+}

@@ -50,6 +50,10 @@ public class ReportPdfRenderService {
     @Autowired
     private StudentReportHtmlV2Builder studentReportHtmlV2Builder;
 
+    /** Report option: an assessment's profile can hide every per-question item. */
+    @Autowired
+    private vacademy.io.assessment_service.features.assessment.service.aireport.ReportProfileService reportProfileService;
+
     @Autowired
     private StudentReportAnalyticsService studentReportAnalyticsService;
 
@@ -107,6 +111,10 @@ public class ReportPdfRenderService {
                 ? assessmentRepository.findById(ctx.getAssessmentId()).orElse(null)
                 : null;
         String evaluationType = assessment != null ? assessment.getEvaluationType() : null;
+        vacademy.io.assessment_service.features.assessment.service.aireport.ReportOptions options =
+                ctx.getAssessmentId() != null && ctx.getInstituteId() != null
+                        ? reportProfileService.reportOptions(ctx.getAssessmentId(), ctx.getInstituteId())
+                        : vacademy.io.assessment_service.features.assessment.service.aireport.ReportOptions.ALL;
         boolean autoEvaluated = !"MANUAL".equalsIgnoreCase(evaluationType);
 
         String attemptId = detail != null && detail.getQuestionOverallDetailDto() != null
@@ -143,9 +151,17 @@ public class ReportPdfRenderService {
                 .studentName(studentName)
                 .registrationUsername(registration != null ? registration.getUsername() : null)
                 .userEmail(registration != null ? registration.getUserEmail() : null)
+                // Only when this assessment chose fields (report_options.student_fields).
+                .studentDetails(reportProfileService != null
+                        ? reportProfileService.studentDetails(ctx.getAssessmentId(), attemptId)
+                        : null)
                 .fullLeaderboard(ctx.getFullLeaderboard())
                 .sections(ctx.getSections())
                 .analytics(analytics)
+                .hideQuestionWise(!options.showQuestionWise())
+                .hideYourAnswer(!options.showYourAnswer())
+                .hideCorrectAnswer(!options.showCorrectAnswer())
+                .hideExplanation(!options.showExplanation())
                 .build());
     }
 

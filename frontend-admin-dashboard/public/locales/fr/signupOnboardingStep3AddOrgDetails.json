@@ -1,0 +1,23 @@
+{
+    "heading": "Créez votre profil dans l'organisation",
+    "fullNameLabel": "Nom complet",
+    "fullNamePlaceholder": "Nom complet (prénom et nom)",
+    "usernameLabel": "Nom d'utilisateur",
+    "usernamePlaceholder": "Saisissez le nom d'utilisateur",
+    "emailLabel": "E-mail",
+    "emailPlaceholder": "Saisissez l'e-mail",
+    "passwordLabel": "Mot de passe",
+    "confirmPasswordLabel": "Confirmer le mot de passe",
+    "finish": "Terminer",
+    "schema": {
+        "nameRequired": "Le nom est requis",
+        "usernameRequired": "Le nom d'utilisateur est requis",
+        "usernameNoUppercase": "Le nom d'utilisateur ne doit pas contenir de majuscules",
+        "emailRequired": "L'e-mail est requis",
+        "emailInvalid": "Format d'e-mail invalide",
+        "passwordMinLength": "Le mot de passe doit comporter au moins 6 caractères",
+        "confirmPasswordRequired": "La confirmation du mot de passe est requise",
+        "roleTypeRequired": "Au moins un type de rôle est requis",
+        "passwordsMismatch": "Les mots de passe ne correspondent pas"
+    }
+}

@@ -22,10 +22,12 @@ export const fetchModulesWithChaptersPublic = async (
 export const fetchModulesWithChapters = async (
   subjectId: string,
   packageSessionId: string,
+  signal?: AbortSignal,
 ) => {
   const response = await authenticatedAxiosInstance.get(
     MODULES_WITH_CHAPTERS_PRIVATE,
     {
+      signal,
       params: {
         subjectId: subjectId,
         packageSessionId: packageSessionId,

@@ -15,6 +15,7 @@ import vacademy.io.notification_service.features.announcements.enums.EventType;
 import vacademy.io.notification_service.features.announcements.enums.ModeType;
 import vacademy.io.notification_service.features.announcements.repository.RichTextDataRepository;
 import vacademy.io.notification_service.features.chat.dto.ChatMessagePageResponse;
+import vacademy.io.notification_service.features.chat.dto.EditChatMessageRequest;
 import vacademy.io.notification_service.features.chat.dto.ChatMessagePayload;
 import vacademy.io.notification_service.features.chat.dto.ChatMessageResponse;
 import vacademy.io.notification_service.features.chat.dto.SendChatMessageRequest;
@@ -29,6 +30,7 @@ import vacademy.io.notification_service.features.chat.repository.ChatConversatio
 import vacademy.io.notification_service.features.chat.repository.ChatMessageRepository;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -173,25 +175,122 @@ public class ChatMessageService {
     }
 
     // ---------------------------------------------------------------------
+    // Edit
+    // ---------------------------------------------------------------------
+
+    /**
+     * Rewrite the body of a message you sent — the "sent it by mistake" fix.
+     *
+     * SENDER ONLY, deliberately: a moderator can take a message down, but nobody may put different
+     * words in someone else's mouth. The edit is marked with {@code isEdited} so readers can see the
+     * message changed, keeps its seq/created_at (so it stays put in the thread rather than jumping to
+     * the bottom), and re-runs the CONTENT moderation rules so an edit can't smuggle past the banned
+     * keyword / link filters.
+     */
+    @Transactional
+    public ChatMessageResponse editMessage(String conversationId, String messageId, String userId,
+                                           String userRole, EditChatMessageRequest req) {
+        ChatConversation conv = convRepo.findById(conversationId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "CONVERSATION_NOT_FOUND"));
+
+        // Institute kill-switch: if chat is off, it is off for edits too.
+        if (!permissionService.isChatEnabled(conv.getInstituteId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "CHAT_DISABLED");
+        }
+
+        ChatMessage msg = messageRepo.findById(messageId)
+                .filter(m -> conversationId.equals(m.getConversationId()))
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "MESSAGE_NOT_FOUND"));
+
+        if (!userId.equals(msg.getSenderId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "NOT_THE_SENDER");
+        }
+        // Institute setting (students only) — enforced HERE, not just hidden in the client.
+        if (!permissionService.canEditOwnMessage(conv.getInstituteId(), userRole)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "EDIT_NOT_ALLOWED");
+        }
+        if (Boolean.TRUE.equals(msg.getIsDeleted())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "MESSAGE_DELETED");
+        }
+
+        String text = req.getText() == null ? "" : req.getText().trim();
+        if (text.isBlank()) {
+            // Clearing the body would leave a blank bubble; deleting is the way to remove a message.
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "EMPTY_MESSAGE");
+        }
+
+        // No-op edit: don't burn an "edited" marker (or a fan-out) on unchanged text.
+        String current = msg.getRichTextId() == null ? null
+                : richTextRepo.findById(msg.getRichTextId()).map(RichTextData::getContent).orElse(null);
+        if (text.equals(current)) {
+            return messageMapper.toResponse(msg, current);
+        }
+
+        ChatRulesService.ModerationResult moderation = rulesService.enforceBeforeEdit(conv, text);
+
+        if (msg.getRichTextId() != null) {
+            RichTextData rt = richTextRepo.findById(msg.getRichTextId()).orElse(null);
+            if (rt != null) {
+                rt.setContent(text);
+                if (req.getRichTextType() != null) {
+                    rt.setType(req.getRichTextType());
+                }
+                richTextRepo.save(rt);
+            } else {
+                msg.setRichTextId(richTextRepo.save(
+                        new RichTextData(req.getRichTextType() != null ? req.getRichTextType() : "text", text)).getId());
+            }
+        } else {
+            // Attachment-only message gaining a caption.
+            msg.setRichTextId(richTextRepo.save(
+                    new RichTextData(req.getRichTextType() != null ? req.getRichTextType() : "text", text)).getId());
+        }
+
+        msg.setIsEdited(true);
+        if (moderation.flagged()) {
+            msg.setIsFlagged(true);
+            msg.setFlagReason(moderation.reason());
+        }
+        msg = messageRepo.save(msg);
+
+        // The list view's denormalized preview is only this message's if it is still the latest one.
+        if (msg.getSeq() != null && msg.getSeq().equals(conv.getLastMessageSeq())) {
+            conv.setLastMessagePreview(buildPreview(text, msg.getContentType()));
+            convRepo.save(conv);
+        }
+
+        if (moderation.flagged()) {
+            reportService.createSystemFlag(conv, msg, moderation.reason());
+        }
+
+        ChatMessageResponse response = messageMapper.toResponse(msg, text);
+        publishUpdateFanout(conv, userId, msg, response);
+        return response;
+    }
+
+    // ---------------------------------------------------------------------
     // Soft delete (tombstone)
     // ---------------------------------------------------------------------
 
     @Transactional
-    public ChatMessageResponse deleteMessage(String conversationId, String messageId, String userId, String userRole) {
+    public ChatMessageResponse deleteMessage(String conversationId, String messageId, String userId,
+                                             String userRole, String instituteId) {
         ChatConversation conv = convRepo.findById(conversationId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "CONVERSATION_NOT_FOUND"));
         ChatMessage msg = messageRepo.findById(messageId)
                 .filter(m -> conversationId.equals(m.getConversationId()))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "MESSAGE_NOT_FOUND"));
 
-        // Sender may delete their own message; otherwise the caller must be an active moderator/owner.
+        // Sender may delete their own message; otherwise the caller must be able to moderate here.
         boolean isSender = userId.equals(msg.getSenderId());
-        boolean isModerator = !isSender && memberRepo.findByConversationIdAndUserId(conversationId, userId)
-                .filter(m -> Boolean.TRUE.equals(m.getIsActive()))
-                .map(m -> ChatMemberRole.MODERATOR.name().equals(m.getMemberRole())
-                        || ChatMemberRole.OWNER.name().equals(m.getMemberRole()))
-                .orElse(false);
-        if (!isSender && !isModerator) {
+        if (isSender) {
+            // Institute setting (students only). A moderator deleting their OWN message is unaffected:
+            // the flag never applies to teachers/admins, and moderation is a separate authority below.
+            if (!permissionService.canDeleteOwnMessage(conv.getInstituteId(), userRole)
+                    && !canModerate(conv, userId, userRole, instituteId)) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "DELETE_NOT_ALLOWED");
+            }
+        } else if (!canModerate(conv, userId, userRole, instituteId)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "NOT_ALLOWED");
         }
 
@@ -205,8 +304,39 @@ public class ChatMessageService {
 
         // Re-render the tombstone on every other client.
         ChatMessageResponse response = messageMapper.toResponse(msg);
-        publishFanout(conv, userId, response);
+        publishUpdateFanout(conv, userId, msg, response);
         return response;
+    }
+
+    /**
+     * Can this caller moderate (delete anyone's message in) this conversation?
+     *
+     * TWO independent grants, because the member row alone is not enough:
+     *   1. an active MODERATOR/OWNER member row, or
+     *   2. the institute ADMIN role, scoped to this conversation's institute, on a GROUP channel.
+     *
+     * (2) exists because an admin sees every batch group in the institute whether or not they ever
+     * joined one ({@code addRoleVisibleBatches}) — with no member row a member-only check 403s the
+     * institute's own administrator out of moderating their own institute.
+     *
+     * Deliberately evaluated from the token on every request and NOT written back as a MODERATOR
+     * member row: the reconciler exempts non-MEMBER rows from roster clean-up, so persisting the grant
+     * would make anyone it touched permanently un-removable from the batch — and an admin whose role
+     * is later revoked would keep moderating. DIRECT threads are excluded outright; a DM is private to
+     * its two participants and only its sender may delete from it, exactly as before.
+     */
+    private boolean canModerate(ChatConversation conv, String userId, String userRole, String instituteId) {
+        boolean isConversationModerator = memberRepo.findByConversationIdAndUserId(conv.getId(), userId)
+                .filter(m -> Boolean.TRUE.equals(m.getIsActive()))
+                .map(m -> ChatMemberRole.MODERATOR.name().equals(m.getMemberRole())
+                        || ChatMemberRole.OWNER.name().equals(m.getMemberRole()))
+                .orElse(false);
+        if (isConversationModerator) {
+            return true;
+        }
+        return "admin".equals(ChatPermissionService.normalizeRole(userRole))
+                && instituteId != null && instituteId.equals(conv.getInstituteId())
+                && !ChatConversationType.DIRECT.name().equals(conv.getType());
     }
 
     private ChatConversationMember resolveCallerMemberForSend(ChatConversation conv, String userId, String userRole, String userName) {
@@ -250,8 +380,26 @@ public class ChatMessageService {
     }
 
     private void publishFanout(ChatConversation conv, String senderId, ChatMessageResponse response) {
+        publishFanout(conv, senderId, response, EventType.CHAT_MESSAGE, "chatmsg_" + response.getId());
+    }
+
+    /**
+     * Fan out an in-place change to an existing message (edit / tombstone) as CHAT_MESSAGE_UPDATED.
+     * Never as CHAT_MESSAGE — see the enum's javadoc: a client that treats this as a new arrival bumps
+     * unread badges and rewrites the conversation-list preview with an older message.
+     */
+    private void publishUpdateFanout(ChatConversation conv, String actorId, ChatMessage msg,
+                                     ChatMessageResponse response) {
+        long stamp = msg.getUpdatedAt() == null ? 0L
+                : msg.getUpdatedAt().atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
+        publishFanout(conv, actorId, response, EventType.CHAT_MESSAGE_UPDATED,
+                "chatmsgupd_" + response.getId() + "_" + stamp);
+    }
+
+    private void publishFanout(ChatConversation conv, String senderId, ChatMessageResponse response,
+                               EventType type, String eventId) {
         AnnouncementEvent event = AnnouncementEvent.builder()
-                .type(EventType.CHAT_MESSAGE)
+                .type(type)
                 .modeType(ModeType.CHAT)
                 .instituteId(conv.getInstituteId())
                 .data(ChatMessagePayload.builder()
@@ -261,7 +409,7 @@ public class ChatMessageService {
                         .build())
                 .timestamp(LocalDateTime.now())
                 .priority("MEDIUM")
-                .eventId("chatmsg_" + response.getId())
+                .eventId(eventId)
                 .build();
 
         List<String> memberIds = ChatConversationType.COMMUNITY.name().equals(conv.getType())

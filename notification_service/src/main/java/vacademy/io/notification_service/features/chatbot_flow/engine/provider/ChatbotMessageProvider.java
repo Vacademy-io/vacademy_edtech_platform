@@ -32,9 +32,10 @@ public interface ChatbotMessageProvider {
      *   interactiveType (button|list), header, body, footer, buttons, sections
      * @param instituteId for credential resolution
      * @param businessChannelId phone_number_id for this institute
+     * @return the provider-assigned message id, or null (see {@link #sendTemplate}).
      */
-    void sendInteractive(String phone, Map<String, Object> interactivePayload,
-                         String instituteId, String businessChannelId);
+    String sendInteractive(String phone, Map<String, Object> interactivePayload,
+                           String instituteId, String businessChannelId);
 
     /**
      * Send a plain text message. Session window required.
@@ -51,7 +52,10 @@ public interface ChatbotMessageProvider {
      * @param mediaUrl  publicly accessible URL of the media file
      * @param caption   optional caption (not supported for audio)
      * @param filename  optional filename (for documents)
+     * @return the provider-assigned message id, or null (see {@link #sendTemplate}). The Inbox
+     *   stores it on notification_log.source_id so the delivered/read webhooks land on THIS row
+     *   rather than the most recent outbound to the same phone.
      */
-    void sendMedia(String phone, String mediaType, String mediaUrl, String caption,
-                   String filename, String instituteId, String businessChannelId);
+    String sendMedia(String phone, String mediaType, String mediaUrl, String caption,
+                     String filename, String instituteId, String businessChannelId);
 }

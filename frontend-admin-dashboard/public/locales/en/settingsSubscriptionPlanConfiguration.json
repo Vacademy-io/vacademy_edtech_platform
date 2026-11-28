@@ -1,0 +1,26 @@
+{
+    "title": "Subscription Plan Configuration",
+    "durationUnit": {
+        "label": "Duration Unit",
+        "days": "Days",
+        "months": "Months",
+        "hint": "This unit will be used for all pricing intervals below"
+    },
+    "pricingIntervals": {
+        "heading": "Pricing Intervals",
+        "addButton": "Add Interval",
+        "interval": {
+            "titleLabel": "Title",
+            "titlePlaceholder": "e.g. Basic Plan",
+            "durationLabel": "Duration ({{unit}})",
+            "priceLabel": "Price",
+            "pricePlaceholder": "0",
+            "featuresHeading": "Features",
+            "addFeaturePlaceholder": "Add a feature",
+            "addFeatureButton": "Add",
+            "removeButton": "Remove Interval",
+            "planChangeLabel": "Members can switch to this plan",
+            "planChangeHint": "(turn on plan switching for this option first)"
+        }
+    }
+}

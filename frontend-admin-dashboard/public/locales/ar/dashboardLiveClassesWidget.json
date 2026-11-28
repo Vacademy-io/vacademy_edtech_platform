@@ -1,0 +1,56 @@
+{
+    "header": {
+        "addButton": "إضافة",
+        "upcomingSessionsCount_zero": "{{count}} جلسات قادمة",
+        "upcomingSessionsCount_one": "{{count}} جلسة قادمة واحدة",
+        "upcomingSessionsCount_two": "{{count}} جلستان قادمتان",
+        "upcomingSessionsCount_few": "{{count}} جلسات قادمة",
+        "upcomingSessionsCount_many": "{{count}} جلسة قادمة",
+        "upcomingSessionsCount_other": "{{count}} جلسة قادمة",
+        "noUpcomingSessions": "لا توجد جلسات قادمة مجدولة"
+    },
+    "emptyState": {
+        "noSessionsScheduledYet": "لا توجد {{term}} مجدولة بعد"
+    },
+    "sessionCard": {
+        "upcomingLabel": "قادمة",
+        "deleteSession": "حذف الجلسة",
+        "viewParticipantDetails": "عرض تفاصيل المشاركين"
+    },
+    "moreCount_zero": "+{{count}} المزيد",
+    "moreCount_one": "+{{count}} المزيد",
+    "moreCount_two": "+{{count}} المزيد",
+    "moreCount_few": "+{{count}} المزيد",
+    "moreCount_many": "+{{count}} المزيد",
+    "moreCount_other": "+{{count}} المزيد",
+    "participantDialog": {
+        "heading": "تفاصيل المشاركين",
+        "tabs": {
+            "registeredUsers": "المستخدمون المسجلون",
+            "attendance": "الحضور"
+        },
+        "registration": {
+            "title": "التسجيلات",
+            "exportButton": "تصدير"
+        },
+        "attendance": {
+            "title": "الحضور",
+            "exportButton": "تصدير"
+        }
+    },
+    "deleteDialog": {
+        "heading": "تقرير الحضور",
+        "confirmMessage": "هل تريد حذف كل حصة في هذه الجلسة؟",
+        "yes": "نعم",
+        "no": "لا"
+    },
+    "csvExport": {
+        "registrationsDownloaded": "تم تنزيل التسجيلات بنجاح.",
+        "attendanceDownloaded": "تم تنزيل تقرير الحضور بنجاح.",
+        "attendanceStatus": {
+            "present": "حاضر",
+            "absent": "غائب",
+            "unmarked": "غير محدد"
+        }
+    }
+}

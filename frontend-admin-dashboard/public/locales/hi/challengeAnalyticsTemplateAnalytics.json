@@ -1,0 +1,57 @@
+{
+    "emptyState": {
+        "title": "टेम्पलेट एनालिटिक्स",
+        "message": "कोई टेम्पलेट डेटा उपलब्ध नहीं है"
+    },
+    "header": {
+        "title": "दिन-वार टेम्पलेट एनालिटिक्स",
+        "subtitle": "दिन और टेम्पलेट के अनुसार संदेश और सहभागिता"
+    },
+    "viewToggle": {
+        "chart": "चार्ट व्यू",
+        "table": "टेबल व्यू"
+    },
+    "summary": {
+        "totalDays": "कुल दिन",
+        "messagesSent": "भेजे गए संदेश",
+        "responses": "प्रतिक्रियाएं",
+        "usersReached": "पहुंचे गए उपयोगकर्ता",
+        "responseRate": "प्रतिक्रिया दर"
+    },
+    "tabs": {
+        "messagesByDay": "दिन के अनुसार संदेश",
+        "usersByDay": "दिन के अनुसार उपयोगकर्ता",
+        "combinedView": "संयुक्त दृश्य"
+    },
+    "tooltip": {
+        "outgoing": "भेजे गए: {{value}}",
+        "incoming": "प्राप्त हुए: {{value}}",
+        "uniqueUsersOut": "अद्वितीय उपयोगकर्ता (भेजे गए): {{value}}",
+        "uniqueUsersIn": "अद्वितीय उपयोगकर्ता (प्राप्त): {{value}}"
+    },
+    "series": {
+        "outgoingMessages": "भेजे गए संदेश",
+        "incomingMessages": "प्राप्त संदेश",
+        "uniqueUsersOutgoing": "अद्वितीय उपयोगकर्ता (भेजे गए)",
+        "uniqueUsersIncoming": "अद्वितीय उपयोगकर्ता (प्राप्त)",
+        "messagesSent": "भेजे गए संदेश",
+        "responses": "प्रतिक्रियाएं",
+        "responseRatePercent": "प्रतिक्रिया दर (%)"
+    },
+    "table": {
+        "day": "दिन",
+        "outgoingUsers": "भेजे गए उपयोगकर्ता",
+        "outgoingMessages": "भेजे गए संदेश",
+        "incomingUsers": "प्राप्त उपयोगकर्ता",
+        "incomingMessages": "प्राप्त संदेश",
+        "responseRate": "प्रतिक्रिया दर",
+        "templates": "टेम्पलेट्स"
+    },
+    "dayLabel": "दिन {{number}}",
+    "outgoingTemplates": "भेजे गए टेम्पलेट्स",
+    "incomingTemplatesResponses": "प्राप्त टेम्पलेट्स (प्रतिक्रियाएं)",
+    "usersCount_one": "{{count}} उपयोगकर्ता",
+    "usersCount_other": "{{count}} उपयोगकर्ता",
+    "messagesCount_one": "{{count}} संदेश",
+    "messagesCount_other": "{{count}} संदेश"
+}

@@ -1,0 +1,17 @@
+{
+    "legend": {
+        "correct": "صحيح",
+        "partiallyCorrect": "صحيح جزئيًا",
+        "wrongResponses": "إجابات خاطئة",
+        "skip": "تخطي"
+    },
+    "checkInsightsButton": "عرض إحصاءات الأسئلة",
+    "dialogTitle": "إحصاءات الأسئلة",
+    "xAxisLabel": "السؤال",
+    "yAxisLabel": "عدد المشاركين",
+    "header": {
+        "title": "تحليل الأسئلة",
+        "selectSectionPlaceholder": "اختر القسم",
+        "exportButton": "تصدير"
+    }
+}

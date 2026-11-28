@@ -1,0 +1,13 @@
+{
+    "validation": {
+        "endMustBeAfterStart": "La fin doit être postérieure au début"
+    },
+    "fileType": {
+        "allFiles": "Tous les fichiers",
+        "pdf": "PDF",
+        "image": "Image (PNG, JPG, GIF)",
+        "document": "Document (DOC, DOCX)",
+        "video": "Vidéo (MP4, MOV, WEBM)",
+        "audio": "Audio (MP3, WAV, M4A)"
+    }
+}

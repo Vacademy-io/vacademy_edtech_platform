@@ -1,0 +1,28 @@
+{
+    "channelSelect": {
+        "metaDirect": "Meta Direct",
+        "allProviders": "Tous les fournisseurs"
+    },
+    "settingsButton": {
+        "title": "Paramètres du flux — y compris les personnes averties lorsque le bot transfère la conversation",
+        "label": "Paramètres"
+    },
+    "saveButton": {
+        "saving": "Enregistrement...",
+        "dirty": "Enregistrer *",
+        "default": "Enregistrer"
+    },
+    "activateButton": {
+        "deactivate": "Désactiver",
+        "activate": "Activer"
+    },
+    "toast": {
+        "saveSuccess": "Flux enregistré avec succès",
+        "activeSaveBlocked": "Impossible d'enregistrer un flux actif. Désactivez-le d'abord, puis enregistrez.",
+        "saveFailed": "Échec de l'enregistrement du flux",
+        "saveFlowFirst": "Enregistrez d'abord le flux",
+        "deactivated": "Flux désactivé",
+        "activated": "Flux activé",
+        "validationFailed": "Échec de la validation"
+    }
+}

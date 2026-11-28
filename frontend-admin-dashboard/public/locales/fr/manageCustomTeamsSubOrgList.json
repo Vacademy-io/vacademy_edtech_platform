@@ -1,0 +1,47 @@
+{
+    "filters": {
+        "noPlanOption": "Aucun forfait",
+        "searchAriaLabel": "Rechercher",
+        "searchPlaceholder": "Rechercher par nom, e-mail ou téléphone",
+        "clearSearchAriaLabel": "Effacer la recherche",
+        "search": "Recherche",
+        "status": "Statut",
+        "statusSearchPlaceholder": "Rechercher un statut…",
+        "city": "Ville",
+        "citySearchPlaceholder": "Rechercher une ville…",
+        "state": "État",
+        "stateSearchPlaceholder": "Rechercher un état…",
+        "pincodeAriaLabel": "Code postal",
+        "pincodePlaceholder": "Code postal",
+        "clearAll": "Tout effacer"
+    },
+    "actions": {
+        "export": "Exporter",
+        "create": "Créer {{term}}"
+    },
+    "toasts": {
+        "inviteLinkCopied": "Lien d'invitation copié",
+        "nothingToExport": "Rien à exporter.",
+        "exported_one": "{{count}} {{term}} exporté.",
+        "exported_many": "{{count}} {{term}} exportés.",
+        "exported_other": "{{count}} {{term}} exportés."
+    },
+    "summary": {
+        "filteredCount": "{{filtered}} sur {{total}} {{term}}"
+    },
+    "error": {
+        "title": "Impossible de charger {{term}}",
+        "forbidden": "Votre rôle n'a pas accès à ces données. Demandez à un administrateur de l'établissement de vérifier les paramètres d'affichage de votre rôle.",
+        "generic": "Une erreur s'est produite lors du chargement de la liste. Merci de réessayer dans un instant."
+    },
+    "empty": {
+        "filtered": "Aucun {{term}} ne correspond à vos filtres.",
+        "none": "Aucun {{term}} trouvé."
+    },
+    "table": {
+        "sortBy": "Trier par {{label}}"
+    },
+    "planCounts": {
+        "all": "All"
+    }
+}

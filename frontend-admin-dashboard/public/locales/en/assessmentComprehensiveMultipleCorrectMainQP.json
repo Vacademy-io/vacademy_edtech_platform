@@ -1,0 +1,22 @@
+{
+    "emptyState": {
+        "message": "Please add a question to show question details"
+    },
+    "comprehension": {
+        "title": "Comprehension text",
+        "hint": "The passage every question in this set refers to.",
+        "placeholder": "Comprehension text"
+    },
+    "question": {
+        "title": "Question",
+        "placeholder": "Write the question"
+    },
+    "explanation": {
+        "hint": "Shown to learners with their result.",
+        "placeholder": "Explanation"
+    },
+    "defaults": {
+        "answersType": "Answer",
+        "explanationsType": "Explanation"
+    }
+}

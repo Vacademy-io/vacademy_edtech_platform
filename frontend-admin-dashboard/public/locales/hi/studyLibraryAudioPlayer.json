@@ -1,0 +1,13 @@
+{
+    "audioPlayer": "ऑडियो प्लेयर",
+    "replace": "बदलें",
+    "noAudioUploaded": "कोई ऑडियो अपलोड नहीं है",
+    "uploadingEllipsis": "अपलोड हो रहा है...",
+    "clickOrDragHint": "ऑडियो फ़ाइल यहां क्लिक करें या खींचें",
+    "supportedFormats": "MP3, WAV, OGG, M4A समर्थित हैं",
+    "titlePlaceholder": "ऑडियो शीर्षक (वैकल्पिक)",
+    "selectAudioFile": "कृपया एक ऑडियो फ़ाइल चुनें",
+    "uploadFailedError": "अपलोड विफल रहा",
+    "failedToGetUrl": "URL प्राप्त करने में विफल",
+    "uploadFailedAlert": "ऑडियो फ़ाइल अपलोड करने में विफल"
+}

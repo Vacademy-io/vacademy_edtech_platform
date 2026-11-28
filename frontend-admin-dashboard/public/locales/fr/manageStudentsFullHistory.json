@@ -1,0 +1,43 @@
+{
+    "hero": {
+        "eyebrow": "HISTORIQUE DE L'APPRENANT",
+        "eventCount_one": "{{count}} événement",
+        "eventCount_many": "{{count}} événements",
+        "eventCount_other": "{{count}} événements"
+    },
+    "filters": {
+        "all": "Tous",
+        "admission": "Admission",
+        "enrollment": "Inscription",
+        "payment": "Paiement",
+        "learning": "Apprentissage",
+        "communication": "Communication",
+        "ariaLabel": "Filtrer les événements de l'historique par catégorie"
+    },
+    "buckets": {
+        "today": "Aujourd'hui",
+        "yesterday": "Hier",
+        "thisWeek": "Cette semaine",
+        "earlier": "Plus tôt"
+    },
+    "error": {
+        "title": "Impossible de charger l'historique d'activité",
+        "hint": "Une erreur s'est produite lors du chargement de la chronologie. Veuillez réessayer."
+    },
+    "empty": {
+        "title": "Aucun historique pour le moment",
+        "hint": "Les événements de toutes les étapes apparaîtront ici"
+    },
+    "filteredEmpty": {
+        "title": "Aucun événement ne correspond à ce filtre",
+        "hint": "Essayez de sélectionner une autre catégorie ci-dessus"
+    },
+    "timeline": {
+        "actorPrefix": "par {{name}}"
+    },
+    "pagination": {
+        "pageOf": "Page {{current}} sur {{total}}",
+        "previous": "Précédent",
+        "next": "Suivant"
+    }
+}

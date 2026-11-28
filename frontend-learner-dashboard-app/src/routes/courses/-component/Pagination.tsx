@@ -1,5 +1,6 @@
 import { CaretLeft, CaretRight } from '@phosphor-icons/react';
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 
 
 
@@ -10,6 +11,7 @@ interface PaginationProps {
 }
 
 const Pagination: React.FC<PaginationProps> = ({ currentPage, totalPages, onPageChange }) => {
+  const { t } = useTranslation('coursesRouteA');
   const renderPageNumbers = (): (number | string)[] => {
     const pageNumbers: (number | string)[] = [];
     const smallTotalPagesThreshold = 4; 
@@ -83,13 +85,13 @@ const Pagination: React.FC<PaginationProps> = ({ currentPage, totalPages, onPage
 
   return (
     <div className="flex items-center justify-center mt-8 mb-4">
-      <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+      <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label={t("pagination.ariaLabel")}>
         <button
           onClick={() => onPageChange(currentPage - 1)}
           disabled={currentPage === 1}
           className="relative inline-flex items-center px-2 py-2 rounded-s-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 transition-opacity"
         >
-          <span className="sr-only">Previous</span>
+          <span className="sr-only">{t("pagination.previous")}</span>
           <CaretLeft className="h-5 w-5" aria-hidden="true" />
         </button>
 
@@ -115,7 +117,7 @@ const Pagination: React.FC<PaginationProps> = ({ currentPage, totalPages, onPage
           disabled={currentPage === totalPages}
           className="relative inline-flex items-center px-2 py-2 rounded-e-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 transition-opacity"
         >
-          <span className="sr-only">Next</span>
+          <span className="sr-only">{t("pagination.next")}</span>
           <CaretRight className="h-5 w-5" aria-hidden="true" />
         </button>
       </nav>

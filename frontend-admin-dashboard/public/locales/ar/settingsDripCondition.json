@@ -1,0 +1,79 @@
+{
+    "dialog": {
+        "title": {
+            "add": "إضافة شرط تدريجي",
+            "edit": "تعديل الشرط التدريجي"
+        },
+        "description": "قم بتكوين قواعد إصدار المحتوى لحزم أو فصول أو شرائح محددة."
+    },
+    "footer": {
+        "cancel": "إلغاء",
+        "addCondition": "إضافة شرط",
+        "saveChanges": "حفظ التغييرات"
+    },
+    "basicSettings": {
+        "level": {
+            "label": "مستوى المحتوى",
+            "placeholder": "اختر المستوى",
+            "package": "حزمة (قالب)"
+        },
+        "levelId": {
+            "packageLabel": "الحزمة",
+            "idLabel": "معرّف {{term}}",
+            "packagePlaceholder": "اختر الحزمة",
+            "idPlaceholder": "أدخل المعرّف"
+        },
+        "target": {
+            "label": "يُطبّق على",
+            "placeholder": "اختر الهدف",
+            "allItems": "كل {{term}}",
+            "hint": "سيتم تطبيق هذا الشرط التدريجي كقالب على جميع العناصر من هذا النوع داخل الحزمة."
+        },
+        "behavior": {
+            "label": "السلوك",
+            "placeholder": "اختر السلوك",
+            "lock": "قفل - مرئي لكن غير قابل للوصول",
+            "hide": "إخفاء - مخفي بالكامل",
+            "both": "كلاهما - فتح تدريجي"
+        },
+        "enabled": {
+            "label": "تفعيل الشرط",
+            "hint": "تفعيل هذا الشرط التدريجي"
+        }
+    },
+    "rules": {
+        "title": "القواعد",
+        "hint": "يجب استيفاء جميع القواعد لفتح المحتوى",
+        "addPlaceholder": "إضافة قاعدة",
+        "types": {
+            "dateBased": "حسب التاريخ",
+            "completionBased": "حسب الإكمال",
+            "prerequisite": "متطلب مسبق",
+            "sequential": "تسلسلي"
+        },
+        "empty": "لم تتم إضافة أي قواعد بعد. أضف قاعدة واحدة على الأقل للمتابعة."
+    },
+    "ruleEditor": {
+        "dateBased": {
+            "label": "تاريخ ووقت الفتح"
+        },
+        "completionBased": {
+            "metricLabel": "نوع المقياس",
+            "averageOfAll": "متوسط جميع العناصر",
+            "averageOfLastN": "متوسط آخر N عناصر",
+            "countLabel": "عدد العناصر (N)",
+            "thresholdLabel": "الحد الأدنى (%)"
+        },
+        "prerequisite": {
+            "typeLabel": "نوع المتطلب المسبق",
+            "requiredItems": "{{term}} المطلوبة",
+            "itemIdsLabel": "معرّفات العناصر (مفصولة بفواصل)",
+            "itemIdsPlaceholder": "chapter-1, chapter-2, chapter-3",
+            "thresholdLabel": "حد الإكمال (%)"
+        },
+        "sequential": {
+            "thresholdLabel": "حد الإكمال (%)",
+            "hint": "يجب إكمال العنصر السابق إلى هذا الحد"
+        }
+    }
+}

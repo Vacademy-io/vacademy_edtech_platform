@@ -27,5 +27,8 @@ public interface AttendanceReportProjection {
     String getFeedbackDetails();
     String getPackageSessionId();
     Integer getProviderTotalDurationMinutes();
+
+    /** Exact seconds when the provider reports them (BBB); NULL for Zoom. */
+    Integer getProviderTotalDurationSeconds();
     String getEngagementData();
 }

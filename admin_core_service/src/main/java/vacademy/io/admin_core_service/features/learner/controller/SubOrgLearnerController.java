@@ -1,12 +1,17 @@
 package vacademy.io.admin_core_service.features.learner.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
+import vacademy.io.admin_core_service.core.security.InstituteAccessValidator;
 import vacademy.io.admin_core_service.features.learner.dto.*;
 import vacademy.io.admin_core_service.features.learner.service.SubOrgLearnerService;
 import vacademy.io.admin_core_service.features.suborg.service.SubOrgAccessScopeService;
 import vacademy.io.common.auth.model.CustomUserDetails;
+import vacademy.io.common.auth.util.SuperAdminAuthUtil;
+import vacademy.io.common.exceptions.VacademyException;
 
 @RestController
 @RequestMapping("/admin-core-service/sub-org/v1")
@@ -19,6 +24,12 @@ public class SubOrgLearnerController {
      *  Root / true institute admins are unrestricted. */
     @Autowired
     private SubOrgAccessScopeService subOrgAccessScopeService;
+
+    @Autowired
+    private InstituteAccessValidator instituteAccessValidator;
+
+    @Autowired
+    private vacademy.io.admin_core_service.features.suborg.service.SubOrgBulkMemberService subOrgBulkMemberService;
 
 
     @GetMapping("/members")
@@ -38,9 +49,104 @@ public class SubOrgLearnerController {
             @RequestBody SubOrgEnrollRequestDTO request,
             @RequestAttribute(value = "user", required = false) CustomUserDetails user) {
 
+        requireCanAddMember(user, request);
         SubOrgEnrollResponseDTO response = subOrgLearnerService.enrollLearnerToSubOrg(request,user);
 
         return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Adding a member: a platform super-admin, an admin of this sub-organization (the learner
+     * portal's team page), or staff of the institute (admin dashboard, assistant tools) who is
+     * not limited to other sub-organizations.
+     */
+    private void requireCanAddMember(CustomUserDetails user, SubOrgEnrollRequestDTO request) {
+        if (request == null) {
+            throw new VacademyException(HttpStatus.BAD_REQUEST, "Request body is required");
+        }
+        requireSubOrgAdminOrStaff(user, request.getSubOrgId(), request.getInstituteId());
+    }
+
+    /** Platform super-admin, an admin of this sub-organization, or institute staff not limited to other sub-orgs. */
+    private void requireSubOrgAdminOrStaff(CustomUserDetails user, String subOrgId, String instituteId) {
+        if (user == null || !StringUtils.hasText(user.getUserId())) {
+            throw new VacademyException(HttpStatus.FORBIDDEN, "Only staff of this institute can add members");
+        }
+        if (isSuperAdmin(user)
+                || subOrgLearnerService.isActiveAdminOfSubOrg(user.getUserId(), subOrgId, instituteId)) {
+            return;
+        }
+        instituteAccessValidator.requireInstituteStaff(user, instituteId);
+        subOrgAccessScopeService.assertNotCrossSubOrg(user, subOrgId);
+    }
+
+    /**
+     * Parent-institute staff adding many learners to one batch of a sub-organization (the
+     * sub-org page's Learners tab). A learner already ACTIVE in the batch is moved into the
+     * sub-org instead of being enrolled a second time. Answers per learner.
+     */
+    @PostMapping("/bulk-add-members")
+    public ResponseEntity<vacademy.io.admin_core_service.features.suborg.dto.SubOrgBulkMembersResponseDTO> bulkAddMembers(
+            @RequestBody vacademy.io.admin_core_service.features.suborg.dto.SubOrgBulkAddMembersRequestDTO request,
+            @RequestAttribute(value = "user", required = false) CustomUserDetails user) {
+        if (request == null) {
+            throw new VacademyException(HttpStatus.BAD_REQUEST, "Request body is required");
+        }
+        requireStaffManagingSubOrg(user, request.getSubOrgId(), request.getInstituteId());
+        return ResponseEntity.ok(subOrgBulkMemberService.addMembers(request, user));
+    }
+
+    /**
+     * Moves learners' existing ACTIVE enrollments into a sub-organization (students list →
+     * select → Move to sub-org). Answers per learner.
+     */
+    @PostMapping("/move-members")
+    public ResponseEntity<vacademy.io.admin_core_service.features.suborg.dto.SubOrgBulkMembersResponseDTO> moveMembers(
+            @RequestBody vacademy.io.admin_core_service.features.suborg.dto.SubOrgMoveMembersRequestDTO request,
+            @RequestAttribute(value = "user", required = false) CustomUserDetails user) {
+        if (request == null) {
+            throw new VacademyException(HttpStatus.BAD_REQUEST, "Request body is required");
+        }
+        requireStaffManagingSubOrg(user, request.getSubOrgId(), request.getInstituteId());
+        return ResponseEntity.ok(subOrgBulkMemberService.moveMembers(request, user));
+    }
+
+    /**
+     * Staff of the parent institute (or a platform super-admin) who may see this sub-org and
+     * hold the Sub-Organizations "manage team" capability. Sub-org admins on the learner portal
+     * keep using add-member one by one.
+     */
+    private void requireStaffManagingSubOrg(CustomUserDetails user, String subOrgId, String instituteId) {
+        if (!StringUtils.hasText(subOrgId) || !StringUtils.hasText(instituteId)) {
+            throw new VacademyException(HttpStatus.BAD_REQUEST, "sub_org_id and institute_id are required");
+        }
+        instituteAccessValidator.requireInstituteStaffOrSuperAdmin(user, instituteId);
+        subOrgAccessScopeService.assertCanAccessSubOrg(user, subOrgId, instituteId);
+        subOrgAccessScopeService.assertRolePermission(user, instituteId, SubOrgAccessScopeService.PERM_MANAGE_TEAM);
+    }
+
+    /**
+     * Seat usage of one batch for the learner portal team page (used / total seats, plus the
+     * institute email to ask for more). Same access as adding a member.
+     */
+    @GetMapping("/seat-usage")
+    public ResponseEntity<vacademy.io.admin_core_service.features.suborg.dto.SeatUsageDTO> getSeatUsage(
+            @RequestParam("package_session_id") String packageSessionId,
+            @RequestParam("sub_org_id") String subOrgId,
+            @RequestParam("institute_id") String instituteId,
+            @RequestAttribute(value = "user", required = false) CustomUserDetails user) {
+        requireSubOrgAdminOrStaff(user, subOrgId, instituteId);
+        return ResponseEntity.ok(
+                subOrgLearnerService.getSeatUsageForPortal(subOrgId, instituteId, packageSessionId));
+    }
+
+    private static boolean isSuperAdmin(CustomUserDetails user) {
+        try {
+            SuperAdminAuthUtil.requireSuperAdmin(user);
+            return true;
+        } catch (VacademyException e) {
+            return false;
+        }
     }
 
     @PostMapping("/terminate-member")
@@ -86,6 +192,22 @@ public class SubOrgLearnerController {
             @RequestAttribute(value = "user", required = false) CustomUserDetails user) {
 
         return ResponseEntity.ok(subOrgLearnerService.getSubOrgsByPackageSession(packageSessionId));
+    }
+
+    /**
+     * Search box of the same picker: sub-orgs anywhere in the institute whose name contains
+     * {@code search} (at least 2 characters), so an organization with no member in the batch yet
+     * can still be picked. Limited to the sub-orgs the caller may see.
+     */
+    @GetMapping("/search")
+    public ResponseEntity<java.util.List<vacademy.io.admin_core_service.features.learner.dto.PackageSessionSubOrgDTO>> searchSubOrgs(
+            @RequestParam("instituteId") String instituteId,
+            @RequestParam("search") String search,
+            @RequestAttribute(value = "user", required = false) CustomUserDetails user) {
+
+        instituteAccessValidator.validateUserAccess(user, instituteId);
+        java.util.List<String> visible = subOrgAccessScopeService.resolveVisibleSubOrgIds(user, instituteId);
+        return ResponseEntity.ok(subOrgLearnerService.searchInstituteSubOrgs(instituteId, search, visible));
     }
 
     @GetMapping("/all-admins")

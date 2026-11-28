@@ -1,0 +1,32 @@
+{
+    "placeholder": "انقر هنا لبدء الكتابة...",
+    "customBlocks": {
+        "image": { "title": "صورة", "description": "رفع صورة" },
+        "video": { "title": "فيديو", "description": "رفع ملف فيديو" },
+        "embed": { "title": "تضمين", "description": "YouTube أو Vimeo أو Loom أو أي رابط" },
+        "file": { "title": "ملف", "description": "إرفاق ملف قابل للتنزيل" },
+        "callout": { "title": "ملاحظة مميزة", "description": "مربع ملاحظة مميز" },
+        "audio": { "title": "صوت", "description": "رفع مقطع صوتي" },
+        "pdfViewer": { "title": "عارض PDF", "description": "ملف PDF مضمّن للمتعلمين" },
+        "math": { "title": "رياضيات (LaTeX)", "description": "معادلة يتم عرضها بواسطة KaTeX" },
+        "mermaid": { "title": "مخطط Mermaid", "description": "مخططات انسيابية وتسلسلية والمزيد" },
+        "fillBlanks": { "title": "املأ الفراغات", "description": "تمرين تفاعلي بنمط الفراغات" },
+        "toc": { "title": "جدول المحتويات", "description": "يتم إنشاؤه تلقائيًا من العناوين" },
+        "jupyter": { "title": "دفتر Jupyter", "description": "تضمين دفتر من GitHub" },
+        "scratch": { "title": "مشروع Scratch", "description": "تضمين مشروع Scratch" },
+        "flashcard": { "title": "بطاقة تعليمية", "description": "بطاقة قابلة للقلب أمام/خلف" },
+        "tabs": { "title": "علامات تبويب", "description": "أقسام محتوى بعلامات تبويب" },
+        "quiz": { "title": "اختبار", "description": "سؤال متعدد الخيارات أو صح/خطأ مضمّن" },
+        "timeline": { "title": "الجدول الزمني", "description": "جدول زمني خطوة بخطوة" },
+        "columns": { "title": "أعمدة", "description": "تخطيط جنبًا إلى جنب" },
+        "accordion": {
+            "title": "قائمة منسدلة",
+            "description": "أقسام قابلة للطي — كل قسم يدعم محتوى غنيًا"
+        },
+        "code": { "title": "كود", "description": "مقتطف كود مع تمييز الصياغة" },
+        "codeEditor": {
+            "title": "محرر أكواد (قابل للتشغيل)",
+            "description": "أداة تشغيل تفاعلية للمتعلمين"
+        }
+    }
+}

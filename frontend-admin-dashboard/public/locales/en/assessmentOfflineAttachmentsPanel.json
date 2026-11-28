@@ -1,0 +1,31 @@
+{
+    "header": {
+        "title": "Attachments",
+        "optionalPdfOnly": "Optional · PDF only",
+        "selectedCount_one": "· {{count}} of 3 selected",
+        "selectedCount_other": "· {{count}} of 3 selected"
+    },
+    "description": "Uploaded when you submit this entry.",
+    "slots": {
+        "student": {
+            "label": "Student's answer sheet",
+            "hint": "The scan of what the student wrote. Shown as their submitted response."
+        },
+        "checked": {
+            "label": "Checked answer sheet",
+            "hint": "The evaluated copy with your marks and remarks. Shown to the student with their result."
+        },
+        "report": {
+            "label": "Report",
+            "hint": "An optional result report you prepared outside the platform."
+        }
+    },
+    "removeAria": "Remove {{label}}",
+    "dropzone": {
+        "uploadPrompt": "Click to upload or drag & drop"
+    },
+    "rejections": {
+        "notPdf": "\"{{fileName}}\" is not a PDF. Scans must be uploaded as PDF files.",
+        "emptyFile": "\"{{fileName}}\" is empty (0 bytes). Re-export it and try again."
+    }
+}

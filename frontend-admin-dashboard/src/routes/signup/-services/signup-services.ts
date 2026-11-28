@@ -4,9 +4,11 @@ import axios from 'axios';
 import { convertedSignupData } from '../-utils/helper';
 import {
     FormValuesStep1Signup,
-    organizationDetailsSignupStep1,
+    OrganizationDetailsSignupStep1Values,
 } from '../onboarding/-components/Step3AddOrgDetails';
-import { z } from 'zod';
+import i18n from '@/i18n';
+
+const NAMESPACE = 'signupServices';
 
 export const UploadFileInS3Public = async (
     file: File,
@@ -20,7 +22,7 @@ export const UploadFileInS3Public = async (
 
     try {
         if (isNullOrEmptyOrUndefined(file)) {
-            throw new Error('Invalid File');
+            throw new Error(i18n.t(`${NAMESPACE}:invalidFile`));
         }
 
         if (file) {
@@ -81,7 +83,7 @@ export const handleSignupInstitute = async ({
 }: {
     searchParams: Record<string, boolean>;
     formData: FormValuesStep1Signup;
-    formDataOrg: z.infer<typeof organizationDetailsSignupStep1>;
+    formDataOrg: OrganizationDetailsSignupStep1Values;
     signupData?: Record<string, any>;
 }) => {
     const convertedData = convertedSignupData({ searchParams, formData, formDataOrg, signupData });

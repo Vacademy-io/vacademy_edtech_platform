@@ -1,0 +1,25 @@
+{
+    "title": "Progression du programme",
+    "description": "Permettez aux enseignants d’indiquer où en est chaque apprenant dans le programme du niveau, bloc de semaines par bloc de semaines.",
+    "loadFailed": "Impossible de charger ce paramètre.",
+    "retry": "Réessayer",
+    "toggleLabel": "Suivre la progression du programme",
+    "teachers": {
+        "title": "Ce que font les enseignants",
+        "point1": "Ouvrir Progression du programme, choisir leur groupe et voir chaque apprenant pour chaque bloc de semaines.",
+        "point2": "Marquer une semaine comme non commencée, en cours, terminée ou ignorée, et cocher les points réalisés.",
+        "point3": "Ajouter une courte note, ou marquer une semaine entière pour plusieurs apprenants à la fois."
+    },
+    "learners": {
+        "title": "Ce que voient les apprenants",
+        "point1": "Leur propre progression pour chaque bloc de semaines de leur niveau, avec les points réalisés.",
+        "point2": "La note de l’enseignant pour la semaine. Les apprenants ne voient jamais la progression des autres."
+    },
+    "syllabusNote": "Les blocs de semaines et leurs points viennent du programme de chaque niveau. Un groupe apparaît ici dès que son niveau a un programme.",
+    "offNote": "Désactiver masque la page et la vue apprenant. La progression déjà saisie est conservée.",
+    "save": "Enregistrer",
+    "saving": "Enregistrement…",
+    "saved": "Paramètre de progression du programme enregistré.",
+    "saveFailed": "Impossible d’enregistrer le paramètre.",
+    "openPage": "Ouvrir Progression du programme"
+}

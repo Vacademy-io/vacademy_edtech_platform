@@ -1,0 +1,21 @@
+{
+    "addedToChapters_zero": "لم تتم الإضافة إلى أي فصل",
+    "addedToChapters_one": "أُضيف إلى فصل واحد",
+    "addedToChapters_two": "أُضيف إلى فصلين",
+    "addedToChapters_few": "أُضيف إلى {{count}} فصول",
+    "addedToChapters_many": "أُضيف إلى {{count}} فصلاً",
+    "addedToChapters_other": "أُضيف إلى {{count}} فصل",
+    "sharedChapterDeduped_zero": "لا فصول مشتركة (تمت إزالة التكرار)",
+    "sharedChapterDeduped_one": "فصل مشترك واحد (تمت إزالة التكرار)",
+    "sharedChapterDeduped_two": "فصلان مشتركان (تمت إزالة التكرار)",
+    "sharedChapterDeduped_few": "{{count}} فصول مشتركة (تمت إزالة التكرار)",
+    "sharedChapterDeduped_many": "{{count}} فصلاً مشتركاً (تمت إزالة التكرار)",
+    "sharedChapterDeduped_other": "{{count}} فصل مشترك (تمت إزالة التكرار)",
+    "alreadyLinked_zero": "لا شيء مرتبط مسبقاً",
+    "alreadyLinked_one": "واحد مرتبط مسبقاً",
+    "alreadyLinked_two": "اثنان مرتبطان مسبقاً",
+    "alreadyLinked_few": "{{count}} مرتبطة مسبقاً",
+    "alreadyLinked_many": "{{count}} مرتبطاً مسبقاً",
+    "alreadyLinked_other": "{{count}} مرتبط مسبقاً",
+    "noChangesMade": "لم يتم إجراء أي تغييرات"
+}

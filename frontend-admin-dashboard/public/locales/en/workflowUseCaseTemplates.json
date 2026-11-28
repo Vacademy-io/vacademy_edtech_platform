@@ -1,0 +1,503 @@
+{
+    "shared": {
+        "channel": {
+            "label": "Send via",
+            "helpText": "Reach recipients over email, WhatsApp, or both.",
+            "options": {
+                "email": "Email only",
+                "whatsapp": "WhatsApp only",
+                "both": "Email + WhatsApp"
+            }
+        },
+        "whatsappTemplate": {
+            "label": "Which WhatsApp template to use?",
+            "helpTextDefault": "Approved WhatsApp template (Settings → Templates, type WHATSAPP). Its variables auto-fill from each recipient's fields — map them later in the builder only if the names differ."
+        },
+        "nodes": {
+            "fetchBatchStudents": "Fetch batch students",
+            "fetchExpiringMemberships": "Fetch expiring memberships",
+            "fetchStudentDetails": "Fetch student details",
+            "triggerAudienceFormSubmitted": "Trigger: Audience form submitted",
+            "triggerGeneric": "Trigger: {{event}}",
+            "triggerStudentEnrolled": "Trigger: Student enrolled"
+        },
+        "questions": {
+            "batchId": {
+                "label": "Which batch?"
+            },
+            "batchIdToNotify": {
+                "label": "Which batch to notify?"
+            },
+            "courseId": {
+                "label": "Which course?",
+                "helpText": "The webhook will only fire when learners enroll in batches of this course."
+            },
+            "daysBack": {
+                "label": "Report covers last how many days?"
+            },
+            "daysUntilExpiry": {
+                "label": "How many days before expiry to send reminder?"
+            },
+            "excludeToday": {
+                "label": "Include today's classes?",
+                "helpTextShort": "For morning-sent emails: pick \"exclude today\" so numbers in the email match the deep-link view even after more classes happen during the day.",
+                "options": {
+                    "excludeShort": "Exclude today (recommended for morning sends)",
+                    "includeShort": "Include today (may show a partial day)"
+                }
+            },
+            "notificationTemplateName": {
+                "label": "Which notification template?"
+            },
+            "payloadJson": {
+                "label": "Webhook payload (JSON)"
+            },
+            "scope": {
+                "label": "When should this fire?"
+            },
+            "templateName": {
+                "label": "Which email template?"
+            },
+            "webhookUrl": {
+                "label": "Webhook URL"
+            }
+        }
+    },
+    "templates": {
+        "ai_call_new_lead": {
+            "name": "AI-call new leads",
+            "description": "When a lead comes in, the AI voice agent calls them first, then routes on the call disposition: interested leads get one status, everyone else a follow-up status. Pick the two statuses in the builder.",
+            "questions": {
+                "campaignName": {
+                    "label": "AI agent (optional)",
+                    "helpText": "Name of the AI agent/campaign to use (from Settings → AI Calling → Campaigns). Provider-agnostic — it resolves to the right campaign id for whichever provider is active. Leave blank to use the institute default."
+                }
+            },
+            "nodes": {
+                "aiCall": "AI Call",
+                "interested": "Interested?",
+                "trueLabel": "Interested / assign",
+                "falseLabel": "Not interested / follow-up",
+                "setStatusInterested": "Set status: interested",
+                "setStatusFollowup": "Set status: follow-up"
+            },
+            "workflowDescription": "Place an AI call when a lead is submitted, then route on the call disposition: callOutcome == ASSIGN sets the interested status, otherwise the follow-up status."
+        },
+        "ai_recall_on_status": {
+            "name": "AI re-calls leads on a status",
+            "description": "When a lead is moved to a chosen status (e.g. DNP) by a person — from the leads list or a post-call disposition — the AI voice agent calls them back after a delay. Retries, calling hours and the counsellor handoff all follow Settings → AI Calling.",
+            "questions": {
+                "statusKey": {
+                    "label": "Which lead status should start the AI call?",
+                    "helpText": "The status KEY exactly as it appears in Settings → Lead Statuses (e.g. DNP, NOT_REACHABLE, CALL_BACK). The status must already exist for this institute — the workflow can only fire on a status a person can actually set."
+                },
+                "campaignName": {
+                    "label": "AI agent (optional)",
+                    "helpText": "Name of the AI agent/campaign from Settings → AI Calling → Campaigns. Leave blank to use the institute default."
+                },
+                "delayMinutes": {
+                    "label": "Wait how long before the bot calls?",
+                    "helpText": "Minutes between the status change and the AI call, so the bot never rings seconds after the counsellor hung up. The call still only goes out inside the calling hours set in Settings → AI Calling."
+                }
+            },
+            "nodes": {
+                "manuallySetTo": "Manually set to {{status}}?",
+                "gateTrueLabel": "Yes — hand to the bot",
+                "gateFalseLabel": "No — ignore",
+                "waitMinutes_one": "Wait {{count}} min",
+                "waitMinutes_other": "Wait {{count}} min",
+                "aiCall": "AI Call",
+                "interested": "Interested?",
+                "outcomeTrueLabel": "Interested / assign",
+                "outcomeFalseLabel": "Still no luck",
+                "setStatusInterested": "Set status: interested"
+            },
+            "workflowName": "AI re-calls {{status}} leads",
+            "workflowDescription_one": "When a person moves a lead to {{status}} — from the leads list or a post-call disposition — wait {{count}} minute, then have the AI agent call them. Statuses set by the AI itself are ignored, so the workflow cannot re-trigger off its own writes.",
+            "workflowDescription_other": "When a person moves a lead to {{status}} — from the leads list or a post-call disposition — wait {{count}} minutes, then have the AI agent call them. Statuses set by the AI itself are ignored, so the workflow cannot re-trigger off its own writes."
+        },
+        "email_batch_students": {
+            "name": "Message batch students",
+            "description": "Fetch students from a batch and send them an email and/or WhatsApp message using a template.",
+            "questions": {
+                "batchId": {
+                    "label": "Which batch to fetch students from?",
+                    "helpText": "Select the batch whose students should receive the message."
+                },
+                "templateName": {
+                    "label": "Which email template to use?",
+                    "helpText": "Choose the email template that will be sent to each student."
+                },
+                "waTemplateName": {
+                    "helpText": "Sent to each student's mobile number. Variables auto-fill from student fields (fullName, email, ...)."
+                },
+                "recipientField": {
+                    "label": "Send email to",
+                    "options": {
+                        "student": "Student email (default)",
+                        "parent": "Parent email",
+                        "guardian": "Guardian email"
+                    }
+                }
+            }
+        },
+        "audience_lead_confirmation": {
+            "name": "Send lead confirmation message",
+            "description": "When someone fills your audience form, automatically send them a confirmation email and/or WhatsApp message.",
+            "questions": {
+                "templateName": {
+                    "label": "Which email template to send?",
+                    "helpText": "This template will be sent to the person who filled the form."
+                },
+                "waTemplateName": {
+                    "helpText": "Sent to the phone number the lead entered on the form. Variables auto-fill from the form's custom fields."
+                }
+            },
+            "workflowDescription": "Send confirmation message when a lead submits the audience form."
+        },
+        "payment_failed_email": {
+            "name": "Payment failed notification",
+            "description": "Send an email to the user when their payment fails, with retry instructions.",
+            "questions": {
+                "templateName": {
+                    "label": "Which email template to send?",
+                    "helpText": "Template for the payment failure notification."
+                }
+            },
+            "nodes": {
+                "trigger": "Trigger: Payment failed"
+            }
+        },
+        "abandoned_cart_reminder": {
+            "name": "Abandoned cart reminder",
+            "description": "When someone starts enrollment but doesn't complete payment, send them a reminder email.",
+            "questions": {
+                "templateName": {
+                    "label": "Which reminder email template?"
+                }
+            },
+            "nodes": {
+                "trigger": "Trigger: Abandoned cart"
+            }
+        },
+        "invite_notify_batch": {
+            "name": "Notify batch about new invite",
+            "description": "When a new enrollment invite is created, email students in a batch about it.",
+            "questions": {
+                "batchId": {
+                    "label": "Which batch to notify?"
+                },
+                "templateName": {
+                    "label": "Which email template?"
+                }
+            }
+        },
+        "scheduled_batch_report": {
+            "name": "Daily/weekly attendance report",
+            "description": "Send a batch attendance report email to admin on a schedule.",
+            "questions": {
+                "batchId": {
+                    "label": "Which batch(es) to report on?",
+                    "helpText": "Pick one or more batches. Leave all unchecked to report across every active batch in your institute."
+                },
+                "templateName": {
+                    "label": "Which email template for the report?"
+                },
+                "excludeToday": {
+                    "helpText": "For morning-sent emails: pick \"exclude today\" so the report covers up through yesterday only. This keeps the email and the View Full Report deep-link consistent — they won't drift apart as more classes happen later in the day. Pick \"include today\" only if the workflow runs in the evening or you want a partial-day snapshot.",
+                    "options": {
+                        "exclude": "Exclude today (recommended — N full days ending yesterday)",
+                        "include": "Include today (window ends now — may show a partial day)"
+                    }
+                }
+            },
+            "nodes": {
+                "fetchAttendanceReport": "Fetch attendance report"
+            }
+        },
+        "scheduled_audience_followup": {
+            "name": "Audience follow-up emails",
+            "description": "Send follow-up emails to audience leads who submitted forms in the last N days.",
+            "questions": {
+                "audienceId": {
+                    "label": "Which audience/campaign(s)?",
+                    "helpText": "Pick one or more campaigns. Leave all unchecked to follow up across every campaign."
+                },
+                "daysAgo": {
+                    "label": "Send follow-up exactly how many days after submission?",
+                    "helpText": "Targets leads whose submission date is exactly this many days ago. Schedule this workflow daily. To follow up on day 3, 5, and 7 create three separate workflows."
+                },
+                "templateName": {
+                    "label": "Which follow-up email template?"
+                },
+                "waTemplateName": {
+                    "helpText": "Sent to each lead's phone number from the form. Variables auto-fill from the lead's fields."
+                }
+            },
+            "nodes": {
+                "fetchRecentLeads": "Fetch recent leads"
+            }
+        },
+        "scheduled_fee_reminder": {
+            "name": "Fee installment reminders",
+            "description": "Send reminders to students with upcoming fee installments.",
+            "questions": {
+                "templateName": {
+                    "label": "Which email template for the reminder?"
+                }
+            },
+            "nodes": {
+                "fetchUpcomingInstallments": "Fetch upcoming installments"
+            }
+        },
+        "welcome_enrolled_student": {
+            "name": "Welcome email to student",
+            "description": "Send a welcome email to a student right after they are enrolled in a batch.",
+            "questions": {
+                "templateName": {
+                    "label": "Which welcome email template?",
+                    "helpText": "This will be sent immediately after enrollment."
+                },
+                "waTemplateName": {
+                    "helpText": "Sent to the new student's mobile number right after enrollment. Variables like fullName/username auto-fill from the enrolled user."
+                }
+            },
+            "workflowDescription": "Send welcome message when a student enrolls."
+        },
+        "email_parents_batch": {
+            "name": "Email parents of batch students",
+            "description": "Fetch students from a batch and send an email to their parents instead.",
+            "questions": {
+                "waTemplateName": {
+                    "helpText": "Note: the student roster only stores the student's mobile number, so the WhatsApp message goes to the student's phone (parent emails stay email-only)."
+                }
+            },
+            "nodes": {
+                "sendToParentsPrefix": "Send to parents"
+            }
+        },
+        "termination_notice": {
+            "name": "Member removal notification",
+            "description": "Notify the student/member when they are removed from a sub-organization.",
+            "nodes": {
+                "trigger": "Trigger: Member removed"
+            }
+        },
+        "session_start_reminder": {
+            "name": "Live session start reminder",
+            "description": "When a live session starts, send a reminder email to all students in a batch.",
+            "questions": {
+                "templateName": {
+                    "label": "Which reminder template?"
+                }
+            },
+            "nodes": {
+                "trigger": "Trigger: Session started"
+            },
+            "workflowDescription": "Notify batch students when a live session starts."
+        },
+        "post_session_followup": {
+            "name": "Post-session follow-up",
+            "description": "After a live session ends, send a follow-up email (recording link, feedback form, etc.).",
+            "questions": {
+                "batchId": {
+                    "label": "Which batch to email?"
+                },
+                "templateName": {
+                    "label": "Which follow-up template?",
+                    "helpText": "Include recording link, feedback form, or next session info."
+                }
+            },
+            "nodes": {
+                "trigger": "Trigger: Session ended"
+            },
+            "workflowDescription": "Send follow-up message after live session ends."
+        },
+        "lead_followup_email": {
+            "name": "Lead follow-up email",
+            "description": "Send a follow-up or nurture email to leads who fill your audience form (use a scheduled workflow for delayed follow-ups).",
+            "questions": {
+                "templateName": {
+                    "label": "Which follow-up template?"
+                }
+            },
+            "nodes": {
+                "trigger": "Trigger: Lead submitted",
+                "followUpPrefix": "Follow-up"
+            }
+        },
+        "membership_expiry_reminder": {
+            "name": "Membership expiry reminder",
+            "description": "Send a renewal reminder when a membership or subscription is about to expire.",
+            "questions": {
+                "templateName": {
+                    "label": "Which reminder template?",
+                    "helpText": "Template for the membership renewal reminder."
+                }
+            },
+            "nodes": {
+                "trigger": "Trigger: Membership expiring"
+            },
+            "workflowDescription": "Send renewal reminders for expiring memberships."
+        },
+        "assessment_created_notify": {
+            "name": "Notify students about new assessment",
+            "description": "When a new assessment is created, email students in a batch to let them know.",
+            "nodes": {
+                "trigger": "Trigger: Assessment created"
+            },
+            "workflowDescription": "Notify batch students about a new assessment."
+        },
+        "assessment_email_batch": {
+            "name": "Assessment: email batch students",
+            "description": "When an assessment event fires, email students in a specific batch."
+        },
+        "assessment_start_notify": {
+            "name": "Assessment start notification",
+            "description": "Notify batch students when an assessment window opens / a student starts an attempt.",
+            "questions": {
+                "templateName": {
+                    "label": "Which template?"
+                }
+            },
+            "nodes": {
+                "trigger": "Trigger: Assessment started"
+            }
+        },
+        "scheduled_expiry_check": {
+            "name": "Expiring membership emails",
+            "description": "Run daily/weekly to find memberships expiring soon and send renewal reminders.",
+            "questions": {
+                "daysUntilExpiry": {
+                    "label": "How many days before expiry to warn?"
+                },
+                "templateName": {
+                    "label": "Which renewal reminder template?"
+                }
+            },
+            "workflowDescription_one": "Send renewal reminders {{count}} day before membership expires.",
+            "workflowDescription_other": "Send renewal reminders {{count}} days before membership expires."
+        },
+        "scheduled_engagement_summary": {
+            "name": "Student engagement report",
+            "description": "Send each student a personalized summary of their attendance and engagement.",
+            "questions": {
+                "templateName": {
+                    "label": "Which report template?",
+                    "helpText": "Template with variables like attendancePercentage, sessionsAttended."
+                },
+                "waTemplateName": {
+                    "helpText": "Variables like attendancePercentage and sessionsAttended auto-fill from each student's report data."
+                }
+            },
+            "nodes": {
+                "fetchStudentEngagement": "Fetch student engagement"
+            },
+            "workflowDescription_one": "Weekly engagement report for batch students (last {{count}} day).",
+            "workflowDescription_other": "Weekly engagement report for batch students (last {{count}} days)."
+        },
+        "scheduled_parents_attendance": {
+            "name": "Send attendance update to parents",
+            "description": "Send parents a weekly update on their child's attendance and engagement.",
+            "questions": {
+                "templateName": {
+                    "label": "Which template for parents?"
+                },
+                "waTemplateName": {
+                    "helpText": "Note: the roster only stores the student's mobile number, so the WhatsApp update goes to the student's phone (parent emails stay email-only)."
+                }
+            },
+            "nodes": {
+                "fetchStudentData": "Fetch student data"
+            },
+            "workflowDescription_one": "Weekly attendance update sent to parents (last {{count}} day).",
+            "workflowDescription_other": "Weekly attendance update sent to parents (last {{count}} days)."
+        },
+        "live_session_end_recap": {
+            "name": "Post-class email to present & absent students",
+            "description": "When any live class in your institute ends, send one email to students who attended and a different one to students who missed it.",
+            "questions": {
+                "presentTemplate": {
+                    "label": "Email template for students who attended",
+                    "helpText": "Sent to learners marked PRESENT in the class."
+                },
+                "absentTemplate": {
+                    "label": "Email template for students who missed it",
+                    "helpText": "Sent to learners marked ABSENT in the class."
+                },
+                "waPresentTemplate": {
+                    "label": "WhatsApp template for students who attended",
+                    "helpText": "Sent to learners marked PRESENT. Variables like fullName/sessionTitle auto-fill from attendance data."
+                },
+                "waAbsentTemplate": {
+                    "label": "WhatsApp template for students who missed it",
+                    "helpText": "Sent to learners marked ABSENT. Variables like fullName/sessionTitle auto-fill from attendance data."
+                }
+            },
+            "nodes": {
+                "trigger": "Trigger: Live class ended",
+                "fetchAttendance": "Fetch attendance",
+                "sendToPresentPrefix": "Send to present",
+                "sendToAbsentPrefix": "Send to absent"
+            },
+            "workflowDescription": "Post-class recap messages to present and absent students for every live class in the institute."
+        },
+        "webhook_on_enrollment": {
+            "name": "Send enrollment data to webhook",
+            "description": "When a learner enrolls, POST their details to an external webhook (Pabbly, Zapier, n8n, Make, etc.). Payload is fully configurable.",
+            "questions": {
+                "webhookUrl": {
+                    "helpText": "The POST endpoint that will receive the enrollment data. Get this from your Pabbly Connect workflow, Zapier Catch Hook, n8n Webhook node, etc."
+                },
+                "scope": {
+                    "helpText": "Pick \"institute-wide\" to fire on every learner enrollment in your institute, or \"specific course\" to fire only when learners enroll in one chosen course.",
+                    "options": {
+                        "institute": "For every enrollment in this institute",
+                        "course": "Only when learners enroll in a specific course"
+                    }
+                },
+                "payloadJson": {
+                    "hint": "Edit the JSON below. Each value can be a literal string OR a SpEL expression. Available variables on the context:  #ctx['triggerTime'] (ISO timestamp), #ctx['user'].fullName / .email / .mobileNumber / .username, #ctx['packageName'] (course), #ctx['packageId'], #ctx['packageSessionIds'] (batch), #ctx['instituteName'], #ctx['instituteId'], #ctx['enrollmentStatus'] (SSIGM status: ACTIVE/INVITED/...), #ctx['enrollmentId'], #ctx['enrolledAt'], #ctx['paymentStatus'] (PAID/PENDING/null), #ctx['paymentOrderId'], #ctx['paymentAmount'], #ctx['paymentCurrency'], #ctx['paymentVendor'], #ctx['paymentDate'], #ctx['hasPayment'] (boolean)."
+                }
+            },
+            "nodes": {
+                "fetchEnrollmentPaymentStatus": "Fetch enrollment & payment status",
+                "postToWebhook": "POST enrollment to webhook"
+            },
+            "workflowDescription": {
+                "course": "Fetch enrollment + payment status and POST to external webhook — fires only when learners enroll in the selected course.",
+                "institute": "Fetch enrollment + payment status and POST to external webhook on every new enrollment in this institute."
+            }
+        },
+        "webhook_on_abandoned_cart": {
+            "name": "Send abandoned cart data to webhook",
+            "description": "When a learner fills the enrollment form but does not complete payment, POST their details to an external webhook (Pabbly, Zapier, n8n) for re-targeting / nurture campaigns.",
+            "questions": {
+                "webhookUrl": {
+                    "helpText": "The POST endpoint that will receive the abandoned-cart data. Get this from your Pabbly Connect / Zapier / n8n / Make workflow."
+                },
+                "scope": {
+                    "helpText": "Pick \"institute-wide\" to fire on every abandoned cart in your institute, or \"specific course\" to fire only for one course.",
+                    "options": {
+                        "institute": "For every abandoned cart in this institute",
+                        "course": "Only when carts are abandoned for a specific course"
+                    }
+                },
+                "courseId": {
+                    "helpText": "The webhook will only fire when carts are abandoned for batches of this course."
+                },
+                "payloadJson": {
+                    "hint": "Edit the JSON below. Each value can be a literal string OR a SpEL expression. Available on the context:  #ctx['triggerTime'] (ISO timestamp), #ctx['user'].fullName / .email / .mobileNumber / .username, #ctx['packageName'] (course), #ctx['packageId'], #ctx['packageSessionIds'] (batch), #ctx['userId'], #ctx['userPlanId'] (often null at abandoned-cart time), #ctx['instituteName'], #ctx['instituteId']. Payment fields are NOT available — the cart was abandoned before payment started."
+                }
+            },
+            "nodes": {
+                "trigger": "Trigger: Cart abandoned",
+                "postToWebhook": "POST abandoned cart to webhook"
+            },
+            "workflowDescription": {
+                "course": "POST abandoned-cart data to external webhook — fires only for the selected course.",
+                "institute": "POST abandoned-cart data to external webhook on every abandoned cart in this institute."
+            }
+        }
+    }
+}

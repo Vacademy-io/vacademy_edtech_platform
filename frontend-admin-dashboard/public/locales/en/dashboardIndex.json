@@ -1,0 +1,336 @@
+{
+    "volt": {
+        "title": "Welcome to Volt",
+        "subtitle": "The future of interactive presentations.",
+        "redirecting": "Redirecting you to your workspace..."
+    },
+    "alertsDialog": {
+        "title": "System Alerts",
+        "loading": "Loading...",
+        "loadMore": "Load more",
+        "empty": "No alerts found"
+    },
+    "myCourses": {
+        "title": "My Courses",
+        "viewAll": "View All",
+        "description": "Quick access to your authored courses and submissions",
+        "authored": "Authored Courses",
+        "inReview": "In Review",
+        "loadError": "Failed to load course data"
+    },
+    "page": {
+        "title": "Dashboard",
+        "metaDescription": "This page shows the dashboard of the institute."
+    },
+    "greeting": {
+        "morning": "Good morning, <strong>{{name}}!</strong>",
+        "afternoon": "Good afternoon, <strong>{{name}}!</strong>",
+        "evening": "Good evening, <strong>{{name}}!</strong>"
+    },
+    "subtitle": {
+        "admin": "Here's how {{instituteName}} is doing today.",
+        "adminFallbackInstitute": "your institute",
+        "nonAdmin": "Track your courses and learners at a glance."
+    },
+    "header": {
+        "roleFallback": "Admin"
+    },
+    "welcomeVideo": {
+        "text": "Welcome aboard! We're excited to have you here. Let's set up your admin dashboard and make learning seamless and engaging.",
+        "textGeneral": "Welcome aboard! We're excited to have you here. Let's set up your admin dashboard so your institute runs smoothly."
+    },
+    "profileCard": {
+        "title": "Complete your institute profile",
+        "dismissAriaLabel": "Dismiss profile completion card",
+        "percentComplete": "{{percent}}% complete"
+    },
+    "namingCard": {
+        "title": "Naming Settings",
+        "description": "Customize the naming conventions used throughout your institute",
+        "button": "Naming Settings",
+        "dismissAriaLabel": "Dismiss naming settings card"
+    },
+    "revenueTrends": {
+        "subOrgTitle": "Amount collected — my organization"
+    },
+    "roleTypeCard": {
+        "title": "Role Type Users"
+    },
+    "aiCard": {
+        "dismissAriaLabel": "Dismiss AI features card",
+        "title": "Try New AI Features!",
+        "description": "Explore cutting-edge AI tools to enhance your teaching",
+        "features": {
+            "pdf": "Questions from PDF",
+            "lectureAudio": "Questions From Lecture Audio",
+            "sortTopicWise": "Sort Questions Topic wise",
+            "image": "Questions From Image",
+            "lectureFeedback": "Get Feedback of Lecture",
+            "planLecture": "Plan Your Lecture"
+        },
+        "manyMore": "Many More"
+    },
+    "assistant": {
+        "name": "Institute Chatbot",
+        "heading": "What would you like to get done today?",
+        "description": "Ask a question or choose a task to get started.",
+        "openChat": "Open chat",
+        "inputLabel": "Ask {{chatbotName}}",
+        "placeholder": "What can I help you with?",
+        "inputHint": "Enter to send · Shift + Enter for a new line",
+        "submit": "Ask assistant",
+        "suggestionsLabel": "Suggested tasks. Select one to edit your question.",
+        "loading": "Loading your assistant",
+        "unavailable": "The assistant is temporarily unavailable. Your dashboard is still ready to use.",
+        "retry": "Try again",
+        "starters": {
+            "overview": {
+                "label": "Check pending fees",
+                "prompt": "How much in fees is pending across the institute?"
+            },
+            "learner": {
+                "label": "New learners this week",
+                "prompt": "Which learners enrolled in the last 7 days?"
+            },
+            "assessments": {
+                "label": "Pending evaluations",
+                "prompt": "Which assessment submissions are still pending evaluation?"
+            },
+            "announcement": {
+                "label": "Recent announcements",
+                "prompt": "Show the last 5 announcements we sent."
+            },
+            "schedule": {
+                "label": "Today’s classes",
+                "prompt": "What classes are scheduled for today?"
+            },
+            "payments": {
+                "label": "Check learner fees",
+                "prompt": "Help me check a learner’s overdue fees."
+            },
+            "batch": {
+                "label": "Joins by batch",
+                "prompt": "How many learners joined each batch in the last 30 days?"
+            },
+            "help": {
+                "label": "Help with a task",
+                "prompt": "How do I create a course?",
+                "promptGeneral": "How do I add a team member?"
+            },
+            "crmNewLeads": {
+                "label": "New leads this week",
+                "prompt": "How many leads came in this week?"
+            },
+            "crmFirstContact": {
+                "label": "Waiting for first contact",
+                "prompt": "Which leads are waiting longest for first contact?"
+            },
+            "crmFeesDue": {
+                "label": "Fees due this week",
+                "prompt": "Who owes fees this week?"
+            }
+        },
+        "instituteName": "{{instituteName}} Institute Chatbot",
+        "helpDescription": "Ask me how or where to do anything in your admin workspace.",
+        "crmCopy": {
+            "crm_leads": "Leads and enquiries",
+            "crm_calls": "Calls and callbacks",
+            "crm_meetings": "Meetings and booking pages",
+            "crm_messages": "Lead messages",
+            "crm_reports": "CRM reports",
+            "crm_collections": "Admissions, dues and collections",
+            "admissionsNoFeePlan": "Admissions this month missing a fee plan",
+            "crm_lead_activity": "Log calls, notes and follow-ups on leads — you confirm each change on a card",
+            "crm_lead_edits": "Change a lead’s status, tier, details and tags — you confirm on a card",
+            "crm_team_edits": "Assign leads and pause or resume routing — you confirm on a card",
+            "crm_lead_intake": "Add or import leads — you confirm on a card",
+            "crm_lead_merges": "Merge duplicate leads — you confirm on a card",
+            "crm_meeting_edits": "Log meeting outcomes — you confirm on a card",
+            "examples": {
+                "leadFollowUp": "Add a follow-up on Asha’s lead for tomorrow at 11am",
+                "leadStatus": "Move Asha’s lead to Interested",
+                "assignLeads": "Assign the new Meta leads to Ravi",
+                "pauseRouting": "Pause lead routing for Ravi this week",
+                "addLead": "Add Priya Shah as a new lead from today’s seminar",
+                "mergeLeads": "Merge the two leads for Asha Verma",
+                "meetingOutcome": "Mark today’s meeting with Asha as done and note she wants the weekend batch"
+            }
+        },
+        "voice": {
+            "start": "Speak your question",
+            "starting": "Starting the microphone…",
+            "stop": "Stop and transcribe",
+            "cancel": "Cancel recording",
+            "recording": "Recording",
+            "elapsed": "{{elapsed}} of {{limit}}",
+            "transcribing": "Turning your speech into text…",
+            "dismiss": "Dismiss",
+            "announce": {
+                "started": "Recording. Press Stop when you’re done.",
+                "done": "Your words are in the message box. Check them, then send.",
+                "cancelled": "Recording cancelled.",
+                "limit": "Recording stopped at the {{minutes}} minute limit."
+            },
+            "errors": {
+                "permission": "Microphone access is blocked. Allow it in your browser’s site settings, then try again.",
+                "noMic": "No microphone found, or it’s in use by another app.",
+                "noSpeech": "We didn’t hear anything. Try again a little closer to the microphone.",
+                "tooLong": "That recording is too long. Keep questions under {{minutes}} minutes.",
+                "rateLimited": "Too many recordings in a short time. Wait a moment, then try again.",
+                "server": "Voice input isn’t available right now. Please type your question."
+            }
+        },
+        "capabilityCopy": {
+            "search_help_knowledge": "How-to guidance",
+            "learner_data": "Learner lookups — attendance, scores, activity, logins",
+            "payments": "Fees & payments",
+            "batch_data": "Batch rosters",
+            "schedule": "Class schedules",
+            "institute_overview": "Institute stats",
+            "learner_edits": "Make changes (with your confirmation)",
+            "assessments": "Assessment results & pending evaluations",
+            "announcements": "Send announcements (with your confirmation)",
+            "examples": {
+                "createCourse": "How do I create a course?",
+                "inviteMember": "How do I invite a team member?",
+                "addToBatch": "Where do I add a learner to a batch?",
+                "findLearner": "Which learners enrolled in the last 7 days?",
+                "studentAttendance": "What’s this student’s attendance this month?",
+                "overdueFees": "Does this learner have overdue fees?",
+                "liveNow": "What classes are live right now?",
+                "pendingFees": "How much fees is pending across the institute?",
+                "extendAccess": "Extend a learner’s access expiry",
+                "pendingEvaluation": "Which submissions are still pending evaluation?",
+                "sendAnnouncement": "Show the last 5 announcements we sent"
+            }
+        },
+        "panel": {
+            "label": "{{chatbotName}} chat",
+            "status": {
+                "ready": "Here to help",
+                "thinking": "Thinking…",
+                "pastChat": "Past chat"
+            },
+            "greeting": "Hi {{name}}, how can I help?",
+            "greetingNoName": "Hi! How can I help?",
+            "greetingHint": "Ask about your institute, or start with one of these.",
+            "canHelpWith": "What I can help with",
+            "showAllCapabilities": "Show all ({{count}})",
+            "showFewerCapabilities": "Show fewer",
+            "tryAsking": "Try asking",
+            "recentChats": "Recent chats",
+            "viewAll": "View all",
+            "actions": {
+                "history": "Recent chats",
+                "newChat": "New chat",
+                "expand": "Expand panel",
+                "shrink": "Shrink panel",
+                "close": "Close assistant",
+                "back": "Back to the chat",
+                "send": "Send message",
+                "copy": "Copy answer",
+                "copied": "Copied",
+                "continue": "Continue this chat",
+                "clearStudent": "Stop asking about this student"
+            },
+            "history": {
+                "search": "Search chats",
+                "today": "Today",
+                "earlier": "Earlier",
+                "empty": "No chats yet. Your conversations will appear here.",
+                "noMatches": "No chats match “{{query}}”.",
+                "error": "Your chats couldn’t be loaded.",
+                "retry": "Try again",
+                "loading": "Loading your chats",
+                "loadMore": "Show more",
+                "current": "Current",
+                "untitled": "Untitled chat",
+                "open": "Open chat: {{title}}",
+                "delete": "Delete chat: {{title}}",
+                "deletePrompt": "Delete this chat?",
+                "confirmDelete": "Delete",
+                "keep": "Keep"
+            },
+            "pastChat": {
+                "notice": "You’re viewing a past chat. Sending a message continues it.",
+                "loading": "Opening the chat…"
+            },
+            "followUps": "Suggested follow-ups",
+            "activity": {
+                "thinking": "Thinking…",
+                "working": "Working on it…"
+            },
+            "composer": {
+                "label": "Message {{chatbotName}}",
+                "placeholder": "Ask the assistant…"
+            },
+            "askingAbout": "Asking about:",
+            "tableLabel": "Table",
+            "card": {
+                "title": "Confirm this change",
+                "beforeConfirm": "Before you confirm",
+                "confirm": "Confirm",
+                "cancel": "Cancel",
+                "working": "Working…",
+                "executed": "Confirmed and applied",
+                "cancelled": "Cancelled",
+                "applying": "Already being applied",
+                "failed": "Not applied",
+                "expired": "Expired. Ask again to make this change."
+            },
+            "errors": {
+                "loadChat": "That chat couldn’t be opened. Please try again.",
+                "continue": "That chat couldn’t be reopened. Please try again.",
+                "delete": "That chat couldn’t be deleted. Please try again."
+            }
+        },
+        "pageAsk": {
+            "button": "Ask",
+            "buttonLabel": "Ask {{chatbotName}} about this page",
+            "menuTitle": "Ask {{chatbotName}} about this page",
+            "somethingElse": "Ask something else",
+            "questions": {
+                "leadsNotContacted": "Which new leads haven't been contacted yet?",
+                "leadsBySource": "How many leads came in this week, by source?",
+                "leadsOverdueFollowUps": "Which follow-ups are overdue, and for which counsellor?",
+                "leadsNoActivity": "Which open leads have had no activity for 7 days?",
+                "learnersRecent": "Who enrolled in the last 7 days?",
+                "learnersOverdueFees": "Which learners have the biggest overdue fees?",
+                "learnersInBatch": "List the learners in a batch",
+                "feesOverdue30": "Who has fees overdue by more than 30 days?",
+                "feesCollectedMonth": "How much did we collect this month?",
+                "feesWhoOwesWeek": "Who owes fees this week?",
+                "feesOutstanding": "What is the total fee outstanding?",
+                "assessmentsPending": "Which submissions are still pending evaluation?",
+                "assessmentsToppers": "Who topped the latest test?",
+                "assessmentsNotAttempted": "Who hasn't attempted the latest test yet?"
+            },
+            "tip": {
+                "lead": "Next time, just ask:",
+                "ask": "Ask now",
+                "stop": "Don't show tips",
+                "dismiss": "Dismiss tip"
+            },
+            "welcome": {
+                "hint": "Welcome! I can help you set up your institute. Start with one of these, or ask anything.",
+                "startHere": "Start here",
+                "questions": {
+                    "firstSteps": "What should I set up first?",
+                    "createCourse": "How do I create a course?",
+                    "addLearners": "How do I add learners to a batch?",
+                    "inviteTeam": "How do I invite my team?"
+                }
+            }
+        }
+    },
+    "quickActions": {
+        "title": "Quick actions"
+    },
+    "overview": {
+        "title": "Institute overview"
+    },
+    "sourceError": {
+        "message": "Couldn't load",
+        "retry": "Retry"
+    }
+}

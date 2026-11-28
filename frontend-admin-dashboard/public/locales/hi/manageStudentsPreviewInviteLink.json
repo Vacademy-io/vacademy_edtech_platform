@@ -1,0 +1,17 @@
+{
+    "previewButton": "आमंत्रण पूर्वावलोकन करें",
+    "instituteLogoAlt": "संस्थान लोगो",
+    "courseBannerAlt": "कोर्स बैनर",
+    "coursePreviewAlt": "कोर्स पूर्वावलोकन छवि",
+    "levelLabel": "स्तर",
+    "learnersGainHeading": "शिक्षार्थियों को क्या मिलेगा",
+    "aboutCourseHeading": "कोर्स के बारे में",
+    "youtubePlayerTitle": "यूट्यूब वीडियो प्लेयर",
+    "videoNotSupported": "आपका ब्राउज़र वीडियो टैग को समर्थन नहीं करता है।",
+    "registrationHeading": "पंजीकरण विवरण",
+    "registrationSubheading": "कोर्स में नामांकन के लिए अपना विवरण भरें",
+    "phoneNumberLabel": "फ़ोन नंबर",
+    "phoneNumberPlaceholder": "123 456 7890",
+    "registerButton": "पंजीकरण करें",
+    "resetFormButton": "फ़ॉर्म रीसेट करें"
+}

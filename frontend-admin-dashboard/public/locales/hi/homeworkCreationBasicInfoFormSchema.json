@@ -1,0 +1,5 @@
+{
+    "assessmentNameRequired": "मूल्यांकन का नाम आवश्यक है",
+    "endDateAfterStartDate": "समाप्ति तिथि आरंभ तिथि से बाद की होनी चाहिए",
+    "reattemptCountPositive": "पुनः प्रयास की संख्या 0 से अधिक होनी चाहिए"
+}

@@ -1,0 +1,29 @@
+{
+    "tabs": {
+        "batchSelection": "اختيار الدفعة",
+        "individualSelection": "اختيار فردي"
+    },
+    "studentCount_zero": "لا يوجد طلاب ({{count}})",
+    "studentCount_one": "طالب واحد ({{count}})",
+    "studentCount_two": "طالبان ({{count}})",
+    "studentCount_few": "{{count}} طلاب",
+    "studentCount_many": "{{count}} طالبًا",
+    "studentCount_other": "{{count}} طالب",
+    "clickRowHint": "انقر فوق صف لبدء إدخال البيانات",
+    "search": {
+        "placeholder": "ابحث بالاسم..."
+    },
+    "table": {
+        "headers": {
+            "studentName": "اسم الطالب",
+            "status": "الحالة",
+            "score": "الدرجة"
+        },
+        "empty": "لم يتم العثور على طلاب"
+    },
+    "status": {
+        "attempted": "تمت المحاولة",
+        "pending": "قيد الانتظار",
+        "registered": "مسجَّل"
+    }
+}

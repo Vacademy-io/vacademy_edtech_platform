@@ -21,15 +21,23 @@ services:
       # Persist synthesized IVR-prompt audio across restarts/redeploys, so each
       # prompt is synthesized once (ever) and replayed free — no recurring TTS cost.
       - tts_cache:/tmp/tts-cache
+      # Vertex service-account JSON (VERTEX_CREDENTIALS_PATH). The box had this
+      # mount added by hand; the tracked file lacked it, and a compose refresh on
+      # 2026-09-12 briefly shipped a container with no LLM credentials.
+      - ./vertex-sa.json:/etc/vertex-sa.json:ro
     healthcheck:
       test: ["CMD-SHELL", "python3 -c \"import urllib.request;urllib.request.urlopen('http://127.0.0.1:8090/voice-bot-service/health', timeout=5)\""]
       interval: 30s
       timeout: 8s
       retries: 3
       start_period: 40s
+    # journald, not json-file: json-file logs are deleted with the container,
+    # so every deploy erased the previous image's call logs (2026-09-12: two
+    # calls the founder asked about had no logs left). `docker compose logs`
+    # still works; retention is journald's (SystemMaxUse on the box).
     logging:
-      driver: json-file
-      options: { max-size: "20m", max-file: "5" }
+      driver: journald
+      options: { tag: "voice-bot" }
 
   caddy:
     image: caddy:2

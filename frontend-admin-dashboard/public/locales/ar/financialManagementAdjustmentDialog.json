@@ -1,0 +1,51 @@
+{
+    "title": "تعديل القسط",
+    "summary": {
+        "feeType": "نوع الرسوم",
+        "expected": "المتوقع",
+        "paid": "المدفوع",
+        "due": "المستحق"
+    },
+    "type": {
+        "concession": "تنازل",
+        "penalty": "غرامة"
+    },
+    "current": {
+        "heading": "التعديل الحالي"
+    },
+    "reasonPrefix": "السبب: {{reason}}",
+    "actions": {
+        "retract": "سحب التعديل",
+        "submitPenalty": "تطبيق الغرامة",
+        "submitConcession": "إرسال للموافقة",
+        "submitting": "جارٍ الإرسال..."
+    },
+    "form": {
+        "concessionHint": "يقلل المبلغ المستحق",
+        "concessionApproval": "يتطلب موافقة",
+        "penaltyHint": "يزيد المبلغ المستحق",
+        "penaltyInstant": "يُطبَّق فورًا",
+        "amountLabel": "المبلغ",
+        "amountPlaceholder": "أدخل المبلغ",
+        "reasonLabel": "السبب",
+        "reasonPlaceholderConcession": "مثال: منحة دراسية، ضائقة مالية",
+        "reasonPlaceholderPenalty": "مثال: تأخر السداد، مخالفة السياسة"
+    },
+    "toast": {
+        "penaltyApplied": "تم تطبيق الغرامة",
+        "concessionSubmitted": "تم إرسال التنازل للموافقة",
+        "submitFailed": "فشل إرسال التعديل",
+        "retracted": "تم سحب التعديل",
+        "retractFailed": "فشل سحب التعديل",
+        "selectType": "اختر تنازل أو غرامة",
+        "invalidAmount": "أدخل مبلغًا صالحًا",
+        "exceedsExpected": "لا يمكن أن يتجاوز التنازل المبلغ المتوقع"
+    },
+    "history": {
+        "heading": "السجل",
+        "loading": "جارٍ تحميل السجل…",
+        "empty": "لا يوجد نشاط تعديل حتى الآن.",
+        "by": "بواسطة {{actor}}",
+        "page": "صفحة {{current}} من {{total}}"
+    }
+}

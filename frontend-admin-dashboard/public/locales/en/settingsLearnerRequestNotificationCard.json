@@ -1,0 +1,20 @@
+{
+    "title": "Learner Request Notifications",
+    "description": "Choose which roles are told when a learner, during a test, reports a problem with a question, asks for more time, or asks for another attempt. By default only admins are notified. Every request also appears in the test's Learner Requests tab.",
+    "rolesHeading": "Notify these roles",
+    "channelsHeading": "Send by",
+    "roles": {
+        "admin": "Admin"
+    },
+    "channels": {
+        "inApp": {
+            "label": "Dashboard bell and app push",
+            "hint": "Shows in the notification bell and on the staff app."
+        },
+        "email": {
+            "label": "Email",
+            "hint": "One email per request. When many learners report the same question, staff hear about it once in 10 minutes."
+        }
+    },
+    "nobodyWarning": "No one will be notified. Learner requests will only appear in the Learner Requests tab."
+}

@@ -1,8 +1,10 @@
 import { X } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
 import { EnquiryDetails } from './enquiry-details';
 import { useEnquirySidebar } from '../../-context/selected-enquiry-sidebar-context';
 
 export const EnquirySidebar = () => {
+    const { t } = useTranslation('admissionsEnquirySidebar');
     const { isOpen, closeSidebar, selectedEnquiryId } = useEnquirySidebar();
 
     if (!isOpen) return null;
@@ -17,7 +19,7 @@ export const EnquirySidebar = () => {
 
             {/* Slide-in panel — mirrors the look of StudentSidebar */}
             <div
-                className={`fixed right-0 top-0 z-50 flex h-full w-[420px] max-w-full flex-col
+                className={`fixed end-0 top-0 z-50 flex h-full w-full max-w-md flex-col
                     border-l border-neutral-200 bg-white shadow-2xl
                     transition-transform duration-300 ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}
             >
@@ -28,7 +30,7 @@ export const EnquirySidebar = () => {
                             <div className="flex items-center gap-3">
                                 <div className="h-6 w-1 animate-pulse rounded-full bg-gradient-to-b from-primary-500 to-primary-400" />
                                 <h2 className="bg-gradient-to-r from-neutral-800 to-neutral-600 bg-clip-text text-lg font-semibold text-transparent">
-                                    Enquiry Details
+                                    {t('title')}
                                 </h2>
                             </div>
                             <button

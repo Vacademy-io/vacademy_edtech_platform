@@ -1,0 +1,25 @@
+{
+    "dialogTitle": {
+        "update": "Update {{term}} Link",
+        "create": "Create {{term}} Link"
+    },
+    "inviteLink": {
+        "copyTitle": "Copy invite link",
+        "copiedToast": "Invite link copied to clipboard"
+    },
+    "toast": {
+        "updateSuccess": "Your invite link has been updated successfully!",
+        "createSuccess": "Your invite link has been created successfully!",
+        "saveError": "Failed to save invite link",
+        "unexpectedError": "An unexpected error occurred",
+        "validationFailed": "Validation failed on: {{fields}}"
+    },
+    "actions": {
+        "close": "Close",
+        "updating": "Updating...",
+        "creating": "Creating..."
+    },
+    "customField": {
+        "defaultOptionLabel": "option {{number}}"
+    }
+}

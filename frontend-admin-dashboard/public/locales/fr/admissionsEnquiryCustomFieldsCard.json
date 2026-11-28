@@ -1,0 +1,10 @@
+{
+    "header": {
+        "title": "Champs du formulaire de demande",
+        "description": "Configurez les champs à partir des paramètres de champs personnalisés"
+    },
+    "emptyState": {
+        "title": "Aucun champ personnalisé avec l'emplacement « Demande » activé.",
+        "description": "Accédez à Paramètres → Champs personnalisés pour activer des champs pour l'emplacement Demande."
+    }
+}

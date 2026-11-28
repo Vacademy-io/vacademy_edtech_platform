@@ -1,0 +1,19 @@
+{
+    "installmentDetails": "Détails de l'échéance",
+    "errors": {
+        "unableToLoad": "Impossible de charger les détails de l'échéance. Veuillez réessayer."
+    },
+    "empty": {
+        "noInstallmentsFound": "Aucune échéance trouvée pour ce groupe de paiement."
+    },
+    "table": {
+        "feeType": "Type de frais",
+        "instNumber": "Éch. n°",
+        "expected": "Attendu",
+        "discount": "Remise",
+        "paid": "Payé",
+        "due": "Dû",
+        "dueDate": "Date d'échéance",
+        "status": "Statut"
+    }
+}

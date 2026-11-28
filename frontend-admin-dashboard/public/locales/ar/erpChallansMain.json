@@ -1,0 +1,58 @@
+{
+    "description": "الإيداعات الضريبية (TDS) المسددة على استقطاعات الرواتب. يُطابق النموذج 24Q كل ربع سنة مع هذه السجلات، لذا فإن أي إيداع غير مسجل هنا سيظهر هناك كتباين.",
+    "recordChallan": "تسجيل إيصال",
+    "toast": {
+        "recorded": "تم تسجيل الإيصال",
+        "removed": "تم حذف الإيصال"
+    },
+    "errors": {
+        "record": "تعذر تسجيل الإيصال.",
+        "remove": "تعذر حذف الإيصال.",
+        "load": "تعذر تحميل سجل الإيصالات."
+    },
+    "empty": {
+        "title": "لا توجد إيصالات مسجلة",
+        "description": "لم يُسجَّل أي إيداع لـ {{financialYear}} {{quarter}} حتى الآن."
+    },
+    "table": {
+        "depositDate": "تاريخ الإيداع",
+        "bsrCode": "رمز BSR",
+        "serial": "الرقم التسلسلي",
+        "amount": "المبلغ",
+        "interest": "الفائدة",
+        "fee": "الرسوم"
+    },
+    "removeChallanAria": "حذف الإيصال",
+    "totalDeposited": "إجمالي المودَع · {{financialYear}} {{quarter}}",
+    "dialog": {
+        "heading": "تسجيل إيصال TDS",
+        "cancel": "إلغاء",
+        "save": "حفظ الإيصال",
+        "saving": "جارٍ الحفظ…"
+    },
+    "fields": {
+        "financialYear": "السنة المالية",
+        "financialYearPlaceholder": "2025-26",
+        "quarter": "الربع",
+        "depositDate": "تاريخ الإيداع",
+        "amountDeposited": "المبلغ المودَع",
+        "bsrCode": "رمز BSR",
+        "bsrCodePlaceholder": "رمز فرع البنك",
+        "challanSerial": "الرقم التسلسلي للإيصال",
+        "interest": "الفائدة",
+        "fee": "الرسوم",
+        "notes": "ملاحظات"
+    },
+    "deleteDialog": {
+        "title": "هل تريد حذف هذا الإيصال؟",
+        "description": "{{amount}} تم إيداعه في {{date}} ولن يُحتسب بعد الآن ضمن مطابقة النموذج 24Q.",
+        "unknownDate": "تاريخ غير معروف",
+        "keepIt": "الاحتفاظ به",
+        "remove": "حذف"
+    },
+    "validation": {
+        "financialYearFormat": "استخدم الصيغة 2025-26",
+        "depositDateRequired": "تاريخ الإيداع مطلوب",
+        "amountPositive": "يجب أن يكون المبلغ أكبر من صفر"
+    }
+}

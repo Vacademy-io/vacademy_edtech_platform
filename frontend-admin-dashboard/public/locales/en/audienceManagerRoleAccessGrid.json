@@ -1,0 +1,14 @@
+{
+    "roleLabels": {
+        "admin": "Admin",
+        "student": "Student",
+        "parent": "Parent"
+    },
+    "actions": {
+        "view": "View",
+        "edit": "Edit"
+    },
+    "addRolePlaceholder": "Add a role…",
+    "addRoleButton": "Add",
+    "removeRole": "Remove {{role}}"
+}

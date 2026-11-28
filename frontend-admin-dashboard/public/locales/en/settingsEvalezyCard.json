@@ -1,0 +1,29 @@
+{
+    "header": {
+        "title": "Evalezy app",
+        "description": "A simple app for checking answer copies: pick an assessment, scan or upload the copies, the AI checks them, download the checked copies as a zip. It opens at evalezy.vacademy.io and in the Evalezy mobile app, with the same login.",
+        "open": "Open Evalezy"
+    },
+    "enabled": {
+        "label": "Allow Evalezy",
+        "description": "Your admins can sign in to Evalezy. When off, Evalezy shows that it is turned off for your institute."
+    },
+    "camera": {
+        "label": "Scan with camera",
+        "description": "Copies can be scanned page by page with the phone or laptop camera."
+    },
+    "upload": {
+        "label": "Upload files",
+        "description": "Copies can be uploaded as PDFs or photos from the device."
+    },
+    "notifyEmail": {
+        "label": "Email when checked",
+        "description": "The person who sent the copies gets an email when the batch is checked."
+    },
+    "quality": {
+        "label": "Scan quality",
+        "description": "Higher quality reads small or faint handwriting better, but uploads take longer.",
+        "standard": "Standard (recommended)",
+        "high": "High"
+    }
+}

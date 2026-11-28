@@ -1,0 +1,52 @@
+{
+    "dialog": {
+        "title": "Supprimer l'option de paiement - {{name}}"
+    },
+    "loading": {
+        "checking": "Vérification des invitations liées...",
+        "loadingButton": "Chargement...",
+        "loadButton": "Charger les invitations liées"
+    },
+    "select": {
+        "alert_one": "Cette option de paiement est liée à {{count}} invitation. Veuillez attribuer une autre option de paiement à chaque invitation d'abord.",
+        "alert_many": "Cette option de paiement est liée à {{count}} invitations. Veuillez attribuer une autre option de paiement à chaque invitation d'abord.",
+        "alert_other": "Cette option de paiement est liée à {{count}} invitations. Veuillez attribuer une autre option de paiement à chaque invitation d'abord.",
+        "progress": "Progression : {{completed}} sur {{total}} terminé(es)",
+        "status": {
+            "updated": "Mis à jour",
+            "failed": "Échec",
+            "updating": "Mise à jour...",
+            "pending": "En attente"
+        },
+        "selectLabel": "Sélectionner une nouvelle option de paiement",
+        "selectPlaceholder": "Sélectionner une option de paiement",
+        "updateButton": "Mettre à jour",
+        "updatedTo": "✓ Mis à jour vers : {{name}}",
+        "errorPrefix": "Erreur : {{error}}",
+        "continueButton": "Tout est mis à jour - Continuer vers la suppression"
+    },
+    "confirm": {
+        "noInvitesAlert": "Cette option de paiement n'est liée à aucune invitation et peut être supprimée en toute sécurité.",
+        "warningAlert": "Cette action est irréversible. Tapez « delete » ci-dessous pour confirmer la suppression.",
+        "inputLabel": "Tapez « delete » pour confirmer",
+        "inputPlaceholder": "Tapez « delete » pour confirmer"
+    },
+    "actions": {
+        "cancel": "Annuler",
+        "deleteButton": "Supprimer l'option de paiement",
+        "deletingButton": "Suppression..."
+    },
+    "toasts": {
+        "loadInvitesFailed": "Échec du chargement des invitations liées",
+        "selectPaymentOption": "Veuillez sélectionner une option de paiement",
+        "paymentOptionNotFound": "Option de paiement sélectionnée introuvable",
+        "inviteNotFound": "Invitation avec l'ID {{id}} introuvable parmi les invitations liées",
+        "updateSuccess": "Option de paiement de l'invitation mise à jour avec succès",
+        "updateFailed": "Échec de la mise à jour de l'invitation",
+        "updateAllRequired": "Veuillez mettre à jour toutes les invitations liées avant de supprimer",
+        "confirmTextRequired": "Veuillez taper « delete » pour confirmer",
+        "deleteSuccess": "Option de paiement supprimée avec succès",
+        "deleteFailed": "Échec de la suppression de l'option de paiement"
+    },
+    "unknownPaymentOption": "Inconnu"
+}

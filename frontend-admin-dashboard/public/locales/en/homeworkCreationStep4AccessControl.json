@@ -1,0 +1,40 @@
+{
+    "page": {
+        "title": "Access Control",
+        "updateButton": "Update",
+        "saveButton": "Save",
+        "publishButton": "Publish"
+    },
+    "sections": {
+        "creationAccess": "Assessment Creation Access",
+        "liveAssessmentNotification": "Live Assessment Notification",
+        "submissionAndReportAccess": "Assessment Submission & Report Access",
+        "evaluationProcess": "Evaluation Process"
+    },
+    "toast": {
+        "updateSuccess": "Your assessment has been updated successfully!",
+        "saveSuccess": "Your assessment has been saved successfully!",
+        "updateAndPublishSuccess": "Your assessment has been updated and published successfully!",
+        "publishSuccess": "Your assessment has been published successfully!",
+        "cancelInvitationSuccess": "Invitation for this user has been cancelled successfully!"
+    },
+    "errors": {
+        "saveFailed": "Failed to save access control.",
+        "publishFailed": "Failed to publish assessment."
+    },
+    "addUserDialog": {
+        "addButton": "Add",
+        "title": "Add User",
+        "roleTypeFilterLabel": "Role Type",
+        "selectAllLabel": "Select All",
+        "doneButton": "Done"
+    },
+    "cancelInvitationDialog": {
+        "trigger": "Cancel Invitation",
+        "title": "Cancel Invitation",
+        "attention": "Attention",
+        "confirmMessagePrefix": "Are you sure you want to cancel invitation for",
+        "confirmMessageSuffix": "?",
+        "confirmButton": "Yes"
+    }
+}

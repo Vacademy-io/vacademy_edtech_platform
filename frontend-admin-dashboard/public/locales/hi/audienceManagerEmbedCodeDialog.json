@@ -1,0 +1,38 @@
+{
+    "dialogTitle": "एम्बेड कोड - {{campaignName}}",
+    "dialogDescription": "प्रतिक्रियाएं एकत्र करने के लिए इस फ़ॉर्म को अपनी वेबसाइट या किसी भी वेबपेज पर एम्बेड करें।",
+    "tabs": {
+        "buttonPopup": "बटन + पॉपअप",
+        "directEmbed": "सीधा एम्बेड"
+    },
+    "defaults": {
+        "buttonText": "अभी रजिस्टर करें",
+        "popupTitle": "पंजीकरण फ़ॉर्म"
+    },
+    "buttonPanel": {
+        "heading": "बटन कस्टमाइज़ करें",
+        "buttonTextLabel": "बटन टेक्स्ट",
+        "bgColorLabel": "बैकग्राउंड रंग",
+        "textColorLabel": "टेक्स्ट रंग",
+        "borderRadiusLabel": "बॉर्डर रेडियस (px)",
+        "popupTitleLabel": "पॉपअप शीर्षक",
+        "previewLabel": "पूर्वावलोकन"
+    },
+    "iframePanel": {
+        "heading": "iFrame कस्टमाइज़ करें",
+        "widthLabel": "चौड़ाई",
+        "heightLabel": "शुरुआती ऊंचाई (px) — फ़ॉर्म के अनुसार बदलती है",
+        "previewScaledLabel": "पूर्वावलोकन (स्केल्ड)",
+        "formPreviewTitle": "फ़ॉर्म पूर्वावलोकन",
+        "tipPrefix": "सुझाव: रिस्पॉन्सिव चौड़ाई के लिए",
+        "tipSuffix": "का उपयोग करें, या इस तरह पिक्सेल निर्दिष्ट करें"
+    },
+    "copyButton": {
+        "copy": "कॉपी करें",
+        "copied": "कॉपी हो गया"
+    },
+    "toasts": {
+        "copiedToClipboard": "क्लिपबोर्ड पर कॉपी हो गया!",
+        "copyFailed": "कॉपी करने में विफल"
+    }
+}

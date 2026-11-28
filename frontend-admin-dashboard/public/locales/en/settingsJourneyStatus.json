@@ -1,0 +1,62 @@
+{
+    "title": "Journey status",
+    "description": "Where each learner stands in each batch: learning, on a break, at risk, suspended. Shown on the learner list and the learner's profile. Status only: nothing is sent to learners.",
+    "loadFailed": "Could not load this setting.",
+    "retry": "Try again",
+    "toggleLabel": "Use journey status",
+    "statuses": {
+        "title": "Statuses",
+        "hint": "Rename, recolour and reorder the statuses. Each keeps its key, so changing a name never loses data.",
+        "label": "Status name",
+        "kind": "Kind",
+        "color": "Colour of {{label}}",
+        "up": "Move up",
+        "down": "Move down",
+        "remove": "Remove status",
+        "newPlaceholder": "New status name",
+        "add": "Add status",
+        "duplicate": "A status with this name already exists.",
+        "kindsHint": "The kind decides how a status behaves: the At Risk check only moves learners on an Active status, and never touches a break, stopped or re-entry status."
+    },
+    "kinds": {
+        "ACTIVE": "Active (learning)",
+        "BREAK": "Break",
+        "RISK": "At risk",
+        "STOPPED": "Stopped",
+        "REENTRY": "Re-entry"
+    },
+    "rules": {
+        "title": "With Breaks and holds",
+        "default": "Status of a new enrolment",
+        "defaultHint": "Every batch without a status of its own has this one.",
+        "onPause": "When a pause starts",
+        "onPauseHint": "Set on the paused batch (a stopped status is kept).",
+        "onResume": "When the pause ends",
+        "onResumeHint": "Set if the batch is still on a break status.",
+        "noChange": "Don't change"
+    },
+    "risk": {
+        "title": "At Risk check",
+        "hint": "Once a day, a learner on an Active status is marked at risk in a batch when either rule below holds. Set a rule to 0 to switch it off.",
+        "toggle": "Run the At Risk check every day",
+        "status": "Status to set",
+        "classes": "Missed classes in a row",
+        "classesHint": "Missed each of the batch's last N classes (classes where attendance was taken).",
+        "fee": "Fee overdue (days)",
+        "feeHint": "The membership's due date is more than this many days past.",
+        "autoReturn": "Move them back to the new-enrolment status when they attend again or pay (only learners the check marked).",
+        "noMessages": "The check only changes the status. It sends no email, WhatsApp or notification."
+    },
+    "offNote": "Switching this off hides journey status everywhere. Saved statuses are kept for when it is switched on again.",
+    "audit": "Every change is recorded on the learner's timeline with who made it, when and why.",
+    "save": "Save",
+    "saving": "Saving…",
+    "saved": "Journey status setting saved.",
+    "saveFailed": "Could not save the setting.",
+    "reentry": {
+        "title": "Re-entry",
+        "hint": "Start re-entry from the learner's profile: the batch moves to the Re-entry status, with an extra class or a bridge course to catch up.",
+        "autoReturn": "Move back to {{status}} after the re-entry date",
+        "noStatus": "Add a status of kind Re-entry to use the re-entry form."
+    }
+}

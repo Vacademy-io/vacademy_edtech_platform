@@ -1,0 +1,40 @@
+{
+    "defaults": {
+        "title": "Vérifier le script",
+        "subtitle": "Modifiez le script ci-dessous, puis générez l'audio et les visuels.",
+        "ctaLabel": "Passer à la vidéo",
+        "discardLabel": "Recommencer"
+    },
+    "counts": {
+        "words_one": "{{count}} mot",
+        "words_many": "{{count}} mots",
+        "words_other": "{{count}} mots",
+        "sentences_one": "{{count}} phrase",
+        "sentences_many": "{{count}} phrases",
+        "sentences_other": "{{count}} phrases"
+    },
+    "approxDuration": "≈ {{time}}",
+    "prompt": {
+        "toggleLabel": "Invite d'origine"
+    },
+    "viewToggle": {
+        "timeline": "Chronologie",
+        "editRaw": "Modifier le texte brut",
+        "estimatesNote": "Les durées sont estimées (≈{{wpm}} mots/min). Les durées réelles proviendront de la synthèse vocale à l'étape suivante."
+    },
+    "timeline": {
+        "empty": "Aucune phrase détectée. Passez à <strong>Modifier le texte brut</strong> pour ajouter la narration."
+    },
+    "sentenceRow": {
+        "shortFragment": "fragment trop court",
+        "longSentence": "phrase longue — envisagez de la scinder",
+        "editTitle": "Modifier",
+        "insertTitle": "Insérer une phrase en dessous",
+        "deleteTitle": "Supprimer la phrase",
+        "newSentencePlaceholder": "Nouvelle phrase."
+    },
+    "rawView": {
+        "placeholder": "Le script apparaîtra ici..."
+    },
+    "resuming": "Reprise en cours..."
+}

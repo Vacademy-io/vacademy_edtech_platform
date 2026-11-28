@@ -1,0 +1,25 @@
+{
+    "heading": "Nécessite votre attention",
+    "allClear": "Tout est en ordre — rien ne nécessite votre attention pour le moment.",
+    "items": {
+        "tnc": {
+            "title": "Conditions générales non signées",
+            "description": "Requis avant le premier cours"
+        },
+        "outstanding": {
+            "title": "₹{{amount}} en attente de paiement",
+            "description": "Factures impayées enregistrées"
+        },
+        "behind": {
+            "title_one": "En retard sur {{count}} cours",
+            "title_many": "En retard sur {{count}} cours",
+            "title_other": "En retard sur {{count}} cours",
+            "description": "Inscriptions actives sous 25 % de progression"
+        }
+    },
+    "actions": {
+        "send": "Envoyer",
+        "collect": "Encaisser",
+        "review": "Examiner"
+    }
+}

@@ -33,6 +33,7 @@ import java.util.*;
 public class LeadJourneyBatchService {
 
     private final TimelineEventService timelineEventService;
+    private final LeadJourneyFollowupService leadJourneyFollowupService;
     private final TelephonyCallLogRepository callLogRepository;
     private final AuthService authService;
 
@@ -49,6 +50,8 @@ public class LeadJourneyBatchService {
             // lookup hiccups.
             log.warn("journeyBatch: disposition lookup failed for {} users: {}",
                     userIds.size(), e.getMessage());
+            addFollowups(byUser, userIds);
+            sortOldestFirst(byUser);
             return byUser;
         }
 
@@ -81,12 +84,26 @@ public class LeadJourneyBatchService {
             }
         }
 
-        // Timeline lists arrive oldest-first; merged disposition rows need a
-        // re-sort so the flow reads chronologically.
+        addFollowups(byUser, userIds);
+        sortOldestFirst(byUser);
+        return byUser;
+    }
+
+    /** Follow-ups with no timeline event (migrated leads) — see LeadJourneyFollowupService. */
+    private void addFollowups(Map<String, List<TimelineEventDTO>> byUser, List<String> userIds) {
+        for (TimelineEventDTO row : leadJourneyFollowupService.followupEvents(
+                userIds, List.of(), timelineEventService.requestInstituteId())) {
+            if (row.getStudentUserId() == null) continue;
+            byUser.computeIfAbsent(row.getStudentUserId(), k -> new ArrayList<>()).add(row);
+        }
+    }
+
+    // Timeline lists arrive oldest-first; merged disposition and follow-up rows
+    // need a re-sort so the flow reads chronologically.
+    private static void sortOldestFirst(Map<String, List<TimelineEventDTO>> byUser) {
         Comparator<TimelineEventDTO> byCreatedAt = Comparator.comparing(
                 TimelineEventDTO::getCreatedAt, Comparator.nullsFirst(Comparator.naturalOrder()));
         for (List<TimelineEventDTO> list : byUser.values()) list.sort(byCreatedAt);
-        return byUser;
     }
 
     /** Best-effort batch name resolution for disposition actors — the export

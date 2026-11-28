@@ -1,0 +1,23 @@
+{
+    "logoAlt": "الشعار",
+    "poweredBy": "بدعم من",
+    "recentTabs": {
+        "heading": "تمت زيارتها مؤخرًا",
+        "emptyTitle": "لا توجد تبويبات حديثة",
+        "emptyDescription": "انتقل إلى الصفحات وستظهر هنا"
+    },
+    "support": {
+        "button": "الدعم",
+        "planTooltip": "خطة دعم {{plan}}",
+        "plan": {
+            "dedicated": "مخصصة",
+            "premium": "مميزة",
+            "average": "متوسطة",
+            "low": "منخفضة",
+            "none": "لا توجد خطة"
+        }
+    },
+    "settings": {
+        "searchPlaceholder": "بحث في الإعدادات"
+    }
+}

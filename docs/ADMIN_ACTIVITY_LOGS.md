@@ -265,7 +265,63 @@ The audit table renders each row as `**{actor_name}** {description}`. Names insi
 | `updated WhatsApp credentials for X` | updated WhatsApp credentials for **X** |
 | `removed WhatsApp credentials for X` | removed WhatsApp credentials for **X** |
 
+CRM sentences (added 2026-09-08):
+
+| Backend `descriptionExpr` outputs | Renders as |
+|---|---|
+| `created / updated / deleted audience X` | created audience **X** |
+| `sent a message to audience X` | sent a message to audience **X** |
+| `imported 340 lead(s) into X` | imported **340 lead(s)** into **X** |
+| `added / updated / deleted / restored lead X` | added lead **X** |
+| `registered walk-in lead X` | registered walk-in lead **X** |
+| `assigned lead X to Y` | assigned lead **X** to **Y** |
+| `assigned / reassigned 12 lead(s) to Y` | assigned **12 lead(s)** to **Y** |
+| `changed lead status / tier / score of X to Y` | changed lead status of **X** to **Y** |
+| `marked lead X as converted` | marked lead **X** as converted |
+| `scheduled / rescheduled / closed a follow-up for lead X` | … for lead **X** |
+| `created / updated / deleted lead status X` | created lead status **X** |
+| `connected Meta lead form X to audience Y` | connected Meta lead form **X** to audience **Y** |
+| `created / updated counsellor pool X` | created counsellor pool **X** |
+| `tagged 48 contact(s) with X` | tagged **48 contact(s)** with **X** |
+| `created / updated / deleted automation X` | created automation **X** |
+| `created engagement engine X` | created engagement engine **X** |
+| `changed the status of 6 enquiry(s) to X` | changed the status of **6 enquiry(s)** to **X** |
+
 If your new endpoint emits a verb-noun phrase the frontend doesn't recognize, the description renders as plain text (no bolding). That's fine — adding a new pattern is a one-line regex addition in `NAMED_DESCRIPTION_PATTERNS`. Keep the alternating-group convention or the renderer will bold the wrong half.
+
+**Mind the prefixes you share with an existing pattern.** `updated lead <X>` bolds
+`<X>` as a lead's name, so a settings endpoint phrased "updated lead TAT and
+follow-up SLA settings" rendered "updated lead **TAT and follow-up SLA
+settings**". It now says "updated TAT and follow-up SLA settings". The split is
+pinned by [activity-log-sentence.test.ts](../frontend-admin-dashboard/src/routes/admin-activity-logs/-components/activity-log-sentence.test.ts)
+— add a case there with every new phrase, since a mis-bolded row is invisible to
+types and to a passing render.
+
+---
+
+## Filtering (read side)
+
+`GET /logs` and `GET /logs/export.csv` accept `actorId`, `entityType` and
+`action` as **comma-separated lists** (`actorId=a,b,c`), with `actorIds` /
+`entityTypes` / `actions` as plural aliases. One value emits `= ?`, several emit
+`IN (...)`; both are served by the existing composite indexes. A single value
+behaves exactly as before, so old links and bookmarks keep working.
+
+Commas rather than repeated `actorId[]=` keys is not a style choice — the
+ingress rejects raw brackets in a query string with a 400 before the request
+reaches the service.
+
+`entityId` is deliberately **not** split: bulk actions store a comma-joined list
+of ids in that column, so splitting it would break the "history of this entity"
+lookup.
+
+On the UI side the three filters are multi-selects. "Performed by" lists the
+institute's own team (the Teams-page roster, via `fetchEligibleOrgUsers`) by full
+name and email rather than asking for a pasted user id — deliberately not a
+`DISTINCT actor_id` over the log table, which would be an aggregate over every
+row an institute has ever written. An actor who has since left the institute is
+therefore not offered in the dropdown; a URL that names their id still filters
+correctly and shows the id in the chip.
 
 ---
 
@@ -377,12 +433,23 @@ Backend — `admin_core_service/src/main/java/vacademy/io/admin_core_service/fea
 | `entity/AdminActivityLog.java` | JPA entity. JSONB columns for `request_payload` and `before_payload`. |
 | `repository/AdminActivityLogRepository.java` | `JpaRepository + JpaSpecificationExecutor`; chunked retention DELETE native query. |
 | `retention/AdminActivityLogRetentionJob.java` | Nightly chunked DELETE. |
-| `service/AdminActivityLogReadService.java` | Filter spec + CSV builder. |
+| `service/AdminActivityLogReadService.java` | Filter spec (equality for one value, `IN` for several) + CSV builder. |
+| `service/AuditNarrator.java` | Learner / course id → name phrasing for descriptions. |
+| `service/CrmAuditNarrator.java` | Audience, lead, follow-up, counsellor id → name phrasing. |
 | `service/PayloadRedactor.java` | Sensitive-key masking before JSON serialization. |
 | `util/AuditSpelEvaluator.java` | Cached SpEL parser + `BeanFactoryResolver` wiring. |
 | `util/RequestContextSnapshot.java` | Immutable POJO for the request-thread context. |
 
-Migration: `src/main/resources/db/migration/V259__Admin_activity_log.sql`.
+Migration: `src/main/resources/db/migration/V259__Admin_activity_log.sql`. No migration was
+needed for the CRM coverage or the multi-select filters — the table and its three composite
+indexes already carry both.
+
+Tests — `admin_core_service/src/test/java/.../admin_activity_logs/`:
+
+| Path | Purpose |
+|---|---|
+| `AuditableAnnotationContractTest.java` | Every `@Auditable` expression parses, its `#vars` are real parameters of that method, its `@beans` exist, and its entityType/action appear in the UI's filter dropdowns. |
+| `AdminActivityLogFilterParsingTest.java` | Comma-separated / plural / single-value query params → filter, and `entityId` is never split. |
 
 POM: `spring-boot-starter-aop` added in `admin_core_service/pom.xml`.
 
@@ -392,11 +459,14 @@ Frontend — `frontend-admin-dashboard/src/routes/admin-activity-logs/`:
 |---|---|
 | `index.tsx` | Route registration + `beforeLoad` toggle gate. |
 | `index.lazy.tsx` | Page shell + state plumbing. |
-| `-components/ActivityLogFilters.tsx` | Resource / Activity dropdowns, date range, refresh, **Export CSV** button. |
-| `-components/ActivityLogTable.tsx` | The table — relative timestamps, status dots, sentence rendering with entity-name bolding. |
-| `-components/PayloadDrawer.tsx` | Side drawer with Before → After JSON view and copy buttons. |
+| `-components/ActivityLogFilters.tsx` | Resource / Activity / Performed-by multi-selects, date presets + range, applied-filter chips, refresh, **Export CSV**. |
+| `-components/ActivityLogTable.tsx` | The table — relative timestamps, actor initials, status dots, resource column, sentence rendering with entity-name bolding, `MyPagination`. |
+| `-components/PayloadDrawer.tsx` | Side drawer: fixed header + one scrolling body, request/actor detail that wraps rather than truncates, payload rendered as labelled fields with a Raw JSON toggle, Before → After for `captureBefore` rows. |
+| `-components/activity-log-sentence.test.ts` | Pins which fragment of each description gets bolded. |
 
-Service hook: `frontend-admin-dashboard/src/services/admin-activity-logs/getActivityLogs.ts`.
+Service hooks: `frontend-admin-dashboard/src/services/admin-activity-logs/getActivityLogs.ts`
+(list, by-id, CSV export) and `getActivityLogActors.ts` (the institute team roster behind the
+"Performed by" filter).
 
 Display-settings integration: `sidebar/constant.ts` (`controlledTabs`), `sidebar/helper.ts` (`adminOnlyIds`), `constants/display-settings/admin-defaults.ts` + `teacher-defaults.ts` (default-off).
 
@@ -414,7 +484,7 @@ Display-settings integration: `sidebar/constant.ts` (`controlledTabs`), `sidebar
 
 5. **PayloadMode.NONE on file-upload endpoints.** If your endpoint takes a `MultipartFile`, set `payload = PayloadMode.NONE` — Jackson will try to serialize the multipart and either explode or produce useless binary. The action + actor are still captured.
 
-6. **Adding to the frontend dropdowns.** New `entityType` / `action` values will work in the backend immediately but won't appear in the filter dropdowns until they're added to `RESOURCE_OPTIONS` / `ACTIVITY_OPTIONS` in [ActivityLogFilters.tsx](../frontend-admin-dashboard/src/routes/admin-activity-logs/-components/ActivityLogFilters.tsx). Filters still accept any string typed/pasted, just no autocomplete.
+6. **Adding to the frontend dropdowns is enforced.** New `entityType` / `action` values work in the backend immediately but are unfilterable until they are added to `RESOURCE_GROUPS` / `ACTIVITY_OPTIONS` in [ActivityLogFilters.tsx](../frontend-admin-dashboard/src/routes/admin-activity-logs/-components/ActivityLogFilters.tsx). That gap went unnoticed for months — the HR, ERP, mentorship and booking resources were all being written and none of them could be picked. `AuditableAnnotationContractTest#filterDropdownsCoverEveryAuditedValue` now fails the build when a value is missing (it skips itself when the frontend is not checked out beside the service). Values from an `actionExpr` cannot be checked statically — add those by hand.
 
 7. **Partial-success endpoints need `conditionExpr`, not avoidance.** Endpoints
    that loop over items, catch per-item exceptions, and return a
@@ -430,9 +500,71 @@ Display-settings integration: `sidebar/constant.ts` (`controlledTabs`), `sidebar
    users by inline `new_users` or a filter, so the request does not say how many
    learners were actually enrolled.
 
-8. **The `clientId` header is required.** The axios interceptor in [axiosInstance.ts](../frontend-admin-dashboard/src/lib/auth/axiosInstance.ts) attaches it automatically from `getInstituteId()`. If you ever build a non-axios request path (e.g., a worker-side fetch), make sure that header is included or audit silently drops the row.
+8. **A description that starts like an existing pattern gets bolded like it.** Prefixes are shared across resources — `updated lead …` claims everything after it as a lead's name — so read the "Frontend description rendering" table before choosing a phrase, and add the phrase to `activity-log-sentence.test.ts`.
+
+9. **The `clientId` header is required.** The axios interceptor in [axiosInstance.ts](../frontend-admin-dashboard/src/lib/auth/axiosInstance.ts) attaches it automatically from `getInstituteId()`. If you ever build a non-axios request path (e.g., a worker-side fetch), make sure that header is included or audit silently drops the row.
+
+10. **A narrator can only read admin_core's own database.** `users` (and the rest
+    of auth_service's schema) does **not** exist in `admin_core_service`. Resolving a
+    person through `vacademy.io.common.auth.repository.UserRepository` compiles,
+    starts, and then throws `relation "users" does not exist` on every call — which
+    the narrator's catch swallows, exactly as it must, leaving the description
+    naming a raw UUID. That shipped on 2026-09-08 and produced live rows reading
+    *"changed lead tier of 664d3077-29b4-4dcb-8c64-d2ed9417f529"*. Inside admin_core
+    the name sources are: `student.full_name` (enrolled learners),
+    `audience_response.parent_name/email/mobile` (a lead's own form), and
+    `user_lead_profile.assigned_counselor_name` (the only staff name written down
+    here). `CrmAuditNarratorNamingTest` fails the build if the narrator ever takes a
+    dependency on `common.auth.repository` again.
+
+11. **A derived query name is validated at pod startup, not at compile time.** A typo
+    in `findFirstByAssignedCounselorIdAnd…` does not fail a build — it fails every
+    pod's context refresh, taking the whole service down for every institute. There
+    is no in-memory database on this module's test classpath, so
+    `CrmAuditNarratorNamingTest#derivedQueriesResolve` runs Spring's own `PartTree`
+    parser over the repository's derived methods to catch it without one.
 
 ---
+
+## CRM coverage (added 2026-09-08)
+
+The CRM was the largest unaudited surface — audience lists, leads and every
+counsellor action were invisible in the log. Now instrumented:
+
+| Resource | Actions | Where |
+|---|---|---|
+| `AUDIENCE` | CREATE, UPDATE, DELETE, SEND_MESSAGE, RECALCULATE_SCORES | `AudienceController` |
+| `LEAD` | CREATE (manual, walk-in), IMPORT, UPDATE, DELETE, RESTORE, ASSIGN, UNASSIGN, REASSIGN, STATUS_CHANGE, TIER_CHANGE, SCORE_CHANGE, CONVERT | `AudienceController`, `LeadStatusController`, `CounsellorWorkbenchController` |
+| `LEAD_STATUS` | CREATE, UPDATE, DELETE | `LeadStatusController` |
+| `LEAD_FOLLOWUP` | CREATE, UPDATE, CLOSE | `LeadFollowupController` |
+| `LEAD_SLA_CONFIG` | UPDATE (with before/after) | `LeadSlaConfigController` |
+| `LEAD_CONNECTOR` | CREATE, UPDATE, DELETE, RESUBSCRIBE | `MetaOAuthController` |
+| `ENQUIRY` | ASSIGN, STATUS_CHANGE | `EnquiryInternalController` |
+| `COUNSELLOR` | STATUS_CHANGE | `CounsellorWorkbenchController` |
+| `COUNSELLOR_POOL` | CREATE, UPDATE, DELETE, ADD_MEMBER, REMOVE_MEMBER, MEMBER_STATUS_CHANGE | `CounselorPoolController` |
+| `COUNSELLOR_TARGET` | UPDATE, BULK_UPDATE, DELETE | `CounsellorTargetController` |
+| `COUNSELLOR_WORKBENCH_CONFIG` | UPDATE | `CounsellorWorkbenchController` |
+| `TAG` | CREATE, DELETE, TAG_USERS, UNTAG_USERS | `TagController` |
+| `TELEPHONY_CONFIG` / `TELEPHONY_NUMBER` | UPDATE / CREATE, UPDATE, ATTACH, DELETE | `TelephonyConfigController`, `TelephonyNumberController` |
+| `ENGAGEMENT_ENGINE` | CREATE, UPDATE, DELETE, ENROLL, STATUS_CHANGE, AUTONOMY_CHANGE | `EngagementEngineController` |
+| `AUTOMATION` | CREATE, UPDATE, DELETE, TRIGGER | `WorkflowController` |
+
+Three decisions worth keeping if you extend this:
+
+- **`payload = NONE` wherever the body carries a credential or is unbounded** —
+  the Meta/Google connector saves (OAuth session keys, `googleKey`), the
+  telephony config (provider API tokens; `REDACTED` only masks the key names it
+  knows), the CSV lead import (thousands of rows of PII) and the workflow
+  builder (the whole node graph). The actor, the action and a counted
+  description are what an audit reader needs from those.
+- **Previews must not be logged.** `/counsellor-workbench/assign` and
+  `/reassign` back both the dry run and the real thing;
+  `conditionExpr = "#result?.body?.dryRun != true"` keeps a preview out of the
+  log. Written as `!= true` rather than `!…dryRun`, since a SpEL `!null` throws
+  and the aspect fails closed — silently dropping real rows.
+- **Names come from `CrmAuditNarrator`, not from SpEL.** Lead and audience ids
+  mean nothing in a log line; the narrator resolves them, degrades to a count or
+  an id, and never throws.
 
 ## Coverage reality check
 
@@ -453,5 +585,7 @@ carry `@Auditable`. An absent row usually means *not instrumented*, not *broken*
 - **Bolding patterns auto-derived from `entityType`/`action`** instead of regex matching the description text.
 - **Per-institute retention override** via institute settings, falling back to the global `audit.retention.days`.
 - **S3 / cold-storage archival before delete** — required for SOC 2 / ISO 27001 evidence trails.
-- **Read-side filter on actor by name/email** instead of raw user-id paste. Backend would need a join to `users` table or a denormalized `actor_name` LIKE index.
+- ~~**Read-side filter on actor by name/email** instead of raw user-id paste.~~
+  Done 2026-09-08 without touching the backend: the UI lists the institute's own
+  team roster and sends the ids it already knows.
 - **Compaction** — if volume ever crosses 50M rows, switch to monthly partitioning by `created_at` so retention deletes become `DROP PARTITION` (instant) instead of chunked DELETEs.

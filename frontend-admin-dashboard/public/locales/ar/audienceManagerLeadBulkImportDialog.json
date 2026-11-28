@@ -1,0 +1,143 @@
+{
+    "dialog": {
+        "title": "استيراد جماعي لملف CSV — {{campaignName}}",
+        "description": "قم برفع ملف CSV لاستيراد عدة عملاء محتملين دفعة واحدة."
+    },
+    "steps": {
+        "upload": "رفع",
+        "preview": "معاينة",
+        "results": "النتائج"
+    },
+    "loading": {
+        "campaignFields": "جارٍ تحميل حقول الحملة..."
+    },
+    "noCustomFields": {
+        "title": "لم يتم تكوين أي حقول مخصصة",
+        "description": "أضف حقولاً مخصصة إلى هذه الحملة قبل استيراد العملاء المحتملين."
+    },
+    "upload": {
+        "downloadTemplateButton": "تنزيل القالب",
+        "fieldsCount_zero": "لا يحتوي ملف CSV على أي حقول ({{count}})، بالإضافة إلى صف نموذجي",
+        "fieldsCount_one": "يحتوي ملف CSV على حقل واحد ({{count}})، بالإضافة إلى صف نموذجي",
+        "fieldsCount_two": "يحتوي ملف CSV على حقلين ({{count}})، بالإضافة إلى صف نموذجي",
+        "fieldsCount_few": "يحتوي ملف CSV على {{count}} حقول، بالإضافة إلى صف نموذجي",
+        "fieldsCount_many": "يحتوي ملف CSV على {{count}} حقلاً، بالإضافة إلى صف نموذجي",
+        "fieldsCount_other": "يحتوي ملف CSV على {{count}} حقل، بالإضافة إلى صف نموذجي",
+        "dropzone": {
+            "cta": "انقر لرفع ملف CSV الخاص بك",
+            "maxRows": "الحد الأقصى {{count}} صف"
+        },
+        "expectedColumns": {
+            "title": "الأعمدة المتوقعة",
+            "leadOwnerChip": "مالك العميل المحتمل (بريد المستشار)",
+            "leadStatusChip": "حالة العميل المحتمل",
+            "leadOwnerLabel": "مالك العميل المحتمل",
+            "leadStatusLabel": "حالة العميل المحتمل",
+            "andConnector": "و",
+            "hintSuffix": "اختياريان. يقبل حقل المالك بريد المستشار الإلكتروني (أو اسمًا فريدًا)؛ ويقبل حقل الحالة تسمية مثل {{statusExamples}}. تُستخدم {{defaultStatus}} افتراضيًا عند ترك الحالة فارغة.",
+            "defaultStatusExamples": "جديد، تم التواصل، مهتم",
+            "defaultStatusFallback": "حالتك الافتراضية"
+        }
+    },
+    "preview": {
+        "statTiles": {
+            "totalRows": "إجمالي الصفوف",
+            "valid": "صالح",
+            "errors": "الأخطاء",
+            "duplicates": "التكرارات"
+        },
+        "blocked": {
+            "reason_zero": "لا توجد أعمدة إلزامية مفقودة: {{columns}}",
+            "reason_one": "عمود إلزامي مفقود: {{columns}}",
+            "reason_two": "عمودان إلزاميان مفقودان: {{columns}}",
+            "reason_few": "أعمدة إلزامية مفقودة: {{columns}}",
+            "reason_many": "عمودًا إلزاميًا مفقودًا: {{columns}}",
+            "reason_other": "عمود إلزامي مفقود: {{columns}}",
+            "title": "تم حظر الاستيراد — {{reason}}",
+            "descriptionPrefix": "لا يحتوي ملفك على عمود مطابق لـ",
+            "descriptionSuffix_zero": ". يؤثر هذا على كل صف، لذا لا يمكن استيراد أي شيء — سيتم حفظ كل عميل محتمل مع ترك تلك الحقول فارغة. أضف العمود إلى ملف CSV (يجب أن يطابق العنوان اسم الحقل) وأعد الرفع.",
+            "descriptionSuffix_one": ". يؤثر هذا على كل صف، لذا لا يمكن استيراد أي شيء — سيتم حفظ كل عميل محتمل مع ترك ذلك الحقل فارغًا. أضف العمود إلى ملف CSV (يجب أن يطابق العنوان اسم الحقل) وأعد الرفع.",
+            "descriptionSuffix_two": ". يؤثر هذا على كل صف، لذا لا يمكن استيراد أي شيء — سيتم حفظ كل عميل محتمل مع ترك هذين الحقلين فارغين. أضف العمود إلى ملف CSV (يجب أن يطابق العنوان اسم الحقل) وأعد الرفع.",
+            "descriptionSuffix_few": ". يؤثر هذا على كل صف، لذا لا يمكن استيراد أي شيء — سيتم حفظ كل عميل محتمل مع ترك تلك الحقول فارغة. أضف العمود إلى ملف CSV (يجب أن يطابق العنوان اسم الحقل) وأعد الرفع.",
+            "descriptionSuffix_many": ". يؤثر هذا على كل صف، لذا لا يمكن استيراد أي شيء — سيتم حفظ كل عميل محتمل مع ترك تلك الحقول فارغة. أضف العمود إلى ملف CSV (يجب أن يطابق العنوان اسم الحقل) وأعد الرفع.",
+            "descriptionSuffix_other": ". يؤثر هذا على كل صف، لذا لا يمكن استيراد أي شيء — سيتم حفظ كل عميل محتمل مع ترك تلك الحقول فارغة. أضف العمود إلى ملف CSV (يجب أن يطابق العنوان اسم الحقل) وأعد الرفع."
+        },
+        "invalidRows": {
+            "count_zero": "{{formatted}} صف لن يتم استيراده",
+            "count_one": "صف واحد ({{formatted}}) لن يتم استيراده",
+            "count_two": "صفان ({{formatted}}) لن يتم استيرادهما",
+            "count_few": "{{formatted}} صفوف لن يتم استيرادها",
+            "count_many": "{{formatted}} صفًا لن يتم استيراده",
+            "count_other": "{{formatted}} صف لن يتم استيراده",
+            "downloadReportButton": "تنزيل تقرير الأخطاء",
+            "note": "يتم تخطي هذه الصفوف — بينما تُستورد بقية الصفوف الصالحة بشكل طبيعي. يسرد التقرير كل صف تم تخطيه مع سببه، حتى تتمكن من إصلاح تلك الصفوف فقط ورفعها بشكل منفصل.",
+            "duplicateReasonLabel": "مكرر (نفس البريد الإلكتروني ظهر سابقًا في الملف)",
+            "reportColumnHeader": "خطأ الاستيراد"
+        },
+        "columnMapping": {
+            "title": "تخطيط الأعمدة",
+            "mappedCount": "({{mapped}}/{{total}} تمت مطابقتها)"
+        },
+        "table": {
+            "rowNumberHeader": "#",
+            "statusHeader": "الحالة",
+            "ownerColumnHeader": "المالك ←",
+            "statusColumnHeader": "الحالة ←",
+            "duplicateEmailTooltip": "بريد إلكتروني مكرر",
+            "showingFirst100_zero": "عرض أول {{shown}} من أصل {{formatted}} صف",
+            "showingFirst100_one": "عرض أول {{shown}} من أصل صف واحد ({{formatted}})",
+            "showingFirst100_two": "عرض أول {{shown}} من أصل صفين ({{formatted}})",
+            "showingFirst100_few": "عرض أول {{shown}} من أصل {{formatted}} صفوف",
+            "showingFirst100_many": "عرض أول {{shown}} من أصل {{formatted}} صفًا",
+            "showingFirst100_other": "عرض أول {{shown}} من أصل {{formatted}} صف"
+        },
+        "footer": {
+            "backButton": "رجوع",
+            "submittingBatch": "جارٍ الإرسال… الدفعة {{done}}/{{total}}",
+            "submittingRows_zero": "جارٍ إرسال {{count}} صف...",
+            "submittingRows_one": "جارٍ إرسال صف واحد ({{count}})...",
+            "submittingRows_two": "جارٍ إرسال صفين ({{count}})...",
+            "submittingRows_few": "جارٍ إرسال {{count}} صفوف...",
+            "submittingRows_many": "جارٍ إرسال {{count}} صفًا...",
+            "submittingRows_other": "جارٍ إرسال {{count}} صف...",
+            "submitButton_zero": "إرسال {{count}} صف صالح",
+            "submitButton_one": "إرسال صف صالح واحد ({{count}})",
+            "submitButton_two": "إرسال صفين صالحين ({{count}})",
+            "submitButton_few": "إرسال {{count}} صفوف صالحة",
+            "submitButton_many": "إرسال {{count}} صفًا صالحًا",
+            "submitButton_other": "إرسال {{count}} صف صالح"
+        }
+    },
+    "results": {
+        "summary": {
+            "total": "الإجمالي",
+            "success": "نجاح",
+            "failed": "فشل",
+            "skipped": "تم التخطي"
+        },
+        "showDetailsButton": "إظهار التفاصيل",
+        "hideDetailsButton": "إخفاء التفاصيل",
+        "rowLabel": "الصف {{number}}",
+        "statusLabel": {
+            "FAILED": "فشل",
+            "SKIPPED": "تم التخطي"
+        },
+        "doneButton": "تم"
+    },
+    "toasts": {
+        "csvEmpty": "ملف CSV فارغ",
+        "tooManyRows": "يحتوي ملف CSV على {{count}} صف. الحد الأقصى المسموح به هو {{max}}.",
+        "missingMandatoryColumns": "أعمدة إلزامية مفقودة: {{columns}}. أضفها إلى الملف وأعد الرفع.",
+        "parseFailed": "فشل تحليل ملف CSV: {{message}}",
+        "cannotImport": "تعذر الاستيراد — {{reason}}. أصلح الملف وأعد رفعه.",
+        "noValidRows": "لا توجد صفوف صالحة لإرسالها",
+        "allImportedSuccess_zero": "تم استيراد جميع الـ {{count}} عميل محتمل بنجاح!",
+        "allImportedSuccess_one": "تم استيراد العميل المحتمل الوحيد ({{count}}) بنجاح!",
+        "allImportedSuccess_two": "تم استيراد العميلين المحتملين ({{count}}) بنجاح!",
+        "allImportedSuccess_few": "تم استيراد جميع الـ {{count}} عملاء محتملين بنجاح!",
+        "allImportedSuccess_many": "تم استيراد جميع الـ {{count}} عميلاً محتملاً بنجاح!",
+        "allImportedSuccess_other": "تم استيراد جميع الـ {{count}} عميل محتمل بنجاح!",
+        "importComplete": "اكتمل الاستيراد: {{success}} ناجح، {{failed}} فاشل، {{skipped}} تم تخطيه",
+        "submitFailed": "فشل إرسال العملاء المحتملين"
+    }
+}

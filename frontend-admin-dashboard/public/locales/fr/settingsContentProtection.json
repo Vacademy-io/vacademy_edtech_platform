@@ -1,0 +1,23 @@
+{
+    "header": {
+        "title": "Protection du contenu",
+        "description": "Contrôlez, par rôle, quels types de diapositives peuvent être téléchargés et si le clic droit, la copie et l'affichage du code source sont bloqués sur les diapositives. Ce sont des mesures dissuasives côté client, appliquées au mieux — elles masquent nos propres contrôles et ne peuvent pas empêcher toute sauvegarde au niveau du navigateur."
+    },
+    "actions": {
+        "roleLabel": "Rôle"
+    },
+    "roles": {
+        "admin": {
+            "label": "Administrateur",
+            "cardLabel": "administrateurs"
+        },
+        "teacher": {
+            "label": "Enseignant",
+            "cardLabel": "enseignants"
+        },
+        "learner": {
+            "label": "Apprenant",
+            "cardLabel": "apprenants"
+        }
+    }
+}

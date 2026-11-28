@@ -43,6 +43,13 @@ export interface QuestionData {
     evaluation_criteria_json: string | null;
     criteria_template_id: string | null;
     question_type: string;
+    evaluation_json?: string | null;
+    // questions-of-sections fills options_with_explanation; `options` stays empty.
+    options?: Array<{ id?: string | null; text?: { content?: string | null } | null }>;
+    options_with_explanation?: Array<{
+        id?: string | null;
+        text?: { content?: string | null } | null;
+    }>;
 }
 
 export type QuestionDataObject = Record<string, QuestionData[]>;

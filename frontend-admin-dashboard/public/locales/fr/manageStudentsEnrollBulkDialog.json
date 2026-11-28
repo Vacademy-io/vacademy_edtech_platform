@@ -1,0 +1,16 @@
+{
+    "placeholders": {
+        "select": "Sélectionner {{term}}"
+    },
+    "buttons": {
+        "enroll": "Inscrire"
+    },
+    "toasts": {
+        "courseCreatedSuccess": "Cours créé avec succès",
+        "createBatchFailed": "Échec de la création du lot",
+        "itemAddedSuccess": "{{term}} ajouté(e) avec succès",
+        "addItemFailed": "Échec de l'ajout de {{term}}",
+        "levelAddedSuccess": "Niveau ajouté avec succès",
+        "addLevelFailedFallback": "Échec de l'ajout du cours"
+    }
+}

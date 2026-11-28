@@ -1,0 +1,22 @@
+{
+    "dropdown": {
+        "increaseSubmissionTime": "Increase Submission Time",
+        "closeSubmission": "Close Submission"
+    },
+    "dialogs": {
+        "attentionLabel": "Attention",
+        "closeButton": "Close",
+        "closeSubmission": {
+            "title": "Close Submission",
+            "confirmMessagePrefix": "Are you sure you want to close Assessment submission of"
+        },
+        "increaseAssessmentTime": {
+            "title": "Increase Assessment Time",
+            "entireAssessment": "Entire Assessment",
+            "increaseBy": "Increase By",
+            "selectSectionPlaceholder": "Select Section",
+            "sectionNumber": "Section {{number}}",
+            "questionNumber": "Question {{number}}"
+        }
+    }
+}

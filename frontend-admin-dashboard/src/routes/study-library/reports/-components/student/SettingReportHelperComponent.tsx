@@ -1,5 +1,6 @@
 import { X } from '@phosphor-icons/react';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { MultipleInputProps } from '../../-types/types';
 
 export const MultipleInput = ({
@@ -9,6 +10,7 @@ export const MultipleInput = ({
     role,
     commaSeperatedType,
 }: MultipleInputProps) => {
+    const { t } = useTranslation('studyLibraryStudentSettingReportHelperComponent');
     const [input, setInput] = useState<string>('');
     const [list, setList] = useState<string[]>(itemsList);
 
@@ -56,8 +58,8 @@ export const MultipleInput = ({
                     onKeyDown={(e) => e.key === 'Enter' && addItemsToList()}
                     placeholder={
                         inputType === 'email'
-                            ? 'Enter email and press Enter'
-                            : 'Enter mobile number and press Enter'
+                            ? t('placeholderEmail')
+                            : t('placeholderMobile')
                     }
                     className="!focus:outline-none !focus:ring-0 mb-2 w-full rounded-md border p-1 !outline-none"
                 />

@@ -8,6 +8,9 @@ import org.springframework.web.bind.annotation.*;
 import vacademy.io.notification_service.features.communication_timeline.dto.CommunicationTimelineRequest;
 import vacademy.io.notification_service.features.communication_timeline.dto.UnifiedCommunicationDTO;
 import vacademy.io.notification_service.features.communication_timeline.service.CommunicationTimelineService;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import vacademy.io.common.auth.model.CustomUserDetails;
+import vacademy.io.notification_service.config.InstituteStaffAccess;
 
 import java.time.Instant;
 import java.util.List;
@@ -35,7 +38,12 @@ public class CommunicationTimelineController {
             @RequestParam(required = false) List<String> channels,
             @RequestParam(required = false, defaultValue = "ALL") String direction,
             @RequestParam(required = false) String fromDate,
-            @RequestParam(required = false) String toDate) {
+            @RequestParam(required = false) String toDate,
+            @AuthenticationPrincipal CustomUserDetails user,
+            @RequestHeader(value = "clientId", required = false) String clientId) {
+
+        // The user themselves, or staff of the institute.
+        InstituteStaffAccess.requireSelfOrStaff(user, clientId, userId);
 
         try {
             log.info("Fetching communication timeline for userId: {}, page: {}, size: {}, channels: {}, direction: {}",
@@ -78,7 +86,12 @@ public class CommunicationTimelineController {
             @RequestParam(required = false) List<String> channels,
             @RequestParam(required = false, defaultValue = "ALL") String direction,
             @RequestParam(required = false) String fromDate,
-            @RequestParam(required = false) String toDate) {
+            @RequestParam(required = false) String toDate,
+            @AuthenticationPrincipal CustomUserDetails user,
+            @RequestHeader(value = "clientId", required = false) String clientId) {
+
+        // Staff of the institute (the admin dashboard's learner side view).
+        InstituteStaffAccess.requireStaff(user, clientId);
 
         try {
             log.info("Fetching channel-based communication timeline: email={}, phone={}, page={}, size={}, channels={}",

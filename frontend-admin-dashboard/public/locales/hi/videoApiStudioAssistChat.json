@@ -1,0 +1,30 @@
+{
+    "statusBubble": {
+        "workingOnIt": "इस पर काम हो रहा है…",
+        "shotProgress": "शॉट {{completed}} / {{total}}"
+    },
+    "genericDecision": {
+        "letAiDecide": "AI को तय करने दें",
+        "approve": "स्वीकृत करें"
+    },
+    "completion": {
+        "videoReady": "आपका वीडियो तैयार है।",
+        "preparingPreview": "प्रीव्यू तैयार किया जा रहा है…",
+        "editVideo": "वीडियो एडिट करें",
+        "detailsAndDownload": "विवरण और डाउनलोड",
+        "saveCast": "कास्ट सेव करें"
+    },
+    "header": {
+        "title": "असिस्ट",
+        "stop": "रोकें",
+        "showProgress": "प्रगति दिखाएं"
+    },
+    "postEdit": {
+        "updating": "शॉट अपडेट हो रहा है…"
+    },
+    "input": {
+        "placeholderEdit": "वीडियो एडिट करें — जैसे “शॉट 3 फिर से बनाएं — बड़ी हेडलाइन, असली स्क्रीनशॉट”",
+        "placeholderSteer": "इसे दिशा दें — जैसे “शॉट 3 को मज़ेदार और छोटा बनाएं”",
+        "placeholderWorking": "काम चल रहा है…"
+    }
+}

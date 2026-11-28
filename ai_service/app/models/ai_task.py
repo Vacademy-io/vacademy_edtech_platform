@@ -58,6 +58,10 @@ class AiTaskType(str, Enum):
     # Whole-paper generation from a knowledge-base blueprint. Async because a
     # 60-question paper is ~10 batched LLM calls — minutes, not seconds.
     KB_PAPER_GENERATE = "KB_PAPER_GENERATE"
+    # HTML Document slide generation (routers/html_document.py). Runs detached
+    # from the request so closing the tab doesn't lose a 3-10 min generation;
+    # the client polls partial HTML + phase and re-attaches by slide id.
+    HTML_DOC_GENERATE = "HTML_DOC_GENERATE"
 
 
 class AiTaskInputType(str, Enum):
@@ -67,6 +71,7 @@ class AiTaskInputType(str, Enum):
     PDF_ID = "PDF_ID"
     IMAGE_ID = "IMAGE_ID"
     ASSESSMENT_EVALUATION = "ASSESSMENT_EVALUATION"
+    SLIDE_ID = "SLIDE_ID"
 
 
 class AiTask(Base):
@@ -152,12 +157,18 @@ class AiTask(Base):
 
     def to_list_dto(self) -> Dict[str, Any]:
         """snake_case list item — matches media_service TaskStatusDto (the shape
-        the FE AITaskIndividualListInterface expects). file_detail is always
-        null for migrated prompt-only tasks (no associated file)."""
+        the FE AITaskIndividualListInterface expects), plus an additive `type`.
+        file_detail is always null for migrated prompt-only tasks (no associated
+        file)."""
         return {
             "id": self.id,
             "task_name": self.task_name,
             "institute_id": self.institute_id,
+            # `type` is additive to the legacy media_service DTO: without it the
+            # aggregated AI-tools history can't tell a topic-question task from a
+            # lecture plan (input_type is only PROMPT_ID/PDF_ID/... for both), so
+            # every card fell through to "open the tool fresh".
+            "type": self.task_type,
             "status": self.status,
             "result_json": self.result_json,
             "input_id": self.input_id,

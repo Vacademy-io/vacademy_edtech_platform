@@ -1,0 +1,15 @@
+{
+    "dialog": {
+        "heading": "دي سمارت إكستراكت"
+    },
+    "fields": {
+        "prompt": {
+            "label": "أدخل موجّهك",
+            "placeholder": "أدخل موجّهك هنا..."
+        }
+    },
+    "actions": {
+        "cancel": "إلغاء",
+        "regenerate": "إعادة الإنشاء"
+    }
+}

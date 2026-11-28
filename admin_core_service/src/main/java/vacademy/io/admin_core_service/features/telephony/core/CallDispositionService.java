@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vacademy.io.admin_core_service.features.audience.entity.LeadStatus;
 import vacademy.io.admin_core_service.features.audience.repository.LeadStatusRepository;
+import vacademy.io.admin_core_service.features.audience.service.AdmissionCourseRuleService;
 import vacademy.io.admin_core_service.features.audience.service.LeadStatusService;
 import vacademy.io.admin_core_service.features.telephony.persistence.entity.CallDispositionCatalog;
 import vacademy.io.admin_core_service.features.telephony.persistence.entity.TelephonyCallLog;
@@ -16,6 +17,7 @@ import vacademy.io.common.exceptions.VacademyException;
 import java.sql.Timestamp;
 import java.util.List;
 import java.util.UUID;
+import vacademy.io.admin_core_service.features.live_activity.core.LiveActivityCounsellorRecorder;
 
 /**
  * The "quick disposition" a counsellor sets after a call. Two responsibilities:
@@ -32,9 +34,11 @@ import java.util.UUID;
 public class CallDispositionService {
 
     private final CallDispositionCatalogRepository catalogRepo;
+    private final LiveActivityCounsellorRecorder liveActivityCounsellorRecorder;
     private final TelephonyCallLogRepository callLogRepo;
     private final LeadStatusRepository leadStatusRepository;
     private final LeadStatusService leadStatusService;
+    private final AdmissionCourseRuleService admissionCourseRuleService;
 
     private static final String SOURCE = "MANUAL_DISPOSITION";
 
@@ -158,6 +162,10 @@ public class CallDispositionService {
         boolean synced = false;
         if (outcome.getMapsToLeadStatusId() != null && isLeadCall(call)) {
             try {
+                // An outcome mapped to CONVERTED follows the institute's admission rule; when it
+                // holds the move back, the outcome is still saved and synced stays false.
+                admissionCourseRuleService.requireAllowedForStaff(
+                        call.getResponseId(), outcome.getMapsToLeadStatusId());
                 leadStatusService.changeLeadStatus(
                         call.getResponseId(), outcome.getMapsToLeadStatusId(), actorUserId, SOURCE);
                 synced = true;
@@ -166,6 +174,16 @@ public class CallDispositionService {
                         callLogId, call.getResponseId(), e.getMessage());
             }
         }
+        // Live activity feed: "a counsellor just wrapped a call with outcome X". This is the
+        // richest counsellor signal available -- one transactional write path carrying the
+        // actor, the lead, the human-readable outcome and free-text notes.
+        //
+        // Note the bulk endpoint (POST /bulk/disposition) must route through this same
+        // method, or bulk dispositions silently never reach the feed.
+        liveActivityCounsellorRecorder.recordDisposition(
+                instituteId, callLogId, call.getCounsellorUserId(), actorUserId,
+                outcome.getDispositionKey(), outcome.getLabel(), notes, call.getToNumber());
+
         return new AppliedDisposition(call, outcome, synced);
     }
 

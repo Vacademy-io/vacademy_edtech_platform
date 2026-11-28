@@ -4,7 +4,7 @@ import type { OnChangeFn, RowSelectionState } from '@tanstack/react-table';
 /**
  * Row selection that can span every page of a paginated table.
  *
- * The tables here keep selection per page, keyed by the row's index within that page. That is fine
+ * The tables here render selection per page, keyed by the row's index within that page. That is fine
  * for ticking a few rows, but it caps a "select everything" action at the ten rows currently on
  * screen: to message 400 learners you had to walk 40 pages. This adds a second mode — *all matching
  * rows* — that fetches every row for the active filters in one request and then tracks
@@ -37,34 +37,52 @@ export function useCrossPageSelection<T>({
     onError?: (error: unknown) => void;
     resetKey?: string;
 }) {
-    // Per-page mode: selection keyed by page, then by row index within that page.
-    const [pageSelections, setPageSelections] = useState<Record<number, RowSelectionState>>({});
-    const [rowsByPage, setRowsByPage] = useState<Record<number, T[]>>({});
+    // Per-page mode: ticked rows by id, with the page they were ticked on. Keyed by id, not by the row's
+    // index: when a page refetches (an accepted request drops out of a filtered list) index keys moved the
+    // tick onto whichever row slid into that slot. The table still gets index keys (currentPageSelection).
+    const [selectedById, setSelectedById] = useState<Record<string, { row: T; page: number }>>({});
 
     // All-matching mode: every row for the current filters, minus anything unticked since.
     const [allMatching, setAllMatching] = useState<T[] | null>(null);
     const [excludedIds, setExcludedIds] = useState<Set<string>>(new Set());
     const [isSelectingAll, setIsSelectingAll] = useState(false);
 
-    // Remember each visited page's rows so a selection made on page 2 still resolves to real rows
-    // after the user pages away.
+    // When the current page's rows change, refresh the stored rows and drop ticks on rows that left this
+    // page (accepted, terminated, filtered out), so a bulk action never runs on rows the screen no longer
+    // shows. Ticks from other pages are kept.
     useEffect(() => {
         if (!pageRows.length) return;
-        setRowsByPage((prev) => ({ ...prev, [page]: pageRows }));
-    }, [page, pageRows]);
+        setSelectedById((prev) => {
+            const onPage = new Map(pageRows.map((row) => [getId(row), row]));
+            let changed = false;
+            const next = { ...prev };
+            for (const [id, entry] of Object.entries(prev)) {
+                if (entry.page !== page) continue;
+                const fresh = onPage.get(id);
+                if (!fresh) {
+                    delete next[id];
+                    changed = true;
+                } else if (fresh !== entry.row) {
+                    next[id] = { row: fresh, page };
+                    changed = true;
+                }
+            }
+            return changed ? next : prev;
+        });
+    }, [page, pageRows, getId]);
 
     const isAllMode = allMatching !== null;
 
     const currentPageSelection: RowSelectionState = useMemo(() => {
-        if (!isAllMode) return pageSelections[page] || {};
-        // In all-mode the checkbox state is derived, not stored: everything on screen is ticked
-        // except rows the user explicitly removed.
+        // The checkbox state is derived from ids. All-mode: everything on screen is ticked except rows
+        // the user explicitly removed. Per-page mode: the rows ticked by id.
         const derived: RowSelectionState = {};
         pageRows.forEach((row, index) => {
-            if (!excludedIds.has(getId(row))) derived[index] = true;
+            const id = getId(row);
+            if (isAllMode ? !excludedIds.has(id) : selectedById[id]) derived[index] = true;
         });
         return derived;
-    }, [isAllMode, pageSelections, page, pageRows, excludedIds, getId]);
+    }, [isAllMode, selectedById, pageRows, excludedIds, getId]);
 
     const onRowSelectionChange: OnChangeFn<RowSelectionState> = useCallback(
         (updaterOrValue) => {
@@ -85,7 +103,15 @@ export function useCrossPageSelection<T>({
                 return;
             }
 
-            setPageSelections((prev) => ({ ...prev, [page]: next }));
+            setSelectedById((prev) => {
+                const updated = { ...prev };
+                pageRows.forEach((row, index) => {
+                    const id = getId(row);
+                    if (next[index]) updated[id] = { row, page };
+                    else delete updated[id];
+                });
+                return updated;
+            });
         },
         [currentPageSelection, isAllMode, page, pageRows, getId]
     );
@@ -94,18 +120,11 @@ export function useCrossPageSelection<T>({
         if (isAllMode) {
             return allMatching.filter((row) => !excludedIds.has(getId(row)));
         }
-        return Object.entries(pageSelections).flatMap(([pageNumber, selection]) => {
-            const rows = rowsByPage[Number(pageNumber)];
-            if (!rows) return [];
-            return Object.entries(selection)
-                .filter(([, isSelected]) => isSelected)
-                .map(([index]) => rows[Number(index)])
-                .filter((row): row is T => row !== undefined);
-        });
-    }, [isAllMode, allMatching, excludedIds, pageSelections, rowsByPage, getId]);
+        return Object.values(selectedById).map((entry) => entry.row);
+    }, [isAllMode, allMatching, excludedIds, selectedById, getId]);
 
     const reset = useCallback(() => {
-        setPageSelections({});
+        setSelectedById({});
         setAllMatching(null);
         setExcludedIds(new Set());
     }, []);
@@ -116,7 +135,7 @@ export function useCrossPageSelection<T>({
     const [lastResetKey, setLastResetKey] = useState(resetKey);
     if (resetKey !== lastResetKey) {
         setLastResetKey(resetKey);
-        if (allMatching !== null || Object.keys(pageSelections).length > 0) reset();
+        if (allMatching !== null || Object.keys(selectedById).length > 0) reset();
     }
 
     const selectAllMatching = useCallback(async () => {
@@ -126,7 +145,7 @@ export function useCrossPageSelection<T>({
             const rows = await fetchAllMatching();
             setAllMatching(rows);
             setExcludedIds(new Set());
-            setPageSelections({});
+            setSelectedById({});
         } catch (error) {
             onError?.(error);
         } finally {

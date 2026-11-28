@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.RequestAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import vacademy.io.admin_core_service.features.certificate.dto.CertificateEligibilityDto;
 import vacademy.io.admin_core_service.features.certificate.dto.IssuedCertificateDTO;
 import vacademy.io.admin_core_service.features.certificate.dto.LearnerCertificateConfigDto;
 import vacademy.io.admin_core_service.features.certificate.service.CertificateReadService;
@@ -52,6 +53,21 @@ public class LearnerCertificateController {
             @RequestParam String instituteId,
             @RequestParam String packageSessionId,
             @RequestAttribute("user") CustomUserDetails user) {
-        return ResponseEntity.ok(learnerCertificateConfigService.resolveForBatch(instituteId, packageSessionId));
+        return ResponseEntity.ok(learnerCertificateConfigService.resolveForBatch(instituteId, packageSessionId,
+                user != null ? user.getUserId() : null));
+    }
+
+    /**
+     * Where the authenticated learner stands against the course's certificate rule:
+     * progress and, for a test-score rule, each quiz/assessment that counts with their
+     * best result. userId is JWT-derived, so a learner only ever sees their own.
+     */
+    @GetMapping("/eligibility")
+    public ResponseEntity<CertificateEligibilityDto> getEligibility(
+            @RequestParam String instituteId,
+            @RequestParam String packageSessionId,
+            @RequestAttribute("user") CustomUserDetails user) {
+        return ResponseEntity.ok(learnerCertificateConfigService
+                .eligibilityFor(instituteId, packageSessionId, user.getUserId()));
     }
 }

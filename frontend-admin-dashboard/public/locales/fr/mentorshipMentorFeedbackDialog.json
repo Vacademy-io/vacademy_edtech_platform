@@ -1,0 +1,11 @@
+{
+    "heading": "Avis sur les sessions — {{mentorName}}",
+    "mentorFallback": "mentor",
+    "outOfFive": "{{count}} sur 5",
+    "ratedSessions_one": "à partir de {{count}} session notée",
+    "ratedSessions_many": "à partir de {{count}} de sessions notées",
+    "ratedSessions_other": "à partir de {{count}} sessions notées",
+    "noSessionsRated": "Aucune session notée pour le moment. Les apprenants sont invités à noter une session une fois qu'elle a eu lieu.",
+    "couldNotLoadFeedback": "Impossible de charger les avis.",
+    "noFeedbackYet": "Rien à afficher pour l'instant — les avis apparaissent ici dès que les apprenants les soumettent."
+}

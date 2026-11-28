@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
@@ -14,9 +16,9 @@ import { RoleTerms, SystemTerms } from '@/routes/settings/-components/NamingSett
 // Membership columns shown only when the institute has org-associated batches.
 // They follow the opt-in pattern (hidden by default) — admin explicitly enables them.
 // Accessors MUST match the column ids in `myColumns` (table-column-data.tsx).
-const MEMBERSHIP_COLUMNS: { accessor: string; label: string }[] = [
-    { accessor: 'membership_role', label: 'Membership Role' },
-    { accessor: 'membership_type', label: 'Membership Type' },
+const buildMembershipColumns = (t: TFunction): { accessor: string; label: string }[] => [
+    { accessor: 'membership_role', label: t('membershipColumns.membershipRole') },
+    { accessor: 'membership_type', label: t('membershipColumns.membershipType') },
 ];
 
 // Stable list of admin-controlled system columns + their human labels. The
@@ -24,31 +26,31 @@ const MEMBERSHIP_COLUMNS: { accessor: string; label: string }[] = [
 // AND the SYSTEM_FIELD_KEY_TO_ACCESSOR mapping. Filter-driven columns
 // (Batch/Invite/Plan/Amount/Preferred Batch) are intentionally omitted — they're
 // gated by filter state, never by role.
-const SYSTEM_COLUMNS: { accessor: string; label: string }[] = [
-    { accessor: 'full_name', label: 'Full Name' },
-    { accessor: 'username', label: 'Username' },
-    { accessor: 'institute_enrollment_number', label: 'Enrollment Number' },
-    { accessor: 'linked_institute_name', label: 'College/School' },
-    { accessor: 'gender', label: 'Gender' },
-    { accessor: 'mobile_number', label: 'Mobile Number' },
-    { accessor: 'email', label: 'Email ID' },
-    { accessor: 'fathers_name', label: "Father/Male Guardian's Name" },
-    { accessor: 'mothers_name', label: "Mother/Female Guardian's Name" },
-    { accessor: 'parents_mobile_number', label: "Father/Male Guardian's Mobile Number" },
-    { accessor: 'parents_email', label: "Father/Male Guardian's Email" },
-    { accessor: 'parents_to_mother_mobile_number', label: "Mother/Female Guardian's Mobile Number" },
-    { accessor: 'parents_to_mother_email', label: "Mother/Female Guardian's Email" },
-    { accessor: 'city', label: 'City' },
-    { accessor: 'region', label: 'State' },
-    { accessor: 'attendance_percent', label: 'Attendance' },
-    { accessor: 'country', label: 'Country' },
-    { accessor: 'expiry_date', label: 'Session Expiry' },
-    { accessor: 'status', label: 'Status' },
-    { accessor: 'referral_count', label: 'Referrals Count' },
-    { accessor: 'counsellor', label: 'Counsellor' },
-    { accessor: 'billing_contact_name', label: 'Billing Contact Name' },
-    { accessor: 'billing_contact_email', label: 'Billing Contact Email' },
-    { accessor: 'billing_contact_role', label: 'Billing Contact Role' },
+const buildSystemColumns = (t: TFunction): { accessor: string; label: string }[] => [
+    { accessor: 'full_name', label: t('systemColumns.fullName') },
+    { accessor: 'username', label: t('systemColumns.username') },
+    { accessor: 'institute_enrollment_number', label: t('systemColumns.enrollmentNumber') },
+    { accessor: 'linked_institute_name', label: t('systemColumns.collegeSchool') },
+    { accessor: 'gender', label: t('systemColumns.gender') },
+    { accessor: 'mobile_number', label: t('systemColumns.mobileNumber') },
+    { accessor: 'email', label: t('systemColumns.emailId') },
+    { accessor: 'fathers_name', label: t('systemColumns.fathersName') },
+    { accessor: 'mothers_name', label: t('systemColumns.mothersName') },
+    { accessor: 'parents_mobile_number', label: t('systemColumns.fathersMobileNumber') },
+    { accessor: 'parents_email', label: t('systemColumns.fathersEmail') },
+    { accessor: 'parents_to_mother_mobile_number', label: t('systemColumns.mothersMobileNumber') },
+    { accessor: 'parents_to_mother_email', label: t('systemColumns.mothersEmail') },
+    { accessor: 'city', label: t('systemColumns.city') },
+    { accessor: 'region', label: t('systemColumns.state') },
+    { accessor: 'attendance_percent', label: t('systemColumns.attendance') },
+    { accessor: 'country', label: t('systemColumns.country') },
+    { accessor: 'expiry_date', label: t('systemColumns.sessionExpiry') },
+    { accessor: 'status', label: t('systemColumns.status') },
+    { accessor: 'referral_count', label: t('systemColumns.referralsCount') },
+    { accessor: 'counsellor', label: t('systemColumns.counsellor') },
+    { accessor: 'billing_contact_name', label: t('systemColumns.billingContactName') },
+    { accessor: 'billing_contact_email', label: t('systemColumns.billingContactEmail') },
+    { accessor: 'billing_contact_role', label: t('systemColumns.billingContactRole') },
 ];
 
 interface LearnerListColumnsCardProps {
@@ -57,7 +59,10 @@ interface LearnerListColumnsCardProps {
 }
 
 export const LearnerListColumnsCard = ({ settings, onChange }: LearnerListColumnsCardProps) => {
+    const { t } = useTranslation('settingsLearnerListColumnsCard');
     const learnerLabel = getTerminologyPlural(RoleTerms.Learner, SystemTerms.Learner);
+    const systemColumns = useMemo(() => buildSystemColumns(t), [t]);
+    const membershipColumns = useMemo(() => buildMembershipColumns(t), [t]);
     const hidden = useMemo(() => new Set(settings?.hiddenColumns ?? []), [settings?.hiddenColumns]);
     // Custom fields default OFF — admin opts in per role. enabledCustomFields is the
     // explicit allow-list; missing/empty means no custom fields visible for this role.
@@ -166,19 +171,19 @@ export const LearnerListColumnsCard = ({ settings, onChange }: LearnerListColumn
     return (
         <Card>
             <CardHeader>
-                <CardTitle>{`${learnerLabel} List Columns`}</CardTitle>
+                <CardTitle>{t('header.title', { learnerLabel })}</CardTitle>
                 <CardDescription>
-                    {`Turn off columns this role should not see in the ${learnerLabel.toLowerCase()} list. ` +
-                        'Filter-driven columns (Batch, Invite, Plan, Amount) are not listed here — they only ' +
-                        'show when their filter is active. Hiding a column here also hides its filter chip.'}
+                    {t('header.description', { learnerLabelLower: learnerLabel.toLowerCase() })}
                 </CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-6">
                 <div>
-                    <h4 className="mb-2 text-sm font-semibold text-neutral-600">Header</h4>
+                    <h4 className="mb-2 text-sm font-semibold text-neutral-600">
+                        {t('headerSection.title')}
+                    </h4>
                     <div className="flex items-center justify-between border-b border-neutral-100 py-2 last:border-b-0">
                         <Label className="text-sm text-neutral-700">
-                            Count badges (Total / Active / Inactive)
+                            {t('headerSection.countBadges')}
                         </Label>
                         <Switch
                             checked={showCountBadges}
@@ -187,35 +192,36 @@ export const LearnerListColumnsCard = ({ settings, onChange }: LearnerListColumn
                     </div>
                 </div>
                 <div>
-                    <h4 className="mb-2 text-sm font-semibold text-neutral-600">System columns</h4>
-                    <div className="flex flex-col">{SYSTEM_COLUMNS.map(renderSystemRow)}</div>
+                    <h4 className="mb-2 text-sm font-semibold text-neutral-600">
+                        {t('systemColumns.title')}
+                    </h4>
+                    <div className="flex flex-col">{systemColumns.map(renderSystemRow)}</div>
                 </div>
                 <div>
                     <h4 className="mb-2 text-sm font-semibold text-neutral-600">
-                        Membership columns
+                        {t('membershipColumns.title')}
                     </h4>
                     <p className="mb-2 text-xs text-neutral-400">
-                        These columns are hidden by default and only visible when the institute has
-                        org-associated batches. Toggle on the ones this role should see.
+                        {t('membershipColumns.description')}
                     </p>
-                    <div className="flex flex-col">{MEMBERSHIP_COLUMNS.map(renderCustomRow)}</div>
+                    <div className="flex flex-col">{membershipColumns.map(renderCustomRow)}</div>
                 </div>
                 <div>
                     <h4 className="mb-2 text-sm font-semibold text-neutral-600">
-                        Custom field columns
+                        {t('customFieldColumns.title')}
                     </h4>
                     <p className="mb-2 text-xs text-neutral-400">
-                        Custom field columns are hidden by default. Toggle on the ones this role
-                        should see in the learner list.
+                        {t('customFieldColumns.description')}
                     </p>
                     {fieldData == null ? (
-                        <p className="text-xs text-neutral-400">Loading custom fields…</p>
+                        <p className="text-xs text-neutral-400">
+                            {t('customFieldColumns.loading')}
+                        </p>
                     ) : customColumns.length > 0 ? (
                         <div className="flex flex-col">{customColumns.map(renderCustomRow)}</div>
                     ) : (
                         <p className="text-xs text-neutral-500">
-                            No custom fields configured for this institute yet. Add them in the
-                            Custom Fields settings, then come back here to enable them per role.
+                            {t('customFieldColumns.empty')}
                         </p>
                     )}
                 </div>

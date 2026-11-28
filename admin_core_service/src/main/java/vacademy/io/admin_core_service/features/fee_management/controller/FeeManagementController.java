@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import vacademy.io.admin_core_service.features.admin_activity_logs.annotation.Auditable;
 import vacademy.io.admin_core_service.features.fee_management.dto.ComplexPaymentOptionDTO;
 import vacademy.io.admin_core_service.features.fee_management.service.FeeManagementService;
 import vacademy.io.common.auth.model.CustomUserDetails;
@@ -23,6 +24,11 @@ public class FeeManagementController {
      * POST /admin-core-service/v1/fee-management/cpo
      */
     @PostMapping("/cpo")
+    @Auditable(
+            entityType = "FEE_PLAN",
+            action = "CREATE",
+            entityIdExpr = "#result?.body?.id",
+            descriptionExpr = "'created fee plan ' + #request?.name")
     public ResponseEntity<ComplexPaymentOptionDTO> createCpo(
             @RequestBody ComplexPaymentOptionDTO request,
             @RequestAttribute("user") CustomUserDetails userDetails) {
@@ -63,6 +69,11 @@ public class FeeManagementController {
      * PUT /admin-core-service/v1/fee-management/cpo/{cpoId}
      */
     @PutMapping("/cpo/{cpoId}")
+    @Auditable(
+            entityType = "FEE_PLAN",
+            action = "UPDATE",
+            entityIdExpr = "#cpoId",
+            descriptionExpr = "'updated fee plan ' + (#request?.name ?: #result?.body?.name)")
     public ResponseEntity<ComplexPaymentOptionDTO> updateCpo(
             @PathVariable String cpoId,
             @RequestBody ComplexPaymentOptionDTO request,
@@ -75,6 +86,11 @@ public class FeeManagementController {
      * PUT /admin-core-service/v1/fee-management/fee-type/{feeTypeId}
      */
     @PutMapping("/fee-type/{feeTypeId}")
+    @Auditable(
+            entityType = "FEE_PLAN",
+            action = "UPDATE",
+            entityIdExpr = "#feeTypeId",
+            descriptionExpr = "'updated fee type ' + (#request?.name ?: #result?.body?.name)")
     public ResponseEntity<ComplexPaymentOptionDTO.FeeTypeDTO> updateFeeType(
             @PathVariable String feeTypeId,
             @RequestBody ComplexPaymentOptionDTO.FeeTypeDTO request,
@@ -87,6 +103,11 @@ public class FeeManagementController {
      * PUT /admin-core-service/v1/fee-management/cpo/{cpoId}/soft-delete
      */
     @PutMapping("/cpo/{cpoId}/soft-delete")
+    @Auditable(
+            entityType = "FEE_PLAN",
+            action = "DELETE",
+            entityIdExpr = "#cpoId",
+            descriptionExpr = "'deleted fee plan ' + (#result?.body?.name ?: #cpoId)")
     public ResponseEntity<ComplexPaymentOptionDTO> softDeleteCpo(
             @PathVariable String cpoId,
             @RequestAttribute("user") CustomUserDetails userDetails) {
@@ -114,6 +135,11 @@ public class FeeManagementController {
      * POST /admin-core-service/v1/fee-management/cpo/{cpoId}/approve
      */
     @PostMapping("/cpo/{cpoId}/approve")
+    @Auditable(
+            entityType = "FEE_PLAN",
+            action = "APPROVE",
+            entityIdExpr = "#cpoId",
+            descriptionExpr = "'approved fee plan ' + (#result?.body?.name ?: #cpoId)")
     public ResponseEntity<ComplexPaymentOptionDTO> approveCpo(
             @PathVariable String cpoId,
             @RequestAttribute("user") CustomUserDetails userDetails) {

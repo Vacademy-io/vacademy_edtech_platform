@@ -5,8 +5,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
+import vacademy.io.admin_core_service.core.security.InstituteAccessValidator;
 import vacademy.io.admin_core_service.features.auth_service.service.AuthService;
+import vacademy.io.admin_core_service.features.certificate.dao.CertificateCriteriaDao;
 import vacademy.io.admin_core_service.features.certificate.dao.CourseCertificateDao;
+import vacademy.io.admin_core_service.features.certificate.dto.CertificateCriteriaDto;
+import vacademy.io.admin_core_service.features.certificate.dto.CertificateEligibilityDto;
+import vacademy.io.admin_core_service.features.certificate.dto.CertificateTestOptionDto;
 import vacademy.io.admin_core_service.features.certificate.dto.CourseCertificateDashboardDto;
 import vacademy.io.admin_core_service.features.certificate.dto.CourseCertificateLearnerDto;
 import vacademy.io.admin_core_service.features.certificate.dto.CourseCertificateSettingDto;
@@ -28,8 +33,12 @@ import vacademy.io.common.auth.model.CustomUserDetails;
 import vacademy.io.common.exceptions.VacademyException;
 import vacademy.io.common.institute.entity.Institute;
 
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -54,6 +63,9 @@ public class CourseCertificateService {
     private final CertificateIssuedNotificationService notificationService;
     private final MediaService mediaService;
     private final AuthService authService;
+    private final CertificateCriteriaEvaluator criteriaEvaluator;
+    private final CertificateCriteriaDao criteriaDao;
+    private final InstituteAccessValidator instituteAccessValidator;
 
     // ---------------------------------------------------------------- settings
 
@@ -95,6 +107,9 @@ public class CourseCertificateService {
                 && (request.getThresholdPercent() < 0 || request.getThresholdPercent() > 100)) {
             throw new VacademyException("thresholdPercent must be between 0 and 100");
         }
+        if (request != null) {
+            validateCriteria(request.getCriteria());
+        }
         packageSettingService.saveGenericSetting(
                 packageId,
                 CertificateSettingsResolver.CERTIFICATE_SETTING_KEY,
@@ -107,19 +122,117 @@ public class CourseCertificateService {
     // --------------------------------------------------------------- dashboard
 
     public CourseCertificateDashboardDto getDashboard(String instituteId, String packageSessionId, String packageId) {
-        int threshold = resolveThreshold(instituteId, packageId);
-        return courseCertificateDao.dashboard(packageSessionId, instituteId, threshold);
+        ResolvedCertificateConfig config = resolveConfig(instituteId, packageId, packageSessionId);
+        CourseCertificateDashboardDto dashboard =
+                courseCertificateDao.dashboard(packageSessionId, instituteId, config.getThresholdPercent());
+        CertificateCriteriaDto criteria = config.getCriteria();
+        dashboard.setCriteriaMode(CertificateCriteriaEvaluator.modeOf(criteria));
+        if (!CertificateCriteriaEvaluator.requiresScore(criteria)) {
+            return dashboard;
+        }
+
+        // Under a score rule "awaiting" and "near" cannot be counted in SQL - they
+        // depend on graded quiz attempts and on assessment marks held in another
+        // service - so judge every learner still without a certificate here.
+        Map<String, Double> withoutCertificate = new LinkedHashMap<>();
+        for (CourseCertificateLearnerDto row : courseCertificateDao.learnersUnpaged(packageSessionId, instituteId, null)) {
+            if (!StringUtils.hasText(row.getCertificateNumber())) {
+                withoutCertificate.put(row.getUserId(), row.getCompletionPercentage());
+            }
+        }
+        long awaiting = 0;
+        long near = 0;
+        long awaitingResults = 0;
+        for (CertificateEligibilityDto eligibility :
+                criteriaEvaluator.evaluate(packageSessionId, config, withoutCertificate).values()) {
+            if (eligibility.isEligible()) {
+                awaiting++;
+            } else if (isNear(eligibility)) {
+                near++;
+            }
+            if (eligibility.getTestsAwaitingResult() > 0) {
+                awaitingResults++;
+            }
+        }
+        dashboard.setCompletedAwaitingCertificate(awaiting);
+        dashboard.setNearThreshold(near);
+        dashboard.setPassRule(CertificateCriteriaEvaluator.passRuleOf(criteria));
+        dashboard.setTestsInRule(criteriaEvaluator.countTestsInRule(packageSessionId, criteria));
+        dashboard.setLearnersAwaitingResults(awaitingResults);
+        return dashboard;
     }
 
     public LearnerPage getLearners(String instituteId, String packageSessionId, String packageId,
                                    String search, String status, int page, int size) {
-        int threshold = resolveThreshold(instituteId, packageId);
+        ResolvedCertificateConfig config = resolveConfig(instituteId, packageId, packageSessionId);
+        if (CertificateCriteriaEvaluator.requiresScore(config.getCriteria())) {
+            return getLearnersUnderScoreRule(instituteId, packageSessionId, config, search, status, page, size);
+        }
+        int threshold = config.getThresholdPercent();
         List<CourseCertificateLearnerDto> rows =
                 courseCertificateDao.learners(packageSessionId, instituteId, search, status, threshold, page, size);
         long total = courseCertificateDao.countLearners(packageSessionId, instituteId, search, status, threshold);
 
-        // Resolve a public URL per issued certificate so the table can preview and
-        // download without a second round trip per row.
+        resolveFileUrls(rows);
+
+        int totalPages = size > 0 ? (int) Math.ceil((double) total / size) : 0;
+        return new LearnerPage(rows, page, size, total, totalPages, page >= totalPages - 1);
+    }
+
+    /**
+     * The learner table under a test-score rule: every matching learner is judged,
+     * then filtered by status and paged in memory. A batch is tens to low thousands of
+     * learners, and the judging is one grading pass plus one assessment-service call
+     * for all of them, the same cost as the Quiz Results tab.
+     */
+    private LearnerPage getLearnersUnderScoreRule(String instituteId, String packageSessionId,
+                                                  ResolvedCertificateConfig config, String search,
+                                                  String status, int page, int size) {
+        List<CourseCertificateLearnerDto> all =
+                courseCertificateDao.learnersUnpaged(packageSessionId, instituteId, search);
+        Map<String, Double> completion = new LinkedHashMap<>();
+        for (CourseCertificateLearnerDto row : all) {
+            completion.put(row.getUserId(), row.getCompletionPercentage());
+        }
+        Map<String, CertificateEligibilityDto> results =
+                criteriaEvaluator.evaluate(packageSessionId, config, completion);
+
+        String wanted = StringUtils.hasText(status) ? status.trim().toUpperCase(Locale.ROOT) : null;
+        List<CourseCertificateLearnerDto> filtered = new ArrayList<>(all.size());
+        for (CourseCertificateLearnerDto row : all) {
+            CertificateEligibilityDto eligibility = results.get(row.getUserId());
+            boolean issued = StringUtils.hasText(row.getCertificateNumber());
+            row.setStatus(issued ? "GENERATED"
+                    : (eligibility != null && eligibility.isEligible() ? "AWAITING" : "PENDING"));
+            if (eligibility != null) {
+                row.setTestsPassed(eligibility.getTestsPassed());
+                row.setTestsTotal(eligibility.getTestsTotal());
+                row.setTestsRequired(eligibility.getTestsRequired());
+                row.setTestsAwaitingResult(eligibility.getTestsAwaitingResult());
+                row.setAverageScorePercent(eligibility.getAverageScorePercent());
+                row.setScoreMet(eligibility.isScoreMet());
+            }
+            boolean knownFilter = "GENERATED".equals(wanted) || "AWAITING".equals(wanted) || "PENDING".equals(wanted);
+            if (!knownFilter || wanted.equals(row.getStatus())) {
+                filtered.add(row);
+            }
+        }
+
+        long total = filtered.size();
+        int from = (int) Math.min(total, (long) Math.max(0, page) * Math.max(1, size));
+        int to = (int) Math.min(total, (long) from + Math.max(1, size));
+        List<CourseCertificateLearnerDto> rows = new ArrayList<>(filtered.subList(from, to));
+        resolveFileUrls(rows);
+
+        int totalPages = size > 0 ? (int) Math.ceil((double) total / size) : 0;
+        return new LearnerPage(rows, page, size, total, totalPages, page >= totalPages - 1);
+    }
+
+    /**
+     * Resolve a public URL per issued certificate so the table can preview and
+     * download without a second round trip per row.
+     */
+    private void resolveFileUrls(List<CourseCertificateLearnerDto> rows) {
         rows.forEach(row -> {
             if (StringUtils.hasText(row.getFileId())) {
                 try {
@@ -129,9 +242,109 @@ public class CourseCertificateService {
                 }
             }
         });
+    }
 
-        int totalPages = size > 0 ? (int) Math.ceil((double) total / size) : 0;
-        return new LearnerPage(rows, page, size, total, totalPages, page >= totalPages - 1);
+    /**
+     * "Near" under a score rule: one test short of the rule (or, for an average rule,
+     * within 10 points of the bar), with progress met or within 10 points of it.
+     */
+    private static boolean isNear(CertificateEligibilityDto e) {
+        if (e.getTestsTotal() == 0 || e.getScoreBlocker() != null) {
+            return false;
+        }
+        boolean progressClose = !e.isProgressRequired() || e.isProgressMet()
+                || (e.getCompletionPercentage() != null
+                    && e.getCompletionPercentage() >= e.getThresholdPercent() - 10);
+        if (!progressClose) {
+            return false;
+        }
+        if (e.isScoreMet()) {
+            return true;
+        }
+        if (CertificateCriteriaDto.RULE_AVERAGE.equals(e.getPassRule())) {
+            return e.getAverageScorePercent() != null && e.getPassPercent() != null
+                    && e.getAverageScorePercent() >= e.getPassPercent() - 10;
+        }
+        return e.getTestsRequired() != null && e.getTestsRequired() - e.getTestsPassed() == 1;
+    }
+
+    // ------------------------------------------------------------------ criteria
+
+    /** Every quiz and assessment across the course's batches, for the settings picker. */
+    public List<CertificateTestOptionDto> getCourseTests(CustomUserDetails user, String instituteId, String packageId) {
+        instituteAccessValidator.requireInstituteStaff(user, instituteId);
+        loadInstitute(instituteId);
+        if (!StringUtils.hasText(packageId)) {
+            throw new VacademyException("packageId is required");
+        }
+        return criteriaDao.findTests(criteriaDao.findPackageSessionIds(packageId));
+    }
+
+    /** One learner's standing against the rule, test by test, for the admin table. */
+    public CertificateEligibilityDto getEligibility(CustomUserDetails user, String instituteId,
+                                                    String packageSessionId, String userId) {
+        // Another learner's marks: staff only. Learners read their own through
+        // /certificate/learner/v1/eligibility, which takes the id from the token.
+        instituteAccessValidator.requireInstituteStaff(user, instituteId);
+        var mapping = mappingRepository.findByUserIdAndPackageSessionIdAndInstituteId(userId, packageSessionId, instituteId)
+                .orElseThrow(() -> new VacademyException(HttpStatus.NOT_FOUND, "Learner is not enrolled in this batch"));
+        ResolvedCertificateConfig config = resolveConfig(instituteId, null, packageSessionId);
+        Double completion = criteriaDao.findCompletionPercentage(mapping.getUserId(), packageSessionId);
+        return criteriaEvaluator.evaluateOne(packageSessionId, mapping.getUserId(), config, completion);
+    }
+
+    private void validateCriteria(CertificateCriteriaDto criteria) {
+        if (criteria == null) {
+            return;
+        }
+        if (criteria.getMode() != null
+                && !CertificateCriteriaDto.MODES.contains(criteria.getMode().toUpperCase(Locale.ROOT))) {
+            throw new VacademyException("criteria.mode must be one of " + CertificateCriteriaDto.MODES);
+        }
+        if (criteria.getTestScope() != null
+                && !CertificateCriteriaDto.SCOPES.contains(criteria.getTestScope().toUpperCase(Locale.ROOT))) {
+            throw new VacademyException("criteria.testScope must be one of " + CertificateCriteriaDto.SCOPES);
+        }
+        if (criteria.getPassRule() != null
+                && !CertificateCriteriaDto.RULES.contains(criteria.getPassRule().toUpperCase(Locale.ROOT))) {
+            throw new VacademyException("criteria.passRule must be one of " + CertificateCriteriaDto.RULES);
+        }
+        if (criteria.getTestTypes() != null) {
+            for (String type : criteria.getTestTypes()) {
+                if (type == null || !CertificateCriteriaDto.TYPES.contains(type.toUpperCase(Locale.ROOT))) {
+                    throw new VacademyException("criteria.testTypes may only contain " + CertificateCriteriaDto.TYPES);
+                }
+            }
+        }
+        if (criteria.getPassPercent() != null && (criteria.getPassPercent() < 0 || criteria.getPassPercent() > 100)) {
+            throw new VacademyException("criteria.passPercent must be between 0 and 100");
+        }
+        if (criteria.getMinTestsToPass() != null && criteria.getMinTestsToPass() < 1) {
+            throw new VacademyException("criteria.minTestsToPass must be at least 1");
+        }
+        boolean custom = CertificateCriteriaDto.SCOPE_CUSTOM.equalsIgnoreCase(criteria.getTestScope());
+        if (CertificateCriteriaEvaluator.requiresScore(criteria) && custom
+                && isEmpty(criteria.getModuleIds()) && isEmpty(criteria.getChapterIds())
+                && isEmpty(criteria.getSlideIds())) {
+            throw new VacademyException("Pick at least one module, chapter or test for the certificate rule");
+        }
+    }
+
+    /** Staff of this institute (no root-user bypass), without throwing. */
+    private boolean isInstituteStaff(CustomUserDetails user, String instituteId) {
+        if (user == null) {
+            return false;
+        }
+        try {
+            instituteAccessValidator.requireInstituteStaff(user, instituteId);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    private static boolean isEmpty(List<String> values) {
+        return values == null || values.stream().noneMatch(StringUtils::hasText);
     }
 
     // ----------------------------------------------------------------- actions
@@ -143,9 +356,36 @@ public class CourseCertificateService {
      */
     public String issueForLearner(CustomUserDetails user, String instituteId, String packageSessionId,
                                   String userId, boolean regenerate, String courseName) {
-        if (mappingRepository.findByUserIdAndPackageSessionIdAndInstituteId(userId, packageSessionId, instituteId)
-                .isEmpty()) {
-            throw new VacademyException(HttpStatus.NOT_FOUND, "Learner is not enrolled in this batch");
+        return issueForLearner(user, instituteId, packageSessionId, userId, regenerate, courseName, false);
+    }
+
+    /**
+     * @param force "Issue anyway": issue even though the learner does not meet the
+     *              course's rule (offline exam, special case). Certificates must still
+     *              be switched on for the course.
+     *
+     * <p>Re-rendering a certificate the learner already holds also skips the rule: it
+     * keeps the same number and date, so it is not a new award, and a rule that has
+     * changed since (a quiz added to the course) must not block fixing a typo on it.
+     */
+    public String issueForLearner(CustomUserDetails user, String instituteId, String packageSessionId,
+                                  String userId, boolean regenerate, String courseName, boolean force) {
+        var mapping = mappingRepository.findByUserIdAndPackageSessionIdAndInstituteId(userId, packageSessionId, instituteId)
+                .orElseThrow(() -> new VacademyException(HttpStatus.NOT_FOUND, "Learner is not enrolled in this batch"));
+        // Skipping the rule is a staff decision. This controller is reachable with any
+        // signed-in token, learners included, so check it here: without this a learner
+        // could issue themselves a certificate with force=true. A non-staff caller keeps
+        // exactly the behaviour this endpoint always had (the rule is checked).
+        boolean staff = isInstituteStaff(user, instituteId);
+        if (force && !staff) {
+            throw new VacademyException(HttpStatus.FORBIDDEN,
+                    "Only institute staff can issue a certificate past the course rule");
+        }
+        boolean alreadyIssued = StringUtils.hasText(mapping.getAutomatedCompletionCertificateFileId());
+        boolean bypassCriteria = staff && (force || (regenerate && alreadyIssued));
+        if (force) {
+            log.info("Certificate issued past the course rule by {} for user {} in batch {}",
+                    user != null ? user.getUserId() : null, userId, packageSessionId);
         }
         CertificationGenerationRequest request = CertificationGenerationRequest.builder()
                 .completionDate(new Date())
@@ -153,7 +393,8 @@ public class CourseCertificateService {
                 .regenerate(regenerate)
                 .build();
         return instituteCertificateManager
-                .generateAutomatedCourseCompletionCertificate(user, userId, packageSessionId, instituteId, request)
+                .generateAutomatedCourseCompletionCertificate(user, userId, packageSessionId, instituteId, request,
+                        bypassCriteria)
                 .getBody();
     }
 
@@ -192,11 +433,17 @@ public class CourseCertificateService {
 
     // ----------------------------------------------------------------- helpers
 
-    private int resolveThreshold(String instituteId, String packageId) {
+    /**
+     * The config in force for a batch. The tab sends packageId; when it is missing the
+     * batch's own course is used, so the course override (and its rule) still applies
+     * instead of silently falling back to the institute default.
+     */
+    private ResolvedCertificateConfig resolveConfig(String instituteId, String packageId, String packageSessionId) {
         Institute institute = loadInstitute(instituteId);
+        String effectivePackageId = StringUtils.hasText(packageId) ? packageId
+                : (StringUtils.hasText(packageSessionId) ? criteriaDao.findPackageId(packageSessionId) : null);
         return certificateSettingsResolver
-                .resolve(institute, packageId, CertificateTypeEnum.COURSE_COMPLETION.name())
-                .getThresholdPercent();
+                .resolve(institute, effectivePackageId, CertificateTypeEnum.COURSE_COMPLETION.name());
     }
 
     private Institute loadInstitute(String instituteId) {

@@ -1,0 +1,23 @@
+{
+    "pageTitle": "Processing Course Assets",
+    "pageDescription": "AI is crafting your course content.",
+    "heading": "Creating Your Course Assets",
+    "generatingSubtitle": "We're generating actual images and videos for your course!",
+    "images": "Images",
+    "videos": "Videos",
+    "processingStatus": "Processing your course assets...",
+    "estimatedTimeRemaining": "Estimated time remaining:",
+    "minutesShort_one": "{{count}} min",
+    "minutesShort_other": "{{count}} min",
+    "secondsShort_one": "{{count}}s",
+    "secondsShort_other": "{{count}}s",
+    "processDurationNote": "This process typically takes 2-5 minutes. You can wait here or come back later.",
+    "backToCourseLibrary": "Back to course library",
+    "dialog": {
+        "title": "Go Back to Course Library?",
+        "description": "Are you sure you want to go back to course library? You can either discard your current course or save it to drafts.",
+        "cancel": "Cancel",
+        "discardCourse": "Discard Course",
+        "saveToDrafts": "Save to Drafts"
+    }
+}

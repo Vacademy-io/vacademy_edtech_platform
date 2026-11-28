@@ -9,6 +9,7 @@ import {
   Lightbulb,
   Target,
 } from "@phosphor-icons/react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
@@ -20,13 +21,17 @@ import { QuizFeedbackData } from "./types";
 
 interface QuizFeedbackComponentProps {
   feedback: QuizFeedbackData;
+  /** Points this pass earned toward the engagement streak (tutor quizzes; small, capped). */
+  pointsAwarded?: number;
   content: string; // Pre-formatted markdown summary
 }
 
 export const QuizFeedbackComponent: React.FC<QuizFeedbackComponentProps> = ({
   feedback,
+  pointsAwarded,
   content,
 }) => {
+  const { t } = useTranslation("chatFeatureB");
   const [showDetails, setShowDetails] = useState(false);
 
   const getScoreColor = () => {
@@ -36,9 +41,9 @@ export const QuizFeedbackComponent: React.FC<QuizFeedbackComponentProps> = ({
   };
 
   const getScoreBg = () => {
-    if (feedback.percentage >= 80) return "from-green-500/20 to-green-600/10";
-    if (feedback.percentage >= 60) return "from-yellow-500/20 to-yellow-600/10";
-    return "from-red-500/20 to-red-600/10";
+    if (feedback.percentage >= 80) return "from-success-500/20 to-success-600/10";
+    if (feedback.percentage >= 60) return "from-warning-500/20 to-warning-600/10";
+    return "from-danger-500/20 to-danger-600/10";
   };
 
   return (
@@ -62,11 +67,19 @@ export const QuizFeedbackComponent: React.FC<QuizFeedbackComponentProps> = ({
             )}
             <div>
               <h3 className="font-bold text-foreground">
-                {feedback.passed ? "Quiz Passed! 🎉" : "Keep Practicing!"}
+                {feedback.passed ? t("quizFeedback.passed") : t("quizFeedback.keepPracticing")}
               </h3>
+              {pointsAwarded ? (
+                <span className="mt-1 inline-flex items-center rounded-full bg-primary-50 px-2 py-0.5 text-caption font-semibold text-primary-500">
+                  {t("quizFeedback.pointsEarned", { points: pointsAwarded })}
+                </span>
+              ) : null}
               <p className="text-xs text-muted-foreground">
                 {feedback.time_taken_seconds &&
-                  `Completed in ${Math.floor(feedback.time_taken_seconds / 60)}m ${feedback.time_taken_seconds % 60}s`}
+                  t("quizFeedback.completedIn", {
+                    minutes: Math.floor(feedback.time_taken_seconds / 60),
+                    seconds: feedback.time_taken_seconds % 60,
+                  })}
               </p>
             </div>
           </div>
@@ -95,11 +108,11 @@ export const QuizFeedbackComponent: React.FC<QuizFeedbackComponentProps> = ({
 
         {/* Recommendations */}
         {feedback.recommendations && feedback.recommendations.length > 0 && (
-          <div className="mt-4 p-3 bg-primary/5 rounded-lg border border-primary/10">
-            <div className="flex items-center gap-2 mb-2">
+          <div className="mt-4 p-3 bg-primary/5 rounded-lg border border-primary/10 space-y-2">
+            <div className="flex items-center gap-2">
               <Lightbulb className="h-4 w-4 text-primary" />
               <span className="text-xs font-semibold text-primary">
-                Recommendations
+                {t("quizFeedback.recommendations")}
               </span>
             </div>
             <ul className="text-xs text-muted-foreground space-y-1">
@@ -122,11 +135,11 @@ export const QuizFeedbackComponent: React.FC<QuizFeedbackComponentProps> = ({
         >
           {showDetails ? (
             <>
-              Hide Question Details <CaretUp className="h-3 w-3 ms-1" />
+              {t("quizFeedback.hideDetails")} <CaretUp className="h-3 w-3 ms-1" />
             </>
           ) : (
             <>
-              Show Question Details <CaretDown className="h-3 w-3 ms-1" />
+              {t("quizFeedback.showDetails")} <CaretDown className="h-3 w-3 ms-1" />
             </>
           )}
         </Button>
@@ -159,7 +172,7 @@ export const QuizFeedbackComponent: React.FC<QuizFeedbackComponentProps> = ({
                       )}
                       <div className="flex-1 min-w-0">
                         <p className="text-xs font-medium text-foreground mb-1">
-                          Question {idx + 1}
+                          {t("quizFeedback.questionNumber", { number: idx + 1 })}
                         </p>
                         <div className="text-xs text-muted-foreground prose prose-xs dark:prose-invert">
                           <ReactMarkdown
@@ -172,18 +185,18 @@ export const QuizFeedbackComponent: React.FC<QuizFeedbackComponentProps> = ({
 
                         <div className="mt-2 space-y-1">
                           <p className="text-xs">
-                            <span className="font-medium">Your answer: </span>
+                            <span className="font-medium">{t("quizFeedback.yourAnswer")}</span>
                             <span
                               className={cn(
                                 qf.correct ? "text-green-600" : "text-red-600"
                               )}
                             >
-                              {qf.user_answer_text || "Not answered"}
+                              {qf.user_answer_text || t("quizFeedback.notAnswered")}
                             </span>
                           </p>
                           {!qf.correct && (
                             <p className="text-xs">
-                              <span className="font-medium">Correct answer: </span>
+                              <span className="font-medium">{t("quizFeedback.correctAnswer")}</span>
                               <span className="text-green-600">
                                 {qf.correct_answer_text}
                               </span>
@@ -193,12 +206,13 @@ export const QuizFeedbackComponent: React.FC<QuizFeedbackComponentProps> = ({
 
                         {qf.explanation && (
                           <div className="mt-2 p-2 bg-muted/50 rounded text-xs">
-                            <span className="font-medium">Explanation: </span>
+                            <span className="font-medium">{t("quizFeedback.explanation")}</span>
                             <span className="inline text-muted-foreground">
                               <ReactMarkdown
                                 remarkPlugins={[remarkGfm, remarkMath]}
                                 rehypePlugins={[rehypeKatex]}
                                 components={{
+                                  // eslint-disable-next-line @typescript-eslint/no-unused-vars
                                   p: ({node: _node, ...props}) => <span {...props} />
                                 }}
                               >

@@ -1,0 +1,30 @@
+{
+    "audio": {
+        "noAudio": "لم يتم رفع أي ملف صوتي"
+    },
+    "pdf": {
+        "noPdf": "لم يتم رفع أي ملف PDF",
+        "openInNewTab": "افتح ملف PDF في تبويب جديد"
+    },
+    "fillBlanks": {
+        "title": "املأ الفراغات"
+    },
+    "jupyter": {
+        "notConfigured": "لم يتم تكوين أي دفتر ملاحظات",
+        "notConfiguredDetail": "يلزم اسم المشروع ورابط المحتوى لعرض دفتر ملاحظات Jupyter",
+        "heading": "دفتر ملاحظات Jupyter: {{name}}",
+        "previewTitle": "معاينة دفتر ملاحظات Jupyter",
+        "repository": "المستودع:",
+        "branch": "الفرع:",
+        "location": "الموقع:"
+    },
+    "scratch": {
+        "notConfigured": "لم يتم تكوين أي مشروع سكراتش",
+        "notConfiguredDetail": "يلزم معرّف المشروع لعرض مشروع سكراتش",
+        "heading": "مشروع سكراتش"
+    },
+    "toc": {
+        "title": "جدول المحتويات",
+        "subtitle": "يتم إنشاء المخطط تلقائيًا من عناوين المستند."
+    }
+}

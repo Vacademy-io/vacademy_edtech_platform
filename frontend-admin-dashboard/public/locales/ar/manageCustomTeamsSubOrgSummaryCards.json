@@ -1,0 +1,8 @@
+{
+    "cards": {
+        "totalTerm": "إجمالي {{term}}",
+        "active": "نشط",
+        "totalLearners": "إجمالي المتعلمين",
+        "totalSeats": "إجمالي المقاعد"
+    }
+}

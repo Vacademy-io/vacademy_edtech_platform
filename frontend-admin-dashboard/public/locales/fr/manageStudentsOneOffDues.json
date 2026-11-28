@@ -1,0 +1,65 @@
+{
+    "card": {
+        "title": "Frais ponctuels",
+        "subtitle": "Frais supplémentaires que l’apprenant paie en ligne, comme une facture.",
+        "add": "Ajouter un frais ponctuel",
+        "empty": "Aucun frais dû.",
+        "error": "Impossible de charger les frais ponctuels.",
+        "retry": "Réessayer",
+        "history": "Payés et annulés ({{count}})"
+    },
+    "status": {
+        "DUE": "Dû",
+        "PAID": "Payé",
+        "CANCELLED": "Annulé"
+    },
+    "row": {
+        "dueOn": "échéance {{date}}",
+        "overdueSince": "en retard depuis le {{date}}",
+        "cancel": "Annuler",
+        "cancelReason": "Motif : {{reason}}"
+    },
+    "source": {
+        "REENTRY_BRIDGE": "Ajouté par la réinscription (cours de rattrapage)",
+        "OTHER": "Ajouté automatiquement"
+    },
+    "form": {
+        "title": "Ajouter un frais ponctuel",
+        "titleFor": "Ajouter un frais ponctuel pour {{name}}",
+        "howItWorks": "L’apprenant voit ce frais dans l’application et peut le payer en ligne. Aucun message n’est envoyé et aucune taxe n’est ajoutée.",
+        "chargeTitle": "Titre",
+        "chargeTitlePlaceholder": "p. ex. Cours de rattrapage",
+        "amount": "Montant",
+        "amountWithCurrency": "Montant ({{symbol}})",
+        "dueDate": "Date d’échéance",
+        "batch": "Groupe (facultatif)",
+        "noBatch": "Lié à aucun groupe",
+        "batchSearch": "Rechercher des groupes",
+        "batchEmpty": "Aucun groupe trouvé",
+        "note": "Note (équipe uniquement)",
+        "notePlaceholder": "Pourquoi ce frais a été ajouté",
+        "cancel": "Annuler",
+        "submit": "Ajouter le frais",
+        "saving": "Ajout…"
+    },
+    "errors": {
+        "titleRequired": "Donnez un titre au frais.",
+        "titleTooLong": "Le titre peut contenir au plus 200 caractères.",
+        "amountPositive": "Saisissez un montant supérieur à zéro.",
+        "amountDecimals": "Utilisez au plus deux décimales.",
+        "dueDateRequired": "Choisissez une date d’échéance.",
+        "noteTooLong": "La note peut contenir au plus 2000 caractères."
+    },
+    "confirm": {
+        "title": "Annuler ce frais ?",
+        "description": "« {{title}} » ({{amount}}) sera annulé et l’apprenant ne pourra plus le payer. L’apprenant n’est pas prévenu.",
+        "reasonPlaceholder": "Motif (facultatif)",
+        "keep": "Conserver le frais",
+        "cancelCharge": "Annuler le frais"
+    },
+    "toast": {
+        "added": "Frais ajouté.",
+        "cancelled": "Frais annulé.",
+        "failed": "Une erreur s’est produite. Veuillez réessayer."
+    }
+}

@@ -1,0 +1,64 @@
+{
+    "header": {
+        "title": "Pull Specific Questions",
+        "subtitle": "Tell us what you want, then drop a question paper. We'll pull exactly those questions out."
+    },
+    "sections": {
+        "step1Title": "What would you like to pull out?",
+        "step2Title": "Describe what you want",
+        "step3Title": "Drop your file"
+    },
+    "filterOptions": {
+        "topic": {
+            "label": "Specific topics",
+            "description": "Pull questions tagged to topics you name.",
+            "placeholder": "e.g. questions covering photosynthesis, the factors that affect it, and its importance in ecosystems"
+        },
+        "pages": {
+            "label": "Specific pages",
+            "description": "Pull questions from a page range you specify.",
+            "placeholder": "e.g. questions from pages 5–10 covering photosynthesis"
+        },
+        "questionNo": {
+            "label": "A set of question numbers",
+            "description": "Pull a specific set of questions by topic or count.",
+            "placeholder": "e.g. 10 questions focused on photosynthesis"
+        }
+    },
+    "upload": {
+        "dropTitle": "Drop your file here, or click to choose",
+        "dropSubtitle": "PDF, Word, or PowerPoint with questions inside.",
+        "removeAriaLabel": "Remove file",
+        "statusUploading": "Uploading…",
+        "statusProcessing": "Reading…",
+        "statusReady": "Ready to extract",
+        "statusGenerating": "Extracting…",
+        "statusDone": "Done",
+        "workingUploading": "Reading your file…",
+        "workingProcessing": "Getting your document ready…",
+        "workingGenerating": "Pulling out the questions you asked for — usually ~30 seconds."
+    },
+    "generate": {
+        "ctaLabel": "Pull questions",
+        "doneHeading": "Vsmart Organizer",
+        "generatingTitle": "Pulling out the questions you asked for",
+        "generatingSubtitle": "Reading and selecting the matching questions. Usually ~30 seconds."
+    },
+    "recentFiles": {
+        "title": "Your recent pulls",
+        "fallbackLabel": "Extracted set",
+        "emptyHint": "Your extracted question sets will appear here. Tell us what you want above, then drop a file."
+    },
+    "tasksList": {
+        "heading": "Vsmart Organizer"
+    },
+    "errors": {
+        "unsupportedFormat": "We can't read .{{ext}} files. Try PDF, Word, or PowerPoint.",
+        "missingPrompt": "Tell us what to pull out first, then drop your file.",
+        "uploadIncomplete": "Upload didn't complete. Want to try again?",
+        "readFailed": "We couldn't read this file. Try a different one?",
+        "genericFailure": "Something went wrong reading your file. Try again?",
+        "extractFailed": "We couldn't extract these questions. Try refining the description?",
+        "pullFailed": "We couldn't finish this pull. Want to try again?"
+    }
+}

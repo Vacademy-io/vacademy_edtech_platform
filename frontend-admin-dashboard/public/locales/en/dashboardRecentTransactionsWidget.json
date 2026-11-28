@@ -1,0 +1,16 @@
+{
+    "heading": "Recent transactions",
+    "viewAll": "View all",
+    "description": "Latest payment activity across your institute",
+    "emptyState": "No transactions yet.",
+    "status": {
+        "success": "Success",
+        "pending": "Pending",
+        "failed": "Failed",
+        "cancelled": "Cancelled"
+    },
+    "fallback": {
+        "unknownUser": "Unknown",
+        "manualVendor": "Manual"
+    }
+}

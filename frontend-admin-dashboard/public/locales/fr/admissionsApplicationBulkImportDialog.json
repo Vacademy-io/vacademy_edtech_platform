@@ -1,0 +1,64 @@
+{
+    "dialog": {
+        "title": "Importer des candidatures en masse",
+        "description": "Téléversez un CSV, sélectionnez une classe/un groupe, prévisualisez et confirmez l'import"
+    },
+    "steps": {
+        "label": "Étape {{number}}"
+    },
+    "upload": {
+        "templateHint": "Téléchargez le modèle CSV et téléversez les réponses des candidats remplies",
+        "dropzoneCta": "Cliquez pour téléverser un fichier `.csv`",
+        "validRowsLabel": "Lignes valides",
+        "skippedRowsLabel": "Lignes ignorées"
+    },
+    "classSelect": {
+        "helperText": "Sélectionnez la classe/le groupe requis pour soumettre les candidatures.",
+        "placeholder": "Sélectionner une classe/un groupe"
+    },
+    "sample": {
+        "studentName": "Jean Élève",
+        "fatherName": "Jean Père",
+        "motherName": "Jeanne Mère"
+    },
+    "columns": {
+        "studentName": "Nom de l'élève",
+        "gender": "Genre",
+        "dateOfBirth": "Date de naissance",
+        "fatherName": "Nom du père",
+        "fatherEmail": "E-mail du père",
+        "fatherMobile": "Mobile du père",
+        "motherName": "Nom de la mère",
+        "motherEmail": "E-mail de la mère",
+        "motherMobile": "Mobile de la mère",
+        "status": "Statut",
+        "source": "Source"
+    },
+    "preview": {
+        "summary_one": "Aperçu de {{count}} ligne valide",
+        "summary_many": "Aperçu de {{count}} lignes valides",
+        "summary_other": "Aperçu de {{count}} lignes valides"
+    },
+    "errors": {
+        "onlyCsvSupported": "Seuls les fichiers .csv sont pris en charge",
+        "missingRequiredColumns": "Colonne(s) requise(s) manquante(s) : {{columns}}",
+        "failedToParseCsv": "Échec de l'analyse du CSV"
+    },
+    "toasts": {
+        "importResult_one": "{{count}} candidature importée ({{failedCount}} échec(s))",
+        "importResult_many": "{{count}} candidatures importées ({{failedCount}} échec(s))",
+        "importResult_other": "{{count}} candidatures importées ({{failedCount}} échec(s))",
+        "importFailedFallback": "Échec de l'import des candidatures",
+        "instituteDetailsUnavailable": "Détails de l'établissement indisponibles",
+        "selectClassBatch": "Veuillez sélectionner une classe/un groupe",
+        "invalidClassBatchSelection": "Sélection de classe/groupe invalide"
+    },
+    "buttons": {
+        "downloadTemplate": "Télécharger le modèle",
+        "back": "Retour",
+        "cancel": "Annuler",
+        "next": "Suivant",
+        "confirmImport": "Confirmer l'import",
+        "importing": "Import en cours..."
+    }
+}

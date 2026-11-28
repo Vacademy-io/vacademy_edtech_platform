@@ -1,0 +1,34 @@
+{
+    "markBadge": {
+        "marks": "{{marks}} अंक"
+    },
+    "comboboxField": {
+        "selectLabel": "{{label}} चुनें",
+        "searchLabel": "{{label}} खोजें...",
+        "noResults": "कोई परिणाम नहीं मिला।"
+    },
+    "selectField": {
+        "selectLabel": "{{label}} चुनें"
+    },
+    "dropdown": {
+        "placeholder": "एक विकल्प चुनें"
+    },
+    "dropdownSchema": {
+        "required": "यह फ़ील्ड आवश्यक है"
+    },
+    "modernButton": {
+        "loading": "लोड हो रहा है..."
+    },
+    "pagination": {
+        "goTo": "यहां जाएं"
+    },
+    "errorState": {
+        "defaultTitle": "कुछ गड़बड़ हो गई",
+        "retry": "पुनः प्रयास करें",
+        "tryAgain": "फिर से प्रयास करें"
+    },
+    "table": {
+        "loading": "लोड हो रहा है...",
+        "errorLoadingData": "डेटा लोड करने में त्रुटि"
+    }
+}

@@ -1,0 +1,82 @@
+{
+    "sections": {
+        "residentialAddress": "Adresse résidentielle (actuelle)"
+    },
+    "fields": {
+        "houseNo": {
+            "label": "N° de maison / d'appartement / Nom du bâtiment",
+            "placeholder": "ex. : 12-A, Résidence Sunrise"
+        },
+        "street": {
+            "label": "Rue / Nom de la voie",
+            "placeholder": "ex. : M.G. Road"
+        },
+        "area": {
+            "label": "Zone / Quartier / Secteur",
+            "placeholder": "ex. : Arera Colony"
+        },
+        "landmark": {
+            "label": "Point de repère",
+            "placeholder": "ex. : Près de City Mall"
+        },
+        "city": {
+            "label": "Ville",
+            "placeholder": "ex. : Bhopal"
+        },
+        "state": {
+            "label": "État",
+            "placeholder": "Sélectionner l'État"
+        },
+        "pincode": {
+            "label": "Code postal",
+            "placeholder": "ex. : 462001",
+            "hint": "6 chiffres"
+        },
+        "country": {
+            "label": "Pays",
+            "placeholder": "Sélectionner le pays"
+        }
+    },
+    "stateOptions": {
+        "andhraPradesh": "Andhra Pradesh",
+        "arunachalPradesh": "Arunachal Pradesh",
+        "assam": "Assam",
+        "bihar": "Bihar",
+        "chhattisgarh": "Chhattisgarh",
+        "goa": "Goa",
+        "gujarat": "Gujarat",
+        "haryana": "Haryana",
+        "himachalPradesh": "Himachal Pradesh",
+        "jharkhand": "Jharkhand",
+        "karnataka": "Karnataka",
+        "kerala": "Kerala",
+        "madhyaPradesh": "Madhya Pradesh",
+        "maharashtra": "Maharashtra",
+        "manipur": "Manipur",
+        "meghalaya": "Meghalaya",
+        "mizoram": "Mizoram",
+        "nagaland": "Nagaland",
+        "odisha": "Odisha",
+        "punjab": "Pendjab",
+        "rajasthan": "Rajasthan",
+        "sikkim": "Sikkim",
+        "tamilNadu": "Tamil Nadu",
+        "telangana": "Telangana",
+        "tripura": "Tripura",
+        "uttarPradesh": "Uttar Pradesh",
+        "uttarakhand": "Uttarakhand",
+        "westBengal": "Bengale-Occidental",
+        "andamanAndNicobarIslands": "Îles Andaman-et-Nicobar",
+        "chandigarh": "Chandigarh",
+        "dadraAndNagarHaveliAndDamanAndDiu": "Dadra et Nagar Haveli et Daman et Diu",
+        "delhi": "Delhi",
+        "jammuAndKashmir": "Jammu-et-Cachemire",
+        "ladakh": "Ladakh",
+        "lakshadweep": "Lakshadweep",
+        "puducherry": "Pondichéry"
+    },
+    "countryOptions": {
+        "india": "Inde",
+        "other": "Autre"
+    }
+}

@@ -1,0 +1,70 @@
+{
+    "unknown": "غير معروف",
+    "loading": "جارٍ التحميل…",
+    "exporting": "جارٍ التصدير…",
+    "exportCsv": "تصدير CSV",
+    "header": {
+        "title": "ملاحظات الحصص المباشرة",
+        "description": "راجع ملاحظات المتعلمين عبر جميع الحصص المباشرة، مُصفّاة حسب الدفعة والمادة والتاريخ."
+    },
+    "columns": {
+        "learner": "المتعلم",
+        "liveClass": "الحصة المباشرة",
+        "subject": "المادة",
+        "date": "التاريخ",
+        "batch": "الدفعة",
+        "submitted": "تاريخ الإرسال",
+        "rating": "التقييم",
+        "feedback": "الملاحظات"
+    },
+    "filters": {
+        "searchPlaceholder": "ابحث باسم المتعلم أو عنوان الحصة…",
+        "clearSearchAriaLabel": "مسح البحث",
+        "batch": "الدفعة",
+        "subject": "المادة",
+        "ratingsBelow": "التقييمات الأقل من",
+        "anyRating": "الكل",
+        "noBatches": "لا توجد دفعات",
+        "noSubjects": "لا توجد مواد",
+        "clearAll": "مسح الكل"
+    },
+    "summary": {
+        "totalResponses": "إجمالي الردود",
+        "avgRating": "متوسط التقييم",
+        "lowRatings": "التقييمات المنخفضة",
+        "ratedBelow3": "مصنّفة أقل من 3"
+    },
+    "viewMode": {
+        "detailed": "مفصّل",
+        "simple": "بسيط"
+    },
+    "states": {
+        "loadError": "تعذّر تحميل الملاحظات. يرجى المحاولة مرة أخرى.",
+        "emptyTitle": "لم يتم العثور على ملاحظات",
+        "emptyDescription": "لم يرسل أي متعلم ملاحظات ضمن الدفعة والمادة والفترة الزمنية المحددة."
+    },
+    "toast": {
+        "noFeedbackToExport": "لا توجد ملاحظات لتصديرها وفق الفلاتر الحالية.",
+        "exported_zero": "تم تصدير {{count}} رد ملاحظات.",
+        "exported_one": "تم تصدير رد ملاحظات واحد.",
+        "exported_two": "تم تصدير ردَي ملاحظات.",
+        "exported_few": "تم تصدير {{count}} ردود ملاحظات.",
+        "exported_many": "تم تصدير {{count}} ردًا من الملاحظات.",
+        "exported_other": "تم تصدير {{count}} رد ملاحظات.",
+        "exportCapped": "تم تحديد سقف التصدير — ضيّق الفلاتر لتصدير الصفوف المتبقية.",
+        "exportFailed": "تعذّر تصدير الملاحظات. يرجى المحاولة مرة أخرى."
+    },
+    "csv": {
+        "learner": "المتعلم",
+        "batch": "الدفعة",
+        "rating": "التقييم",
+        "feedback": "الملاحظات",
+        "submitted": "تاريخ الإرسال",
+        "email": "البريد الإلكتروني",
+        "mobile": "الجوال",
+        "liveClass": "الحصة المباشرة",
+        "subject": "المادة",
+        "meetingDate": "تاريخ الاجتماع",
+        "submittedAt": "وقت الإرسال"
+    }
+}

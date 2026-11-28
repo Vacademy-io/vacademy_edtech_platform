@@ -11,6 +11,7 @@ import {
     DropdownMenuSubContent,
 } from '@/components/ui/dropdown-menu';
 import { MyButton } from '@/components/design-system/button';
+import { useTranslation } from 'react-i18next';
 import { useSubmissionsBulkActionsDialogStoreAttempted } from '../bulk-actions-zustand-store/useSubmissionsBulkActionsDialogStoreAttempted';
 
 interface BulkActionsMenuProps {
@@ -21,6 +22,7 @@ interface BulkActionsMenuProps {
 }
 
 export const BulkActionsMenuAttempted = ({ selectedStudents, trigger }: BulkActionsMenuProps) => {
+    const { t } = useTranslation('evaluationBulkActionsMenuAttempted');
     const {
         openBulkProvideReattemptDialog,
         openBulkProvideRevaluateAssessmentDialog,
@@ -39,7 +41,7 @@ export const BulkActionsMenuAttempted = ({ selectedStudents, trigger }: BulkActi
         const bulkActionInfo: AssessmentSubmissionsBulkActionInfo = {
             selectedStudentIds: validStudents.map((student) => student.user_id),
             selectedStudents: validStudents,
-            displayText: `${validStudents.length} students`,
+            displayText: t('studentsCount', { count: validStudents.length }),
         };
 
         switch (value) {
@@ -76,18 +78,18 @@ export const BulkActionsMenuAttempted = ({ selectedStudents, trigger }: BulkActi
                         className="cursor-pointer"
                         onClick={() => handleMenuOptionsChange('Provide Reattempt')}
                     >
-                        Provide Reattempt
+                        {t('provideReattempt')}
                     </DropdownMenuItem>
                     <DropdownMenuSub>
                         <DropdownMenuSubTrigger className="cursor-pointer">
-                            Revaluate
+                            {t('revaluate')}
                         </DropdownMenuSubTrigger>
                         <DropdownMenuSubContent>
                             <DropdownMenuItem
                                 className="cursor-pointer"
                                 onClick={() => handleMenuOptionsChange('Revaluate Question Wise')}
                             >
-                                Question Wise
+                                {t('questionWise')}
                             </DropdownMenuItem>
                             <DropdownMenuItem
                                 className="cursor-pointer"
@@ -95,7 +97,7 @@ export const BulkActionsMenuAttempted = ({ selectedStudents, trigger }: BulkActi
                                     handleMenuOptionsChange('Revaluate Entire Assessment')
                                 }
                             >
-                                Entire Assessment
+                                {t('entireAssessment')}
                             </DropdownMenuItem>
                         </DropdownMenuSubContent>
                     </DropdownMenuSub>
@@ -103,7 +105,7 @@ export const BulkActionsMenuAttempted = ({ selectedStudents, trigger }: BulkActi
                         className="cursor-pointer"
                         onClick={() => handleMenuOptionsChange('Release Result')}
                     >
-                        Release Result
+                        {t('releaseResult')}
                     </DropdownMenuItem>
                 </DropdownMenuContent>
             </DropdownMenu>

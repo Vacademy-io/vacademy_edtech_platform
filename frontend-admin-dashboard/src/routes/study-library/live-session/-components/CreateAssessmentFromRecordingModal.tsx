@@ -1,4 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { MyDialog } from '@/components/design-system/dialog';
 import { MyButton } from '@/components/design-system/button';
 import { ToolCostBadge } from '@/components/common/ai-credits/ToolCostBadge';
@@ -49,7 +51,7 @@ import {
 import { RecordingAssessmentExportButtons } from './RecordingAssessmentExportButtons';
 import { AddToCourseDialog } from './add-to-course/AddToCourseDialog';
 import {
-    QUESTION_TYPES,
+    buildQuestionTypes,
     type QuestionTypeCode,
 } from './questionTypePresets';
 
@@ -115,6 +117,7 @@ export function CreateAssessmentFromRecordingModal({
     englishTextUrl,
     initialArtifact,
 }: CreateAssessmentFromRecordingModalProps) {
+    const { t } = useTranslation('studyLibraryCreateAssessmentFromRecordingModal');
     const [startDateTime, setStartDateTime] = useState<string>(defaultStartDateTime());
     const [endDateTime, setEndDateTime] = useState<string>(defaultEndDateTime());
     const [marksPerQuestion, setMarksPerQuestion] = useState<number>(4);
@@ -219,29 +222,31 @@ export function CreateAssessmentFromRecordingModal({
         onSuccess: (data) => {
             setResult(data);
             if (data.status === 'COMPLETED') {
-                toast.success(`Generated ${data.questions?.length ?? 0} questions`);
+                toast.success(
+                    t('toast.generatedQuestions', { count: data.questions?.length ?? 0 })
+                );
             } else if (data.status === 'FAILED') {
-                toast.error(data.errorMessage ?? 'Generation failed');
+                toast.error(data.errorMessage ?? t('toast.generationFailed'));
             }
         },
         onError: (err: unknown) => {
             const msg = (err as { response?: { data?: { message?: string } } })?.response?.data
                 ?.message;
-            toast.error(msg ?? 'Could not create assessment');
+            toast.error(msg ?? t('toast.createFailed'));
         },
     });
 
     const handleSubmit = () => {
         if (!startDateTime || !endDateTime) {
-            toast.error('Start and end datetime are required');
+            toast.error(t('toast.dateTimeRequired'));
             return;
         }
         if (new Date(endDateTime) <= new Date(startDateTime)) {
-            toast.error('End datetime must be after start datetime');
+            toast.error(t('toast.endAfterStart'));
             return;
         }
         if (numQuestions < 1 || numQuestions > 50) {
-            toast.error('Number of questions must be between 1 and 50');
+            toast.error(t('toast.questionCountRange'));
             return;
         }
         mutate({
@@ -283,7 +288,7 @@ export function CreateAssessmentFromRecordingModal({
         <MyDialog
             open={open}
             onOpenChange={onOpenChange}
-            heading={isPreview ? 'Assessment Preview' : 'Create Assessment from Recording'}
+            heading={isPreview ? t('dialog.headingPreview') : t('dialog.headingCreate')}
             // Form mode keeps the compact 3xl card; preview mode goes
             // full-screen so the sidebar + detail layout has room to breathe.
             dialogWidth={isPreview ? '!max-w-none !w-screen' : 'max-w-3xl'}
@@ -339,13 +344,13 @@ export function CreateAssessmentFromRecordingModal({
                         </div>
                         <div className="text-center">
                             <div className="text-sm font-medium text-neutral-800">
-                                Generating {numQuestions} questions with AI
-                                {includeImages ? ' + illustrations' : ''}
+                                {t('loading.generating', { count: numQuestions })}
+                                {includeImages ? t('loading.withIllustrations') : ''}
                             </div>
                             <div className="mt-1 text-xs text-neutral-500">
                                 {includeImages
-                                    ? 'Typically takes 30–90 seconds — the LLM picks a few questions where a diagram helps and we illustrate only those. Please don’t close this window.'
-                                    : 'Typically takes 15–45 seconds. Please don’t close this window.'}
+                                    ? t('loading.hintWithImages')
+                                    : t('loading.hintPlain')}
                             </div>
                         </div>
                         <Loader2 className="size-4 animate-spin text-primary-500" />
@@ -405,10 +410,10 @@ export function CreateAssessmentFromRecordingModal({
                 {isFailed && (
                     <Alert variant="destructive" className="border-red-200 bg-red-50">
                         <AlertTriangle className="size-4 text-red-600" />
-                        <AlertDescription className="ml-2">
-                            <div className="font-medium text-red-800">Generation failed</div>
+                        <AlertDescription className="ms-2">
+                            <div className="font-medium text-red-800">{t('failure.title')}</div>
                             <div className="mt-1 text-xs text-red-700">
-                                {result?.errorMessage ?? 'Unknown error'}
+                                {result?.errorMessage ?? t('failure.unknownError')}
                             </div>
                         </AlertDescription>
                     </Alert>
@@ -422,19 +427,20 @@ export function CreateAssessmentFromRecordingModal({
                     onClick={() => onOpenChange(false)}
                     disabled={isPending}
                 >
-                    {isPreview ? 'Close' : 'Cancel'}
+                    {isPreview ? t('dialog.close') : t('dialog.cancel')}
                 </MyButton>
                 {isForm && (
                     <>
                         <ToolCostBadge
                             credits={costPreview.credits}
                             sufficient={costPreview.sufficient}
+                            coverage={costPreview.coverage}
                             loading={costPreview.isLoading}
                         />
                         <MyButton
                             onClick={() => {
                                 if (questionTypes.length === 0) {
-                                    toast.error('Pick at least one question type');
+                                    toast.error(t('toast.pickQuestionType'));
                                     return;
                                 }
                                 handleSubmit();
@@ -442,11 +448,13 @@ export function CreateAssessmentFromRecordingModal({
                             disable={questionTypes.length === 0 || isPending}
                         >
                             <Sparkles className="size-3.5" />
-                            Generate Assessment
+                            {t('generate')}
                         </MyButton>
                     </>
                 )}
-                {isFailed && <MyButton onClick={() => setResult(null)}>Try Again</MyButton>}
+                {isFailed && (
+                    <MyButton onClick={() => setResult(null)}>{t('failure.tryAgain')}</MyButton>
+                )}
             </div>
         </MyDialog>
     );
@@ -530,6 +538,8 @@ function QuestionTypePickerStep({
     includeImages: boolean;
     setIncludeImages: (v: boolean) => void;
 }) {
+    const { t } = useTranslation('studyLibraryCreateAssessmentFromRecordingModal');
+    const QUESTION_TYPES = useMemo(() => buildQuestionTypes(t), [t]);
     const toggle = (code: QuestionTypeCode) => {
         const has = selected.includes(code);
         if (has) {
@@ -560,10 +570,10 @@ function QuestionTypePickerStep({
             <section className="flex flex-col gap-2">
                 <div className="flex items-baseline justify-between">
                     <div className="text-sm font-semibold text-neutral-800">
-                        Pick question types
+                        {t('picker.pickTypes')}
                     </div>
                     <span className="text-[11px] text-neutral-500">
-                        {selected.length} selected
+                        {t('picker.selectedCount', { count: selected.length })}
                     </span>
                 </div>
                 <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
@@ -604,11 +614,7 @@ function QuestionTypePickerStep({
                         );
                     })}
                 </div>
-                <p className="text-[11px] text-neutral-500">
-                    Note: the LLM currently only generates MCQs reliably. Other types
-                    are saved with your assessment but may still come back as MCQs
-                    until prompt support lands.
-                </p>
+                <p className="text-[11px] text-neutral-500">{t('picker.note')}</p>
             </section>
 
             <Separator />
@@ -617,7 +623,7 @@ function QuestionTypePickerStep({
                 pairs naturally with the type selection. */}
             <section className="flex flex-col gap-2">
                 <div className="text-sm font-semibold text-neutral-800">
-                    How many questions?
+                    {t('picker.howMany')}
                 </div>
                 <div className="flex items-center gap-2">
                     <Input
@@ -648,9 +654,7 @@ function QuestionTypePickerStep({
                         ))}
                     </div>
                 </div>
-                <p className="text-[11px] text-neutral-500">
-                    Between 1 and 50. You can change this on the next step too.
-                </p>
+                <p className="text-[11px] text-neutral-500">{t('picker.rangeHint')}</p>
             </section>
 
             {/* Image enrichment toggle. Same visual weight as a normal
@@ -663,7 +667,7 @@ function QuestionTypePickerStep({
                         checked={includeImages}
                         onChange={(e) => setIncludeImages(e.target.checked)}
                     />
-                    Generate illustrations for questions and options
+                    {t('picker.includeImages')}
                 </label>
             </section>
         </div>
@@ -695,20 +699,21 @@ function FormFields(props: {
     visibility: 'PRIVATE' | 'PUBLIC';
     setVisibility: (v: 'PRIVATE' | 'PUBLIC') => void;
 }) {
+    const { t } = useTranslation('studyLibraryCreateAssessmentFromRecordingModal');
     return (
         <div className="flex flex-col gap-4">
             {/* Section: Title — auto-suggested from transcript on open. Empty
                 value falls through to the Gemini-generated title server-side. */}
-            <FieldGroup label="Title" icon={<TypeIcon className="size-3" />}>
-                <Field id="title" label="Assessment title">
+            <FieldGroup label={t('form.titleGroup')} icon={<TypeIcon className="size-3" />}>
+                <Field id="title" label={t('form.titleLabel')}>
                     <Input
                         id="title"
                         type="text"
                         value={props.title}
                         placeholder={
                             props.titleLoading
-                                ? 'Suggesting from transcript…'
-                                : 'Leave empty to auto-generate from the lecture'
+                                ? t('form.titlePlaceholderLoading')
+                                : t('form.titlePlaceholderEmpty')
                         }
                         onChange={(e) => props.setTitle(e.target.value)}
                         maxLength={200}
@@ -717,9 +722,9 @@ function FormFields(props: {
             </FieldGroup>
 
             {/* Section: Schedule */}
-            <FieldGroup label="Schedule" icon={<CalendarClock className="size-3" />}>
+            <FieldGroup label={t('form.scheduleGroup')} icon={<CalendarClock className="size-3" />}>
                 <div className="grid grid-cols-2 gap-3">
-                    <Field id="start-dt" label="Start date & time">
+                    <Field id="start-dt" label={t('form.startLabel')}>
                         <Input
                             id="start-dt"
                             type="datetime-local"
@@ -727,7 +732,7 @@ function FormFields(props: {
                             onChange={(e) => props.setStartDateTime(e.target.value)}
                         />
                     </Field>
-                    <Field id="end-dt" label="End date & time">
+                    <Field id="end-dt" label={t('form.endLabel')}>
                         <Input
                             id="end-dt"
                             type="datetime-local"
@@ -740,17 +745,17 @@ function FormFields(props: {
                     local timezone client-side, then sent to the backend as
                     a proper ISO string with offset so it's stored correctly. */}
                 <p className="text-[11px] text-neutral-500">
-                    Times shown in your local timezone:{' '}
+                    {t('form.timezoneHint')}{' '}
                     <span className="font-medium text-neutral-700">
-                        {describeUserTimezone()}
+                        {describeUserTimezone(t)}
                     </span>
                 </p>
             </FieldGroup>
 
             {/* Section: Marking */}
-            <FieldGroup label="Marking" icon={<Award className="size-3" />}>
+            <FieldGroup label={t('form.markingGroup')} icon={<Award className="size-3" />}>
                 <div className="grid grid-cols-2 gap-3">
-                    <Field id="marks" label="Marks per question">
+                    <Field id="marks" label={t('form.marksLabel')}>
                         <Input
                             id="marks"
                             type="number"
@@ -761,7 +766,7 @@ function FormFields(props: {
                             }
                         />
                     </Field>
-                    <Field id="duration" label="Entire Test Duration">
+                    <Field id="duration" label={t('form.durationLabel')}>
                         <DurationHrsMinInput
                             totalMinutes={props.durationMinutes}
                             onChange={props.setDurationMinutes}
@@ -777,15 +782,15 @@ function FormFields(props: {
                             onCheckedChange={props.setNegativeMarkingEnabled}
                         />
                         <Label htmlFor="negmarking" className="cursor-pointer text-sm">
-                            Enable negative marking
+                            {t('form.negativeMarkingLabel')}
                         </Label>
                         {props.negativeMarkingEnabled && (
-                            <div className="ml-auto flex items-center gap-2">
+                            <div className="ms-auto flex items-center gap-2">
                                 <Label
                                     htmlFor="neg"
                                     className="text-xs font-normal text-neutral-500"
                                 >
-                                    Deduct
+                                    {t('form.deductLabel')}
                                 </Label>
                                 <Input
                                     id="neg"
@@ -799,7 +804,9 @@ function FormFields(props: {
                                     }
                                     className="w-20"
                                 />
-                                <span className="text-xs text-neutral-500">per wrong answer</span>
+                                <span className="text-xs text-neutral-500">
+                                    {t('form.perWrongAnswer')}
+                                </span>
                             </div>
                         )}
                     </CardContent>
@@ -811,9 +818,9 @@ function FormFields(props: {
                 publish; reattemptCount=0 means single-attempt, previewTime=0
                 means the timer starts immediately when a learner enters the
                 assessment (no cover/instructions screen). */}
-            <FieldGroup label="Attempts & Preview" icon={<RotateCcw className="size-3" />}>
+            <FieldGroup label={t('form.attemptsGroup')} icon={<RotateCcw className="size-3" />}>
                 <div className="grid grid-cols-2 gap-3">
-                    <Field id="reattempt" label="Reattempts allowed">
+                    <Field id="reattempt" label={t('form.reattemptLabel')}>
                         <Input
                             id="reattempt"
                             type="number"
@@ -825,11 +832,9 @@ function FormFields(props: {
                                 )
                             }
                         />
-                        <p className="text-[11px] text-neutral-500">
-                            Retries after the first submission. 0 = single attempt.
-                        </p>
+                        <p className="text-[11px] text-neutral-500">{t('form.reattemptHint')}</p>
                     </Field>
-                    <Field id="preview" label="Preview time (minutes)">
+                    <Field id="preview" label={t('form.previewTimeLabel')}>
                         <Input
                             id="preview"
                             type="number"
@@ -842,7 +847,7 @@ function FormFields(props: {
                             }
                         />
                         <p className="text-[11px] text-neutral-500">
-                            Instructions/cover screen time before the timer starts.
+                            {t('form.previewTimeHint')}
                         </p>
                     </Field>
                 </div>
@@ -853,9 +858,9 @@ function FormFields(props: {
                 is visible, questions are already produced, so we show the
                 count as a read-only chip rather than an editable input
                 that wouldn't actually do anything. */}
-            <FieldGroup label="Content & Access" icon={<Eye className="size-3" />}>
+            <FieldGroup label={t('form.contentGroup')} icon={<Eye className="size-3" />}>
                 <div className="grid grid-cols-2 gap-3">
-                    <Field id="numq" label="Number of questions">
+                    <Field id="numq" label={t('form.numQuestionsLabel')}>
                         <div
                             id="numq"
                             className="inline-flex h-10 items-center gap-2 rounded-md border border-neutral-200 bg-neutral-50 px-3 text-sm text-neutral-700"
@@ -864,12 +869,14 @@ function FormFields(props: {
                                 {props.numQuestions}
                             </span>
                             <span className="text-[11px] text-neutral-500">
-                                fixed at generation
+                                {t('form.fixedAtGeneration')}
                             </span>
                         </div>
                     </Field>
                     <div className="flex flex-col gap-1.5">
-                        <Label className="text-xs font-medium text-neutral-700">Visibility</Label>
+                        <Label className="text-xs font-medium text-neutral-700">
+                            {t('form.visibilityLabel')}
+                        </Label>
                         <RadioGroup
                             value={props.visibility}
                             onValueChange={(v) =>
@@ -877,8 +884,16 @@ function FormFields(props: {
                             }
                             className="grid grid-cols-2 gap-2"
                         >
-                            <VisibilityOption value="PRIVATE" label="Private" hint="batch-only" />
-                            <VisibilityOption value="PUBLIC" label="Public" hint="open access" />
+                            <VisibilityOption
+                                value="PRIVATE"
+                                label={t('form.visibilityPrivate')}
+                                hint={t('form.visibilityPrivateHint')}
+                            />
+                            <VisibilityOption
+                                value="PUBLIC"
+                                label={t('form.visibilityPublic')}
+                                hint={t('form.visibilityPublicHint')}
+                            />
                         </RadioGroup>
                     </div>
                 </div>
@@ -927,6 +942,7 @@ function ContextSummaryCard({
     detectedLanguage?: string;
     batches?: BatchSummary[];
 }) {
+    const { t } = useTranslation('studyLibraryCreateAssessmentFromRecordingModal');
     const [expanded, setExpanded] = useState(false);
     const hasBatches = !!batches && batches.length > 0;
     const noBatches = batches !== undefined && batches.length === 0;
@@ -944,11 +960,10 @@ function ContextSummaryCard({
                         type="button"
                         onClick={() => setExpanded((v) => !v)}
                         className="inline-flex items-center gap-1.5 rounded-full border border-neutral-200 bg-white px-2.5 py-1 text-xs font-medium text-neutral-700 transition-colors hover:bg-neutral-50"
-                        title={expanded ? 'Hide batch list' : 'View attached batches'}
+                        title={expanded ? t('context.hideBatchList') : t('context.viewBatches')}
                     >
                         <Users className="size-3" />
-                        Assigned to {batches.length}{' '}
-                        {batches.length === 1 ? 'batch' : 'batches'}
+                        {t('context.assignedToBatches', { count: batches.length })}
                         {expanded ? (
                             <ChevronUp className="size-3" />
                         ) : (
@@ -959,12 +974,12 @@ function ContextSummaryCard({
                 {noBatches && (
                     <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-700">
                         <AlertTriangle className="size-3" />
-                        No batches attached — assessment won&apos;t auto-assign
+                        {t('context.noBatches')}
                     </span>
                 )}
                 {detectedLanguage && (
-                    <span className="ml-auto text-[11px] text-neutral-500">
-                        Questions will be generated in {detectedLanguage}.
+                    <span className="ms-auto text-[11px] text-neutral-500">
+                        {t('context.languageHint', { language: detectedLanguage })}
                     </span>
                 )}
             </div>
@@ -1006,6 +1021,7 @@ function DurationHrsMinInput({
     totalMinutes: number;
     onChange: (totalMinutes: number) => void;
 }) {
+    const { t } = useTranslation('studyLibraryCreateAssessmentFromRecordingModal');
     const safe = Number.isFinite(totalMinutes) && totalMinutes >= 0 ? totalMinutes : 0;
     const hrs = Math.floor(safe / 60);
     const min = safe % 60;
@@ -1030,20 +1046,24 @@ function DurationHrsMinInput({
                 inputMode="numeric"
                 value={String(hrs)}
                 onChange={(e) => setHrs(parseInt(sanitize(e.target.value), 10) || 0)}
-                aria-label="Hours"
+                aria-label={t('duration.hoursAria')}
                 className="w-10 border-none bg-transparent text-center text-sm font-medium text-neutral-800 focus:outline-none"
             />
-            <span className="text-[11px] font-medium uppercase text-neutral-500">hrs</span>
+            <span className="text-[11px] font-medium uppercase text-neutral-500">
+                {t('duration.hoursUnit')}
+            </span>
             <span className="text-neutral-300">:</span>
             <input
                 type="text"
                 inputMode="numeric"
                 value={String(min).padStart(2, '0')}
                 onChange={(e) => setMin(parseInt(sanitize(e.target.value), 10) || 0)}
-                aria-label="Minutes"
+                aria-label={t('duration.minutesAria')}
                 className="w-10 border-none bg-transparent text-center text-sm font-medium text-neutral-800 focus:outline-none"
             />
-            <span className="text-[11px] font-medium uppercase text-neutral-500">min</span>
+            <span className="text-[11px] font-medium uppercase text-neutral-500">
+                {t('duration.minutesUnit')}
+            </span>
         </div>
     );
 }
@@ -1133,6 +1153,7 @@ function PreviewPane({
     configFields: PreviewPaneConfigFields;
     onPublished: (updated: AssessmentArtifact, opts?: { keepOpen?: boolean }) => void;
 }) {
+    const { t } = useTranslation('studyLibraryCreateAssessmentFromRecordingModal');
     const isPublished = result.status === 'PUBLISHED' || !!result.assessmentId;
     // "Create Assessment" dialog state. The form fields used to render
     // inline above the questions, but users found it cluttered — they
@@ -1164,12 +1185,12 @@ function PreviewPane({
             }),
         onSuccess: (updated) => {
             onPublished(updated);
-            toast.success('Assessment published');
+            toast.success(t('toast.publishSuccess'));
         },
         onError: (err: unknown) => {
             const msg =
                 (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
-            toast.error(msg ?? 'Could not publish assessment');
+            toast.error(msg ?? t('toast.publishFailed'));
         },
     });
     return (
@@ -1187,8 +1208,8 @@ function PreviewPane({
                     <Input
                         value={configFields.title}
                         onChange={(e) => configFields.setTitle(e.target.value)}
-                        placeholder={result.title ?? 'Untitled'}
-                        aria-label="Assessment title"
+                        placeholder={result.title ?? t('preview.untitled')}
+                        aria-label={t('preview.titleAria')}
                         className="h-auto flex-1 border-0 bg-transparent px-0 py-0 text-lg font-semibold leading-tight text-neutral-800 shadow-none placeholder:text-neutral-400 focus-visible:ring-0 focus-visible:ring-offset-0"
                     />
                     <PencilSimple
@@ -1199,7 +1220,7 @@ function PreviewPane({
                 </div>
                 <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-neutral-500">
                     <span className="inline-flex items-center gap-1 rounded-full border border-neutral-200 bg-white px-2 py-0.5 font-medium text-neutral-600">
-                        {result.numQuestions ?? 0} questions
+                        {t('preview.questionsCount', { count: result.numQuestions ?? 0 })}
                     </span>
                     {result.targetLanguage && (
                         <span className="inline-flex items-center gap-1 rounded-full border border-neutral-200 bg-white px-2 py-0.5 font-medium uppercase text-neutral-600">
@@ -1222,10 +1243,7 @@ function PreviewPane({
                                     className="inline-flex items-center gap-1 rounded-full border border-neutral-200 bg-white px-2 py-0.5 font-medium text-neutral-600 transition-colors hover:border-primary-300 hover:bg-primary-50 hover:text-primary-700"
                                 >
                                     <Users className="size-3" />
-                                    {batches.length}{' '}
-                                    {batches.length === 1
-                                        ? 'batch'
-                                        : 'batches'}
+                                    {t('preview.batchesCount', { count: batches.length })}
                                     <ChevronDown className="size-3" />
                                 </button>
                             </PopoverTrigger>
@@ -1234,7 +1252,7 @@ function PreviewPane({
                                 className="w-72 p-0"
                             >
                                 <div className="border-b border-neutral-200 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-neutral-500">
-                                    Assigned batches ({batches.length})
+                                    {t('preview.assignedBatchesHeader', { count: batches.length })}
                                 </div>
                                 <ul className="max-h-64 overflow-y-auto py-1">
                                     {batches.map((b) => (
@@ -1279,10 +1297,11 @@ function PreviewPane({
             {isPublished ? (
                 <Alert className="border-green-200 bg-green-50">
                     <CheckCircle2 className="size-4 text-green-600" />
-                    <AlertDescription className="ml-2 flex items-center justify-between text-xs text-green-900">
+                    <AlertDescription className="ms-2 flex items-center justify-between text-xs text-green-900">
                         <span>
-                            Published to the institute&apos;s Assessments tab —
-                            registered to {(result.registeredBatchIds?.length ?? 0)} batch(es).
+                            {t('preview.publishedBanner', {
+                                count: result.registeredBatchIds?.length ?? 0,
+                            })}
                         </span>
                         {result.assessmentId && (
                             <Badge variant="outline" className="border-green-300 bg-white font-mono text-[10px] text-green-700">
@@ -1294,9 +1313,9 @@ function PreviewPane({
             ) : (
                 <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-primary-200 bg-primary-50/40 px-4 py-3">
                     <div className="text-xs text-neutral-700">
-                        Review the questions above. Open <strong>Create
-                        Assessment</strong> to set the title, schedule, and
-                        marking — you can publish from inside that dialog.
+                        {t('preview.reviewHintPrefix')}{' '}
+                        <strong>{t('preview.createAssessment')}</strong>{' '}
+                        {t('preview.reviewHintSuffix')}
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
                         <RecordingAssessmentExportButtons
@@ -1304,7 +1323,7 @@ function PreviewPane({
                             title={
                                 configFields.title?.trim() ||
                                 result.title ||
-                                'Assessment'
+                                t('preview.defaultTitle')
                             }
                         />
                         <MyButton
@@ -1313,14 +1332,14 @@ function PreviewPane({
                             onClick={() => setAddToCourseOpen(true)}
                         >
                             <GraduationCap className="size-3.5" />
-                            Add to course
+                            {t('preview.addToCourse')}
                         </MyButton>
                         <MyButton
                             type="button"
                             onClick={() => setConfigDialogOpen(true)}
                         >
                             <Settings2 className="size-3.5" />
-                            Create Assessment
+                            {t('preview.createAssessment')}
                         </MyButton>
                     </div>
                 </div>
@@ -1337,7 +1356,7 @@ function PreviewPane({
                         onClick={() => setAddToCourseOpen(true)}
                     >
                         <GraduationCap className="size-3.5" />
-                        Add to course as slide
+                        {t('preview.addToCourseAsSlide')}
                     </MyButton>
                 </div>
             )}
@@ -1353,7 +1372,7 @@ function PreviewPane({
                     kind: 'ASSESSMENT',
                     questions: result.questions ?? [],
                     suggestedTitle:
-                        configFields.title?.trim() || result.title || 'Assessment',
+                        configFields.title?.trim() || result.title || t('preview.defaultTitle'),
                     assessmentId: result.assessmentId,
                 }}
                 publishAssessment={
@@ -1463,19 +1482,16 @@ function ConfigureAssessmentDialog({
     publishing: boolean;
     canPublish: boolean;
 }) {
+    const { t } = useTranslation('studyLibraryCreateAssessmentFromRecordingModal');
     return (
         <MyDialog
             open={open}
             onOpenChange={onOpenChange}
-            heading="Create Assessment"
+            heading={t('config.heading')}
             dialogWidth="max-w-2xl"
         >
             <div className="flex flex-col gap-4 p-5">
-                <p className="text-xs text-neutral-500">
-                    Set the title, schedule, marking, and visibility — these
-                    travel as overrides on the publish call so what you see
-                    here is exactly what learners will get.
-                </p>
+                <p className="text-xs text-neutral-500">{t('config.description')}</p>
                 <FormFields
                     title={configFields.title}
                     setTitle={configFields.setTitle}
@@ -1508,7 +1524,7 @@ function ConfigureAssessmentDialog({
                         onClick={() => onOpenChange(false)}
                         disabled={publishing}
                     >
-                        Cancel
+                        {t('config.cancel')}
                     </MyButton>
                     <MyButton
                         type="button"
@@ -1518,12 +1534,12 @@ function ConfigureAssessmentDialog({
                         {publishing ? (
                             <>
                                 <Loader2 className="size-3.5 animate-spin" />
-                                Publishing…
+                                {t('config.publishing')}
                             </>
                         ) : (
                             <>
                                 <Sparkles className="size-3.5" />
-                                Publish Assessment
+                                {t('config.publish')}
                             </>
                         )}
                     </MyButton>
@@ -1534,11 +1550,12 @@ function ConfigureAssessmentDialog({
 }
 
 function RichQuestionsViewer({ questions }: { questions: GeneratedQuestion[] }) {
+    const { t } = useTranslation('studyLibraryCreateAssessmentFromRecordingModal');
     const [selected, setSelected] = useState(0);
     if (!questions || questions.length === 0) {
         return (
             <div className="flex h-[70vh] items-center justify-center rounded-md border bg-neutral-50 text-sm text-neutral-500">
-                No questions to preview yet.
+                {t('questions.empty')}
             </div>
         );
     }
@@ -1572,7 +1589,7 @@ function RichQuestionsViewer({ questions }: { questions: GeneratedQuestion[] }) 
                                         {i + 1}
                                     </span>
                                     <span className="text-[10px] font-medium uppercase tracking-wide text-neutral-500">
-                                        Multiple Choice
+                                        {t('questions.multipleChoice')}
                                     </span>
                                 </div>
                                 <div className="line-clamp-2 text-[11px] leading-snug text-neutral-700">
@@ -1616,13 +1633,13 @@ function RichQuestionsViewer({ questions }: { questions: GeneratedQuestion[] }) 
                 <div className="flex items-center justify-between border-b pb-2.5">
                     <div className="flex items-center gap-2">
                         <span className="text-sm font-semibold text-neutral-800">
-                            Question {selected + 1}
+                            {t('questions.questionLabel', { number: selected + 1 })}
                         </span>
                         <Badge
                             variant="outline"
                             className="border-amber-300 bg-amber-50 text-[10px] font-medium uppercase tracking-wide text-amber-700"
                         >
-                            Medium
+                            {t('questions.difficultyMedium')}
                         </Badge>
                     </div>
                     <span className="text-[10px] text-neutral-400">
@@ -1644,7 +1661,9 @@ function RichQuestionsViewer({ questions }: { questions: GeneratedQuestion[] }) 
                 {/* Answers grid — option text also rendered as HTML so
                     image-enriched options display the illustration. */}
                 <div>
-                    <div className="mb-1.5 text-xs font-semibold text-neutral-700">Answer</div>
+                    <div className="mb-1.5 text-xs font-semibold text-neutral-700">
+                        {t('questions.answer')}
+                    </div>
                     <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                         {active.options.map((opt, idx) => {
                             const correct = idx === active.correctAnswerIndex;
@@ -1681,7 +1700,7 @@ function RichQuestionsViewer({ questions }: { questions: GeneratedQuestion[] }) 
 
                 {active.explanation && (
                     <div className="rounded-md border border-blue-100 bg-blue-50/50 px-3 py-2 text-xs leading-relaxed text-blue-900">
-                        <span className="mr-1 font-semibold">Why:</span>
+                        <span className="me-1 font-semibold">{t('questions.why')}</span>
                         {active.explanation}
                     </div>
                 )}
@@ -1760,7 +1779,7 @@ function toLocalIsoWithOffset(localStr: string): string {
 }
 
 /** Human-readable timezone label, e.g. "Asia/Kolkata · GMT+5:30". */
-function describeUserTimezone(): string {
+function describeUserTimezone(t: TFunction): string {
     try {
         const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
         const offsetMin = -new Date().getTimezoneOffset();
@@ -1771,6 +1790,6 @@ function describeUserTimezone(): string {
         const offsetLabel = mins === 0 ? `GMT${sign}${hours}` : `GMT${sign}${hours}:${String(mins).padStart(2, '0')}`;
         return tz ? `${tz} · ${offsetLabel}` : offsetLabel;
     } catch {
-        return 'your local timezone';
+        return t('timezone.fallback');
     }
 }

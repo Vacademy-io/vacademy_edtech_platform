@@ -29,4 +29,14 @@ public class PaymentLogDTO {
     private String trackingId;
     private String trackingSource;
     private String orderStatus;
+
+    /** Offline payments only (V577): how it was paid, as recorded by an admin. */
+    private String paymentMode;
+    private String paymentSubMode;
+    private String paymentReference;
+    private String paymentDetailsJson;
+    private String recordedByUserId;
+
+    /** Rows of one payment stored per course share this (V642); null for a payment on its own. */
+    private String paymentGroupId;
 }

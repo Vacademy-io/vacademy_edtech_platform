@@ -1,0 +1,26 @@
+{
+    "sessionsAndAnalytics": "सत्र और विश्लेषण",
+    "statusFilter": {
+        "all": "सभी स्थितियाँ",
+        "active": "सक्रिय",
+        "completed": "पूर्ण",
+        "error": "त्रुटि",
+        "timedOut": "समय समाप्त"
+    },
+    "refresh": "रीफ़्रेश करें",
+    "stats": {
+        "total": "कुल",
+        "active": "सक्रिय",
+        "completed": "पूर्ण",
+        "errors": "त्रुटियाँ",
+        "timedOut": "समय समाप्त"
+    },
+    "loadingSessions": "सत्र लोड हो रहे हैं...",
+    "noSessionsFound": "कोई सत्र नहीं मिला",
+    "userId": "आईडी: {{id}}",
+    "nodeLabel": "नोड:",
+    "noMessages": "इस सत्र के लिए कोई संदेश दर्ज नहीं है",
+    "selectSessionPrompt": "बातचीत देखने के लिए एक सत्र चुनें",
+    "bot": "बॉट",
+    "user": "उपयोगकर्ता"
+}

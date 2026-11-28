@@ -1,0 +1,9 @@
+{
+    "manage": "Gérer les {{term}}s",
+    "description": "{{term}}s en direct et à venir pour ce groupe.",
+    "create": "Créer {{term}}",
+    "failedToLoad": "Échec du chargement des {{term}}s. Veuillez réessayer.",
+    "emptyState": "Aucun {{term}} en direct ou à venir pour ce groupe pour le moment.",
+    "liveNow": "En direct",
+    "upcoming": "À venir"
+}

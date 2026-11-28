@@ -1,16 +1,16 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { UseFormReturn } from 'react-hook-form';
 import { InviteLinkFormValues } from '../GenerateInviteLinkSchema';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { FormField, FormItem, FormControl, FormMessage, FormLabel } from '@/components/ui/form';
-import { ImageSquare, PencilSimpleLine } from '@phosphor-icons/react';
+import { ImageSquare, PencilSimpleLine, X } from '@phosphor-icons/react';
 import { MyInput } from '@/components/design-system/input';
 import { RichTextEditor } from '@/components/editor/RichTextEditor';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { MyButton } from '@/components/design-system/button';
 import { Badge } from '@/components/ui/badge';
-import { X } from 'lucide-react';
 import { DashboardLoader } from '@/components/core/dashboard-loader';
 import { FileUploadComponent } from '@/components/design-system/file-upload';
 import { getTerminology } from '@/components/common/layout-container/sidebar/utils';
@@ -26,7 +26,7 @@ const PreviewImageWithFallback = ({ src, alt }: { src?: string; alt: string }) =
 
     if (!src || errored) {
         return (
-            <div className="flex h-[200px] items-center justify-center rounded-lg bg-gray-100">
+            <div className="flex h-48 items-center justify-center rounded-lg bg-gray-100">
                 <p className="text-white">
                     <ImageSquare size={100} />
                 </p>
@@ -34,7 +34,7 @@ const PreviewImageWithFallback = ({ src, alt }: { src?: string; alt: string }) =
         );
     }
     return (
-        <div className="h-[200px] w-full rounded-lg bg-gray-100">
+        <div className="h-48 w-full rounded-lg bg-gray-100">
             <img
                 src={src}
                 alt={alt}
@@ -76,15 +76,16 @@ const CoursePreviewCard = ({
     isBundle = false,
     totalBatches = 1,
 }: CoursePreviewCardProps) => {
+    const { t } = useTranslation('manageStudentsCoursePreviewCard');
     return (
         <Card className="pb-4">
             <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-2xl font-bold">
                     <PencilSimpleLine size={22} />
-                    <span>Course Preview</span>
+                    <span>{t('card.title')}</span>
                     {isBundle && (
                         <Badge variant="secondary" className="ml-2 bg-blue-100 text-blue-700">
-                            Bundle ({totalBatches} batches)
+                            {t('card.bundleBadge', { count: totalBatches })}
                         </Badge>
                     )}
                 </CardTitle>
@@ -104,7 +105,7 @@ const CoursePreviewCard = ({
                                             required={true}
                                             label={getTerminology(ContentTerms.Course, SystemTerms.Course)}
                                             inputType="text"
-                                            inputPlaceholder="Enter course name"
+                                            inputPlaceholder={t('courseName.placeholder')}
                                             className="w-full"
                                             input={field.value}
                                             onChangeFunction={(e) => field.onChange(e.target.value)}
@@ -121,7 +122,7 @@ const CoursePreviewCard = ({
                                 name="description"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Description</FormLabel>
+                                        <FormLabel>{t('description.label')}</FormLabel>
                                         <FormControl>
                                             <RichTextEditor
                                                 onChange={(value: string) => {
@@ -142,7 +143,7 @@ const CoursePreviewCard = ({
                                                 value={field.value}
                                                 onBlur={field.onBlur}
                                                 minHeight={120}
-                                                placeholder="Enter course description (max 30 words)"
+                                                placeholder={t('description.placeholder')}
                                             />
                                         </FormControl>
                                     </FormItem>
@@ -150,22 +151,25 @@ const CoursePreviewCard = ({
                             />
 
                             <span className="relative top-12 text-xs text-red-500">
-                                *Max 30 words allowed
+                                {t('description.maxWordsHint')}
                             </span>
                         </div>
 
                         {/* Tags Section */}
                         <div className="space-y-2 pt-10">
                             <Label className="font-medium text-gray-900">
-                                {getTerminology(ContentTerms.PopularTag, SystemTerms.PopularTag)} Tags
+                                {t('tags.sectionLabel', {
+                                    term: getTerminology(
+                                        ContentTerms.PopularTag,
+                                        SystemTerms.PopularTag
+                                    ),
+                                })}
                             </Label>
-                            <p className="text-sm text-gray-600">
-                                Add tags to help categorize and find your course easily
-                            </p>
+                            <p className="text-sm text-gray-600">{t('tags.helperText')}</p>
                             <div className="flex gap-2">
                                 <Input
                                     type="text"
-                                    placeholder="Enter a tag"
+                                    placeholder={t('tags.inputPlaceholder')}
                                     value={form.watch('newTag')}
                                     onChange={handleTagInputChange}
                                     onKeyDown={(e) => {
@@ -184,7 +188,7 @@ const CoursePreviewCard = ({
                                     onClick={addTag}
                                     disable={!(form.watch('newTag') || '').trim()}
                                 >
-                                    Add
+                                    {t('tags.addButton')}
                                 </MyButton>
                             </div>
 
@@ -229,14 +233,14 @@ const CoursePreviewCard = ({
                                 name="learningOutcome"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>What learners will gain?</FormLabel>
+                                        <FormLabel>{t('learningOutcome.label')}</FormLabel>
                                         <FormControl>
                                             <RichTextEditor
                                                 onChange={field.onChange}
                                                 value={field.value}
                                                 onBlur={field.onBlur}
                                                 minHeight={120}
-                                                placeholder="Provide a detailed overview of the course. Include learning objectives, topics covered, format (video, quizzes, projects), and who this course is for."
+                                                placeholder={t('placeholders.courseOverview')}
                                             />
                                         </FormControl>
                                         <FormMessage />
@@ -248,14 +252,14 @@ const CoursePreviewCard = ({
                                 name="aboutCourse"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>About the course</FormLabel>
+                                        <FormLabel>{t('aboutCourse.label')}</FormLabel>
                                         <FormControl>
                                             <RichTextEditor
                                                 onChange={field.onChange}
                                                 value={field.value}
                                                 onBlur={field.onBlur}
                                                 minHeight={120}
-                                                placeholder="Provide a detailed overview of the course. Include learning objectives, topics covered, format (video, quizzes, projects), and who this course is for."
+                                                placeholder={t('placeholders.courseOverview')}
                                             />
                                         </FormControl>
                                         <FormMessage />
@@ -267,14 +271,14 @@ const CoursePreviewCard = ({
                                 name="targetAudience"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Who should join?</FormLabel>
+                                        <FormLabel>{t('targetAudience.label')}</FormLabel>
                                         <FormControl>
                                             <RichTextEditor
                                                 onChange={field.onChange}
                                                 value={field.value}
                                                 onBlur={field.onBlur}
                                                 minHeight={120}
-                                                placeholder="Provide a detailed overview of the course. Include learning objectives, topics covered, format (video, quizzes, projects), and who this course is for."
+                                                placeholder={t('placeholders.courseOverview')}
                                             />
                                         </FormControl>
                                         <FormMessage />
@@ -288,23 +292,22 @@ const CoursePreviewCard = ({
                     <div className="space-y-6">
                         {/* Course Preview */}
                         <div className="flex flex-col gap-1">
-                            <FormLabel>Course Preview Image</FormLabel>
+                            <FormLabel>{t('media.coursePreview.label')}</FormLabel>
                             <p className="text-sm text-gray-500">
-                                This is the thumbnail that appears on the course card. Recommended
-                                size: 2:1 ratio
+                                {t('media.coursePreview.helperText')}
                             </p>
                             <div className="relative">
                                 {form.watch('uploadingStates').coursePreview ? (
-                                    <div className="flex h-[200px] items-center justify-center rounded-lg bg-gray-100">
+                                    <div className="flex h-48 items-center justify-center rounded-lg bg-gray-100">
                                         <DashboardLoader />
                                     </div>
                                 ) : form.watch('coursePreview') ? (
                                     <PreviewImageWithFallback
                                         src={form.watch('coursePreviewBlob')}
-                                        alt="Course Preview"
+                                        alt={t('media.coursePreview.alt')}
                                     />
                                 ) : (
-                                    <div className="flex h-[200px] items-center justify-center rounded-lg bg-gray-100">
+                                    <div className="flex h-48 items-center justify-center rounded-lg bg-gray-100">
                                         <p className="text-white">
                                             <ImageSquare size={100} />
                                         </p>
@@ -333,23 +336,22 @@ const CoursePreviewCard = ({
 
                         {/* Course Banner */}
                         <div className="flex flex-col gap-1">
-                            <FormLabel>Course Banner Image</FormLabel>
+                            <FormLabel>{t('media.courseBanner.label')}</FormLabel>
                             <p className="text-sm text-gray-500">
-                                A wide background image displayed on top of the course detail page.
-                                Recommended size: 2.64:1 ratio
+                                {t('media.courseBanner.helperText')}
                             </p>
                             <div className="relative">
                                 {form.watch('uploadingStates').courseBanner ? (
-                                    <div className="flex h-[200px] items-center justify-center rounded-lg bg-gray-100">
+                                    <div className="flex h-48 items-center justify-center rounded-lg bg-gray-100">
                                         <DashboardLoader />
                                     </div>
                                 ) : form.watch('courseBanner') ? (
                                     <PreviewImageWithFallback
                                         src={form.watch('courseBannerBlob')}
-                                        alt="Course Banner"
+                                        alt={t('media.courseBanner.alt')}
                                     />
                                 ) : (
-                                    <div className="flex h-[200px] items-center justify-center rounded-lg bg-gray-100">
+                                    <div className="flex h-48 items-center justify-center rounded-lg bg-gray-100">
                                         <p className="text-white">
                                             <ImageSquare size={100} />
                                         </p>
@@ -378,16 +380,14 @@ const CoursePreviewCard = ({
 
                         {/* Course Media */}
                         <div className="flex flex-col gap-1">
-                            <FormLabel>Course Media (Image or Video)</FormLabel>
+                            <FormLabel>{t('media.courseMedia.label')}</FormLabel>
                             <p className="text-sm text-gray-500">
-                                A featured media block within the course page; this can visually
-                                represent the content or offer a teaser. For videos, recommended
-                                format: MP4
+                                {t('media.courseMedia.helperText')}
                             </p>
                             <div className="flex flex-col gap-2">
                                 {/* Preview logic remains unchanged */}
                                 {form.watch('uploadingStates').courseMedia ? (
-                                    <div className="flex h-[200px] items-center justify-center rounded-lg bg-gray-100">
+                                    <div className="flex h-48 items-center justify-center rounded-lg bg-gray-100">
                                         <DashboardLoader />
                                     </div>
                                 ) : (form.watch('courseMedia')?.id ||
@@ -395,7 +395,7 @@ const CoursePreviewCard = ({
                                   form.watch('courseMedia')?.type !== 'youtube' ? (
                                     form.watch('courseMedia')?.type === 'video' ? (
                                         form.watch('courseMediaBlob') ? (
-                                            <div className="h-[200px] w-full rounded-lg bg-gray-100">
+                                            <div className="h-48 w-full rounded-lg bg-gray-100">
                                                 <video
                                                     src={form.watch('courseMediaBlob')}
                                                     controls
@@ -404,11 +404,11 @@ const CoursePreviewCard = ({
                                                     disableRemotePlayback
                                                     className="size-full rounded-lg object-contain"
                                                 >
-                                                    Your browser does not support the video tag.
+                                                    {t('media.courseMedia.videoUnsupported')}
                                                 </video>
                                             </div>
                                         ) : (
-                                            <div className="flex h-[200px] items-center justify-center rounded-lg bg-gray-100">
+                                            <div className="flex h-48 items-center justify-center rounded-lg bg-gray-100">
                                                 <p className="text-white">
                                                     <ImageSquare size={100} />
                                                 </p>
@@ -417,17 +417,17 @@ const CoursePreviewCard = ({
                                     ) : (
                                         <PreviewImageWithFallback
                                             src={form.watch('courseMediaBlob')}
-                                            alt="Course Media"
+                                            alt={t('media.courseMedia.alt')}
                                         />
                                     )
                                 ) : form.watch('courseMedia')?.type === 'youtube' &&
                                   form.watch('courseMedia')?.id ? (
-                                    <div className="mt-2 flex h-[200px] w-full items-center justify-center rounded-lg bg-gray-100">
+                                    <div className="mt-2 flex h-48 w-full items-center justify-center rounded-lg bg-gray-100">
                                         <iframe
                                             width="100%"
                                             height="100%"
                                             src={`https://www.youtube.com/embed/${extractYouTubeVideoId(form.watch('courseMedia')?.id || '')}`}
-                                            title="YouTube video player"
+                                            title={t('youtube.playerTitle')}
                                             frameBorder="0"
                                             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                                             allowFullScreen
@@ -435,7 +435,7 @@ const CoursePreviewCard = ({
                                         />
                                     </div>
                                 ) : (
-                                    <div className="flex h-[200px] items-center justify-center rounded-lg bg-gray-100">
+                                    <div className="flex h-48 items-center justify-center rounded-lg bg-gray-100">
                                         <p className="text-white">
                                             <ImageSquare size={100} />
                                         </p>
@@ -472,7 +472,7 @@ const CoursePreviewCard = ({
                                                     courseMediaRef.current?.click();
                                                 }}
                                             >
-                                                Upload Image/Video
+                                                {t('media.courseMedia.uploadOption')}
                                             </button>
                                             <button
                                                 className="w-full rounded px-3 py-2 text-left text-sm hover:bg-gray-100"
@@ -481,7 +481,7 @@ const CoursePreviewCard = ({
                                                     form.setValue('showYoutubeInput', true);
                                                 }}
                                             >
-                                                YouTube Link
+                                                {t('media.courseMedia.youtubeOption')}
                                             </button>
                                         </div>
                                     )}
@@ -491,7 +491,7 @@ const CoursePreviewCard = ({
                                             className=" w-64 rounded bg-white p-4 shadow"
                                         >
                                             <label className="mb-1 block text-sm font-medium text-gray-700">
-                                                Paste YouTube Link
+                                                {t('youtube.pasteLinkLabel')}
                                             </label>
                                             <Input
                                                 type="text"
@@ -520,7 +520,7 @@ const CoursePreviewCard = ({
                                                     if (!id) {
                                                         form.setValue(
                                                             'youtubeError',
-                                                            'Invalid YouTube link'
+                                                            t('errors.invalidYoutubeLink')
                                                         );
                                                         return;
                                                     }
@@ -536,7 +536,7 @@ const CoursePreviewCard = ({
                                                 }}
                                                 disable={!form.watch('youtubeUrl')}
                                             >
-                                                Save YouTube Link
+                                                {t('youtube.saveButton')}
                                             </MyButton>
                                         </div>
                                     )}

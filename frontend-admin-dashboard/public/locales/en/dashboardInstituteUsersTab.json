@@ -1,0 +1,9 @@
+{
+  "emptyState": {
+    "message": "No institute users exist."
+  },
+  "status": {
+    "active": "Active",
+    "disabled": "Disabled"
+  }
+}

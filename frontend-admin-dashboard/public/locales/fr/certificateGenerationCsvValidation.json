@@ -1,0 +1,18 @@
+{
+    "errors": {
+        "columnLabel": "Colonne {{position}}",
+        "invalidHeader": "La colonne {{position}} doit être '{{expected}}', trouvé '{{found}}'",
+        "missingValue": "manquant",
+        "duplicateHeader": "En-tête en double '{{header}}' trouvé. Tous les en-têtes après la 3e colonne doivent être uniques.",
+        "missingStudent": "L'étudiant sélectionné '{{name}}' (ID : {{id}}) est absent du CSV",
+        "extraStudent": "L'étudiant '{{name}}' (ID : {{id}}) n'a pas été sélectionné pour la génération de certificats"
+    },
+    "warnings": {
+        "dataTypeMismatch": "La valeur '{{value}}' dans la colonne '{{column}}' semble être de type {{actualType}} mais la colonne est majoritairement {{expectedType}}",
+        "emptyCell": "Le champ requis '{{field}}' est vide"
+    },
+    "format": {
+        "row": " (Ligne {{row}})",
+        "inColumn": " dans {{column}}"
+    }
+}

@@ -21,6 +21,7 @@ import vacademy.io.admin_core_service.features.live_session.enums.*;
 import vacademy.io.admin_core_service.features.live_session.repository.*;
 import vacademy.io.admin_core_service.features.live_session.constants.LiveClassEmailBody;
 import vacademy.io.admin_core_service.features.institute_learner.repository.StudentSessionInstituteGroupMappingRepository;
+import vacademy.io.admin_core_service.features.live_session.provider.service.google.GoogleMeetCohostSyncService;
 import vacademy.io.admin_core_service.features.live_session.scheduler.LiveSessionNotificationProcessor;
 import vacademy.io.admin_core_service.features.notification.dto.NotificationDTO;
 import vacademy.io.admin_core_service.features.notification.dto.NotificationToUserDTO;
@@ -82,6 +83,12 @@ public class Step2Service {
     @Autowired
     private LiveSessionPaymentService liveSessionPaymentService;
 
+    @Autowired
+    private LiveSessionInstructorService instructorService;
+
+    @Autowired
+    private GoogleMeetCohostSyncService googleMeetCohostSyncService;
+
     public Boolean step2AddService(LiveSessionStep2RequestDTO request, CustomUserDetails user) {
         LiveSession session = getSessionOrThrow(request.getSessionId());
 
@@ -91,6 +98,16 @@ public class Step2Service {
 
         updateSessionAccessLevel(session, request);
         linkParticipants(request);
+        // Null means "client didn't send instructors" and is a no-op inside the
+        // service, so pre-V524 clients keep the creator seeded at step 1.
+        List<String> instructorUserIds = resolveInstructorUserIds(request, session);
+        instructorService.syncInstructors(session.getId(), instructorUserIds);
+        if (instructorUserIds != null) {
+            // Editing a class whose Meet spaces already exist: make newly assigned teachers co-hosts
+            // now, so their first "Start as host" doesn't join them as a participant. No-op on
+            // create, where the spaces are made after this call and get their co-hosts then.
+            googleMeetCohostSyncService.addCohostsToUpcomingSpaces(session.getId());
+        }
         processNotificationActions(request, session.getId(), isEdit);
         processCustomFields(request, session);
         liveSessionPaymentService.upsertPaymentConfig(session, request.getPaymentConfig());
@@ -102,6 +119,39 @@ public class Step2Service {
         sessionRepository.save(session);
 
         return true;
+    }
+
+    /**
+     * The instructor id list to reconcile to: explicit ids, plus any
+     * human-typed identifiers (email / username) resolved against the institute
+     * directory.
+     *
+     * <p>Returns null — a no-op for the sync — when the client sent neither
+     * field, which is what keeps pre-V524 clients unaffected. Unresolvable
+     * identifiers are dropped with a log line here; the bulk endpoint resolves
+     * them up front instead so it can report them per row.
+     */
+    private List<String> resolveInstructorUserIds(LiveSessionStep2RequestDTO request, LiveSession session) {
+        List<String> explicitIds = request.getInstructorUserIds();
+        List<String> identifiers = request.getInstructorIdentifiers();
+        if (explicitIds == null && identifiers == null) {
+            return null;
+        }
+
+        List<String> merged = new ArrayList<>();
+        if (explicitIds != null) {
+            merged.addAll(explicitIds);
+        }
+        if (identifiers != null && !identifiers.isEmpty()) {
+            LiveSessionInstructorService.ResolvedIdentifiers resolved =
+                    instructorService.resolveIdentifiers(session.getInstituteId(), identifiers);
+            resolved.userIds().stream().filter(id -> !merged.contains(id)).forEach(merged::add);
+            if (!resolved.unresolved().isEmpty()) {
+                log.warn("live_session.instructors.unresolved sessionId={} identifiers={}",
+                        session.getId(), resolved.unresolved());
+            }
+        }
+        return merged;
     }
 
     private LiveSession getSessionOrThrow(String sessionId) {

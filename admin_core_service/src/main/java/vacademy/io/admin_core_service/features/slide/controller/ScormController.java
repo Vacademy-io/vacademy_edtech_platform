@@ -11,8 +11,10 @@ import vacademy.io.admin_core_service.features.slide.entity.ScormSlide;
 import vacademy.io.admin_core_service.features.slide.service.ScormService;
 import vacademy.io.admin_core_service.features.slide.service.SlideService;
 import vacademy.io.common.auth.model.CustomUserDetails;
+import vacademy.io.common.auth.util.SuperAdminAuthUtil;
 
 import java.io.IOException;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/admin-core-service/scorm/v1")
@@ -30,8 +32,39 @@ public class ScormController {
                                                                                                                     // now
                                                                                                                     // or
                                                                                                                     // required?
-        ScormSlide slide = scormService.uploadScormPackage(file);
-        return ResponseEntity.ok(mapToDTO(slide));
+        ScormService.UploadResult result = scormService.uploadScormPackage(file);
+        ScormSlideDTO dto = mapToDTO(result.slide());
+        dto.setCompatibilityFixes(result.compatibility().fixes());
+        dto.setCompatibilityWarnings(result.compatibility().warnings());
+        return ResponseEntity.ok(dto);
+    }
+
+    /**
+     * One-off: move existing SCORM slides onto the current player. Dry run by
+     * default; call repeatedly with dryRun=false until legacyRemainingBefore
+     * reaches 0.
+     */
+    @PostMapping("/upgrade-legacy-players")
+    public ResponseEntity<Map<String, Object>> upgradeLegacyPlayers(
+            @RequestAttribute("user") CustomUserDetails userDetails,
+            @RequestParam(defaultValue = "true") boolean dryRun,
+            @RequestParam(defaultValue = "50") int limit) {
+        SuperAdminAuthUtil.requireSuperAdmin(userDetails);
+        return ResponseEntity.ok(scormService.upgradeLegacyPlayers(dryRun, Math.min(limit, 200)));
+    }
+
+    /**
+     * Super admin: put one SCORM slide on the current player (e.g. a website
+     * scormViewer package uploaded before page arrows). Returns the new and
+     * previous launch_url; the page JSON that embeds the old url must then be
+     * pointed at the new one.
+     */
+    @PostMapping("/refresh-player")
+    public ResponseEntity<Map<String, Object>> refreshPlayer(
+            @RequestAttribute("user") CustomUserDetails userDetails,
+            @RequestParam String slideId) {
+        SuperAdminAuthUtil.requireSuperAdmin(userDetails);
+        return ResponseEntity.ok(scormService.refreshPlayer(slideId));
     }
 
     @PostMapping("/add-or-update")

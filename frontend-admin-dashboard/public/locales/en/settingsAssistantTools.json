@@ -1,0 +1,140 @@
+{
+    "loading": "Loading settings…",
+    "header": {
+        "title": "Vacademy Assistant",
+        "description": "The in-app AI assistant for your team. Control which capabilities it can use for everyone, and grant extra capabilities to specific roles below. Access is always limited to this institute."
+    },
+    "capabilities": {
+        "title": "Capabilities for everyone",
+        "description": "Enabled for every non-learner role in your institute."
+    },
+    "perRole": {
+        "title": "Per-role access (advanced)",
+        "description": "Grant extra capabilities to specific roles, on top of the institute-wide set above. Leave a role uncustomized to use the institute-wide settings.",
+        "suggestedPresets": "Suggested presets:",
+        "customize": "Customize"
+    },
+    "footer": {
+        "save": "Save settings",
+        "saving": "Saving…"
+    },
+    "toasts": {
+        "settingsSaved": "Assistant settings saved",
+        "saveFailed": "Failed to save assistant settings",
+        "presetApplied": "Preset applied — click Save settings to confirm."
+    },
+    "tools": {
+        "search_help_knowledge": {
+            "label": "Help & how-to guidance",
+            "description": "Answers “how do I / where do I” questions about using the portal, with step-by-step instructions."
+        },
+        "learner_data": {
+            "label": "Learner data lookup",
+            "description": "Find learners by name/email/phone and answer questions about their attendance, assessment scores, activity, course progress and login summary — and generate their full analysis report. On by default for Admins; grant to other roles below."
+        },
+        "payments": {
+            "label": "Payments & fees",
+            "description": "Answer questions about a learner’s payment history, outstanding/overdue fees, and payment plans. On by default for Admins."
+        },
+        "batch_data": {
+            "label": "Batch rosters",
+            "description": "List the learners in a batch and answer batch headcount questions. On by default for Admins."
+        },
+        "schedule": {
+            "label": "Class schedule",
+            "description": "Answer “what classes are live/upcoming” and “what do I have today” from the live-session schedule. On by default for Admins."
+        },
+        "institute_overview": {
+            "label": "Institute overview",
+            "description": "Institute-wide snapshots: total overdue fees, live classes right now, active learner counts. On by default for Admins."
+        },
+        "learner_edits": {
+            "label": "Learner edits (actions)",
+            "description": "Let the assistant PROPOSE changes — edit a learner’s details, extend access, move batch, activate/deactivate. Every change requires the user to press Confirm on a card before anything is applied. On by default for Admins; other roles are opt-in."
+        },
+        "assessments": {
+            "label": "Assessment results",
+            "description": "Find assessments and answer questions about submissions, scores, pending evaluations, and leaderboards. On by default for Admins."
+        },
+        "website_builder": {
+            "label": "Website: view",
+            "description": "See the institute’s websites — pages, what each section shows (which courses, which lead campaign), traffic, lead capture health and pre-publish checks — and run the interview needed before a site is generated. Read-only. On by default for Admins."
+        },
+        "website_builder_edits": {
+            "label": "Website: edit drafts",
+            "description": "Let the assistant build and change websites by conversation — compose pages, edit sections, set colours and fonts, wire forms to lead campaigns. Every change is saved as a draft; nothing goes live until you publish it in Manage Pages. Uses no AI credits. Off by default."
+        },
+        "audience_forms": {
+            "label": "Lead forms: view",
+            "description": "See lead campaigns (Audience Manager): their form fields, where they are used on the websites, leads received and recent leads. Read-only. On by default for Admins."
+        },
+        "audience_forms_edits": {
+            "label": "Lead forms: edit",
+            "description": "Let the assistant create lead campaigns, add fields to their forms and send test leads. It never removes anything. Off by default."
+        },
+        "announcements": {
+            "label": "Announcements",
+            "description": "See planned/past announcements, and PROPOSE sending one to batches, roles, or specific learners — sending always requires pressing Confirm on a card. On by default for Admins."
+        },
+        "workflows": {
+            "label": "Automations: view",
+            "description": "See the institute’s automations (workflows): each one’s trigger or schedule, its nodes, recent runs and per-node results, plus the authoring catalog and the batches, lead campaigns and templates an automation can reference. Read-only. On by default for Admins."
+        },
+        "workflows_edits": {
+            "label": "Automations: draft",
+            "description": "Let the assistant build automations by conversation — compose the workflow, check it against the builder’s rules, save it as a DRAFT, and create the new email and WhatsApp templates it needs (WhatsApp templates are sent to Meta for approval). A draft never runs until you open it in the builder and publish it; published automations and existing templates cannot be changed or removed from here. Uses no AI credits. Off by default."
+        },
+        "crm_leads": {
+            "label": "CRM leads: view",
+            "description": "Find leads and enquiries, see a lead’s details, timeline and today’s follow-ups, and export a list as a private download link. Each person sees only the leads the CRM shows them. Read-only. On by default for Admins and Counsellors."
+        },
+        "crm_calls": {
+            "label": "CRM calls: view",
+            "description": "See call logs, call transcripts, callbacks due, missed inbound calls and AI-calling status. Read-only. On by default for Admins and Counsellors."
+        },
+        "crm_meetings": {
+            "label": "CRM meetings: view",
+            "description": "See your and your team’s meetings, a lead’s meetings, free slots and booking pages. Read-only. On by default for Admins and Counsellors."
+        },
+        "crm_messages": {
+            "label": "CRM messages: view",
+            "description": "See a lead’s WhatsApp and email history, the inbox, approved templates and escalations. Read-only. On by default for Admins and Counsellors."
+        },
+        "crm_reports": {
+            "label": "CRM reports: view",
+            "description": "Answer questions from the CRM reports — sources, funnel, counsellor performance, follow-ups, SLA, revenue and custom reports — each with its date range and definition. Read-only. On by default for Admins and Counsellors."
+        },
+        "crm_collections": {
+            "label": "CRM payments: view",
+            "description": "See admissions, a lead’s dues, who owes, what falls due and collections. Read-only. On by default for Admins and Counsellors."
+        },
+        "crm_lead_activity": {
+            "label": "CRM leads: log activity and follow-ups",
+            "description": "Let the assistant PROPOSE logging a call, chat, visit or note on a lead, and scheduling, moving or completing follow-ups. Every change shows on a card first and is made only when the user presses Confirm. Opt-in: off until you switch it on."
+        },
+        "crm_lead_edits": {
+            "label": "CRM leads: edit status, tier, details and tags",
+            "description": "Let the assistant PROPOSE changing lead status (one lead or many), tier, contact details, form answers and tags. The card lists each lead with what changes. A move to Converted follows your admission rule. Opt-in: off until you switch it on."
+        },
+        "crm_lead_merges": {
+            "label": "CRM leads: merge duplicate people",
+            "description": "Let institute admins merge a person entered twice into the one to keep, or undo a merge, after confirming a card that shows both people. Opt-in: off until you switch it on."
+        },
+        "crm_team_edits": {
+            "label": "CRM leads: assign and route",
+            "description": "Let admins and team managers assign leads, move a counsellor’s leads to others and pause or resume a counsellor’s lead routing, after confirming a card. Opt-in: off until you switch it on."
+        },
+        "crm_lead_intake": {
+            "label": "CRM leads: add leads",
+            "description": "Let the assistant add a lead (walk-ins and phone enquiries too) or import up to 100 into a lead list, after confirming a card. Existing and opted-out people are flagged. Opt-in: off until you switch it on."
+        },
+        "crm_meeting_edits": {
+            "label": "CRM meetings: log outcomes",
+            "description": "Let the assistant record whether a meeting with a lead was held or a no-show, after confirming a card. Booking meetings stays in the CRM (the lead receives an invite). Opt-in: off until you switch it on."
+        }
+    },
+    "presets": {
+        "TEACHER": "Teachers: learner data + schedule + assessments",
+        "EVALUATOR": "Evaluators: learner data + assessments"
+    }
+}

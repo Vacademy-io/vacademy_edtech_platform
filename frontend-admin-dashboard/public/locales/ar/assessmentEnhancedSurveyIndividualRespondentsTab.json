@@ -1,0 +1,42 @@
+{
+    "questionType": {
+        "mcqs": "اختيار واحد",
+        "mcqm": "اختيار متعدد",
+        "trueFalse": "صح/خطأ",
+        "numeric": "رقمي",
+        "oneWord": "كلمة واحدة",
+        "longAnswer": "إجابة طويلة"
+    },
+    "response": {
+        "noResponse": "لا توجد إجابة",
+        "unknownAnswerFormat": "تنسيق إجابة غير معروف",
+        "noCorrectAnswerAvailable": "لا توجد إجابة صحيحة متاحة",
+        "noCorrectOptionsAvailable": "لا توجد خيارات صحيحة متاحة",
+        "unknownCorrectAnswerFormat": "تنسيق إجابة صحيحة غير معروف"
+    },
+    "states": {
+        "loading": "جارٍ تحميل بيانات الاستبيان المحسّن...",
+        "errorPrefix": "خطأ:",
+        "noRespondentsFound": "لم يتم العثور على مجيبين.",
+        "noResponsesAvailable": "لا توجد إجابات متاحة لهذا المجيب."
+    },
+    "header": {
+        "batch": "الدفعة:",
+        "correctCount": "{{correct}}/{{total}} صحيحة",
+        "accuracy": "{{value}}% دقة"
+    },
+    "navigation": {
+        "previous": "السابق",
+        "of": "من {{total}}",
+        "next": "التالي"
+    },
+    "question": {
+        "numberedTitle": "س{{order}}. {{content}}",
+        "userAnswer": "إجابة المستخدم:",
+        "markedForReview": "مُعلّم للمراجعة",
+        "correctAnswer": "الإجابة الصحيحة:",
+        "allOptions": "جميع الخيارات:",
+        "timeTakenSeconds": "{{count}} ث",
+        "questionNumber": "السؤال رقم {{order}}"
+    }
+}

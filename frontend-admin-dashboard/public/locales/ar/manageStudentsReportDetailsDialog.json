@@ -1,0 +1,15 @@
+{
+    "dialog": {
+        "defaultTitle": "تقرير التحليل"
+    },
+    "tabs": {
+        "efforts": "الجهود",
+        "overview": "نظرة عامة",
+        "topics": "المواضيع",
+        "remedial": "علاجي"
+    },
+    "sections": {
+        "strengths": "نقاط القوة",
+        "weaknesses": "نقاط الضعف"
+    }
+}

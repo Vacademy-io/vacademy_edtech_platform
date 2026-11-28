@@ -1,0 +1,49 @@
+{
+    "groups": {
+        "earnings": "Gains",
+        "deductions": "Déductions",
+        "employerContributions": "Cotisations patronales"
+    },
+    "table": {
+        "columns": {
+            "component": "Composant",
+            "calculation": "Calcul",
+            "monthly": "Mensuel",
+            "annual": "Annuel"
+        },
+        "overridden": "Personnalisé pour cet employé"
+    },
+    "errors": {
+        "loadFailed": "Impossible de charger la structure salariale de cet employé."
+    },
+    "empty": {
+        "noStructure": {
+            "title": "Aucune structure salariale attribuée pour l'instant",
+            "description": "Attribuez-en une depuis ERP → Salaire. D'ici là, cet employé est exclu des cycles de paie."
+        },
+        "noComponents": {
+            "title": "Cette structure n'a aucun composant",
+            "description": "Ajoutez des composants au modèle salarial pour que la paie puisse calculer un bulletin."
+        }
+    },
+    "card": {
+        "defaultStructureName": "Structure salariale actuelle",
+        "defaultRevisionName": "Structure salariale",
+        "componentBreakdown": "Détail des composants",
+        "revisionHistory": "Historique des révisions",
+        "noEarlierStructures": "Aucune structure antérieure — celle-ci est la première attribuée."
+    },
+    "fields": {
+        "ctcAnnual": "CTC (annuel)",
+        "ctcMonthly": "CTC (mensuel)",
+        "grossMonthly": "Brut (mensuel)",
+        "netMonthly": "Net (mensuel)",
+        "effectiveFrom": "Effectif à partir du",
+        "currency": "Devise",
+        "status": "Statut",
+        "revisionReason": "Motif de la révision"
+    },
+    "history": {
+        "open": "ouvert"
+    }
+}

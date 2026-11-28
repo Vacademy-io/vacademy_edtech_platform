@@ -1,0 +1,32 @@
+{
+    "basicInfo": {
+        "assessmentName": "اسم التقييم",
+        "untitled": "بدون عنوان",
+        "notAvailable": "غير متوفر"
+    },
+    "instructions": {
+        "title": "تعليمات التقييم",
+        "description": "تظهر للمشاركين قبل بدء التقييم",
+        "empty": "لم يتم توفير أي تعليمات."
+    },
+    "liveDateRange": {
+        "title": "نطاق تاريخ البث المباشر",
+        "startDateTime": "تاريخ ووقت البدء",
+        "endDateTime": "تاريخ ووقت الانتهاء"
+    },
+    "attemptSettings": {
+        "title": "إعدادات المحاولة",
+        "description": "يتحكم في كيفية إجراء المشاركين للتقييم",
+        "reattemptCount": "عدد المحاولات المسموح بها",
+        "totalDuration": "المدة الإجمالية",
+        "durationNotSet": "—",
+        "durationMinutes_zero": "{{count}} دقيقة",
+        "durationMinutes_one": "{{count}} دقيقة",
+        "durationMinutes_two": "{{count}} دقيقتان",
+        "durationMinutes_few": "{{count}} دقائق",
+        "durationMinutes_many": "{{count}} دقيقة",
+        "durationMinutes_other": "{{count}} دقيقة",
+        "assessmentPreview": "معاينة التقييم",
+        "allowSwitchingSections": "السماح بالتنقل بين الأقسام"
+    }
+}

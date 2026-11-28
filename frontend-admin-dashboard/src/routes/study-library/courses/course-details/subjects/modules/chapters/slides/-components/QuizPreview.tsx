@@ -31,10 +31,23 @@ import QuizAddQuestionsDropdown from './quiz/components/QuizAddQuestionsDropdown
 import QuizAddViaAIDialog from './quiz/components/QuizAddViaAIDialog';
 import QuizAddViaDocumentDialog from './quiz/components/QuizAddViaDocumentDialog';
 import QuizAddViaCSVDialog from './quiz/components/QuizAddViaCSVDialog';
+import QuizAddViaQuestionPaperDialog from './quiz/components/QuizAddViaQuestionPaperDialog';
 import QuizQuestionsPreviewDialog from './quiz/components/QuizQuestionsPreviewDialog';
 import QuizSettingsPanel, { QuizSettings } from './quiz/components/QuizSettingsPanel';
+import { useTranslation } from 'react-i18next';
+import { mergeCbeSecret } from '@/components/cbe/types';
+import {
+    cbeQuestionMark,
+    ensureCbeConfig,
+    isCbeQuestionType,
+    makeDefaultCbeConfig,
+    validateCbeConfig,
+} from '@/routes/assessment/question-papers/-utils/cbe-question';
+import { CbeSlideSecretContext } from '@/routes/assessment/question-papers/-components/QuestionPaperTemplatesTypes/CbeResponse/cbe-slide-secret-context';
+import { fetchQuizQuestionCbeSecret } from '../-services/cbe-evaluation-secret';
 
 const QuizPreview = ({ activeItem, routeParams }: QuizPreviewProps) => {
+    const { t } = useTranslation('studyLibraryQuizPreview');
     // Get route parameters for API calls
     const { chapterId, moduleId, subjectId, sessionId } = routeParams || {};
 
@@ -92,17 +105,20 @@ const QuizPreview = ({ activeItem, routeParams }: QuizPreviewProps) => {
         marksPerQuestion: 1,
         negativeMarkingEnabled: false,
         negativeMarking: 0,
+        partialMarking: false,
         passPercentageEnabled: false,
         passPercentage: 50,
         reAttemptCountEnabled: false,
         reAttemptCount: 3,
+        showAnswerAfterEachQuestion: false,
     });
     const [isSavingSettings, setIsSavingSettings] = useState(false);
 
-    // External question adding (document / AI / CSV)
+    // External question adding (document / AI / CSV / saved question paper)
     const [isDocDialogOpen, setIsDocDialogOpen] = useState(false);
     const [isAIDialogOpen, setIsAIDialogOpen] = useState(false);
     const [isCSVDialogOpen, setIsCSVDialogOpen] = useState(false);
+    const [isQuestionPaperDialogOpen, setIsQuestionPaperDialogOpen] = useState(false);
     const [isPreviewDialogOpen, setIsPreviewDialogOpen] = useState(false);
     const [pendingQuestions, setPendingQuestions] = useState<UploadQuestionPaperFormType['questions']>([]);
     const [isAddingExternal, setIsAddingExternal] = useState(false);
@@ -140,7 +156,9 @@ const QuizPreview = ({ activeItem, routeParams }: QuizPreviewProps) => {
                         time_limit_in_minutes: quizSettings.timeLimitEnabled ? quizSettings.timeLimitMinutes : null,
                         marks_per_question: quizSettings.marksPerQuestion,
                         negative_marking: quizSettings.negativeMarkingEnabled ? quizSettings.negativeMarking : 0,
+                        partial_marking: quizSettings.partialMarking,
                         pass_percentage: quizSettings.passPercentageEnabled ? quizSettings.passPercentage : null,
+                        show_answer_after_each_question: quizSettings.showAnswerAfterEachQuestion,
                         questions: currentQuestions,
                     },
                 });
@@ -183,10 +201,12 @@ const QuizPreview = ({ activeItem, routeParams }: QuizPreviewProps) => {
                 marksPerQuestion: marksPerQuestion > 0 ? marksPerQuestion : 1,
                 negativeMarkingEnabled: negativeMarking > 0,
                 negativeMarking: negativeMarking,
+                partialMarking: qs.partial_marking === true,
                 passPercentageEnabled: passPercentage != null,
                 passPercentage: passPercentage ?? 50,
                 reAttemptCountEnabled: (qs as any).re_attempt_count != null,
                 reAttemptCount: (qs as any).re_attempt_count ?? 3,
+                showAnswerAfterEachQuestion: qs.show_answer_after_each_question === true,
             });
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -198,10 +218,10 @@ const QuizPreview = ({ activeItem, routeParams }: QuizPreviewProps) => {
             <div className="flex size-full flex-col overflow-hidden rounded border border-neutral-200 bg-white shadow-sm">
                 {/* Header */}
                 <div className="flex items-center justify-between border-b bg-red-50 px-6 py-4">
-                    <h2 className="text-lg font-semibold text-red-700">Quiz Questions</h2>
+                    <h2 className="text-lg font-semibold text-red-700">{t('studyLibraryQuizPreview:header')}</h2>
                     <div className="flex items-center gap-2">
                         <span className="rounded-full bg-red-100 px-2 py-1 text-xs font-medium text-red-600">
-                            DELETED
+                            {t('studyLibraryQuizPreview:deletedBadge')}
                         </span>
                     </div>
                 </div>
@@ -213,10 +233,10 @@ const QuizPreview = ({ activeItem, routeParams }: QuizPreviewProps) => {
                             <Trash size={24} className="text-red-500" />
                         </div>
                         <h3 className="mb-2 text-lg font-medium text-slate-600">
-                            This quiz has been deleted
+                            {t('studyLibraryQuizPreview:quizDeletedTitle')}
                         </h3>
                         <p className="text-sm text-slate-400">
-                            The quiz content is no longer available
+                            {t('studyLibraryQuizPreview:quizDeletedSubtitle')}
                         </p>
                     </div>
                 </div>
@@ -244,8 +264,10 @@ const QuizPreview = ({ activeItem, routeParams }: QuizPreviewProps) => {
                 time_limit_in_minutes: quizSettings.timeLimitEnabled ? quizSettings.timeLimitMinutes : null,
                 marks_per_question: quizSettings.marksPerQuestion,
                 negative_marking: quizSettings.negativeMarkingEnabled ? quizSettings.negativeMarking : 0,
+                partial_marking: quizSettings.partialMarking,
                 pass_percentage: quizSettings.passPercentageEnabled ? quizSettings.passPercentage : null,
                 re_attempt_count: quizSettings.reAttemptCountEnabled ? quizSettings.reAttemptCount : undefined,
+                show_answer_after_each_question: quizSettings.showAnswerAfterEachQuestion,
                 questions: currentQuestions,
             },
         });
@@ -317,8 +339,10 @@ const QuizPreview = ({ activeItem, routeParams }: QuizPreviewProps) => {
         timeLimitInMinutes: s.timeLimitEnabled ? s.timeLimitMinutes : null,
         marksPerQuestion: s.marksPerQuestion,
         negativeMarking: s.negativeMarkingEnabled ? s.negativeMarking : 0,
+        partialMarking: s.partialMarking,
         passPercentage: s.passPercentageEnabled ? s.passPercentage : null,
         reAttemptCount: s.reAttemptCountEnabled ? s.reAttemptCount : null,
+        showAnswerAfterEachQuestion: s.showAnswerAfterEachQuestion,
     });
 
     const handleSaveSettings = async () => {
@@ -328,9 +352,9 @@ const QuizPreview = ({ activeItem, routeParams }: QuizPreviewProps) => {
             const payload = createQuizSlidePayload(currentQuestions, activeItem, buildSettingsPayload(quizSettings));
             await addUpdateQuizSlide(payload);
             syncToStore();
-            toast.success('Quiz settings saved!');
+            toast.success(t('studyLibraryQuizPreview:toast.settingsSaved'));
         } catch {
-            toast.error('Failed to save settings. Please try again.');
+            toast.error(t('studyLibraryQuizPreview:toast.saveSettingsFailed'));
         } finally {
             setIsSavingSettings(false);
         }
@@ -376,9 +400,13 @@ const QuizPreview = ({ activeItem, routeParams }: QuizPreviewProps) => {
             syncToStore();
             setIsPreviewDialogOpen(false);
             setPendingQuestions([]);
-            toast.success(`${questions.length} question(s) added successfully!`);
+            toast.success(
+                t('studyLibraryQuizPreview:toast.questionsAddedSuccess', {
+                    count: questions.length,
+                })
+            );
         } catch {
-            toast.error('Failed to add questions. Please try again.');
+            toast.error(t('studyLibraryQuizPreview:toast.addQuestionsFailed'));
         } finally {
             setIsAddingExternal(false);
         }
@@ -400,10 +428,54 @@ const QuizPreview = ({ activeItem, routeParams }: QuizPreviewProps) => {
 
         editForm.reset({ ...form.getValues(), questions: [initializedQuestion] });
         setEditIndex(index);
+
+        // Spreadsheet & Written Response: the slide JSON carries the redacted config only.
+        // Load this question's solution half before it can be shown or edited.
+        if (
+            isCbeQuestionType(initializedQuestion.questionType) &&
+            initializedQuestion.cbeSecretStatus !== 'owned'
+        ) {
+            void loadCbeSecret();
+        }
+    };
+
+    /** Loads the solution, marking scheme and grading notes of the CBE question being edited. */
+    const loadCbeSecret = async () => {
+        const questionId = editForm.getValues('questions.0.id');
+        if (!activeItem.id || !questionId) {
+            editForm.setValue('questions.0.cbeSecretStatus', 'failed', { shouldDirty: false });
+            return;
+        }
+        editForm.setValue('questions.0.cbeSecretStatus', 'loading', { shouldDirty: false });
+        try {
+            const secret = await fetchQuizQuestionCbeSecret(activeItem.id, questionId);
+            // Another question may have been opened meanwhile.
+            if (editForm.getValues('questions.0.id') !== questionId) return;
+            const merged = mergeCbeSecret(
+                ensureCbeConfig(editForm.getValues('questions.0.cbeConfig')),
+                secret
+            );
+            editForm.setValue('questions.0.cbeConfig', merged, { shouldDirty: false });
+            editForm.setValue('questions.0.cbeSecretStatus', 'owned', { shouldDirty: false });
+        } catch (error) {
+            console.error('[cbe] could not load the quiz question solution', error);
+            if (editForm.getValues('questions.0.id') !== questionId) return;
+            editForm.setValue('questions.0.cbeSecretStatus', 'failed', { shouldDirty: false });
+        }
+    };
+
+    /** A CBE question needs at least one part and marks on every part before it is saved. */
+    const cbeQuestionBlocked = (question: { questionType?: string; cbeConfig?: unknown }) => {
+        if (!isCbeQuestionType(question.questionType)) return false;
+        const { errors } = validateCbeConfig(ensureCbeConfig(question.cbeConfig));
+        if (errors.length === 0) return false;
+        toast.error(t('studyLibraryQuizPreview:toast.cbeInvalid'));
+        return true;
     };
 
     const handleEditConfirm = async () => {
         const updated = editForm.getValues(`questions.0`);
+        if (cbeQuestionBlocked(updated)) return;
 
         if (editIndex !== null) {
             try {
@@ -423,10 +495,10 @@ const QuizPreview = ({ activeItem, routeParams }: QuizPreviewProps) => {
                 syncToStore();
                 setEditIndex(null);
                 closeRef.current?.click();
-                toast.success('Question updated successfully!');
+                toast.success(t('studyLibraryQuizPreview:toast.questionUpdated'));
             } catch (error) {
                 console.error('Error updating question:', error);
-                toast.error('Failed to update question. Please try again.');
+                toast.error(t('studyLibraryQuizPreview:toast.updateQuestionFailed'));
             }
         }
     };
@@ -496,6 +568,16 @@ const QuizPreview = ({ activeItem, routeParams }: QuizPreviewProps) => {
             case 'ONE_WORD':
                 questionOptions.subjectiveAnswerText = '';
                 break;
+            case QuestionType.CBE_RESPONSE: {
+                // Spreadsheet & Written Response: one spreadsheet part (a), 10 marks. The
+                // editor owns this (empty) solution half, so it is saved with the question.
+                const cbeConfig = makeDefaultCbeConfig();
+                questionOptions.cbeConfig = cbeConfig;
+                questionOptions.cbeSecretStatus = 'owned';
+                questionOptions.questionMark = cbeQuestionMark(cbeConfig);
+                questionOptions.validAnswers = undefined;
+                break;
+            }
             default:
                 // For any other question type, ensure basic options are available
                 questionOptions.singleChoiceOptions = Array(4).fill({
@@ -524,6 +606,7 @@ const QuizPreview = ({ activeItem, routeParams }: QuizPreviewProps) => {
 
     const handleAddQuestionConfirm = async () => {
         const newQuestion = editForm.getValues(`questions.0`);
+        if (cbeQuestionBlocked(newQuestion)) return;
         if (newQuestion.questionName.trim()) {
             try {
                 // Assign stable IDs to both the question and its options so every
@@ -545,13 +628,13 @@ const QuizPreview = ({ activeItem, routeParams }: QuizPreviewProps) => {
                 // Update the store
                 syncToStore();
                 setIsAddQuestionDialogOpen(false);
-                toast.success('Question added successfully!');
+                toast.success(t('studyLibraryQuizPreview:toast.questionAdded'));
             } catch (error) {
                 console.error('Error adding question:', error);
-                toast.error('Failed to add question. Please try again.');
+                toast.error(t('studyLibraryQuizPreview:toast.addQuestionFailed'));
             }
         } else {
-            toast.error('Please enter a question name');
+            toast.error(t('studyLibraryQuizPreview:toast.enterQuestionName'));
         }
     };
 
@@ -592,11 +675,11 @@ const QuizPreview = ({ activeItem, routeParams }: QuizPreviewProps) => {
 
                 // Update the store
                 setTimeout(syncToStore, 0);
-                toast.success('Question deleted successfully!');
+                toast.success(t('studyLibraryQuizPreview:toast.questionDeleted'));
                 setQuestionToDelete(null);
             } catch (error) {
                 console.error('Error deleting question:', error);
-                toast.error('Failed to delete question. Please try again.');
+                toast.error(t('studyLibraryQuizPreview:toast.deleteQuestionFailed'));
             } finally {
                 setIsDeletingQuestion(false);
             }
@@ -625,7 +708,7 @@ const QuizPreview = ({ activeItem, routeParams }: QuizPreviewProps) => {
         return (
             <div className="flex size-full flex-col overflow-hidden rounded border border-neutral-200 bg-white shadow-sm">
                 <div className="flex items-center justify-between border-b bg-red-50 px-6 py-4">
-                    <h2 className="text-lg font-semibold text-red-700">Quiz Questions</h2>
+                    <h2 className="text-lg font-semibold text-red-700">{t('studyLibraryQuizPreview:header')}</h2>
                 </div>
                 <div className="flex flex-1 flex-col items-center justify-center bg-white px-6 py-12">
                     <div className="text-center">
@@ -633,10 +716,10 @@ const QuizPreview = ({ activeItem, routeParams }: QuizPreviewProps) => {
                             <Warning size={24} className="text-red-500" />
                         </div>
                         <h3 className="mb-2 text-lg font-medium text-slate-600">
-                            Unable to load quiz
+                            {t('studyLibraryQuizPreview:unableToLoadTitle')}
                         </h3>
                         <p className="text-sm text-slate-400">
-                            Route parameters are not available. Please refresh the page.
+                            {t('studyLibraryQuizPreview:unableToLoadSubtitle')}
                         </p>
                     </div>
                 </div>
@@ -649,12 +732,13 @@ const QuizPreview = ({ activeItem, routeParams }: QuizPreviewProps) => {
             <div className="flex size-full flex-col overflow-hidden rounded border border-neutral-200 bg-white shadow-sm">
                 {/* Header */}
                 <div className="flex items-center justify-between border-b bg-primary-50 px-6 py-4">
-                    <h2 className="text-primary-700 text-lg font-semibold">Quiz Questions</h2>
+                    <h2 className="text-primary-700 text-lg font-semibold">{t('studyLibraryQuizPreview:header')}</h2>
                     <QuizAddQuestionsDropdown
                         onManual={() => setIsQuestionTypeDialogOpen(true)}
                         onDocument={() => setIsDocDialogOpen(true)}
                         onAI={() => setIsAIDialogOpen(true)}
                         onCSV={() => setIsCSVDialogOpen(true)}
+                        onQuestionPaper={() => setIsQuestionPaperDialogOpen(true)}
                     />
                 </div>
 
@@ -696,10 +780,10 @@ const QuizPreview = ({ activeItem, routeParams }: QuizPreviewProps) => {
                                 <Plus size={24} className="text-slate-400" />
                             </div>
                             <h3 className="mb-2 text-lg font-medium text-slate-600">
-                                No questions yet
+                                {t('studyLibraryQuizPreview:noQuestionsTitle')}
                             </h3>
                             <p className="text-sm text-slate-400">
-                                Add your first question to get started
+                                {t('studyLibraryQuizPreview:noQuestionsSubtitle')}
                             </p>
                         </div>
                     )}
@@ -716,7 +800,7 @@ const QuizPreview = ({ activeItem, routeParams }: QuizPreviewProps) => {
                 <Dialog open={isAddQuestionDialogOpen} onOpenChange={setIsAddQuestionDialogOpen}>
                     <DialogContent className="no-scrollbar !m-0 flex h-full !w-full !max-w-full flex-col overflow-y-auto !rounded-none !p-0">
                         <h1 className="bg-primary-50 p-4 font-semibold text-primary-500">
-                            Add New Question
+                            {t('studyLibraryQuizPreview:addNewQuestionTitle')}
                         </h1>
 
                         <FormProvider {...editForm}>
@@ -739,18 +823,18 @@ const QuizPreview = ({ activeItem, routeParams }: QuizPreviewProps) => {
                             <Button
                                 type="button"
                                 variant="outline"
-                                className="mr-2"
+                                className="me-2"
                                 onClick={() => setIsAddQuestionDialogOpen(false)}
                             >
-                                Cancel
+                                {t('studyLibraryQuizPreview:cancel')}
                             </Button>
                             <MyButton
                                 type="button"
                                 className=""
                                 onAsyncClick={handleAddQuestionConfirm}
-                                loadingText="Adding..."
+                                loadingText={t('studyLibraryQuizPreview:adding')}
                             >
-                                Add Question
+                                {t('studyLibraryQuizPreview:addQuestion')}
                             </MyButton>
                         </div>
                     </DialogContent>
@@ -763,25 +847,38 @@ const QuizPreview = ({ activeItem, routeParams }: QuizPreviewProps) => {
                 >
                     <DialogContent className="no-scrollbar !m-0 flex h-full !w-full !max-w-full flex-col overflow-y-auto !rounded-none !p-0">
                         <h1 className="bg-primary-50 p-4 font-semibold text-primary-500">
-                            Edit Question {editIndex !== null ? getDisplayNumber(editIndex) : ''}
+                            {t('studyLibraryQuizPreview:editQuestionTitle', {
+                                number: editIndex !== null ? getDisplayNumber(editIndex) : '',
+                            })}
                         </h1>
 
                         <FormProvider {...editForm}>
-                            <MainViewComponentFactory
-                                type={
-                                    editForm.getValues('questions.0.questionType') as QuestionType
+                            {/* A CBE question's solution half is loaded apart from the quiz
+                                (see loadCbeSecret); the editor locks it until it is here. */}
+                            <CbeSlideSecretContext.Provider
+                                value={
+                                    editIndex !== null &&
+                                    isCbeQuestionType(editForm.getValues('questions.0.questionType'))
+                                        ? { retry: () => void loadCbeSecret() }
+                                        : null
                                 }
-                                props={{
-                                    form: editForm,
-                                    currentQuestionIndex: 0,
-                                    setCurrentQuestionIndex: () => {},
-                                    className:
-                                        'dialog-height overflow-auto ml-6 flex w-full flex-col gap-6 pr-6 pt-4',
-                                    showQuestionNumber: false,
-                                    // Quiz options get the full rich-text editor on demand (expand-to-modal)
-                                    enableOptionModalCompose: true,
-                                }}
-                            />
+                            >
+                                <MainViewComponentFactory
+                                    type={
+                                        editForm.getValues('questions.0.questionType') as QuestionType
+                                    }
+                                    props={{
+                                        form: editForm,
+                                        currentQuestionIndex: 0,
+                                        setCurrentQuestionIndex: () => {},
+                                        className:
+                                            'dialog-height overflow-auto ml-6 flex w-full flex-col gap-6 pr-6 pt-4',
+                                        showQuestionNumber: false,
+                                        // Quiz options get the full rich-text editor on demand (expand-to-modal)
+                                        enableOptionModalCompose: true,
+                                    }}
+                                />
+                            </CbeSlideSecretContext.Provider>
                         </FormProvider>
 
                         <div className="flex justify-end gap-3 px-6 pb-4 pt-2">
@@ -793,14 +890,14 @@ const QuizPreview = ({ activeItem, routeParams }: QuizPreviewProps) => {
                                 variant="outline"
                                 onClick={() => setEditIndex(null)}
                             >
-                                Cancel
+                                {t('studyLibraryQuizPreview:cancel')}
                             </Button>
                             <MyButton
                                 type="button"
                                 onAsyncClick={handleEditConfirm}
-                                loadingText="Saving..."
+                                loadingText={t('studyLibraryQuizPreview:saving')}
                             >
-                                Save Changes
+                                {t('studyLibraryQuizPreview:saveChanges')}
                             </MyButton>
                         </div>
                     </DialogContent>
@@ -829,6 +926,11 @@ const QuizPreview = ({ activeItem, routeParams }: QuizPreviewProps) => {
                 <QuizAddViaCSVDialog
                     open={isCSVDialogOpen}
                     onOpenChange={setIsCSVDialogOpen}
+                    onQuestionsReady={handleQuestionsReady}
+                />
+                <QuizAddViaQuestionPaperDialog
+                    open={isQuestionPaperDialogOpen}
+                    onOpenChange={setIsQuestionPaperDialogOpen}
                     onQuestionsReady={handleQuestionsReady}
                 />
                 <QuizQuestionsPreviewDialog

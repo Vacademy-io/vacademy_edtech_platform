@@ -1,145 +1,243 @@
 import { TestContent } from '@/types/assessments/schedule-test-list';
 import { MyButton } from '@/components/design-system/button';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import { DotIcon, DotIconOffline } from '@/svgs';
-import { CheckCircle, Copy, DownloadSimple, LockSimple, PauseCircle } from '@phosphor-icons/react';
-import QRCode from 'react-qr-code';
-import { convertToLocalDateTime } from '@/constants/helper';
-import { getSubjectNameById } from '../../question-papers/-utils/helper';
+import {
+    ArrowSquareOut,
+    CalendarBlank,
+    CalendarCheck,
+    CheckSquareOffset,
+    FolderSimple,
+    PlugsConnected,
+    Timer,
+    UsersThree,
+} from '@phosphor-icons/react';
+import { format } from 'date-fns';
+import { resolveSubjectName } from '@/services/subject-names';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { useInstituteQuery } from '@/services/student-list-section/getInstituteDetails';
 import { DashboardLoader } from '@/components/core/dashboard-loader';
-import {
-    copyToClipboard,
-    getAssessmentJoinLink,
-    handleDownloadQRCode,
-} from '../../create-assessment/$assessmentId/$examtype/-utils/helper';
 import { ScheduleTestMainDropdownComponent } from './ScheduleTestDetailsDropdownMenu';
-import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
+import { PrivateLinkInfo } from './assessment-share';
 import { useNavigate } from '@tanstack/react-router';
-import { useState } from 'react';
+import { useRef } from 'react';
 import { getBatchNamesByIds } from '../assessment-details/$assessmentId/$examType/$assesssmentType/$assessmentTab/-utils/helper';
 import { ContentTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
-import { getTerminology } from '@/components/common/layout-container/sidebar/utils';
+import {
+    getTerminology,
+    getTerminologyPlural,
+} from '@/components/common/layout-container/sidebar/utils';
+import { useTranslation } from 'react-i18next';
+import {
+    AccessBadge,
+    SessionBatches,
+    SessionCardFooter,
+    SessionCardShell,
+    SessionMetaDivider,
+    SessionMetaItem,
+    SessionMetaRow,
+} from '@/routes/study-library/live-session/-components/session-card-shell';
+import { AssessmentTag, statusForTab, typeMetaFor } from './assessment-presentation';
+import { isApiSourced } from '../-utils.ts/assessment-source';
 
+/**
+ * "26 Sep 2026, 6:15 PM" in the viewer's zone. Same UTC handling as
+ * convertToLocalDateTime (the API sometimes omits the trailing Z), shorter text
+ * so the metadata row fits on one line.
+ */
+const toCardDate = (value: string | null | undefined): string => {
+    if (!value) return '';
+    const hasTimezone = /Z$|[+-]\d{2}:?\d{2}$/i.test(value);
+    const date = new Date(hasTimezone ? value : `${value.replace(' ', 'T')}Z`);
+    return Number.isNaN(date.getTime()) ? '' : format(date, 'dd MMM yyyy, h:mm a');
+};
+
+/** Start / end for windowed tests, duration for timed ones, then participants and evaluation. */
+function CardMetaRow({ test }: { test: TestContent }) {
+    const { t } = useTranslation('assessmentScheduleTestDetails');
+    const hasWindow = test.play_mode === 'EXAM' || test.play_mode === 'SURVEY';
+    const hasDuration = test.play_mode === 'EXAM' || test.play_mode === 'MOCK';
+    const hours = Math.floor(test.duration / 60);
+    const minutes = test.duration % 60;
+    const durationLabel =
+        hours > 0
+            ? [
+                  t('info.duration.hours', { count: hours }),
+                  minutes > 0 ? t('info.duration.minutes', { count: minutes }) : null,
+              ]
+                  .filter(Boolean)
+                  .join(' ')
+            : t('info.duration.minutes', { count: test.duration });
+    return (
+        <SessionMetaRow>
+            {hasWindow && (
+                <SessionMetaItem
+                    icon={<CalendarBlank size={16} />}
+                    tone="primary"
+                    label={t('meta.starts')}
+                    value={toCardDate(test.bound_start_time)}
+                />
+            )}
+            {hasWindow && (
+                <SessionMetaItem
+                    icon={<CalendarCheck size={16} />}
+                    tone="info"
+                    label={t('meta.ends')}
+                    value={toCardDate(test.bound_end_time)}
+                />
+            )}
+            {hasDuration && (
+                <SessionMetaItem
+                    icon={<Timer size={16} />}
+                    tone="warning"
+                    label={t('meta.duration')}
+                    value={durationLabel}
+                />
+            )}
+            {hasWindow || hasDuration ? <SessionMetaDivider /> : null}
+            <SessionMetaItem
+                icon={<UsersThree size={16} />}
+                tone="success"
+                label={t('meta.participants')}
+                value={
+                    <span className="font-semibold text-neutral-900">
+                        {test.user_registrations}
+                    </span>
+                }
+            />
+            <SessionMetaItem
+                icon={<CheckSquareOffset size={16} />}
+                tone="neutral"
+                label={t('meta.evaluation')}
+                value={
+                    test.evaluation_type === 'MANUAL'
+                        ? t('meta.evaluationManual')
+                        : t('meta.evaluationAuto')
+                }
+            />
+        </SessionMetaRow>
+    );
+}
+
+/**
+ * One assessment in the list, drawn with the same card system as the live
+ * session list (shell, metadata row, batches, footer) so the two lists read
+ * alike. The join link, its QR code and the UTM builder live in the ⋮ menu;
+ * the type (exam, mock, practice …) is a badge so it reads at a glance.
+ */
 const ScheduleTestDetails = ({
     scheduleTestContent,
     selectedTab,
     handleRefetchData,
+    subjectNamesById = {},
+    folderName,
 }: {
     scheduleTestContent: TestContent;
     selectedTab: string;
     handleRefetchData: () => void;
+    /** Names for the subject ids the institute list cannot resolve — see subject-names.ts. */
+    subjectNamesById?: Record<string, string>;
+    /** Assessment folder this test is in (folders on); shown as a chip. */
+    folderName?: string;
 }) => {
-    const [isDialogOpen, setIsDialogOpen] = useState(false);
+    const { t } = useTranslation('assessmentScheduleTestDetails');
     const navigate = useNavigate();
+    const cardRef = useRef<HTMLDivElement>(null);
     const { data: instituteDetails, isLoading } = useSuspenseQuery(useInstituteQuery());
-    const batchIdsList = getBatchNamesByIds(
+    const batchNames = getBatchNamesByIds(
         instituteDetails?.batches_for_sessions,
         scheduleTestContent.batch_ids
     );
     const handleNavigateAssessment = (assessmentId: string) => {
-        if (!isDialogOpen) {
-            navigate({
-                to: '/assessment/assessment-list/assessment-details/$assessmentId/$examType/$assesssmentType/$assessmentTab',
-                params: {
-                    assessmentId: assessmentId,
-                    examType: scheduleTestContent.play_mode,
-                    assesssmentType: scheduleTestContent.assessment_visibility,
-                    assessmentTab: selectedTab,
-                },
-            });
-        }
+        navigate({
+            to: '/assessment/assessment-list/assessment-details/$assessmentId/$examType/$assesssmentType/$assessmentTab',
+            params: {
+                assessmentId: assessmentId,
+                examType: scheduleTestContent.play_mode,
+                assesssmentType: scheduleTestContent.assessment_visibility,
+                assessmentTab: selectedTab,
+            },
+        });
     };
 
-    const joinLink = getAssessmentJoinLink(
-        instituteDetails?.learner_portal_base_url,
-        scheduleTestContent.join_link
+    // Dialogs and popovers portal to document.body, but React re-bubbles their
+    // clicks through the component tree — only a click that really lands inside
+    // the card opens the assessment.
+    const handleCardClick = (e: React.MouseEvent<HTMLDivElement>) => {
+        if (!cardRef.current?.contains(e.target as Node)) return;
+        handleNavigateAssessment(scheduleTestContent.assessment_id);
+    };
+
+    const type = typeMetaFor(scheduleTestContent.play_mode);
+    const status = statusForTab(selectedTab);
+    const subjectName = resolveSubjectName(
+        instituteDetails?.subjects,
+        subjectNamesById,
+        scheduleTestContent.subject_id
     );
+    const isPrivate = scheduleTestContent.assessment_visibility === 'PRIVATE';
+    const subtitle = [
+        subjectName &&
+            t('info.subject', {
+                label: getTerminology(ContentTerms.Subjects, SystemTerms.Subjects),
+                name: subjectName,
+            }),
+        scheduleTestContent.created_at &&
+            t('meta.createdOn', { date: toCardDate(scheduleTestContent.created_at) }),
+    ]
+        .filter(Boolean)
+        .join(' · ');
 
     if (isLoading) return <DashboardLoader />;
     return (
-        <div
-            className="my-6 flex cursor-pointer flex-col gap-4 rounded-xl border bg-neutral-50 p-4"
-            onClick={() => handleNavigateAssessment(scheduleTestContent.assessment_id)}
-        >
-            <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                    <h1 className="font-semibold">{scheduleTestContent.name}</h1>
-                    <Badge
-                        className={`rounded-md border border-neutral-300 ${
-                            scheduleTestContent.assessment_visibility === 'PRIVATE'
-                                ? 'bg-primary-50'
-                                : 'bg-info-50'
-                        } py-1.5 shadow-none`}
-                    >
-                        <LockSimple size={16} className="mr-2" />
-                        {scheduleTestContent.assessment_visibility}
-                    </Badge>
-                    <Badge
-                        className={`rounded-md border border-neutral-300 ${
-                            scheduleTestContent.play_mode !== 'EXAM'
-                                ? 'bg-neutral-50'
-                                : 'bg-success-50'
-                        } py-1.5 shadow-none`}
-                    >
-                        {scheduleTestContent.play_mode === 'EXAM' ? (
-                            <DotIcon className="mr-2" />
-                        ) : (
-                            <DotIconOffline className="mr-2" />
-                        )}
-                        {scheduleTestContent.play_mode}
-                    </Badge>
-                    <Separator orientation="vertical" className="h-8 w-px bg-neutral-300" />
-                    <Badge
-                        className={`rounded-md border ${
-                            scheduleTestContent.status === 'PUBLISHED'
-                                ? 'bg-success-50'
-                                : 'bg-neutral-100'
-                        } border-neutral-300 py-1.5 shadow-none`}
-                    >
-                        {scheduleTestContent.status === 'PUBLISHED' ? (
-                            <CheckCircle
-                                size={16}
-                                weight="fill"
-                                className="mr-2 text-success-600"
-                            />
-                        ) : (
-                            <PauseCircle
-                                size={16}
-                                weight="fill"
-                                className="mr-2 text-neutral-400"
-                            />
-                        )}
-                        {scheduleTestContent.status}
-                    </Badge>
+        <SessionCardShell cardRef={cardRef} onClick={handleCardClick}>
+            <div className="flex items-start justify-between gap-3">
+                <div className="flex min-w-0 flex-1 items-start gap-3">
+                    <div className="min-w-0">
+                        <h3
+                            className="truncate text-base font-semibold text-neutral-900 sm:text-lg"
+                            title={scheduleTestContent.name}
+                        >
+                            {scheduleTestContent.name}
+                        </h3>
+                        {subtitle ? (
+                            <p
+                                className="mt-0.5 truncate text-sm text-neutral-500"
+                                title={subtitle}
+                            >
+                                {subtitle}
+                            </p>
+                        ) : null}
+                    </div>
                 </div>
-                <div className="flex items-center gap-4">
-                    {batchIdsList.length > 0 && (
-                        <Badge className="rounded-md border border-primary-200 bg-primary-50 py-1.5 shadow-none">
-                            {batchIdsList[0]}
-                        </Badge>
-                    )}
-                    {batchIdsList.length - 1 > 0 && (
-                        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                            <DialogTrigger onClick={(e) => e.stopPropagation()}>
-                                <span className="text-sm text-primary-500">
-                                    +{batchIdsList.length - 1} more
+                <div
+                    className="flex shrink-0 flex-wrap items-center justify-end gap-2"
+                    onClick={(e) => e.stopPropagation()}
+                >
+                    {folderName ? (
+                        <span title={folderName}>
+                            <AssessmentTag tone="neutral" icon={<FolderSimple size={12} />}>
+                                <span className="inline-block max-w-32 truncate align-bottom">
+                                    {folderName}
                                 </span>
-                            </DialogTrigger>
-                            <DialogContent className="p-0">
-                                <h1 className="rounded-t-lg bg-primary-50 p-4 font-semibold text-primary-500">
-                                    Assessment Batches
-                                </h1>
-                                <ul className="flex list-disc flex-col gap-4 py-4 pl-8 pr-4">
-                                    {batchIdsList.map((batchId, idx) => {
-                                        return <li key={idx}>{batchId}</li>;
-                                    })}
-                                </ul>
-                            </DialogContent>
-                        </Dialog>
-                    )}
+                            </AssessmentTag>
+                        </span>
+                    ) : null}
+                    <AssessmentTag tone={type.tone}>{t(`types.${type.key}`)}</AssessmentTag>
+                    {isApiSourced(scheduleTestContent.source) ? (
+                        <span title={t('source.apiTooltip')}>
+                            <AssessmentTag tone="info" icon={<PlugsConnected size={12} />}>
+                                {t('source.api')}
+                            </AssessmentTag>
+                        </span>
+                    ) : null}
+                    <AssessmentTag tone={status.tone} dot>
+                        {t(`status.${status.key}`)}
+                    </AssessmentTag>
+                    <span className="inline-flex items-center gap-0.5">
+                        <AccessBadge
+                            accessLevel={scheduleTestContent.assessment_visibility?.toLowerCase()}
+                        />
+                        {isPrivate ? <PrivateLinkInfo /> : null}
+                    </span>
                     <ScheduleTestMainDropdownComponent
                         scheduleTestContent={scheduleTestContent}
                         selectedTab={selectedTab}
@@ -147,95 +245,38 @@ const ScheduleTestDetails = ({
                     />
                 </div>
             </div>
-            <div className="flex w-full items-start justify-start gap-8 text-sm text-neutral-500">
-                <div className="flex flex-col gap-4">
-                    <p>Created on: {convertToLocalDateTime(scheduleTestContent.created_at)}</p>
-                    <p>
-                        {getTerminology(ContentTerms.Subjects, SystemTerms.Subjects)}:{' '}
-                        {getSubjectNameById(
-                            instituteDetails?.subjects || [],
-                            scheduleTestContent.subject_id || ''
-                        )}
-                    </p>
+
+            <CardMetaRow test={scheduleTestContent} />
+
+            <SessionCardFooter>
+                <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-8 gap-y-3">
+                    {batchNames.length ? (
+                        <SessionBatches
+                            batches={batchNames}
+                            maxVisible={2}
+                            label={getTerminologyPlural(ContentTerms.Batch, SystemTerms.Batch)}
+                            moreLabel={(count) => t('batchDialog.moreLink', { count })}
+                            lessLabel={t('batches.less')}
+                        />
+                    ) : null}
                 </div>
-                <div className="flex flex-col gap-4">
-                    {(scheduleTestContent.play_mode === 'EXAM' ||
-                        scheduleTestContent.play_mode === 'SURVEY') && (
-                        <p>
-                            Start Date and Time:{' '}
-                            {convertToLocalDateTime(scheduleTestContent.bound_start_time)}
-                        </p>
-                    )}
-                    {(scheduleTestContent.play_mode === 'EXAM' ||
-                        scheduleTestContent.play_mode === 'MOCK') && (
-                        <p>
-                            <span className="font-normal text-neutral-500">Duration: </span>
-                            {scheduleTestContent.duration >= 60 ? (
-                                <span>
-                                    {Math.floor(scheduleTestContent.duration / 60)} hrs{' '}
-                                    {scheduleTestContent.duration % 60 > 0 && (
-                                        <> {scheduleTestContent.duration % 60} min</>
-                                    )}
-                                </span>
-                            ) : (
-                                <span>{scheduleTestContent.duration} min</span>
-                            )}
-                        </p>
-                    )}
-                </div>
-                <div className="flex flex-col gap-4">
-                    {(scheduleTestContent.play_mode === 'EXAM' ||
-                        scheduleTestContent.play_mode === 'SURVEY') && (
-                        <p>
-                            End Date and Time:{' '}
-                            {convertToLocalDateTime(scheduleTestContent.bound_end_time)}
-                        </p>
-                    )}
-                    <p>Total Participants: {scheduleTestContent.user_registrations}</p>
-                </div>
-            </div>
-            <div className="flex justify-between">
-                <div className="flex items-center gap-2 text-sm text-neutral-500">
-                    <h1 className="!font-normal text-black">Join Link:</h1>
-                    <span className="px-3 py-2 text-sm underline">
-                        {joinLink}
-                    </span>
+                <div
+                    className="flex shrink-0 items-center gap-2"
+                    onClick={(e) => e.stopPropagation()}
+                >
                     <MyButton
                         type="button"
-                        scale="small"
+                        scale="medium"
                         buttonType="secondary"
-                        className="h-8 min-w-8"
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            copyToClipboard(joinLink);
-                        }}
+                        className="w-full gap-1.5 sm:w-auto sm:!min-w-0 sm:px-5"
+                        onClick={() => handleNavigateAssessment(scheduleTestContent.assessment_id)}
                     >
-                        <Copy size={32} />
+                        <ArrowSquareOut size={16} />
+                        {t('actions.viewDetails')}
                     </MyButton>
                 </div>
-                <div className="flex items-center gap-4">
-                    <QRCode
-                        value={joinLink}
-                        className="size-16"
-                        id={`qr-code-svg-assessment-list-${scheduleTestContent.join_link}`}
-                    />
-                    <MyButton
-                        type="button"
-                        scale="small"
-                        buttonType="secondary"
-                        className="h-8 min-w-8"
-                        onClick={(e) => {
-                            handleDownloadQRCode(
-                                `qr-code-svg-assessment-list-${scheduleTestContent.join_link}`
-                            );
-                            e.stopPropagation();
-                        }}
-                    >
-                        <DownloadSimple size={32} />
-                    </MyButton>
-                </div>
-            </div>
-        </div>
+            </SessionCardFooter>
+        </SessionCardShell>
     );
 };
 

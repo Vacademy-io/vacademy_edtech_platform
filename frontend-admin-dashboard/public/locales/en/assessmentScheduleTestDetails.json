@@ -1,0 +1,77 @@
+{
+    "batchDialog": {
+        "moreLink_one": "+{{count}} more",
+        "moreLink_other": "+{{count}} more",
+        "title": "Assessment Batches"
+    },
+    "info": {
+        "createdOn": "Created on: {{date}}",
+        "subject": "{{label}}: {{name}}",
+        "startDateTime": "Start Date and Time: {{date}}",
+        "endDateTime": "End Date and Time: {{date}}",
+        "duration": {
+            "label": "Duration: ",
+            "hours_one": "{{count}} hr",
+            "hours_other": "{{count}} hrs",
+            "minutes_one": "{{count}} min",
+            "minutes_other": "{{count}} min"
+        },
+        "totalParticipants_one": "Total Participants: {{count}}",
+        "totalParticipants_other": "Total Participants: {{count}}"
+    },
+    "joinLink": {
+        "label": "Join Link:",
+        "privateWarning": "This link only works while the assessment is Public. Set it to Public in Step 3 before sharing."
+    },
+    "types": {
+        "examination": "Exam",
+        "mock": "Mock test",
+        "practice": "Practice",
+        "survey": "Survey",
+        "offline": "Offline exam",
+        "assignment": "Assignment"
+    },
+    "status": {
+        "live": "Live",
+        "upcoming": "Upcoming",
+        "closed": "Closed",
+        "draft": "Draft"
+    },
+    "meta": {
+        "starts": "Starts",
+        "ends": "Ends",
+        "duration": "Duration",
+        "participants": "Participants",
+        "evaluation": "Evaluation",
+        "evaluationAuto": "Automatic",
+        "evaluationManual": "Manual",
+        "createdOn": "Created {{date}}"
+    },
+    "batches": {
+        "less": "Show less"
+    },
+    "actions": {
+        "viewDetails": "View details"
+    },
+    "privateLink": {
+        "title": "The join link works only for an Open Test",
+        "body": "This assessment is private (a Closed Test). Learners you assigned take it from their learner app, so they do not need a link. The join link and QR code start working only when it is an Open Test: edit the assessment, go to Step 3 \"Add Participants\" and choose \"Open Test\".",
+        "ariaLabel": "Why the join link does not work"
+    },
+    "share": {
+        "copyLink": "Copy join link",
+        "qrCode": "Show QR code",
+        "copied": "Join link copied",
+        "copiedPrivate": "Link copied, but it will work only after you switch this assessment to \"Open Test\" (Step 3, \"Add Participants\")."
+    },
+    "qrDialog": {
+        "title": "Join link and QR code",
+        "description": "Learners scan the code or open the link to register and take the assessment.",
+        "copy": "Copy",
+        "download": "Download QR code"
+    },
+    "source": {
+        "api": "Source: API",
+        "apiTooltip": "Created through the AI Evaluation API"
+    }
+}

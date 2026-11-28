@@ -7,7 +7,7 @@
 # runner.utils.parse_telephony_websocket, audio.turn.smart_turn.local_smart_turn_v3
 # (no extra needed; model baked into the image — see Dockerfile).
 # `local` extra deliberately absent: it drags pyaudio/portaudio (desktop only).
-pipecat-ai[silero,websocket,sarvam,google,openai,deepgram]==1.4.0
+pipecat-ai[silero,websocket,sarvam,google,openai,deepgram,aws,soundfile]==1.4.0
 aiohttp>=3.9
 fastapi>=0.115
 uvicorn[standard]>=0.30
@@ -20,3 +20,12 @@ python-dotenv>=1.0
 # call, which is what makes streaming decode viable.
 edge-tts>=7.2
 miniaudio>=1.59
+# Telephone-band EQ on the bot voice (app/voice_eq.py) uses scipy IIR
+# filtering. Already present transitively; pinned here because we now depend
+# on it directly.
+scipy>=1.11
+# Voice modulation (app/prosody.py): Praat's PSOLA pitch resynthesis via
+# parselmouth. Binary wheels for py3.12 manylinux; no Praat install needed.
+praat-parselmouth>=0.4.7
+# Navana (Bodhi) TTS — ships its own Pipecat service (verified on pipecat 1.4.0).
+bodhi-api-sdk[tts]==1.2.0

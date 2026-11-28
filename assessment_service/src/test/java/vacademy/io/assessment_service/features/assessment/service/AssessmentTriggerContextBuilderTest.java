@@ -251,6 +251,21 @@ class AssessmentTriggerContextBuilderTest {
     }
 
     @Test
+    void forResult_carriesTheCheckedCopySoAnAutomationCanSendIt() {
+        // A manual-result test has no generated report: the AI-annotated (or
+        // teacher-uploaded) copy is the only document a learner receives.
+        Assessment assessment = assessment();
+        StudentAttempt attempt = attempt(registration(assessment));
+        attempt.setEvaluatedFileId("copy-file-9");
+        attempt.setReportPdfFileId(null);
+
+        Map<String, Object> ctx = builder.forResult(attempt, assessment, "inst-1", 80.0, null, null);
+
+        assertThat(ctx).containsEntry("checkedCopyFileId", "copy-file-9");
+        assertThat(ctx).doesNotContainKey("reportPdfFileId");
+    }
+
+    @Test
     void forResult_roundsPercentageToTwoDecimals() {
         Assessment assessment = assessment();
         StudentAttempt attempt = attempt(registration(assessment));

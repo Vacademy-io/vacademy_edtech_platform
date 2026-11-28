@@ -1,47 +1,53 @@
 import { z } from 'zod';
+import type { TFunction } from 'i18next';
 
-export const BasicInfoFormSchema = z.object({
-    status: z.string(),
-    testCreation: z.object({
-        assessmentName: z.string().min(1, 'Assessment name is required'),
-        subject: z.string(),
-        assessmentInstructions: z.string(),
-        liveDateRange: z
-            .object({
-                startDate: z.string().optional(),
-                endDate: z.string().optional(),
-            })
+export const buildBasicInfoFormSchema = (t: TFunction) =>
+    z.object({
+        status: z.string(),
+        testCreation: z.object({
+            assessmentName: z
+                .string()
+                .min(1, t('homeworkCreationBasicInfoFormSchema:assessmentNameRequired')),
+            subject: z.string(),
+            assessmentInstructions: z.string(),
+            liveDateRange: z
+                .object({
+                    startDate: z.string().optional(),
+                    endDate: z.string().optional(),
+                })
+                .refine(
+                    (data) =>
+                        (!data.startDate && !data.endDate) || // Allow empty
+                        new Date(data.endDate!) > new Date(data.startDate!), // Date comparison
+                    {
+                        message: t('homeworkCreationBasicInfoFormSchema:endDateAfterStartDate'),
+                        path: ['endDate'],
+                    }
+                ),
+        }),
+        assessmentPreview: z.object({
+            checked: z.boolean(),
+            previewTimeLimit: z.string(),
+        }),
+        reattemptCount: z
+            .string()
+            .default('1') // Default to "1" to prevent undefined errors
             .refine(
-                (data) =>
-                    (!data.startDate && !data.endDate) || // Allow empty
-                    new Date(data.endDate!) > new Date(data.startDate!), // Date comparison
+                (value) => {
+                    const num = Number(value);
+                    return !isNaN(num) && num > 0;
+                },
                 {
-                    message: 'End date must be greater than start date',
-                    path: ['endDate'],
+                    message: t('homeworkCreationBasicInfoFormSchema:reattemptCountPositive'),
+                    path: ['reattemptCount'],
                 }
             ),
-    }),
-    assessmentPreview: z.object({
-        checked: z.boolean(),
-        previewTimeLimit: z.string(),
-    }),
-    reattemptCount: z
-        .string()
-        .default('1') // Default to "1" to prevent undefined errors
-        .refine(
-            (value) => {
-                const num = Number(value);
-                return !isNaN(num) && num > 0;
-            },
-            {
-                message: 'Reattempt count must be greater than 0',
-                path: ['reattemptCount'],
-            }
-        ),
-    submissionType: z.string(),
-    durationDistribution: z.string(),
-    evaluationType: z.string(),
-    switchSections: z.boolean(),
-    raiseReattemptRequest: z.boolean(),
-    raiseTimeIncreaseRequest: z.boolean(),
-});
+        submissionType: z.string(),
+        durationDistribution: z.string(),
+        evaluationType: z.string(),
+        switchSections: z.boolean(),
+        raiseReattemptRequest: z.boolean(),
+        raiseTimeIncreaseRequest: z.boolean(),
+    });
+
+export type BasicInfoFormSchemaType = z.infer<ReturnType<typeof buildBasicInfoFormSchema>>;

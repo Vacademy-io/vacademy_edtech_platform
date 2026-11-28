@@ -3,6 +3,8 @@ import { useQuery } from '@tanstack/react-query';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import {
     Notebook,
     ListChecks,
@@ -48,6 +50,8 @@ import {
     type NotesFormat,
 } from './use-add-to-course';
 import { countAnswerable } from './transformGeneratedQuestions';
+import { getTerminology } from '@/components/common/layout-container/sidebar/utils';
+import { ContentTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
 
 interface Props {
     open: boolean;
@@ -110,7 +114,7 @@ const looksLikeId = (s: string) =>
     /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i.test(s.trim());
 
 /** Derive a human title — first notes heading, or a clean fallback (never a raw id). */
-const deriveTitle = (content: AddToCourseContent): string => {
+const deriveTitle = (content: AddToCourseContent, t: TFunction): string => {
     if (content.kind === 'NOTES') {
         const heading = (content.markdown || '').match(/^#{1,6}\s+(.+?)\s*$/m)?.[1];
         if (heading) {
@@ -120,7 +124,7 @@ const deriveTitle = (content: AddToCourseContent): string => {
     }
     const suggested = content.suggestedTitle?.trim() ?? '';
     if (suggested && !looksLikeId(suggested)) return suggested;
-    return content.kind === 'NOTES' ? 'Lecture Notes' : 'Assessment';
+    return content.kind === 'NOTES' ? t('defaultTitle.notes') : t('defaultTitle.assessment');
 };
 
 interface Cascade {
@@ -155,6 +159,7 @@ export function AddToCourseDialog({
     linkedBatches,
     assessmentConfig,
 }: Props) {
+    const { t } = useTranslation('studyLibraryAddToCourseDialog');
     const [sel, setSel] = useState<Cascade>(EMPTY);
     const [destinations, setDestinations] = useState<AddedDestination[]>([]);
     const [title, setTitle] = useState('');
@@ -238,7 +243,7 @@ export function AddToCourseDialog({
         cascadeTouchedRef.current = false;
         setSel(defaultCascade);
         setDestinations([]);
-        setTitle(deriveTitle(content));
+        setTitle(deriveTitle(content, t));
         setAssessmentMode('QUIZ');
         setNotesFormat('DOC');
         setSlideStatus('DRAFT');
@@ -399,7 +404,11 @@ export function AddToCourseDialog({
     const permission = useMemo(
         () =>
             selectedCourse
-                ? canBulkUploadToCourse(selectedCourse.course, roleDisplay, 'Course')
+                ? canBulkUploadToCourse(
+                      selectedCourse.course,
+                      roleDisplay,
+                      getTerminology(ContentTerms.Course, SystemTerms.Course)
+                  )
                 : { allowed: true as boolean, reason: undefined as string | undefined },
         [selectedCourse, roleDisplay]
     );
@@ -428,10 +437,10 @@ export function AddToCourseDialog({
     const combinedDestinations = useMemo<AddedDestination[]>(() => {
         const list: AddedDestination[] = [];
         if (currentDestComplete && packageSessionId) {
-            const courseName = selectedCourse?.course.package_name ?? 'Course';
+            const courseName = selectedCourse?.course.package_name ?? t('fields.course');
             const chapterName =
                 chapters.find((c) => c.chapter.id === sel.chapterId)?.chapter.chapter_name ??
-                'Chapter';
+                t('fields.chapter');
             list.push({
                 // A chapter can be shared across batches, so the destination key
                 // is chapter + package_session, not chapter alone.
@@ -454,7 +463,7 @@ export function AddToCourseDialog({
                         x.dest.packageSessionId === d.dest.packageSessionId
                 ) === i
         );
-    }, [currentDestComplete, packageSessionId, sel, destinations, selectedCourse, chapters]);
+    }, [currentDestComplete, packageSessionId, sel, destinations, selectedCourse, chapters, t]);
     const allDestinations = useMemo<AddToCourseDestination[]>(
         () => combinedDestinations.map((d) => d.dest),
         [combinedDestinations]
@@ -472,8 +481,9 @@ export function AddToCourseDialog({
     const addCurrentDestination = () => {
         if (!currentDestComplete || !packageSessionId) return;
         const chapterName =
-            chapters.find((c) => c.chapter.id === sel.chapterId)?.chapter.chapter_name ?? 'Chapter';
-        const courseName = selectedCourse?.course.package_name ?? 'Course';
+            chapters.find((c) => c.chapter.id === sel.chapterId)?.chapter.chapter_name ??
+            t('fields.chapter');
+        const courseName = selectedCourse?.course.package_name ?? t('fields.course');
         const key = `${sel.chapterId}::${packageSessionId}`;
         setDestinations((prev) =>
             prev.some((d) => d.key === key)
@@ -513,16 +523,16 @@ export function AddToCourseDialog({
                     });
                     setPublishedAssessmentId(id);
                 }
-                if (!id) throw new Error('Could not publish the assessment.');
+                if (!id) throw new Error(t('toast.couldNotPublish'));
                 toast.success(
                     selectedBatchIds.length > 0
-                        ? `Published to the Assessment Center (${selectedBatchIds.length} batch${selectedBatchIds.length === 1 ? '' : 'es'})`
-                        : 'Published (unassigned) to the Assessment Center'
+                        ? t('toast.publishedToAssessmentCenter', { count: selectedBatchIds.length })
+                        : t('toast.publishedUnassigned')
                 );
                 onOpenChange(false);
             } catch (e) {
                 toast.error(
-                    e instanceof Error ? e.message : 'Could not publish the assessment'
+                    e instanceof Error ? e.message : t('toast.couldNotPublish')
                 );
             }
             return;
@@ -560,7 +570,7 @@ export function AddToCourseDialog({
                     linkedId = await publishAssessment({
                         packageSessionIds: destPackageSessionIds,
                     });
-                    if (!linkedId) throw new Error('Could not publish the assessment.');
+                    if (!linkedId) throw new Error(t('toast.couldNotPublish'));
                     setPublishedAssessmentId(linkedId);
                 }
                 if (linkedId) effectiveContent = { ...content, assessmentId: linkedId };
@@ -594,7 +604,7 @@ export function AddToCourseDialog({
                 cascadeTouchedRef.current = false;
                 setSel(defaultCascade);
                 toast.warning(
-                    `Added to ${createdIds.length}; ${failed.length} failed — retry the remaining below.`
+                    t('toast.addedPartial', { added: createdIds.length, failed: failed.length })
                 );
                 return;
             }
@@ -604,26 +614,30 @@ export function AddToCourseDialog({
                 names.length <= 2
                     ? names.join(', ')
                     : `${names.slice(0, 2).join(', ')} +${names.length - 2} more`;
-            toast.success(`Added to ${summary || `${createdIds.length} chapter(s)`}`);
+            toast.success(
+                t('toast.addedSuccess', {
+                    summary: summary || t('toast.chapterCount', { count: createdIds.length }),
+                })
+            );
             onOpenChange(false);
         } catch (e) {
-            toast.error(e instanceof Error ? e.message : 'Could not add to course');
+            toast.error(e instanceof Error ? e.message : t('toast.couldNotAdd'));
         }
     };
 
     const destinationLabel = isNotes
         ? notesFormat === 'PDF'
-            ? 'Lecture notes → PDF slide'
-            : 'Lecture notes → Document slide'
+            ? t('destinationLabel.notesPdf')
+            : t('destinationLabel.notesDoc')
         : assessmentMode === 'QUIZ'
-          ? 'Assessment → Quiz slide'
+          ? t('destinationLabel.quiz')
           : assessmentMode === 'ASSESSMENT_ONLY'
-            ? 'Assessment → Assessment Center (no slide)'
-            : 'Assessment → Assessment slide (linked)';
+            ? t('destinationLabel.assessmentOnly')
+            : t('destinationLabel.assessment');
 
     return (
         <MyDialog
-            heading="Add to course"
+            heading={t('dialog.heading')}
             open={open}
             onOpenChange={onOpenChange}
             dialogWidth="max-w-3xl"
@@ -635,7 +649,7 @@ export function AddToCourseDialog({
                         scale="medium"
                         onClick={() => onOpenChange(false)}
                     >
-                        Cancel
+                        {t('dialog.cancel')}
                     </MyButton>
                     <MyButton
                         type="button"
@@ -645,15 +659,15 @@ export function AddToCourseDialog({
                         onAsyncClick={handleCreate}
                         loadingText={
                             isAssessmentOnly
-                                ? 'Publishing…'
+                                ? t('dialog.loading.publishing')
                                 : isNotes && notesFormat === 'PDF'
-                                  ? 'Rendering PDF…'
+                                  ? t('dialog.loading.renderingPdf')
                                   : !isNotes && assessmentMode === 'ASSESSMENT' && !assessmentId
-                                    ? 'Publishing…'
-                                    : 'Adding…'
+                                    ? t('dialog.loading.publishing')
+                                    : t('dialog.loading.adding')
                         }
                     >
-                        {isAssessmentOnly ? 'Publish assessment' : 'Create slide'}
+                        {isAssessmentOnly ? t('dialog.publishAssessment') : t('dialog.createSlide')}
                     </MyButton>
                 </>
             }
@@ -672,9 +686,11 @@ export function AddToCourseDialog({
                         </span>
                         {!isNotes && (
                             <span className="text-caption text-neutral-500">
-                                {questionCount} question{questionCount === 1 ? '' : 's'}
+                                {t('questionCount', { count: questionCount })}
                                 {questionCount > 0 && answerableCount < questionCount
-                                    ? ` · ${questionCount - answerableCount} without a marked answer`
+                                    ? t('withoutMarkedAnswer', {
+                                          count: questionCount - answerableCount,
+                                      })
                                     : ''}
                             </span>
                         )}
@@ -685,8 +701,8 @@ export function AddToCourseDialog({
                 {!isAssessmentOnly && (
                     <MyInput
                         inputType="text"
-                        label="Slide title"
-                        inputPlaceholder="Give the slide a title"
+                        label={t('slideTitleLabel')}
+                        inputPlaceholder={t('slideTitlePlaceholder')}
                         input={title}
                         onChangeFunction={(e) => setTitle(e.target.value)}
                         size="large"
@@ -698,20 +714,20 @@ export function AddToCourseDialog({
                 {/* Notes format selector */}
                 {isNotes && (
                     <div className="flex flex-col gap-2">
-                        <span className="text-body font-semibold text-neutral-600">Add as</span>
+                        <span className="text-body font-semibold text-neutral-600">{t('addAs')}</span>
                         <div className="flex flex-wrap gap-2">
                             <ModeButton
                                 active={notesFormat === 'DOC'}
                                 icon={<Notebook className="size-4" />}
-                                label="Document slide"
-                                hint="Editable rich text"
+                                label={t('notesFormat.docLabel')}
+                                hint={t('notesFormat.docHint')}
                                 onClick={() => setNotesFormat('DOC')}
                             />
                             <ModeButton
                                 active={notesFormat === 'PDF'}
                                 icon={<FilePdf className="size-4" />}
-                                label="PDF slide"
-                                hint="Fixed page layout"
+                                label={t('notesFormat.pdfLabel')}
+                                hint={t('notesFormat.pdfHint')}
                                 onClick={() => setNotesFormat('PDF')}
                             />
                         </div>
@@ -727,10 +743,10 @@ export function AddToCourseDialog({
                                     onCheckedChange={(v) => setWatermark(v === true)}
                                     disabled={!logoDataUrl}
                                 />
-                                Add institute logo watermark
+                                {t('watermark.label')}
                                 {!logoDataUrl && (
                                     <span className="text-caption text-neutral-400">
-                                        (no logo set)
+                                        {t('watermark.noLogo')}
                                     </span>
                                 )}
                             </label>
@@ -741,25 +757,25 @@ export function AddToCourseDialog({
                 {/* Assessment slide type selector */}
                 {!isNotes && (
                     <div className="flex flex-col gap-2">
-                        <span className="text-body font-semibold text-neutral-600">Add as</span>
+                        <span className="text-body font-semibold text-neutral-600">{t('addAs')}</span>
                         <div className="flex flex-wrap gap-2">
                             <ModeButton
                                 active={assessmentMode === 'QUIZ'}
                                 icon={<ListChecks className="size-4" />}
-                                label="Quiz slide"
-                                hint="Embeds the questions"
+                                label={t('assessmentMode.quizLabel')}
+                                hint={t('assessmentMode.quizHint')}
                                 onClick={() => setAssessmentMode('QUIZ')}
                             />
                             <ModeButton
                                 active={assessmentMode === 'ASSESSMENT'}
                                 icon={<LinkSimple className="size-4" />}
-                                label="Assessment slide"
+                                label={t('assessmentMode.assessmentLabel')}
                                 hint={
                                     assessmentId
-                                        ? 'Links the published assessment'
+                                        ? t('assessmentMode.assessmentHintLinked')
                                         : publishAssessment
-                                          ? 'Publishes, then links it'
-                                          : 'Publish first'
+                                          ? t('assessmentMode.assessmentHintPublishThenLink')
+                                          : t('assessmentMode.assessmentHintPublishFirst')
                                 }
                                 disabled={!canLinkAssessment}
                                 onClick={() => setAssessmentMode('ASSESSMENT')}
@@ -767,8 +783,8 @@ export function AddToCourseDialog({
                             <ModeButton
                                 active={assessmentMode === 'ASSESSMENT_ONLY'}
                                 icon={<Exam className="size-4" />}
-                                label="Assessment only"
-                                hint="Assessment Center · no slide"
+                                label={t('assessmentMode.onlyLabel')}
+                                hint={t('assessmentMode.onlyHint')}
                                 disabled={!canPublishOnly}
                                 onClick={() => setAssessmentMode('ASSESSMENT_ONLY')}
                             />
@@ -776,34 +792,32 @@ export function AddToCourseDialog({
                         {assessmentMode === 'ASSESSMENT' && !assessmentId && publishAssessment && (
                             <p className="flex items-center gap-1.5 text-caption text-neutral-500">
                                 <Info className="size-3.5" />
-                                The assessment will be published (with its current settings) and
-                                linked as a scheduled assessment slide.
+                                {t('publishNote')}
                             </p>
                         )}
                         {isAssessmentOnly && (
                             <div className="flex flex-col gap-1.5">
                                 <span className="text-body font-medium text-neutral-600">
-                                    Assign to batches
+                                    {t('assignToBatches')}
                                 </span>
                                 <MultiSelect
                                     options={batchOptions}
                                     selected={selectedBatchIds}
                                     onChange={setSelectedBatchIds}
-                                    placeholder="Select batches"
+                                    placeholder={t('selectBatchesPlaceholder')}
                                 />
                                 <p className="flex items-center gap-1.5 text-caption text-neutral-500">
                                     <Info className="size-3.5 shrink-0" />
                                     {selectedBatchIds.length > 0
-                                        ? `Publishes to the Assessment Center, takeable by ${selectedBatchIds.length} batch${selectedBatchIds.length === 1 ? '' : 'es'}. No course slide is created.`
-                                        : 'No batch selected — publishes unassigned; attach batches later from the Assessment Center.'}
+                                        ? t('batchInfo', { count: selectedBatchIds.length })
+                                        : t('noBatchSelected')}
                                 </p>
                             </div>
                         )}
                         {linkNeedsPublish && (
                             <p className="flex items-center gap-1.5 text-caption text-warning-600">
                                 <Info className="size-3.5" />
-                                Publish the assessment (Create Assessment) before linking it as an
-                                assessment slide.
+                                {t('linkNeedsPublish')}
                             </p>
                         )}
                     </div>
@@ -817,7 +831,7 @@ export function AddToCourseDialog({
                     assessmentConfig && (
                         <div className="flex flex-col gap-2">
                             <span className="text-body font-semibold text-neutral-600">
-                                Schedule &amp; marking
+                                {t('scheduleAndMarking')}
                             </span>
                             <div className="rounded-lg border border-neutral-200 p-3">
                                 {assessmentConfig}
@@ -828,20 +842,20 @@ export function AddToCourseDialog({
                 {/* Slide publish state (slide only) */}
                 {!isAssessmentOnly && (
                     <div className="flex flex-col gap-2">
-                        <span className="text-body font-semibold text-neutral-600">Save as</span>
+                        <span className="text-body font-semibold text-neutral-600">{t('saveAs')}</span>
                         <div className="flex flex-wrap gap-2">
                             <ModeButton
                                 active={slideStatus === 'DRAFT'}
                                 icon={<NotePencil className="size-4" />}
-                                label="Draft"
-                                hint="Hidden from learners"
+                                label={t('status.draftLabel')}
+                                hint={t('status.draftHint')}
                                 onClick={() => setSlideStatus('DRAFT')}
                             />
                             <ModeButton
                                 active={slideStatus === 'PUBLISHED'}
                                 icon={<CheckCircle className="size-4" />}
-                                label="Published"
-                                hint="Visible to learners"
+                                label={t('status.publishedLabel')}
+                                hint={t('status.publishedHint')}
                                 onClick={() => setSlideStatus('PUBLISHED')}
                             />
                         </div>
@@ -851,11 +865,11 @@ export function AddToCourseDialog({
                 {/* Destination cascade (slide only) */}
                 {!isAssessmentOnly && (
                 <div className="flex flex-col gap-2">
-                    <span className="text-body font-semibold text-neutral-600">Destination</span>
+                    <span className="text-body font-semibold text-neutral-600">{t('destination')}</span>
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                         <CascadeField
-                            label="Course"
-                            placeholder="Select course"
+                            label={t('fields.course')}
+                            placeholder={t('fields.selectCourse')}
                             value={sel.courseId}
                             onChange={setCourse}
                             disabled={!studyLibraryData || isInitLoading}
@@ -867,8 +881,8 @@ export function AddToCourseDialog({
                         />
                         {showSession && (
                             <CascadeField
-                                label="Session"
-                                placeholder="Select session"
+                                label={t('fields.session')}
+                                placeholder={t('fields.selectSession')}
                                 value={sel.sessionId}
                                 onChange={setSession}
                                 disabled={!sel.courseId}
@@ -881,8 +895,8 @@ export function AddToCourseDialog({
                         )}
                         {showLevel && (
                             <CascadeField
-                                label="Level"
-                                placeholder="Select level"
+                                label={t('fields.level')}
+                                placeholder={t('fields.selectLevel')}
                                 value={sel.levelId}
                                 onChange={setLevel}
                                 disabled={!sel.sessionId}
@@ -895,8 +909,8 @@ export function AddToCourseDialog({
                         )}
                         {showSubject && (
                             <CascadeField
-                                label="Subject"
-                                placeholder="Select subject"
+                                label={t('fields.subject')}
+                                placeholder={t('fields.selectSubject')}
                                 value={sel.subjectId}
                                 onChange={setSubject}
                                 disabled={!sel.levelId}
@@ -909,8 +923,8 @@ export function AddToCourseDialog({
                         )}
                         {showModule && (
                             <CascadeField
-                                label="Module"
-                                placeholder="Select module"
+                                label={t('fields.module')}
+                                placeholder={t('fields.selectModule')}
                                 value={sel.moduleId}
                                 onChange={setModule}
                                 disabled={
@@ -924,8 +938,8 @@ export function AddToCourseDialog({
                             />
                         )}
                         <CascadeField
-                            label="Chapter"
-                            placeholder="Select chapter"
+                            label={t('fields.chapter')}
+                            placeholder={t('fields.selectChapter')}
                             value={sel.chapterId}
                             onChange={setChapter}
                             disabled={!sel.moduleId}
@@ -945,7 +959,7 @@ export function AddToCourseDialog({
                     ) : (
                         !sel.chapterId && (
                             <p className="text-caption text-neutral-500">
-                                Pick a chapter to add this slide to.
+                                {t('pickChapter')}
                             </p>
                         )
                     )}
@@ -955,8 +969,8 @@ export function AddToCourseDialog({
                         <div className="flex flex-wrap items-center justify-between gap-2">
                             <span className="text-body font-semibold text-neutral-700">
                                 {allDestinations.length > 0
-                                    ? `Adding to ${allDestinations.length} ${allDestinations.length === 1 ? 'course' : 'courses'}`
-                                    : 'Select a chapter above'}
+                                    ? t('addingToCourses', { count: allDestinations.length })
+                                    : t('selectChapterAbove')}
                             </span>
                             <MyButton
                                 type="button"
@@ -966,7 +980,7 @@ export function AddToCourseDialog({
                                 onClick={addCurrentDestination}
                             >
                                 <Plus className="mr-1 size-3.5" />
-                                Add another course
+                                {t('addAnotherCourse')}
                             </MyButton>
                         </div>
                         {combinedDestinations.length > 0 && (
@@ -986,13 +1000,13 @@ export function AddToCourseDialog({
                                                     type="button"
                                                     onClick={() => removeDestination(d.key)}
                                                     className="shrink-0 text-neutral-400 transition-colors hover:text-danger-600"
-                                                    aria-label="Remove destination"
+                                                    aria-label={t('removeDestination')}
                                                 >
                                                     <Trash className="size-4" />
                                                 </button>
                                             ) : (
                                                 <span className="shrink-0 text-caption text-neutral-400">
-                                                    from selection
+                                                    {t('fromSelection')}
                                                 </span>
                                             )}
                                         </div>
@@ -1006,16 +1020,16 @@ export function AddToCourseDialog({
 
                 {/* Preview */}
                 <div className="flex flex-col gap-2">
-                    <span className="text-body font-semibold text-neutral-600">Preview</span>
+                    <span className="text-body font-semibold text-neutral-600">{t('preview')}</span>
                     <div className="max-h-72 overflow-y-auto rounded-lg border border-neutral-200 bg-white p-4">
                         {isNotes ? (
                             <div className="flex flex-col gap-2 text-body leading-relaxed text-neutral-700 [&_h1]:text-h3 [&_h1]:font-semibold [&_h2]:text-subtitle [&_h2]:font-semibold [&_h3]:font-semibold [&_img]:h-auto [&_img]:max-w-full [&_img]:rounded-md [&_li]:ml-4 [&_li]:list-disc [&_ol_li]:list-decimal [&_strong]:font-semibold [&_table]:w-full [&_table]:border-collapse [&_td]:border [&_td]:border-neutral-200 [&_td]:px-2 [&_td]:py-1 [&_th]:border [&_th]:border-neutral-200 [&_th]:bg-neutral-50 [&_th]:px-2 [&_th]:py-1">
                                 <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                                    {content.markdown || '_No notes content._'}
+                                    {content.markdown || t('noNotesContent')}
                                 </ReactMarkdown>
                             </div>
                         ) : questionCount === 0 ? (
-                            <p className="text-body text-neutral-500">No questions to add.</p>
+                            <p className="text-body text-neutral-500">{t('noQuestions')}</p>
                         ) : (
                             <ol className="flex flex-col gap-4">
                                 {(content.questions ?? []).map((q, i) => (
@@ -1025,7 +1039,7 @@ export function AddToCourseDialog({
                                                 {i + 1}.
                                             </span>
                                             <span>
-                                                {stripHtml(q.question) || 'Untitled question'}
+                                                {stripHtml(q.question) || t('untitledQuestion')}
                                             </span>
                                         </div>
                                         {q.options && q.options.length > 0 && (
@@ -1090,6 +1104,7 @@ function CascadeField({
     onChange: (v: string) => void;
     disabled?: boolean;
 }) {
+    const { t } = useTranslation('studyLibraryAddToCourseDialog');
     return (
         <div className="flex w-full flex-col gap-1.5">
             <label className="text-body font-medium text-neutral-600">
@@ -1101,8 +1116,8 @@ function CascadeField({
                 value={value}
                 onChange={onChange}
                 placeholder={placeholder}
-                searchPlaceholder={`Search ${label.toLowerCase()}…`}
-                emptyText="No matches"
+                searchPlaceholder={t('searchPlaceholder', { field: label.toLowerCase() })}
+                emptyText={t('noMatches')}
                 disabled={disabled}
             />
         </div>

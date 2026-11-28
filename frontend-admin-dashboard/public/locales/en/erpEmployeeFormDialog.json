@@ -1,0 +1,78 @@
+{
+    "validation": {
+        "joinDateRequired": "Pick the joining date",
+        "noticePeriodWholeNumber": "Use a whole number of days",
+        "userIdRequired": "A user id is required to link this profile to a person"
+    },
+    "noDepartment": "No department",
+    "noDesignation": "No designation",
+    "noReportingManager": "No reporting manager",
+    "notSet": "Not set",
+    "toast": {
+        "updated": "Employee profile updated",
+        "added": "Employee added"
+    },
+    "errors": {
+        "updateFailed": "Could not update this employee profile",
+        "createFailed": "Could not add this employee"
+    },
+    "editEmployee": "Edit employee",
+    "addEmployee": "Add employee",
+    "cancel": "Cancel",
+    "saving": "Saving…",
+    "adding": "Adding…",
+    "saveChanges": "Save changes",
+    "sections": {
+        "whoThisIsFor": "Who this profile is for",
+        "roleInOrganisation": "Role in the organisation",
+        "emergencyContact": "Emergency contact",
+        "statutoryIdentifiers": "Statutory identifiers"
+    },
+    "fields": {
+        "userId": {
+            "label": "User id",
+            "placeholder": "Platform user id",
+            "description": "Easier path: open Staff Coverage and create the HR profile straight from someone already on your team — it fills the user id in for you."
+        },
+        "employeeCode": {
+            "label": "Employee code",
+            "placeholder": "e.g. EMP-014"
+        },
+        "joinDate": {
+            "label": "Join date"
+        },
+        "department": "Department",
+        "designation": "Designation",
+        "reportingManager": "Reporting manager",
+        "employmentType": "Employment type",
+        "noticePeriod": {
+            "label": "Notice period (days)",
+            "placeholder": "e.g. 30"
+        },
+        "nationality": {
+            "label": "Nationality",
+            "placeholder": "e.g. Indian"
+        },
+        "contactName": {
+            "label": "Name",
+            "placeholder": "Contact name"
+        },
+        "contactPhone": {
+            "label": "Phone",
+            "placeholder": "Contact number"
+        },
+        "contactRelation": {
+            "label": "Relation",
+            "placeholder": "e.g. Spouse"
+        },
+        "pan": {
+            "label": "PAN",
+            "placeholder": "e.g. ABCDE1234F"
+        },
+        "uan": {
+            "label": "UAN",
+            "placeholder": "Provident fund UAN"
+        }
+    },
+    "maskedHint": "The stored number is hidden. Leave this blank to keep it."
+}

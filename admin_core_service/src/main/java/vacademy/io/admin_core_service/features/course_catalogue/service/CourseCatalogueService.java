@@ -84,8 +84,15 @@ public class CourseCatalogueService {
                 if (optional.isEmpty()) {
                         throw new RuntimeException("Catalogue not found");
                 }
+                Optional<CatalogueInstituteMapping> mapping = catalogueInstituteMappingRepository
+                                .findByCourseCatalogueId(catalogueId);
+                // A deleted site stays deleted: this write copies the request status
+                // onto the mapping, so an editor tab left open would bring it back.
+                if (mapping.isEmpty() || CatalogueStatusEnum.DELETED.name().equals(mapping.get().getStatus()))
+                        throw new VacademyException(HttpStatus.NOT_FOUND, "Catalogue Not Found");
 
                 CourseCatalogue catalogue = optional.get();
+                String previousJson = catalogue.getCatalogueJson();
                 if (request.getCatalogueJson() != null) catalogue.setCatalogueJson(request.getCatalogueJson());
                 if (request.getTagName() != null) catalogue.setTagName(request.getTagName());
                 if (request.getStatus() != null) catalogue.setStatus(request.getStatus());
@@ -93,15 +100,13 @@ public class CourseCatalogueService {
 
                 // Legacy direct write bypasses the draft/publish flow — record it
                 // as a PUBLISHED revision so history stays complete/restorable.
-                if (request.getCatalogueJson() != null) {
+                // Re-sending the same content (a settings-only update) is not a
+                // new version: recording it would mark an open draft as stale.
+                if (request.getCatalogueJson() != null
+                                && !CatalogueRevisionService.sameJson(previousJson, request.getCatalogueJson())) {
                         catalogueRevisionService.recordLegacyPublishedRevision(catalogueId,
                                         request.getCatalogueJson(), userId);
                 }
-
-                Optional<CatalogueInstituteMapping> mapping = catalogueInstituteMappingRepository
-                                .findByCourseCatalogueId(catalogueId);
-                if (mapping.isEmpty())
-                        throw new VacademyException(HttpStatus.NOT_FOUND, "Catalogue Not Found");
 
                 mapping.get().setStatus(request.getStatus());
                 mapping.get().setSource(request.getSource());
@@ -118,7 +123,34 @@ public class CourseCatalogueService {
                                 .sourceId(mapping.get().getSourceId())
                                 .instituteId(mapping.get().getInstitute().getId())
                                 .isDefault(mapping.get().getIsDefault())
+                                // An open editor draft is never discarded here (someone may be
+                                // mid-edit); report it so the caller knows it now lags the live site.
+                                .openDraftRevisionNo(catalogueRevisionService.openDraftRevisionNo(catalogueId))
                                 .build();
+        }
+
+        /**
+         * Soft delete: the site and its mapping move to DELETED. Every reader
+         * (Manage Pages list, editor and public by-tag lookups, catalog API,
+         * storefront jobs) serves only ACTIVE/DRAFT, so the site disappears
+         * everywhere and its tag is free for a new site. The row and its
+         * revisions stay in the database.
+         */
+        @Transactional
+        public void deleteCatalogue(String catalogueId) {
+                CatalogueInstituteMapping mapping = catalogueInstituteMappingRepository
+                                .findByCourseCatalogueId(catalogueId)
+                                .orElseThrow(() -> new VacademyException(HttpStatus.NOT_FOUND, "Catalogue Not Found"));
+                if (CatalogueStatusEnum.DELETED.name().equals(mapping.getStatus())) return;
+
+                mapping.setStatus(CatalogueStatusEnum.DELETED.name());
+                catalogueInstituteMappingRepository.save(mapping);
+
+                CourseCatalogue catalogue = mapping.getCourseCatalogue();
+                if (catalogue != null) {
+                        catalogue.setStatus(CatalogueStatusEnum.DELETED.name());
+                        courseCatalogueRepository.save(catalogue);
+                }
         }
 
         @Transactional(readOnly = true)
@@ -176,6 +208,18 @@ public class CourseCatalogueService {
                                 .sourceId(mapping.getSourceId())
                                 .instituteId(mapping.getInstitute().getId())
                                 .build();
+        }
+
+        /**
+         * The site for the editor: as the public by-tag response, plus when the
+         * live site was last published (the live revision; null when there is
+         * none on record, so the editor falls back to the revision history).
+         */
+        @Transactional(readOnly = true)
+        public CourseCatalogueResponse getCatalogueByInstituteAndTagForEditor(String instituteId, String tagName) {
+                CourseCatalogueResponse response = getCatalogueByInstituteAndTag(instituteId, tagName);
+                response.setUpdatedAt(catalogueRevisionService.liveUpdatedAt(response.getId()));
+                return response;
         }
 
         @Transactional(readOnly = true)

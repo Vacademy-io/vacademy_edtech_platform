@@ -1,0 +1,15 @@
+{
+    "planDescription": {
+        "complexPaymentOption": "Option de paiement complexe (échelonné).",
+        "donation": "Accès au plan de don.",
+        "free": "Accès au plan gratuit.",
+        "oneTime": "Accès au plan de paiement unique.",
+        "subscription": "Accès au plan d'abonnement."
+    },
+    "planOption": {
+        "fallbackTitle": "{{name}} - Option {{number}}"
+    },
+    "referral": {
+        "defaultBonusContentTitle": "Contenu bonus"
+    }
+}

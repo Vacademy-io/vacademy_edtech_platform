@@ -1,0 +1,147 @@
+{
+    "page": {
+        "title": "Syllabus progress",
+        "subtitle": "Mark how far each learner has got through the stage syllabus. Learners see their own progress in the app.",
+        "settings": "Settings",
+        "loadFailed": "Could not load your batches",
+        "loadFailedHint": "Check your connection and try again."
+    },
+    "retry": "Try again",
+    "off": {
+        "title": "Syllabus progress is off",
+        "body": "Switch it on in Settings to let teachers mark each learner’s progress week by week, and learners see it in their app.",
+        "action": "Open settings"
+    },
+    "noBatches": {
+        "title": "No batch has a syllabus yet",
+        "body": "A batch shows up here once its course stage has a syllabus of week blocks. Ask your admin to add one to the stage."
+    },
+    "noAssigned": {
+        "title": "No batches assigned to you",
+        "body": "No batches are assigned to you yet. Ask your admin to assign you to a batch."
+    },
+    "picker": {
+        "label": "Batch",
+        "placeholder": "Choose a batch",
+        "search": "Search course, stage or batch",
+        "empty": "No batch matches.",
+        "option_one": "{{course}} · {{stage}} · {{batch}} ({{count}} learner)",
+        "option_other": "{{course}} · {{stage}} · {{batch}} ({{count}} learners)",
+        "summary": "{{learners}} learners · {{blocks}} week blocks",
+        "promptTitle": "Choose a batch",
+        "promptBody": "Pick a batch above to see each learner’s progress, week block by week block."
+    },
+    "search": {
+        "label": "Student",
+        "placeholder": "Search a student by name",
+        "minChars": "Type at least 2 letters.",
+        "failed": "Could not search students.",
+        "empty": "No student matches “{{q}}”.",
+        "results": "Matching students",
+        "noName": "Unnamed student",
+        "batchLine": "{{course}} · {{stage}} · {{batch}} — {{done}}/{{total}} done",
+        "batchName": "{{course}} · {{stage}} · {{batch}}"
+    },
+    "learner": {
+        "back": "Back",
+        "loadFailed": "Could not load this student’s progress",
+        "loadFailedHint": "Check your connection and try again.",
+        "noCoursesTitle": "No batch with a syllabus",
+        "noCoursesBody": "This student is not in a batch whose course stage has a syllabus.",
+        "openBatch": "Open batch",
+        "summary": "{{done}} of {{total}} week blocks done",
+        "current": "Current",
+        "markHint": "Tap a week block to mark it.",
+        "notYoursTitle": "Not in your batches",
+        "notYoursBody": "This student is not in your batches. Ask your admin if you need to mark their progress."
+    },
+    "batch": {
+        "loadFailed": "Could not load this batch",
+        "loadFailedHint": "Check your connection and try again.",
+        "noSyllabusTitle": "This batch has no syllabus",
+        "noSyllabusBody": "Its course stage has no week blocks yet. Add a syllabus to the stage to start marking progress.",
+        "noLearnersTitle": "No learners in this batch",
+        "noLearnersBody": "Once learners are enrolled in this batch, they show up here."
+    },
+    "grid": {
+        "searchPlaceholder": "Search learner or enrolment no.",
+        "noMatchTitle": "No learner matches",
+        "noMatchBody": "Try another name or enrolment number.",
+        "caption": "Syllabus progress for {{batch}}",
+        "selectAllLearners": "Select all learners shown",
+        "learners_one": "{{count}} learner",
+        "learners_other": "{{count}} learners",
+        "showPoints": "Show the points for {{block}}",
+        "selectWeek": "Select {{block}}",
+        "selectLearner": "Select {{name}}",
+        "completedCount": "{{done}}/{{total}} done",
+        "enrollment": "Enrolment no. {{number}}",
+        "cellLabel": "{{name}}, {{block}}: {{status}}",
+        "pointsOf": "{{done}} of {{total}} points done",
+        "hasNote": "Has a teacher note"
+    },
+    "legend": {
+        "note": "Teacher note"
+    },
+    "status": {
+        "NOT_STARTED": "Not started",
+        "IN_PROGRESS": "In progress",
+        "COMPLETED": "Completed",
+        "SKIPPED": "Skipped"
+    },
+    "block": {
+        "week": "Week {{week}}",
+        "weeks": "Weeks {{from}}–{{to}}",
+        "weekShort": "W{{week}}",
+        "weeksShort": "W{{from}}–{{to}}",
+        "month": "Month {{month}}"
+    },
+    "dialog": {
+        "status": "Status",
+        "statusRequired": "Choose a status",
+        "pointsDone": "Points done ({{done}} of {{total}})",
+        "tickAll": "Tick all",
+        "clearPoints": "Clear",
+        "noPoints": "This week block has no points listed.",
+        "note": "Teacher note",
+        "notePlaceholder": "What went well, what to practise next…",
+        "noteHint": "The learner sees this note.",
+        "noteTooLong": "Keep the note under {{max}} characters",
+        "cancel": "Cancel",
+        "save": "Save",
+        "saving": "Saving…",
+        "lastMarkedBy": "Last marked by {{name}} on {{date}}",
+        "lastMarked": "Last marked on {{date}}",
+        "startedOn": "Started on {{date}}",
+        "completedOn": "Completed on {{date}}"
+    },
+    "bulk": {
+        "open": "Mark week as…",
+        "title": "Mark weeks",
+        "clear": "Clear selection",
+        "selectionSummary": "{{learners}} · {{weeks}}",
+        "learnerCount_one": "{{count}} learner",
+        "learnerCount_other": "{{count}} learners",
+        "allLearnersShort": "All learners",
+        "weekCount_one": "{{count}} week block",
+        "weekCount_other": "{{count}} week blocks",
+        "weeks": "Week blocks",
+        "weeksPlaceholder": "Choose week blocks",
+        "weeksRequired": "Choose at least one week block",
+        "markAs": "Mark as",
+        "note": "Note (optional)",
+        "noteHint": "Added to every learner and week you mark.",
+        "replaceNote": "This replaces the current status of these weeks for these learners.",
+        "apply_one": "Mark {{count}} entry",
+        "apply_other": "Mark {{count}} entries",
+        "allLearners_one": "Applies to the {{count}} learner in this batch (no learner ticked).",
+        "allLearners_other": "Applies to all {{count}} learners in this batch (no learner ticked).",
+        "selectedLearners_one": "Applies to the {{count}} learner you ticked.",
+        "selectedLearners_other": "Applies to the {{count}} learners you ticked."
+    },
+    "toast": {
+        "saved_one": "Progress saved ({{count}} entry).",
+        "saved_other": "Progress saved ({{count}} entries).",
+        "saveFailed": "Could not save the progress."
+    }
+}

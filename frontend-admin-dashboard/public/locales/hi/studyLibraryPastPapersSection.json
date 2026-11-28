@@ -1,0 +1,42 @@
+{
+    "kind": {
+        "assessment": "असेसमेंट",
+        "notes": "नोट्स"
+    },
+    "status": {
+        "generating": "जनरेट हो रहा है",
+        "ready": "तैयार",
+        "published": "प्रकाशित",
+        "failed": "विफल"
+    },
+    "bucket": {
+        "today": "आज",
+        "yesterday": "कल",
+        "thisWeek": "इस सप्ताह पहले",
+        "older": "पुराने"
+    },
+    "rowTime": {
+        "today": "आज, {{time}}",
+        "yesterday": "कल, {{time}}"
+    },
+    "error": {
+        "couldNotLoad": "AI इतिहास लोड नहीं हो सका।",
+        "retry": "पुनः प्रयास करें"
+    },
+    "empty": {
+        "heading": "अभी तक कोई AI इतिहास नहीं",
+        "description": "नीचे एक असेसमेंट या नोट्स जनरेट करें — हर बार यहां दिखाई देगा ताकि आप बिना नई जनरेशन खर्च किए दोबारा-निर्यात या दोबारा-प्रकाशित कर सकें।"
+    },
+    "header": {
+        "title": "AI इतिहास",
+        "subtitle": "इस रिकॉर्डिंग से जनरेट किया गया",
+        "refresh": "रीफ़्रेश करें"
+    },
+    "row": {
+        "lectureNotesChars_one": "लेक्चर नोट्स · {{count}} अक्षर",
+        "lectureNotesChars_other": "लेक्चर नोट्स · {{count}} अक्षर",
+        "questionsCount_one": "{{count}} प्रश्न",
+        "questionsCount_other": "{{count}} प्रश्न",
+        "quotedTitle": "“{{title}}”"
+    }
+}

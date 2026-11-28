@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
@@ -19,14 +20,16 @@ export const FreePlanConfiguration: React.FC<FreePlanConfigurationProps> = ({
     validityDays,
     onValidityDaysChange,
 }) => {
+    const { t } = useTranslation('settingsFreePlanConfiguration');
+
     return (
         <Card>
             <CardHeader>
-                <CardTitle className="text-lg">Free Plan Configuration</CardTitle>
+                <CardTitle className="text-lg">{t('title')}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
                 <div>
-                    <Label>Course Access *</Label>
+                    <Label>{t('courseAccess.label')}</Label>
                     <RadioGroup
                         value={accessType}
                         onValueChange={(value) => onAccessTypeChange(value as FreeAccessType)}
@@ -38,7 +41,7 @@ export const FreePlanConfiguration: React.FC<FreePlanConfigurationProps> = ({
                                 htmlFor="free-access-unlimited"
                                 className="cursor-pointer font-normal"
                             >
-                                Unlimited access
+                                {t('courseAccess.unlimited')}
                             </Label>
                         </div>
                         <div className="flex items-center gap-2">
@@ -47,17 +50,17 @@ export const FreePlanConfiguration: React.FC<FreePlanConfigurationProps> = ({
                                 htmlFor="free-access-limited"
                                 className="cursor-pointer font-normal"
                             >
-                                Limited access
+                                {t('courseAccess.limited')}
                             </Label>
                         </div>
                     </RadioGroup>
 
                     {accessType === 'limited' && (
                         <div className="mt-3">
-                            <Label>Access Duration (Days) *</Label>
+                            <Label>{t('accessDuration.label')}</Label>
                             <Input
                                 type="number"
-                                placeholder="Enter number of days"
+                                placeholder={t('accessDuration.placeholder')}
                                 value={validityDays ?? ''}
                                 onChange={(e) =>
                                     onValidityDaysChange(
@@ -70,11 +73,7 @@ export const FreePlanConfiguration: React.FC<FreePlanConfigurationProps> = ({
                         </div>
                     )}
 
-                    <p className="mt-2 text-xs text-gray-500">
-                        Applies when an admin assigns a learner to this plan. Learners who enroll
-                        themselves through an invite link take their access days from that
-                        invite&apos;s Learner Access Duration.
-                    </p>
+                    <p className="mt-2 text-xs text-gray-500">{t('accessNote')}</p>
                 </div>
             </CardContent>
         </Card>

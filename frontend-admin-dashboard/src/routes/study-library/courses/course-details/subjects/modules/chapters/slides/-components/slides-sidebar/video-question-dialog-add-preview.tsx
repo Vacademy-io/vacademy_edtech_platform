@@ -14,6 +14,7 @@ import { converDataToVideoFormat } from '../../-helper/helper';
 import { useInstituteDetailsStore } from '@/stores/students/students-list/useInstituteDetailsStore';
 import { Route } from '../..';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 type QuestionPaperForm = z.infer<ReturnType<typeof uploadQuestionPaperFormSchema>>;
 
 const VideoQuestionDialogAddPreview = ({
@@ -43,6 +44,7 @@ const VideoQuestionDialogAddPreview = ({
     isAddTimeFrameRef: React.RefObject<HTMLButtonElement>;
     isAddQuestionTypeRef: React.RefObject<HTMLButtonElement>;
 }) => {
+    const { t } = useTranslation('studyLibraryVideoQuestionDialogAddPreview');
     const { activeItem, setActiveItem } = useContentStore();
     // Slide context + save mutation so a newly added question persists to the
     // backend right away (same wiring edit/delete already use).
@@ -127,10 +129,10 @@ const VideoQuestionDialogAddPreview = ({
                 newSlide: false,
             });
             await addUpdateVideoSlide(payload);
-            toast.success('Question saved');
+            toast.success(t('questionSaved'));
         } catch (err) {
             console.error('Failed to save video question:', err);
-            toast.error('Failed to save question');
+            toast.error(t('saveFailed'));
         }
 
         // Close after data is properly updated
@@ -141,7 +143,7 @@ const VideoQuestionDialogAddPreview = ({
         <Dialog open={previewQuestionDialog} onOpenChange={setPreviewQuestionDialog}>
             <DialogContent className="no-scrollbar !m-0 flex h-full !w-full !max-w-full flex-col !gap-0 overflow-y-auto !rounded-none !p-0 [&>button]:hidden">
                 <div className="flex w-full items-center justify-between bg-primary-50">
-                    <h1 className="p-4 font-semibold text-primary-500">Question</h1>
+                    <h1 className="p-4 font-semibold text-primary-500">{t('question')}</h1>
                     <div className="mr-4 flex items-center gap-2">
                         <MyButton
                             type="button"
@@ -151,7 +153,7 @@ const VideoQuestionDialogAddPreview = ({
                             className="mr-3"
                             onClick={() => setPreviewQuestionDialog(false)}
                         >
-                            Close
+                            {t('close')}
                         </MyButton>
                         <MyButton
                             type="button"
@@ -161,14 +163,14 @@ const VideoQuestionDialogAddPreview = ({
                             className="mr-3"
                             onClick={handleAddQuestionInAddedForm}
                         >
-                            Done
+                            {t('done')}
                         </MyButton>
                     </div>
                 </div>
                 <div>
                     <FormProvider {...videoQuestionForm}>
                         {videoQuestionForm.getValues('questions')?.length === 0 ? (
-                            <p>Nothing to show</p>
+                            <p>{t('nothingToShow')}</p>
                         ) : (
                             <div className="my-4 flex flex-col gap-2">
                                 <MainViewComponentFactory

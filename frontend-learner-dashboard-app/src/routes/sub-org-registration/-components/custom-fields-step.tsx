@@ -3,6 +3,7 @@ import { useForm, FormProvider, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { ArrowLeft, ListChecks, SpinnerGap } from "@phosphor-icons/react";
+import { useTranslation } from "react-i18next";
 import { FormControl, FormField, FormItem } from "@/components/ui/form";
 import { Separator } from "@/components/ui/separator";
 import { ModernCard } from "@/components/design-system/modern-card";
@@ -14,10 +15,9 @@ import {
   getFieldRenderType,
 } from "@/components/common/enroll-by-invite/-utils/custom-field-helpers";
 import {
-  getCountryCode,
+  lookupCountryCode,
   findCountryFieldKey,
 } from "@/components/common/enroll-by-invite/-utils/country-code-mapping";
-import { getCachedPreferredCountries } from "@/services/domain-routing";
 import { getDynamicSchema } from "@/routes/register/-utils/helper";
 import { AssessmentCustomFieldOpenRegistration } from "@/types/assessment-open-registration";
 import { capitalise } from "@/utils/custom-field";
@@ -89,6 +89,7 @@ const CustomFieldsStep = ({
   onContinue,
   onBack,
 }: CustomFieldsStepProps) => {
+  const { t } = useTranslation("registrationB");
   const formFields = useMemo(
     () => convertTemplateCustomFields(customFields),
     [customFields]
@@ -137,19 +138,23 @@ const CustomFieldsStep = ({
 
   const watchedFormValues = useWatch({ control: form.control });
 
-  // Phone country code derives from a country field if one exists in the form,
-  // falling back to the institute's configured preferred country
-  // (commaSeparatedPreferredCountry) instead of a hardcoded default.
-  const getPhoneCountryCode = () => {
-    const preferred = getCachedPreferredCountries();
-    const fallback = preferred[0] ?? "in";
+  // A country field in this form, when there is one, is the strongest signal
+  // — the visitor just told us where they are.
+  //
+  // Undefined means "no such signal", and PhoneInputField then resolves the
+  // country itself through the portal's chain (institute preference, else the
+  // region the form is opened in). It has to be undefined rather than that
+  // chain's answer read here: a `country` prop overrides the field's own
+  // resolution, so passing a value read before domain routing replied would
+  // pin the field to the platform fallback (+91) even after the real
+  // preference arrived.
+  const getPhoneCountryCode = (): string | undefined => {
     const formValues = form.getValues();
     const countryFieldKey = findCountryFieldKey(formValues);
     if (countryFieldKey) {
-      const countryValue = formValues[countryFieldKey]?.value || "";
-      return getCountryCode(countryValue, fallback);
+      return lookupCountryCode(formValues[countryFieldKey]?.value);
     }
-    return fallback;
+    return undefined;
   };
 
   /** Collects values keyed by custom_field_id in the template's field order. */
@@ -188,10 +193,10 @@ const CustomFieldsStep = ({
         </div>
         <div>
           <h2 className="text-lg font-semibold leading-tight text-neutral-700">
-            Additional Information
+            {t("subOrgRegistration.customFields.title")}
           </h2>
           <p className="mt-0.5 text-sm text-neutral-500">
-            A few more details requested by the institute
+            {t("subOrgRegistration.customFields.subtitle")}
           </p>
         </div>
       </div>
@@ -199,9 +204,11 @@ const CustomFieldsStep = ({
       <Separator className="mb-5" />
 
       {formFields.length === 0 ? (
-        <div className="py-8 text-center text-neutral-500">
-          <p className="mb-4">No additional information is required.</p>
-          <div className="flex flex-col-reverse items-center justify-center gap-3 sm:flex-row">
+        <div className="py-8 text-center text-neutral-500 space-y-4">
+          <p>
+            {t("subOrgRegistration.customFields.noFieldsMessage")}
+          </p>
+          <div className="flex flex-col-reverse items-center justify-center gap-stack sm:flex-row">
             {onBack && (
               <MyButton
                 type="button"
@@ -212,7 +219,7 @@ const CustomFieldsStep = ({
                 disable={isSubmitting}
               >
                 <ArrowLeft className="me-2 size-4" />
-                Back
+                {t("common.back")}
               </MyButton>
             )}
             <MyButton
@@ -223,7 +230,7 @@ const CustomFieldsStep = ({
               onClick={() => onContinue([])}
               disable={isSubmitting}
             >
-              Continue
+              {t("common.continue")}
             </MyButton>
           </div>
         </div>
@@ -255,7 +262,9 @@ const CustomFieldsStep = ({
                         <FormControl>
                           <PhoneInputField
                             label={capitalise(field.field_name)}
-                            placeholder="123 456 7890"
+                            placeholder={t(
+                              "subOrgRegistration.customFields.phonePlaceholder"
+                            )}
                             name={`${key}.value`}
                             control={form.control}
                             country={phoneCountryCode}
@@ -301,7 +310,7 @@ const CustomFieldsStep = ({
               );
             })}
 
-            <div className="mt-2 flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
+            <div className="mt-2 flex flex-col-reverse gap-stack sm:flex-row sm:justify-between">
               {onBack ? (
                 <MyButton
                   type="button"
@@ -313,7 +322,7 @@ const CustomFieldsStep = ({
                   className="w-full sm:w-auto"
                 >
                   <ArrowLeft className="me-2 size-4" />
-                  Back
+                  {t("common.back")}
                 </MyButton>
               ) : (
                 <span className="hidden sm:block" />
@@ -329,12 +338,12 @@ const CustomFieldsStep = ({
                 {isSubmitting ? (
                   <>
                     <SpinnerGap className="me-2 size-4 animate-spin" />
-                    Submitting...
+                    {t("common.submitting")}
                   </>
                 ) : isFinalStep ? (
-                  "Submit Registration"
+                  t("common.submitRegistration")
                 ) : (
-                  "Continue"
+                  t("common.continue")
                 )}
               </MyButton>
             </div>

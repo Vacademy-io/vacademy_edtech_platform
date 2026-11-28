@@ -22,4 +22,12 @@ public class AllStudentV2Response {
     private long totalElements;
     private int totalPages;
     private boolean last;
+
+    /**
+     * Whether this institute runs trials at all, i.e. some live invite sets
+     * AUTOPAY_SETTING.TRIAL_DAYS > 0. The Trial/Paid badge and its filter hide themselves
+     * when false, so an institute with no trial memberships is never shown a distinction
+     * that means nothing there. Derived from the invites, not a flag to remember to set.
+     */
+    private Boolean membershipTypesAvailable;
 }

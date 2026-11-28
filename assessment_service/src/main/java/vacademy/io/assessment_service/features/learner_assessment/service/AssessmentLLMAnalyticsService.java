@@ -2,6 +2,8 @@ package vacademy.io.assessment_service.features.learner_assessment.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import vacademy.io.assessment_service.features.assessment.entity.StudentAttempt;
 import vacademy.io.assessment_service.features.client.AdminCoreServiceClient;
@@ -22,10 +24,17 @@ public class AssessmentLLMAnalyticsService {
     private final AdminCoreServiceClient adminCoreServiceClient;
     private final AssessmentDataEnrichmentService enrichmentService;
 
+    /** Off = no submission is sent for AI analysis (see application.properties). */
+    @Value("${assessment.llm-analytics.enabled:true}")
+    private boolean enabled;
+
     /**
-     * Send assessment submission data to admin core service for LLM analysis (Sync)
-     * This is fire-and-forget - failures won't impact the assessment submission
-     * flow
+     * Send assessment submission data to admin core service for LLM analysis.
+     * Truly async since 2026-08-27 (it was named Async but ran on the Tomcat
+     * thread; at the 1000-VU load test that serialized the submit wave).
+     * Fire-and-forget - failures won't impact the assessment submission flow.
+     * Safe off-thread: the entity's registration/assessment relations are
+     * EAGER (already hydrated), everything else is fresh repository queries.
      *
      * @param studentAttempt  The student's completed attempt
      * @param assessmentId    The assessment ID
@@ -34,6 +43,7 @@ public class AssessmentLLMAnalyticsService {
      * @param durationMinutes The assessment duration
      * @param totalMarks      The total marks for the assessment
      */
+    @Async("assessmentAnalyticsExecutor")
     public void sendAssessmentDataForAnalysisAsync(
             StudentAttempt studentAttempt,
             String assessmentId,
@@ -41,6 +51,10 @@ public class AssessmentLLMAnalyticsService {
             String assessmentType,
             Integer durationMinutes,
             Integer totalMarks) {
+
+        if (!enabled) {
+            return;
+        }
 
         try {
             // Derive instituteId from registration

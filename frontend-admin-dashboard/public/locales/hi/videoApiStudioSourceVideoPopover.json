@@ -1,0 +1,47 @@
+{
+    "trigger": {
+        "title": "स्रोत वीडियो क्लिप जोड़ें",
+        "ariaLabel": "स्रोत वीडियो जोड़ें"
+    },
+    "heading": {
+        "title": "स्रोत वीडियो",
+        "description": "जनरेट किए गए वीडियो के अंदर उपयोग होने वाला डेमो फुटेज या पॉडकास्ट ऑडियो।"
+    },
+    "processing": {
+        "label": "प्रोसेस हो रहा है"
+    },
+    "available": {
+        "label": "उपलब्ध",
+        "allSelected": "सभी उपलब्ध वीडियो चुन लिए गए हैं।",
+        "durationSeconds": "{{seconds}} सेकंड"
+    },
+    "limit": {
+        "message_one": "अधिकतम {{count}} स्रोत।",
+        "message_other": "अधिकतम {{count}} स्रोत।"
+    },
+    "modes": {
+        "demo": "डेमो",
+        "podcast": "पॉडकास्ट",
+        "photo": "फ़ोटो",
+        "screenshot": "स्क्रीनशॉट",
+        "diagram": "डायग्राम"
+    },
+    "upload": {
+        "namePlaceholder": "वीडियो का नाम",
+        "typeLabel": "प्रकार:",
+        "confirm": "अपलोड और इंडेक्स करें",
+        "uploading": "अपलोड हो रहा है…",
+        "cancel": "रद्द करें",
+        "dropCta": "वीडियो (≤500MB) या छवि (≤10MB) अपलोड करें"
+    },
+    "errors": {
+        "videoTooLarge": "वीडियो बहुत बड़ा है। अधिकतम 500MB।",
+        "imageTooLarge": "छवि बहुत बड़ी है। अधिकतम 10MB।",
+        "unsupportedFormat": "असमर्थित फ़ॉर्मैट। MP4/WebM/MOV या PNG/JPEG/WebP उपयोग करें।",
+        "uploadFailed": "अपलोड विफल",
+        "urlFailed": "URL प्राप्त करने में विफल"
+    },
+    "success": {
+        "uploaded": "\"{{name}}\" अपलोड हो गया — इंडेक्सिंग शुरू"
+    }
+}

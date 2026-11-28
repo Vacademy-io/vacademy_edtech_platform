@@ -27,6 +27,23 @@ export interface ResultNotificationSettings {
 }
 
 /**
+ * Role-wise control over who on the staff hears about a learner's request from inside a test
+ * (a problem with a question, more time, another attempt), and on which channels. `roles` maps
+ * a role key (ADMIN / TEACHER / a custom role name) to on/off; a role absent from the map falls
+ * back to the default: ADMIN on, every other role off. Learner roles are never notified.
+ * `channels.inApp` = dashboard bell + app push; `channels.email` = an email. Both default on.
+ */
+export interface LearnerRequestNotificationSettings {
+    version: number;
+    roles: Record<string, boolean>;
+    channels: { inApp: boolean; email: boolean };
+}
+
+/** Default: only ADMIN hears about learner requests. */
+export const defaultReceivesLearnerRequestNotification = (roleKey: string): boolean =>
+    (roleKey || '').toUpperCase() === 'ADMIN';
+
+/**
  * Calculator offered inside the live test.
  * - `basic`     — four-function keypad (arithmetic only).
  * - `scientific` — JEE/NEET-style: trig and inverse trig, log/ln, powers and
@@ -63,13 +80,124 @@ export interface ExamExperienceSettings {
     };
 }
 
+/**
+ * AI copy checking template: INSIDE = the teacher's remarks written on the
+ * copy (the usual checked copy); OUTSIDE = marks on the copy, remarks in a
+ * "Teacher comments" panel beside it.
+ */
+export type CommentPlacement = 'INSIDE' | 'OUTSIDE';
+
+/**
+ * What happens to uploaded copies in a bulk AI check (web and Evalezy): ASK = the
+ * teacher chooses each time (the default); MAP = always matched to the
+ * assessment's students; CHECK_ONLY = only checked and returned as a zip, never
+ * matched to a student or shown as a submission.
+ */
+export type StudentMapping = 'ASK' | 'MAP' | 'CHECK_ONLY';
+
+/**
+ * The language the AI writes its remarks in: AUTO gives a Hindi or Sanskrit copy
+ * Hindi remarks (every other copy English); ENGLISH keeps every copy in English.
+ */
+export type RemarksLanguage = 'AUTO' | 'ENGLISH';
+
+/**
+ * Spelling and grammar on AI-checked copies: HIGHLIGHT = each error underlined
+ * with its correction and listed in the answer's feedback, no marks deducted.
+ */
+export type LanguageFeedback = 'HIGHLIGHT' | 'OFF';
+
+/** Ink, darkness, handwriting and size of the AI's pen on checked copies (ai_service pen_style.py). */
+export type PenInkName = 'RED' | 'BLUE' | 'GREEN' | 'BLACK' | 'PURPLE';
+/** A named ink, or a "#rrggbb" the teacher picked. */
+export type PenInk = PenInkName | `#${string}`;
+export type PenFont =
+    | 'DAWNING_OF_A_NEW_DAY'
+    | 'COVERED_BY_YOUR_GRACE'
+    | 'OVER_THE_RAINBOW'
+    | 'CAVEAT'
+    | 'CEDARVILLE_CURSIVE'
+    | 'KALAM'
+    | 'PATRICK_HAND'
+    | 'ARCHITECTS_DAUGHTER';
+export type PenSize = 'SMALL' | 'MEDIUM' | 'LARGE';
+export interface PenStyle {
+    ink: PenInk;
+    font: PenFont;
+    size: PenSize;
+    /** 0 lightest .. 100 darkest; 50 leaves the ink as it is. */
+    darkness: number;
+}
+export const DEFAULT_PEN_STYLE: PenStyle = {
+    ink: 'RED',
+    font: 'KALAM',
+    size: 'MEDIUM',
+    darkness: 50,
+};
+
+export interface AiCopyCheckSettings {
+    /** The template preselected when copies are sent for AI checking. */
+    commentPlacement: CommentPlacement;
+    /** The pen every checked copy is drawn with. Absent = the usual red pen. */
+    penStyle?: PenStyle;
+    /** Whether uploaded copies are matched to students. Absent = ASK. */
+    studentMapping?: StudentMapping;
+    /** The language of the AI's remarks. Absent = AUTO. */
+    remarksLanguage?: RemarksLanguage;
+}
+
+/** How the AI checks one assessment's copies, kept on the assessment (snake_case, as sent). */
+export interface CopyCheckConfig {
+    subject?: string | null;
+    level?: string | null;
+    instructions?: string | null;
+    language_feedback?: LanguageFeedback | null;
+}
+
+/**
+ * Assessment folders: group assessments (e.g. an "English" folder) on the admin list
+ * and show them to learners as folder cards. Off = the flat list, as before.
+ * Read by the learner app too, so keep the shape in sync there.
+ */
+export interface AssessmentFolderSettings {
+    enabled: boolean;
+}
+
+/** Size of a scanned page in Evalezy: STANDARD keeps uploads light, HIGH helps small handwriting. */
+export type EvalezyScanQuality = 'STANDARD' | 'HIGH';
+
+/**
+ * Evalezy — the simple copy-check app (evalezy.vacademy.io and the Evalezy mobile
+ * app): pick an assessment, scan or upload copies, the AI checks them, download
+ * the checked copies as a zip. Same portal and login; these switches are the
+ * institute's whole control over it. The AI template, instructions and language
+ * feedback come from `aiCopyCheck` like every other copy check.
+ */
+export interface EvalezySettings {
+    /** This institute's admins may use Evalezy. Off = the app shows a "turned off" page. */
+    enabled: boolean;
+    /** Scan pages with the device camera. */
+    allowCamera: boolean;
+    /** Pick PDFs and photos from the device. */
+    allowUpload: boolean;
+    scanQuality: EvalezyScanQuality;
+    /** Email the person who sent the copies when the batch is checked. */
+    notifyEmail: boolean;
+}
+
 export interface AssessmentSettingsData {
     offlineEntry: {
         enabled: boolean;
     };
+    assessmentFolders?: AssessmentFolderSettings;
+    /** Folders on the Question Banks and Papers page; off unless enabled === true. */
+    questionPaperFolders?: AssessmentFolderSettings;
     reportBranding: ReportBrandingSettings;
     resultNotifications: ResultNotificationSettings;
+    learnerRequestNotifications?: LearnerRequestNotificationSettings;
     examExperience: ExamExperienceSettings;
+    aiCopyCheck?: AiCopyCheckSettings;
+    evalezy?: EvalezySettings;
 }
 
 /** Default: STUDENT/LEARNER receive results; every other role (incl. ADMIN) does not. */
@@ -116,6 +244,30 @@ export const DEFAULT_EXAM_EXPERIENCE: ExamExperienceSettings = {
     mobile: { hideAppNavigation: true },
 };
 
+/** On by default: Evalezy only reaches features an admin already has in the portal. */
+export const DEFAULT_EVALEZY_SETTINGS: EvalezySettings = {
+    enabled: true,
+    allowCamera: true,
+    allowUpload: true,
+    scanQuality: 'STANDARD',
+    notifyEmail: true,
+};
+
+/** Fill in a partially-saved `evalezy` block; unknown values fall back to the default. */
+export const mergeEvalezySettings = (
+    incoming?: Partial<EvalezySettings> | null
+): EvalezySettings => {
+    const flag = (value: unknown, fallback: boolean) =>
+        typeof value === 'boolean' ? value : fallback;
+    return {
+        enabled: flag(incoming?.enabled, DEFAULT_EVALEZY_SETTINGS.enabled),
+        allowCamera: flag(incoming?.allowCamera, DEFAULT_EVALEZY_SETTINGS.allowCamera),
+        allowUpload: flag(incoming?.allowUpload, DEFAULT_EVALEZY_SETTINGS.allowUpload),
+        scanQuality: incoming?.scanQuality === 'HIGH' ? 'HIGH' : 'STANDARD',
+        notifyEmail: flag(incoming?.notifyEmail, DEFAULT_EVALEZY_SETTINGS.notifyEmail),
+    };
+};
+
 export const DEFAULT_ASSESSMENT_SETTINGS: AssessmentSettingsData = {
     offlineEntry: {
         enabled: false,
@@ -123,6 +275,8 @@ export const DEFAULT_ASSESSMENT_SETTINGS: AssessmentSettingsData = {
     reportBranding: { ...DEFAULT_REPORT_BRANDING },
     // Empty map => backend applies per-role defaults (STUDENT on, everything else off).
     resultNotifications: { version: 1, roles: {} },
+    // Empty map => backend default (ADMIN on); both channels on.
+    learnerRequestNotifications: { version: 1, roles: {}, channels: { inApp: true, email: true } },
     examExperience: {
         ...DEFAULT_EXAM_EXPERIENCE,
         calculator: { ...DEFAULT_EXAM_EXPERIENCE.calculator },
@@ -130,7 +284,23 @@ export const DEFAULT_ASSESSMENT_SETTINGS: AssessmentSettingsData = {
         questionPalette: { ...DEFAULT_EXAM_EXPERIENCE.questionPalette },
         mobile: { ...DEFAULT_EXAM_EXPERIENCE.mobile },
     },
+    aiCopyCheck: { commentPlacement: 'INSIDE' },
+    assessmentFolders: { enabled: false },
+    questionPaperFolders: { enabled: false },
+    evalezy: { ...DEFAULT_EVALEZY_SETTINGS },
 };
+
+/** The saved choice, or ASK for anything missing or unknown. */
+export const normalizeStudentMapping = (value: unknown): StudentMapping =>
+    value === 'MAP' || value === 'CHECK_ONLY' ? value : 'ASK';
+
+/** The saved choice, or AUTO for anything missing or unknown. */
+export const normalizeRemarksLanguage = (value: unknown): RemarksLanguage =>
+    value === 'ENGLISH' ? 'ENGLISH' : 'AUTO';
+
+/** The saved template, or INSIDE for anything missing or unknown. */
+export const normalizeCommentPlacement = (value: unknown): CommentPlacement =>
+    value === 'OUTSIDE' ? 'OUTSIDE' : 'INSIDE';
 
 /** Fill in any missing branch of a partially-saved `examExperience` object. */
 export const mergeExamExperience = (

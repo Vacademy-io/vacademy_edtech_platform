@@ -1,0 +1,14 @@
+{
+    "actions": {
+        "addStudent": "إضافة طالب",
+        "newBatch": "دفعة جديدة",
+        "announcement": "إعلان",
+        "payments": "المدفوعات",
+        "reports": "التقارير",
+        "todaysClasses": "حصص اليوم",
+        "myCourses": "دوراتي",
+        "newCourse": "دورة جديدة",
+        "assessments": "التقييمات",
+        "evaluations": "عمليات التقييم"
+    }
+}

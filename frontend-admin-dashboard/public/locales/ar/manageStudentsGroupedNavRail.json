@@ -1,0 +1,11 @@
+{
+  "ariaLabelProfileSections": "أقسام الملف الشخصي",
+  "group": {
+    "Snapshot": "لمحة عامة",
+    "Learning": "التعلّم",
+    "Finance": "المالية",
+    "CRM": "إدارة العملاء",
+    "Account": "الحساب",
+    "Records": "السجلات"
+  }
+}

@@ -1,0 +1,44 @@
+{
+    "dialog": {
+        "heading": "AI calls in progress"
+    },
+    "status": {
+        "completed": "Completed",
+        "noAnswer": "No answer",
+        "busy": "Busy",
+        "failed": "Failed",
+        "cancelled": "Cancelled",
+        "onCall": "On call",
+        "ringing": "Ringing",
+        "dialing": "Dialing",
+        "waitingAt": "#{{position}} in line",
+        "nextUp": "Next up",
+        "cancelled_queue": "Cancelled",
+        "expired": "Expired"
+    },
+    "header": {
+        "allFinished_one": "All {{count}} call finished",
+        "allFinished_other": "All {{count}} calls finished",
+        "progress": "{{done}} of {{total}} completed",
+        "liveSuffix_one": " · {{count}} live",
+        "liveSuffix_other": " · {{count}} live",
+        "waiting_one": "{{count}} waiting",
+        "waiting_other": "{{count}} waiting",
+        "waitingWithEta_one": "{{count}} waiting · about {{eta}} left",
+        "waitingWithEta_other": "{{count}} waiting · about {{eta}} left"
+    },
+    "list": {
+        "dialingFirst": "Dialing the first lead…",
+        "defaultLeadName": "Lead",
+        "duration": "{{minutes}}m {{seconds}}s",
+        "droppedNotice_one": "{{count}} lead will not be called (cancelled or expired).",
+        "droppedNotice_other": "{{count}} leads will not be called (cancelled or expired)."
+    },
+    "error": {
+        "pollPaused": "Live updates paused (retrying) — the calls keep running server-side."
+    },
+    "footer": {
+        "backgroundNotice": "Runs in the background — closing this window does not stop the calls, and you can follow the rest under Calling → Call Queue. Outcomes and counsellor assignment land automatically after each call.",
+        "cancelRemaining": "Cancel remaining"
+    }
+}

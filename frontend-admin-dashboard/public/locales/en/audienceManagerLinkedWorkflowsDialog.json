@@ -1,0 +1,38 @@
+{
+    "dialog": {
+        "titlePrefix": "Workflows linked to",
+        "description": "Workflows that fire for this campaign — either targeting it specifically, or running globally across all campaigns. Includes event-driven workflows (on lead submission) AND scheduled ones (e.g. follow-up emails)."
+    },
+    "status": {
+        "refreshing": "Refreshing…",
+        "foundCount_one": "{{count}} workflow found",
+        "foundCount_other": "{{count}} workflows found",
+        "loading": "Loading workflows…",
+        "error": "Failed to load workflows. Click Refresh to retry."
+    },
+    "actions": {
+        "refresh": "Refresh",
+        "open": "Open",
+        "close": "Close"
+    },
+    "empty": {
+        "title": "No workflows linked to this campaign yet.",
+        "hint": "Use “Configure Workflow” from the menu to create one."
+    },
+    "badge": {
+        "specific": "This campaign",
+        "global": "All campaigns",
+        "matchReason": {
+            "eventDriven": "On submission",
+            "scheduled": "Scheduled"
+        }
+    },
+    "workflowStatus": {
+        "active": "Active",
+        "draft": "Draft",
+        "inactive": "Inactive"
+    },
+    "workflow": {
+        "triggerLabel": "Trigger: {{name}}"
+    }
+}

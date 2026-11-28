@@ -1,0 +1,22 @@
+{
+  "name": "vacademy-activeness-bbb-plugin",
+  "version": "0.3.1",
+  "private": true,
+  "description": "BBB HTML5 plugin: on-device camera activeness score for learners in Vacademy live classes",
+  "scripts": {
+    "build": "node build.mjs",
+    "typecheck": "tsc --noEmit",
+    "test": "node --test src/meter.test.ts"
+  },
+  "dependencies": {
+    "bigbluebutton-html-plugin-sdk": "0.0.96",
+    "react": "18.3.1",
+    "react-dom": "18.3.1"
+  },
+  "devDependencies": {
+    "@types/react": "18.3.12",
+    "@types/react-dom": "18.3.1",
+    "esbuild": "0.24.2",
+    "typescript": "5.6.3"
+  }
+}

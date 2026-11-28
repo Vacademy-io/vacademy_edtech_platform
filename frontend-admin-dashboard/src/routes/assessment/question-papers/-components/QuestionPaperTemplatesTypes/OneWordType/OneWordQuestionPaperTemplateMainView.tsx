@@ -11,6 +11,7 @@ import { formatStructure } from '../../../-utils/helper';
 import { QUESTION_TYPES } from '@/constants/dummy-data';
 import { Badge } from '@/components/ui/badge';
 import { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 
 export const OneWordQuestionPaperTemplateMainView = ({
     form,
@@ -19,13 +20,14 @@ export const OneWordQuestionPaperTemplateMainView = ({
     showQuestionNumber = true,
     examType,
 }: QuestionPaperTemplateFormProps) => {
+    const { t } = useTranslation('assessmentOneWordTemplateQP');
     console.log('🎯 OneWordQuestionPaperTemplateMainView rendered', {
         examType,
         currentQuestionIndex,
         isSurvey: examType === 'SURVEY'
     });
     const { control, getValues, setValue } = form;
-    const explanationsType = getValues('explanationsType') || 'Explanation:';
+    const explanationsType = getValues('explanationsType') || t('explanation.defaultLabel');
     const questionsType = getValues('questionsType') || '';
 
     const allQuestions = getValues('questions') || [];
@@ -46,7 +48,7 @@ export const OneWordQuestionPaperTemplateMainView = ({
     if (allQuestions.length === 0) {
         return (
             <div className="flex h-screen w-full items-center justify-center">
-                <h1>Please add a question to show question details</h1>
+                <h1>{t('emptyState.noQuestions')}</h1>
             </div>
         );
     }
@@ -55,7 +57,7 @@ export const OneWordQuestionPaperTemplateMainView = ({
         <div className={className}>
             {getValues(`questions.${currentQuestionIndex}.parentRichTextContent`) && (
                 <div className="flex w-full flex-col !flex-nowrap items-start gap-1">
-                    <span>Comprehension Text</span>
+                    <span>{t('label.comprehensionText')}</span>
                     <FormField
                         control={control}
                         name={`questions.${currentQuestionIndex}.parentRichTextContent`}
@@ -78,7 +80,7 @@ export const OneWordQuestionPaperTemplateMainView = ({
             <div className="flex w-full flex-col !flex-nowrap items-start gap-1">
                 <div className="flex items-center gap-2">
                     <span>
-                        Question
+                        {t('label.question')}
                         {showQuestionNumber && (
                             <>
                                 &nbsp;
@@ -120,7 +122,7 @@ export const OneWordQuestionPaperTemplateMainView = ({
 
             {examType !== 'SURVEY' && (
                 <div className="flex w-full flex-col gap-4">
-                    <span>Answer</span>
+                    <span>{t('label.answer')}</span>
 
                     <FormField
                         control={control}
@@ -133,7 +135,7 @@ export const OneWordQuestionPaperTemplateMainView = ({
                                         value={field.value || ''}
                                         onChange={(e) => field.onChange(e.target.value)}
                                         className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none"
-                                        placeholder="Enter the correct answer"
+                                        placeholder={t('placeholder.correctAnswer')}
                                     />
                                 </FormControl>
                                 <FormMessage />

@@ -1,0 +1,12 @@
+{
+    "defaultTitle": "Quiz",
+    "assessmentPaperSuffix": "{{title}} (Épreuve d'évaluation)",
+    "totalQuestions_one": "Question totale : {{count}}",
+    "totalQuestions_many": "Questions totales : {{count}}",
+    "totalQuestions_other": "Questions totales : {{count}}",
+    "difficultySuffix": " | Difficulté : {{difficulty}}",
+    "assessmentInstructions": "Instructions : Répondez à toutes les questions. Écrivez vos réponses clairement.",
+    "questionNumber": "Question {{number}}",
+    "answerLabel": "Réponse :",
+    "explanationLabel": "Explication :"
+}

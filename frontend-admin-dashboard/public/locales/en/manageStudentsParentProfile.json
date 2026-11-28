@@ -1,0 +1,82 @@
+{
+    "linkForm": {
+        "cancel": "Cancel",
+        "linking": "Linking…",
+        "linkButton": "Link {{person}}"
+    },
+    "backTrail": {
+        "label": "Back — viewing {{name}}"
+    },
+    "roles": {
+        "guardian": "Guardian",
+        "student": "Student"
+    },
+    "fallback": {
+        "thisLearner": "this learner",
+        "thisGuardian": "this guardian"
+    },
+    "toast": {
+        "copiedToClipboard": "{{field}} copied to clipboard!",
+        "copyFailed": "Failed to copy {{field}}",
+        "guardianLinked": "Guardian linked",
+        "studentLinked": "Student linked",
+        "guardianCredentialsSentTo": "Guardian credentials sent to {{email}}",
+        "guardianCredentialsSent": "Guardian credentials sent",
+        "guardianCredentialsNotSent": "Could not send guardian credentials",
+        "guardianCredentialsSendFailed": "Failed to send guardian credentials",
+        "linkGuardianFailedDefault": "Failed to link guardian."
+    },
+    "toastFields": {
+        "studentUsername": "Student Username",
+        "studentPassword": "Student Password",
+        "username": "Username",
+        "email": "Email",
+        "password": "Password"
+    },
+    "fields": {
+        "username": "Username",
+        "password": "Password",
+        "name": "Name",
+        "email": "Email",
+        "mobile": "Mobile"
+    },
+    "status": {
+        "loading": "Loading…",
+        "notFound": "Not found",
+        "passwordNotFound": "Password not found"
+    },
+    "ownLogin": {
+        "passwordHidden": "Password visibility is off for this institute — enable it under Settings → Role Display to view this student's login here.",
+        "heading": "This Student's Login"
+    },
+    "errors": {
+        "loadGuardianInfo": "Couldn't load guardian information"
+    },
+    "guardianHero": {
+        "eyebrow": "Guardian Profile",
+        "title": "This is a guardian profile",
+        "linkedToChildren_one": "Linked to {{count}} child",
+        "linkedToChildren_other": "Linked to {{count}} children"
+    },
+    "linkedChildren": {
+        "heading": "Linked Children",
+        "addChild": "Add Child",
+        "viewLearnerTooltip": "View this learner's guardian info"
+    },
+    "noGuardian": {
+        "title": "No guardian linked yet",
+        "hint": "Link an existing guardian, or add a new one, right from here."
+    },
+    "linkGuardianSection": {
+        "heading": "Link a Guardian",
+        "addGuardian": "Add Guardian"
+    },
+    "guardianSection": {
+        "heading": "Guardian",
+        "shareCredentialsTooltip": "Email these credentials so the guardian can log in to the parent portal",
+        "shareCredentials": "Share credentials",
+        "sending": "Sending…",
+        "viewProfileTooltip": "View this guardian's own profile",
+        "viewProfileLink": "View guardian's profile →"
+    }
+}

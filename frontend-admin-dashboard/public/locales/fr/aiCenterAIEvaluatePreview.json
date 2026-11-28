@@ -1,0 +1,18 @@
+{
+    "failedDialog": {
+        "heading": "Échec du chargement des questions",
+        "clickPrefix": "Cliquez",
+        "hereLink": "ici",
+        "retrySuffix": "pour réessayer"
+    },
+    "retryButton": {
+        "label": "Réessayer"
+    },
+    "viewReviewButton": {
+        "label": "Voir l'évaluation",
+        "loading": "Chargement…"
+    },
+    "toast": {
+        "noDataExists": "Aucune donnée disponible !"
+    }
+}

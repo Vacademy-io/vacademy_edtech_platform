@@ -1,0 +1,11 @@
+{
+    "tabs": {
+        "problem": "समस्या",
+        "testCases_one": "टेस्ट केस ({{count}})",
+        "testCases_other": "टेस्ट केस ({{count}})",
+        "settings": "सेटिंग्स",
+        "starterCode": "स्टार्टर कोड",
+        "submissions": "सबमिशन"
+    },
+    "problemPlaceholder": "समस्या का वर्णन करें। बाधाएं, इनपुट/आउटपुट प्रारूप और उदाहरण शामिल करें।"
+}

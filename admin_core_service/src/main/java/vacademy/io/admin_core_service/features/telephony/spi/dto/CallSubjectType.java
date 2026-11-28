@@ -13,7 +13,20 @@ package vacademy.io.admin_core_service.features.telephony.spi.dto;
 public enum CallSubjectType {
     LEAD,
     PACKAGE_SESSION_STUDENT,
-    LIVE_SESSION_PARTICIPANT;
+    LIVE_SESSION_PARTICIPANT,
+    /**
+     * A contact called through the public AI calling API. The client's CRM owns it:
+     * the outcome is stored, billed and delivered to the client's webhook, but no lead
+     * is assigned, re-statused or pushed into a workflow (the non-LEAD branch of
+     * AiCallOutcomeProcessor). subjectId = the public call id (ai_call_api_call.id).
+     */
+    API_CONTACT,
+    /**
+     * A test call an admin placed from the AI agent editor to their own number. No lead,
+     * no workflow: the non-LEAD branch of AiCallOutcomeProcessor stores and bills it and
+     * does nothing else. subjectId = ai_agent_test_call.id (V615).
+     */
+    AGENT_TEST;
 
     /** Lenient parse; null / blank / unknown ⇒ {@link #LEAD} (backward compatible). */
     public static CallSubjectType fromString(String s) {

@@ -1,0 +1,16 @@
+{
+    "popover": {
+        "title": "Questions Settings",
+        "questionTypeLabel": "Question Type"
+    },
+    "comprehensionText": "Comprehension Text",
+    "question": {
+        "labelWithNumber": "Question {{number}}"
+    },
+    "answer": {
+        "label": "Answer"
+    },
+    "explanation": {
+        "label": "Explanation:"
+    }
+}

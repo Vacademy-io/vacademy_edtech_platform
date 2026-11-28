@@ -1,0 +1,42 @@
+{
+    "header": {
+        "quizBlock": "क्विज़ ब्लॉक",
+        "mcq": "बहुविकल्पीय",
+        "trueFalse": "सही/गलत",
+        "preview": "पूर्वावलोकन",
+        "edit": "संपादित करें"
+    },
+    "toolbar": {
+        "bold": "बोल्ड",
+        "italic": "इटैलिक",
+        "underline": "अंडरलाइन",
+        "bulletList": "बुलेट सूची",
+        "numberedList": "क्रमांकित सूची",
+        "insertLink": "लिंक डालें",
+        "insertImage": "छवि डालें"
+    },
+    "prompts": {
+        "linkUrl": "लिंक URL:"
+    },
+    "labels": {
+        "question": "प्रश्न",
+        "options": "विकल्प (सही उत्तर चिह्नित करने के लिए वृत्त पर क्लिक करें)",
+        "explanation": "स्पष्टीकरण (उत्तर देने के बाद दिखाया जाएगा)"
+    },
+    "actions": {
+        "markCorrect": "सही उत्तर के रूप में चिह्नित करें",
+        "removeOption": "विकल्प हटाएं",
+        "addOption": "+ विकल्प जोड़ें"
+    },
+    "placeholders": {
+        "question": "अपना प्रश्न लिखें…",
+        "option": "विकल्प {{label}}",
+        "explanation": "सही उत्तर स्पष्ट करें…"
+    },
+    "preview": {
+        "noQuestion": "कोई प्रश्न सेट नहीं है",
+        "checkAnswer": "उत्तर जांचें",
+        "tryAgain": "फिर से प्रयास करें",
+        "explanationLabel": "स्पष्टीकरण:"
+    }
+}

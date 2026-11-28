@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Trophy, Medal, Crown, CaretRight, Copy, ShareNetwork } from "@phosphor-icons/react";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 import {
   Dialog,
   DialogContent,
@@ -19,6 +20,11 @@ import { usePlayGamificationStore } from "@/stores/play-gamification-store";
 import { getCachedGamification } from "@/services/play-gamification";
 import { isLibraryToken } from "@/services/badge-library";
 import { getInstituteId } from "@/constants/helper";
+import {
+  getTerminology,
+  getTerminologyPlural,
+} from "@/components/common/layout-container/sidebar/utils";
+import { ContentTerms, RoleTerms, SystemTerms } from "@/types/naming-settings";
 
 /**
  * Course leaderboard as a trigger + dialog. Ranked by learning activity, names
@@ -64,6 +70,7 @@ function BadgeIcons({ entry }: { entry: LeaderboardEntry }) {
 }
 
 function Row({ entry, onClick }: { entry: LeaderboardEntry; onClick?: () => void }) {
+  const { t } = useTranslation("courseDetailsA");
   const clickable = Boolean(onClick) && entry.badgeCount > 0;
   return (
     <div
@@ -80,7 +87,7 @@ function Row({ entry, onClick }: { entry: LeaderboardEntry; onClick?: () => void
             }
           : undefined
       }
-      title={clickable ? "View badges" : undefined}
+      title={clickable ? t("leaderboard.row.viewBadgesTitle") : undefined}
       className={cn(
         "flex items-center gap-3 rounded-lg px-3 py-2",
         entry.currentUser && "bg-primary-50 ring-1 ring-primary-200",
@@ -142,13 +149,18 @@ function EntryBadgesDialog({
   entry: LeaderboardEntry | null;
   onClose: () => void;
 }) {
+  const { t } = useTranslation("courseDetailsA");
   return (
     <Dialog open={Boolean(entry)} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Trophy weight="fill" className="h-5 w-5 text-warning-500" />
-            {entry?.currentUser ? "Your badges" : `${entry?.name ?? "Learner"}'s badges`}
+            {entry?.currentUser
+              ? t("leaderboard.badgesDialog.yourBadges")
+              : t("leaderboard.badgesDialog.othersBadges", {
+                  name: entry?.name ?? t("leaderboard.badgesDialog.defaultName"),
+                })}
           </DialogTitle>
         </DialogHeader>
         {entry && entry.badges?.length > 0 ? (
@@ -159,7 +171,7 @@ function EntryBadgesDialog({
           </div>
         ) : (
           <p className="py-6 text-center text-caption text-muted-foreground">
-            No badges earned yet.
+            {t("leaderboard.badgesDialog.empty")}
           </p>
         )}
       </DialogContent>
@@ -168,6 +180,7 @@ function EntryBadgesDialog({
 }
 
 function YourStanding({ me, onOpenBadges }: { me: LeaderboardEntry; onOpenBadges?: () => void }) {
+  const { t } = useTranslation("courseDetailsA");
   const clickable = Boolean(onOpenBadges) && me.badgeCount > 0;
   return (
     <div
@@ -184,7 +197,7 @@ function YourStanding({ me, onOpenBadges }: { me: LeaderboardEntry; onOpenBadges
             }
           : undefined
       }
-      title={clickable ? "View your badges" : undefined}
+      title={clickable ? t("leaderboard.standing.viewYourBadgesTitle") : undefined}
       className={cn(
         "mb-3 rounded-xl bg-primary-50 p-3 ring-1 ring-primary-200",
         clickable && "cursor-pointer transition-shadow hover:ring-primary-300"
@@ -193,10 +206,10 @@ function YourStanding({ me, onOpenBadges }: { me: LeaderboardEntry; onOpenBadges
       <div className="flex items-center justify-between">
         <div>
           <p className="text-caption font-semibold uppercase tracking-wide text-primary-600">
-            Your standing
+            {t("leaderboard.standing.label")}
           </p>
           <p className="text-h3 font-bold text-primary-600">
-            {me.rank != null ? `#${me.rank}` : "Unranked"}
+            {me.rank != null ? `#${me.rank}` : t("leaderboard.standing.unranked")}
           </p>
         </div>
         <div className="text-end">
@@ -207,7 +220,7 @@ function YourStanding({ me, onOpenBadges }: { me: LeaderboardEntry; onOpenBadges
             </span>
           </div>
           <p className="text-caption text-neutral-500">
-            badge{me.badgeCount === 1 ? "" : "s"} earned
+            {t("leaderboard.standing.badgesEarned", { count: me.badgeCount })}
           </p>
         </div>
       </div>
@@ -233,6 +246,8 @@ export const CourseLeaderboard: React.FC<{
   packageSessionId: string;
   variant?: "card" | "compact";
 }> = ({ packageSessionId, variant = "card" }) => {
+  const { t } = useTranslation("courseDetailsA");
+  const course = getTerminology(ContentTerms.Course, SystemTerms.Course);
   const [open, setOpen] = useState(false);
   const [data, setData] = useState<CourseLeaderboardData | null>(null);
   const [loading, setLoading] = useState(false);
@@ -317,11 +332,13 @@ export const CourseLeaderboard: React.FC<{
   const shareUrl = `${window.location.origin}/leaderboard/${packageSessionId}`;
   const handleCopy = () => {
     navigator.clipboard.writeText(shareUrl);
-    toast.success("Leaderboard link copied");
+    toast.success(t("leaderboard.toast.linkCopied"));
   };
   const handleShare = () => {
     if (navigator.share) {
-      navigator.share({ title: "Course Leaderboard", url: shareUrl }).catch(() => {});
+      navigator
+        .share({ title: t("leaderboard.dialog.title", { course }), url: shareUrl })
+        .catch(() => {});
     } else {
       handleCopy();
     }
@@ -332,8 +349,8 @@ export const CourseLeaderboard: React.FC<{
       <button
         type="button"
         onClick={() => setOpen(true)}
-        aria-label="Course leaderboard"
-        title="Leaderboard"
+        aria-label={t("leaderboard.trigger.compactAriaLabel", { course })}
+        title={t("leaderboard.trigger.compactTitle")}
         className="flex h-9 w-9 items-center justify-center rounded-full bg-primary-50 text-primary-500 transition-colors hover:bg-primary-100"
       >
         <Crown weight="fill" className="h-5 w-5" />
@@ -348,11 +365,16 @@ export const CourseLeaderboard: React.FC<{
           <Crown weight="fill" className="h-5 w-5 text-warning-500" />
         </span>
         <div className="min-w-0 flex-1">
-          <p className="text-body font-semibold text-neutral-700">Leaderboard</p>
+          <p className="text-body font-semibold text-neutral-700">
+            {t("leaderboard.trigger.cardTitle")}
+          </p>
           <p className="truncate text-caption text-muted-foreground">
             {me
-              ? `You're ${me.rank != null ? `#${me.rank}` : "unranked"} · ${me.badgeCount} badge${me.badgeCount === 1 ? "" : "s"}`
-              : "See how you rank in this course"}
+              ? t("leaderboard.trigger.cardSubtitleRanked", {
+                  rank: me.rank != null ? `#${me.rank}` : t("leaderboard.trigger.unranked"),
+                  count: me.badgeCount,
+                })
+              : t("leaderboard.trigger.cardSubtitleDefault", { course })}
           </p>
         </div>
         <CaretRight className="h-4 w-4 shrink-0 text-neutral-400" />
@@ -368,14 +390,14 @@ export const CourseLeaderboard: React.FC<{
             <div className="flex items-center justify-between gap-2 pe-7">
               <DialogTitle className="flex items-center gap-2">
                 <Crown weight="fill" className="h-5 w-5 text-warning-500" />
-                Course Leaderboard
+                {t("leaderboard.dialog.title", { course })}
               </DialogTitle>
               <div className="flex items-center gap-1">
                 <button
                   type="button"
                   onClick={handleCopy}
-                  title="Copy public link"
-                  aria-label="Copy public link"
+                  title={t("leaderboard.dialog.copyLinkTitle")}
+                  aria-label={t("leaderboard.dialog.copyLinkTitle")}
                   className="flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                 >
                   <Copy className="h-4 w-4" />
@@ -383,8 +405,8 @@ export const CourseLeaderboard: React.FC<{
                 <button
                   type="button"
                   onClick={handleShare}
-                  title="Share"
-                  aria-label="Share leaderboard"
+                  title={t("leaderboard.dialog.shareTitle")}
+                  aria-label={t("leaderboard.dialog.shareAriaLabel")}
                   className="flex h-8 w-8 items-center justify-center rounded-full text-primary-500 transition-colors hover:bg-primary-50"
                 >
                   <ShareNetwork className="h-4 w-4" />
@@ -395,13 +417,13 @@ export const CourseLeaderboard: React.FC<{
 
           {loading && !data ? (
             <p className="py-6 text-center text-caption text-muted-foreground">
-              Loading leaderboard…
+              {t("leaderboard.dialog.loading")}
             </p>
           ) : !data || data.entries.length === 0 ? (
             <div className="flex flex-col items-center gap-2 py-6 text-center">
               <Trophy weight="fill" className="h-7 w-7 text-neutral-300" />
               <p className="text-caption text-muted-foreground">
-                No leaderboard activity yet — start learning to climb the ranks!
+                {t("leaderboard.dialog.emptyText")}
               </p>
             </div>
           ) : (
@@ -411,10 +433,16 @@ export const CourseLeaderboard: React.FC<{
               )}
               <div className="mb-2 flex items-center justify-between">
                 <span className="text-caption font-semibold text-neutral-500">
-                  Ranking
+                  {t("leaderboard.dialog.rankingLabel")}
                 </span>
                 <span className="text-caption text-muted-foreground">
-                  {data.totalLearners} learners
+                  {t("leaderboard.dialog.learnersCount", {
+                    count: data.totalLearners,
+                    learners: getTerminologyPlural(
+                      RoleTerms.Learner,
+                      SystemTerms.Learner,
+                    ).toLocaleLowerCase(),
+                  })}
                 </span>
               </div>
               <div className="flex max-h-80 flex-col gap-1 overflow-y-auto">
@@ -423,7 +451,7 @@ export const CourseLeaderboard: React.FC<{
                 ))}
               </div>
               <p className="mt-3 text-center text-caption text-muted-foreground">
-                Ranked by learning activity • climbs as you learn
+                {t("leaderboard.dialog.footer")}
               </p>
             </div>
           )}

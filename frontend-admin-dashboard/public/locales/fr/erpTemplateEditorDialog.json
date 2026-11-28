@@ -1,0 +1,71 @@
+{
+    "dialog": {
+        "headingEdit": "Modèle de salaire",
+        "headingNew": "Nouveau modèle de salaire",
+        "close": "Fermer",
+        "cancel": "Annuler",
+        "saving": "Enregistrement…",
+        "saveTemplate": "Enregistrer le modèle",
+        "createTemplate": "Créer le modèle",
+        "loadError": "Impossible de charger ce modèle.",
+        "retrying": "Nouvelle tentative…",
+        "retry": "Réessayer"
+    },
+    "toast": {
+        "updated": "Modèle mis à jour",
+        "created": "Modèle créé",
+        "saveError": "Impossible d'enregistrer le modèle de salaire."
+    },
+    "info": "Ces composants n'ont pas besoin de correspondre exactement au CTC de l'employé — la paie ajoute une <bold1>indemnité spéciale</bold1> équilibrante pour le reste. Un modèle dont les composants <bold2>dépassent</bold2> le CTC est refusé ; veillez donc à ce que les montants fixes et les pourcentages restent en dessous.",
+    "form": {
+        "nameLabel": "Nom du modèle",
+        "namePlaceholder": "Structure standard du personnel",
+        "descriptionLabel": "Description",
+        "descriptionPlaceholder": "À qui s'adresse ce modèle.",
+        "defaultLabel": "Utiliser comme modèle par défaut pour les nouvelles affectations"
+    },
+    "components": {
+        "heading": "Composants",
+        "rowCount_one": "{{count}} ligne",
+        "rowCount_many": "{{count}} lignes",
+        "rowCount_other": "{{count}} lignes",
+        "addRow": "Ajouter une ligne de composant",
+        "row": "Ligne {{number}}",
+        "removeRow": "Supprimer la ligne {{number}}",
+        "componentLabel": "Composant",
+        "componentLoading": "Chargement des composants…",
+        "componentSelect": "Sélectionner un composant",
+        "componentSearchPlaceholder": "Rechercher par code ou par nom",
+        "componentEmpty": "Aucun composant trouvé. Ajoutez-en un depuis l'onglet Composants.",
+        "calculationLabel": "Calcul",
+        "monthlyAmountLabel": "Montant mensuel",
+        "monthlyAmountPlaceholder": "25000",
+        "percentageLabel": "Pourcentage",
+        "percentagePlaceholder": "40",
+        "percentageDescription": "Pourcentage de la base désignée par ce calcul.",
+        "formulaLabel": "Formule",
+        "formulaPlaceholder": "#BASIC * 0.1 + 1500",
+        "formulaHelp": "Variables disponibles : #CTC (annuel), #CTC_MONTHLY, #BASIC, #GROSS, et #<CODE_COMPOSANT> pour tout composant de ce modèle. Le résultat est le montant MENSUEL.",
+        "minLabel": "Minimum (facultatif)",
+        "minPlaceholder": "Aucun plancher",
+        "maxLabel": "Maximum (facultatif)",
+        "maxPlaceholder": "Aucun plafond",
+        "displayOrderLabel": "Ordre d'affichage"
+    },
+    "validation": {
+        "nameRequired": "Donnez un nom au modèle",
+        "descriptionMax": "Limitez la description à 500 caractères",
+        "componentsMin": "Un modèle doit comporter au moins un composant",
+        "componentRequired": "Choisissez un composant",
+        "amountNumber": "Le montant doit être un nombre",
+        "percentageNumber": "Le pourcentage doit être un nombre",
+        "minNumber": "Le minimum doit être un nombre",
+        "maxNumber": "Le maximum doit être un nombre",
+        "wholeNumbers": "Nombres entiers uniquement",
+        "enterAmount": "Saisissez le montant mensuel",
+        "enterPercentage": "Saisissez un pourcentage",
+        "percentageRange": "Les pourcentages vont de 0 à 100",
+        "enterFormula": "Saisissez une formule",
+        "maxAtLeastMin": "Le maximum doit être au moins égal au minimum"
+    }
+}

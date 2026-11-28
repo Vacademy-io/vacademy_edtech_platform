@@ -20,9 +20,11 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Collects EVERY mark-bearing item a learner did in the report window
@@ -55,13 +57,32 @@ public class SubjectMarksCollector {
      */
     public SubjectMarksSection collect(String userId, AcademicsSection academics,
                                         LocalDate startDate, LocalDate endDate) {
+        return collect(userId, academics, startDate, endDate, null);
+    }
+
+    /** Slides of one batch, for scoping the report; empty when it cannot be read. */
+    public Set<String> batchSlideIds(String batchId) {
+        try {
+            return new HashSet<>(slideRepository.findSlideIdsForPackageSession(batchId));
+        } catch (Exception e) {
+            log.warn("[SubjectMarksCollector] Slides of batch {} failed: {}", batchId, e.getMessage());
+            return Set.of();
+        }
+    }
+
+    /**
+     * @param batchSlides when not null, only assignment, question and quiz marks on these slides
+     *                    count (the picked batch). Assessments arrive already scoped.
+     */
+    public SubjectMarksSection collect(String userId, AcademicsSection academics,
+                                       LocalDate startDate, LocalDate endDate, Set<String> batchSlides) {
         try {
             List<SubjectMarksSection.GradedItem> items = new ArrayList<>();
 
             items.addAll(collectAssessmentItems(academics));
-            items.addAll(collectAssignmentItems(userId, startDate, endDate));
-            items.addAll(collectQuestionItems(userId, startDate, endDate));
-            items.addAll(collectQuizItems(userId, startDate, endDate));
+            items.addAll(collectAssignmentItems(userId, startDate, endDate, batchSlides));
+            items.addAll(collectQuestionItems(userId, startDate, endDate, batchSlides));
+            items.addAll(collectQuizItems(userId, startDate, endDate, batchSlides));
 
             // Keep only gradable items (both a score AND a positive total) so neither the
             // deterministic grouping nor the LLM can produce a >100% subject from a missing total.
@@ -163,7 +184,8 @@ public class SubjectMarksCollector {
         return result;
     }
 
-    private List<SubjectMarksSection.GradedItem> collectAssignmentItems(String userId, LocalDate startDate, LocalDate endDate) {
+    private List<SubjectMarksSection.GradedItem> collectAssignmentItems(String userId, LocalDate startDate, LocalDate endDate,
+                                                                  Set<String> batchSlides) {
         List<SubjectMarksSection.GradedItem> result = new ArrayList<>();
         try {
             Timestamp startTs = Timestamp.valueOf(startDate.atStartOfDay());
@@ -181,6 +203,7 @@ public class SubjectMarksCollector {
                 if (marks == null) continue;
                 String slideId = ast.getActivityLog() != null ? ast.getActivityLog().getSlideId() : null;
                 if (slideId == null) continue;
+                if (batchSlides != null && !batchSlides.contains(slideId)) continue;
 
                 Double totalMarks = resolveAssignmentTotalMarks(slideId, totalMarksCache);
                 String subject = subjectCache.computeIfAbsent(slideId, this::resolveSubjectSafe);
@@ -200,7 +223,8 @@ public class SubjectMarksCollector {
         return result;
     }
 
-    private List<SubjectMarksSection.GradedItem> collectQuestionItems(String userId, LocalDate startDate, LocalDate endDate) {
+    private List<SubjectMarksSection.GradedItem> collectQuestionItems(String userId, LocalDate startDate, LocalDate endDate,
+                                                                  Set<String> batchSlides) {
         List<SubjectMarksSection.GradedItem> result = new ArrayList<>();
         try {
             Timestamp startTs = Timestamp.valueOf(startDate.atStartOfDay());
@@ -209,6 +233,7 @@ public class SubjectMarksCollector {
                     questionSlideTrackedRepository.findQuestionMarksForUserInRange(userId, startTs, endTs);
             for (SlideMarksProjection row : rows) {
                 if (row.getMarksObtained() == null) continue;
+                if (batchSlides != null && !batchSlides.contains(row.getSlideId())) continue;
                 result.add(SubjectMarksSection.GradedItem.builder()
                         .type("QUESTION")
                         .title(row.getTitle() != null ? row.getTitle() : row.getSlideId())
@@ -223,7 +248,8 @@ public class SubjectMarksCollector {
         return result;
     }
 
-    private List<SubjectMarksSection.GradedItem> collectQuizItems(String userId, LocalDate startDate, LocalDate endDate) {
+    private List<SubjectMarksSection.GradedItem> collectQuizItems(String userId, LocalDate startDate, LocalDate endDate,
+                                                                  Set<String> batchSlides) {
         List<SubjectMarksSection.GradedItem> result = new ArrayList<>();
         try {
             Timestamp startTs = Timestamp.valueOf(startDate.atStartOfDay());
@@ -232,6 +258,7 @@ public class SubjectMarksCollector {
                     quizSlideQuestionTrackedRepository.findQuizMarksForUserInRange(userId, startTs, endTs);
             for (SlideMarksProjection row : rows) {
                 if (row.getMarksObtained() == null) continue;
+                if (batchSlides != null && !batchSlides.contains(row.getSlideId())) continue;
                 result.add(SubjectMarksSection.GradedItem.builder()
                         .type("QUIZ")
                         .title(row.getTitle() != null ? row.getTitle() : row.getSlideId())

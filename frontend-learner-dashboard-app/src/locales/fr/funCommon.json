@@ -1,0 +1,10 @@
+{
+  "done": "Terminé",
+  "review": "Revoir",
+  "liveNow": "EN DIRECT",
+  "new": "NOUVEAU",
+  "progress": "Progression",
+  "percentDone": "{{percent}} % terminé",
+  "percent": "{{percent}} %",
+  "notStarted": "Pas commencé"
+}

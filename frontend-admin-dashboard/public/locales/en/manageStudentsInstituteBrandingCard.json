@@ -1,0 +1,10 @@
+{
+  "title": "Institute Branding",
+  "includeLogo": {
+    "label": "Include institute logo."
+  },
+  "blendHeader": {
+    "label": "Match header to theme background.",
+    "description": "Puts the logo header and invite title on the page background instead of white. Only the form stays white."
+  }
+}

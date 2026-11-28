@@ -1,0 +1,19 @@
+{
+    "header": {
+        "title": "फ़ॉर्म फ़ील्ड्स ({{count}})",
+        "subtitle": "फ़ील्ड को पुनः व्यवस्थित करने के लिए खींचें"
+    },
+    "quickAddButtons": {
+        "gender": "लिंग जोड़ें",
+        "state": "राज्य जोड़ें",
+        "city": "शहर जोड़ें",
+        "schoolCollege": "स्कूल/कॉलेज जोड़ें",
+        "address": "पता जोड़ें",
+        "pincode": "पिन कोड",
+        "fatherName": "पिता का नाम",
+        "motherName": "माता का नाम",
+        "parentPhoneNumber": "अभिभावक का फ़ोन नंबर",
+        "parentEmail": "अभिभावक का ईमेल"
+    },
+    "addCustomFieldButton": "कस्टम फ़ील्ड जोड़ें"
+}

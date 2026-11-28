@@ -1,0 +1,104 @@
+{
+    "startOnboarding": {
+        "button": "ऑनबोर्डिंग शुरू करें",
+        "dialogHeading": "ऑनबोर्डिंग शुरू करें",
+        "cancel": "रद्द करें",
+        "start": "शुरू करें",
+        "starting": "शुरू हो रहा है…",
+        "loadingFlows": "फ़्लो लोड हो रहे हैं…",
+        "noActiveFlows": "अभी कोई सक्रिय ऑनबोर्डिंग फ़्लो नहीं है — पहले ऑनबोर्डिंग टैब से कोई फ़्लो सक्रिय करें।",
+        "flowLabel": "ऑनबोर्डिंग फ़्लो",
+        "pickFlowPlaceholder": "एक फ़्लो चुनें…",
+        "started": "ऑनबोर्डिंग शुरू हो गई",
+        "startFailed": "इस व्यक्ति के लिए ऑनबोर्डिंग शुरू नहीं की जा सकी।"
+    },
+    "loadError": {
+        "title": "ऑनबोर्डिंग प्रगति लोड नहीं हो सकी"
+    },
+    "empty": {
+        "title": "कोई ऑनबोर्डिंग फ़्लो शुरू नहीं हुआ है",
+        "hint": "इस व्यक्ति को अभी तक किसी ऑनबोर्डिंग फ़्लो में शामिल नहीं किया गया है।"
+    },
+    "credentials": {
+        "copiedToClipboard": "{{label}} क्लिपबोर्ड पर कॉपी हो गया",
+        "copyFailed": "{{label}} कॉपी नहीं हो सका",
+        "passwordVisibilityOff": "इस संस्थान के लिए पासवर्ड दृश्यता बंद है — इस छात्र का लॉगिन यहाँ देखने के लिए इसे सेटिंग्स → रोल डिस्प्ले में सक्षम करें।",
+        "loading": "लॉगिन विवरण लोड हो रहे हैं…",
+        "usernameLabel": "यूज़रनेम:",
+        "passwordLabel": "पासवर्ड:",
+        "notAvailable": "उपलब्ध नहीं",
+        "notFound": "नहीं मिला",
+        "usernameFieldName": "यूज़रनेम",
+        "passwordFieldName": "पासवर्ड"
+    },
+    "instance": {
+        "heading": "ऑनबोर्डिंग — {{status}}",
+        "resolvedSubjectPrefix": "यह फ़ॉर्म किसी अभिभावक ने एक छात्र की ओर से भरा है। असल छात्र है",
+        "resolvedSubjectFallback": "बनाया गया",
+        "resolvedSubjectSuffix": "— यह ऑनबोर्डिंग यहाँ, मूल लीड/संपर्क पर दिखाई देती रहेगी।",
+        "stepStatusWithReason": "{{status}} — {{reason}}",
+        "viewForm": "फ़ॉर्म देखें",
+        "complete": "पूर्ण करें",
+        "skip": "छोड़ें",
+        "noSteps": "अभी तक कोई चरण दर्ज नहीं हुआ है।",
+        "stepCompleted": "चरण को पूर्ण के रूप में चिह्नित किया गया",
+        "completeFailed": "यह चरण पूर्ण नहीं किया जा सका।",
+        "progressSaved": "प्रगति सहेजी गई",
+        "saveFailed": "यह चरण सहेजा नहीं जा सका।",
+        "stepSkipped": "चरण छोड़ दिया गया",
+        "skipFailed": "यह चरण छोड़ा नहीं जा सका।"
+    },
+    "status": {
+        "pending": "लंबित",
+        "inProgress": "जारी है",
+        "completed": "पूर्ण",
+        "skipped": "छोड़ा गया"
+    },
+    "skipDialog": {
+        "heading": "क्या यह चरण छोड़ें?",
+        "cancel": "रद्द करें",
+        "skipStep": "चरण छोड़ें",
+        "skipping": "छोड़ा जा रहा है…",
+        "description": "\"{{stepName}}\" वैकल्पिक है और इसे छोड़ा जा सकता है। एक कारण जोड़ें (वैकल्पिक)।",
+        "reasonPlaceholder": "कारण (वैकल्पिक)",
+        "defaultReason": "एडमिन द्वारा छोड़ा गया"
+    },
+    "completeStepDialog": {
+        "heading": "पूर्ण करें — {{stepName}}",
+        "cancel": "रद्द करें",
+        "save": "सहेजें",
+        "saving": "सहेजा जा रहा है…",
+        "completeStep": "चरण पूर्ण करें",
+        "completing": "पूर्ण किया जा रहा है…",
+        "parentToggleLabel": "यह फ़ॉर्म किसी अभिभावक ने एक छात्र की ओर से भरा है",
+        "existingDetailsHint": "छात्र को इस व्यक्ति के मौजूदा विवरण का उपयोग करके बनाया जाएगा:",
+        "noNameOnFile": "कोई नाम दर्ज नहीं है",
+        "noContactOnFile": "कोई ईमेल या मोबाइल नंबर दर्ज नहीं है",
+        "studentDetailsHint": "छात्र का अपना विवरण दर्ज करें — नामांकन और पहुँच उन्हें ही दी जाएगी, अभिभावक को नहीं।",
+        "studentFullNameLabel": "छात्र का पूरा नाम",
+        "studentFullNamePlaceholder": "उदा. आरव शर्मा",
+        "studentEmailLabel": "छात्र का ईमेल",
+        "studentEmailPlaceholder": "student@example.com",
+        "studentMobileLabel": "छात्र का मोबाइल नंबर",
+        "studentMobilePlaceholder": "यदि ईमेल दिया गया है तो वैकल्पिक",
+        "enrollLabel": "नामांकन करें (कोर्स / बैच)",
+        "optionalIfEnrolled": "(यदि पहले से नामांकित है तो वैकल्पिक)",
+        "skipCourseHint": "यदि छात्र पहले से किसी सक्रिय कोर्स में नामांकित है, तो यह चरण कोई कोर्स चुने बिना पूर्ण करने की अनुमति देता है।",
+        "pickCoursePlaceholder": "एक कोर्स चुनें…",
+        "searchCoursePlaceholder": "कोर्स / बैच खोजें…",
+        "searchPlaceholder": "खोजें…",
+        "noFieldsHint": "इस चरण में कोई फ़ील्ड जुड़ी नहीं है — इसे पूर्ण करने के लिए कोई इनपुट आवश्यक नहीं है।",
+        "formFieldsLabel": "फ़ॉर्म फ़ील्ड्स",
+        "defaultFieldLabel": "फ़ील्ड"
+    },
+    "submittedFormDialog": {
+        "heading": "फ़ॉर्म — {{stepName}}",
+        "close": "बंद करें",
+        "noFields": "इस चरण में कोई फ़ील्ड जुड़ी नहीं है।",
+        "untitledField": "शीर्षक रहित फ़ील्ड",
+        "notAnswered": "उत्तर नहीं दिया गया"
+    },
+    "noAccess": {
+        "hint": "इस संस्थान के ऑनबोर्डिंग तक आपकी भूमिका की पहुँच नहीं है।"
+    }
+}

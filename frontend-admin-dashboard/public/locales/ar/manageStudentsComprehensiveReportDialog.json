@@ -1,0 +1,198 @@
+{
+    "unavailable": {
+        "noDataForPeriod": "لا توجد بيانات متاحة لهذه الفترة.",
+        "reportNotAvailable": "بيانات التقرير غير متاحة."
+    },
+    "common": {
+        "notAvailable": "غير متاح",
+        "stats": {
+            "present": "حاضر",
+            "absent": "غائب",
+            "late": "متأخر",
+            "unmarked": "غير مُسجَّل",
+            "notMarked": "غير مُسجَّل",
+            "attended": "حضر",
+            "missed": "غاب"
+        },
+        "headings": {
+            "strengths": "نقاط القوة",
+            "areasToImprove": "مجالات التحسين",
+            "liveClasses": "الحصص المباشرة",
+            "assignments": "الواجبات"
+        }
+    },
+    "overview": {
+        "studentDetailsHeading": "بيانات الطالب",
+        "stats": {
+            "batch": "الدفعة",
+            "enrollmentNo": "رقم القيد",
+            "status": "الحالة",
+            "enrolled": "تاريخ التسجيل",
+            "reportPeriod": "فترة التقرير",
+            "generated": "تاريخ الإنشاء"
+        },
+        "loginActivityHeading": "نشاط تسجيل الدخول",
+        "loginStats": {
+            "totalLogins": "إجمالي مرات الدخول",
+            "lastLogin": "آخر تسجيل دخول",
+            "avgSession": "متوسط مدة الجلسة",
+            "totalActiveTime": "إجمالي وقت النشاط"
+        },
+        "avgSessionValue": "{{minutes}} دقيقة",
+        "totalActiveTimeValue": "{{hours}} ساعة"
+    },
+    "attendance": {
+        "overallHeading": "نسبة الحضور الإجمالية",
+        "attendanceRate": "معدل الحضور",
+        "recentSessionsHeading": "الحصص الأخيرة",
+        "sessionFallbackTitle": "حصة"
+    },
+    "academics": {
+        "summary": {
+            "assessments": "التقييمات",
+            "avgScore": "متوسط الدرجات",
+            "best": "الأفضل",
+            "needsWork": "بحاجة إلى تحسين"
+        },
+        "assessmentScoresHeading": "درجات التقييمات",
+        "chart": {
+            "marks": "الدرجات",
+            "total": "الإجمالي"
+        },
+        "allAssessmentsHeading": "جميع التقييمات",
+        "assessmentFallbackName": "تقييم"
+    },
+    "activity": {
+        "totalTime": "الوقت الإجمالي",
+        "avgConcentration": "متوسط التركيز",
+        "dailyActivityHeading": "النشاط اليومي",
+        "chart": {
+            "timeMinutes": "الوقت (دقيقة)"
+        },
+        "contentEngagementHeading": "التفاعل مع المحتوى",
+        "minutesValue": "{{minutes}} دقيقة"
+    },
+    "progress": {
+        "courseCompletionHeading": "إنجاز الدورة",
+        "overallProgress": "التقدم الإجمالي",
+        "subjectProgressHeading": "التقدم حسب المادة"
+    },
+    "liveClasses": {
+        "summaryHeading": "ملخص الحصص المباشرة",
+        "totalClasses": "إجمالي الحصص:",
+        "attendanceSuffix": "نسبة حضور {{value}}"
+    },
+    "certificates": {
+        "completion": "نسبة الإنجاز"
+    },
+    "assignments": {
+        "summary": {
+            "submitted": "تم التسليم",
+            "graded": "تم التصحيح",
+            "late": "متأخر"
+        },
+        "notGraded": "لم يُصحَّح",
+        "lateBadge": "متأخر",
+        "doubtsHeading": "الاستفسارات",
+        "doubtsStats": {
+            "raised": "المطروحة",
+            "resolved": "المحلولة",
+            "avgResolution": "متوسط وقت الحل"
+        }
+    },
+    "insights": {
+        "summaryHeading": "الملخص",
+        "keyInsightsHeading": "أهم الملاحظات",
+        "recommendationsHeading": "التوصيات"
+    },
+    "adminSections": {
+        "attendance": "الحضور",
+        "academicPerformance": "الأداء الأكاديمي",
+        "marksBySubject": "الدرجات حسب المادة",
+        "studyHabits": "عادات الدراسة والتفاعل اليومي",
+        "courseProgress": "تقدم الدورة — اكتمل {{percentage}}%"
+    },
+    "adminReport": {
+        "title": "تقرير تقدم الطالب",
+        "periodGenerated": "{{period}} · تم الإنشاء في {{date}}",
+        "statusGrade": "{{status}} · الدرجة {{grade}}",
+        "studentLabels": {
+            "student": "الطالب",
+            "class": "الصف",
+            "enrollmentNo": "رقم القيد",
+            "rollNo": "الرقم التسلسلي"
+        },
+        "atAGlanceHeading": "نظرة سريعة",
+        "summaryForParentsHeading": "ملخص لأولياء الأمور",
+        "weeklyTrend": "الاتجاه الأسبوعي",
+        "averagePrefix": "المتوسط",
+        "vsClassAverage": "مقابل متوسط الصف {{percentage}}%",
+        "bestSubjectLabel": "الأفضل:",
+        "weakestSubjectLabel": "بحاجة إلى تحسين:",
+        "subjectPerformanceVsClass": "أداء المواد مقارنة بالصف",
+        "marksAggregationNote": "مجمّعة من التقييمات والواجبات والاختبارات القصيرة وأسئلة التدريب.",
+        "needsWorkBadge": "بحاجة إلى تحسين",
+        "studyHabitsStats": {
+            "activeDays": "أيام النشاط",
+            "longestStreak": "أطول سلسلة متواصلة",
+            "focusScore": "درجة التركيز",
+            "mostActive": "أكثر الأوقات نشاطًا"
+        },
+        "dailyStudyTimeDays_zero": "وقت الدراسة اليومي (بالدقائق) · {{count}} يوم",
+        "dailyStudyTimeDays_one": "وقت الدراسة اليومي (بالدقائق) · {{count}} يوم",
+        "dailyStudyTimeDays_two": "وقت الدراسة اليومي (بالدقائق) · {{count}} يومان",
+        "dailyStudyTimeDays_few": "وقت الدراسة اليومي (بالدقائق) · {{count}} أيام",
+        "dailyStudyTimeDays_many": "وقت الدراسة اليومي (بالدقائق) · {{count}} يومًا",
+        "dailyStudyTimeDays_other": "وقت الدراسة اليومي (بالدقائق) · {{count}} يوم",
+        "dayLabel": "اليوم {{count}}",
+        "contentExplored": "المحتوى المستكشف:",
+        "videosWatched": "فيديوهات",
+        "documentsRead": "مستندات",
+        "quizzesAttempted": "اختبارات قصيرة",
+        "liveClassesStats": {
+            "totalClasses": "إجمالي الحصص",
+            "attended": "حضر",
+            "missed": "غاب",
+            "notMarked": "غير مُسجَّل",
+            "attendance": "الحضور"
+        },
+        "assignmentsStats": {
+            "assigned": "المُكلَّف بها",
+            "submitted": "المُسلَّمة",
+            "onTime": "في الموعد",
+            "late": "متأخر",
+            "pending": "معلّقة",
+            "avgScore": "متوسط الدرجات"
+        },
+        "achievementsHeading": "الإنجازات",
+        "whatWeNoticedHeading": "ما لاحظناه",
+        "recommendedNextStepsHeading": "الخطوات التالية الموصى بها",
+        "footer": "{{instituteName}} · تم الإنشاء بواسطة Vacademy في {{date}} · {{period}}"
+    },
+    "dialog": {
+        "headingWithName": "{{reportName}} — {{studentName}}",
+        "headingDefault": "التقرير الشامل — {{studentName}}",
+        "headingWithPeriod": "التقرير الشامل — {{studentName}} ({{periodLabel}})",
+        "studentFallbackName": "الطالب",
+        "reportNotAvailable": "بيانات التقرير غير متاحة.",
+        "tabs": {
+            "overview": "نظرة عامة",
+            "attendance": "الحضور",
+            "academics": "التحصيل الدراسي",
+            "activity": "النشاط",
+            "progress": "التقدم",
+            "liveClasses": "الحصص المباشرة",
+            "certificates": "الشهادات",
+            "assignments": "الواجبات",
+            "insights": "رؤى الذكاء الاصطناعي"
+        },
+        "actions": {
+            "downloading": "جارٍ التنزيل…",
+            "downloadPdf": "تنزيل PDF",
+            "close": "إغلاق"
+        },
+        "toast": {
+            "downloadFailed": "فشل تنزيل ملف PDF"
+        }
+    }
+}

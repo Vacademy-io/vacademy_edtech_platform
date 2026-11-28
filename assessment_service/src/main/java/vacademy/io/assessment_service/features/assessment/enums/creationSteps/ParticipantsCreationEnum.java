@@ -6,6 +6,8 @@ public enum ParticipantsCreationEnum {
     PRIVATE_REGISTRATIONS,
     PRE_BATCH_REGISTRATIONS,
     PRE_USER_REGISTRATIONS,
+    // Of PRE_USER_REGISTRATIONS, how many registered through the public link (OPEN_REGISTRATION).
+    OPEN_USER_REGISTRATIONS,
     CLOSED_SELECT_BATCH,
     CLOSED_SELECT_STUDENT,
     CLOSED_LINK,

@@ -1,0 +1,14 @@
+{
+    "heading": "आगामी सत्र",
+    "loading": "लोड हो रहा है…",
+    "learnerFallback": "छात्र",
+    "todayBadge": "आज",
+    "joinButton": "जॉइन करें",
+    "linkPendingTitle": "मीटिंग लिंक अभी बनाया जा रहा है। अगर यह दिखाई न दे, तो अपने एडमिन से गूगल कनेक्शन जाँचने को कहें।",
+    "linkPendingLabel": "लिंक लंबित",
+    "rescheduleAriaLabel": "{{name}} के साथ सत्र फिर से शेड्यूल करें",
+    "rescheduleTitle": "इस सत्र को किसी और स्लॉट में ले जाएँ",
+    "cancelAriaLabel": "{{name}} के साथ सत्र रद्द करें",
+    "cancelTitle": "यह सत्र रद्द करें",
+    "thisLearnerFallback": "इस छात्र"
+}

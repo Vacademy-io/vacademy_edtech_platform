@@ -1,0 +1,44 @@
+{
+    "dialog": {
+        "headingEdit": "تعديل مكوّن الراتب",
+        "headingNew": "إضافة مكوّن راتب",
+        "cancel": "إلغاء",
+        "saving": "جارٍ الحفظ…",
+        "saveChanges": "حفظ التغييرات",
+        "createComponent": "إنشاء المكوّن"
+    },
+    "toast": {
+        "updated": "تم تحديث المكوّن",
+        "created": "تم إنشاء المكوّن",
+        "saveError": "تعذر حفظ مكوّن الراتب."
+    },
+    "info": "TDS وPF وESI وPT هي مكوّنات نظامية — ينشئها نظام الرواتب تلقائيًا عند تشغيله. لا تُضِف هذه المكوّنات هنا، وإلا احتُسب الخصم مرتين لدى الموظف.",
+    "form": {
+        "nameLabel": "الاسم",
+        "namePlaceholder": "بدل السكن",
+        "codeLabel": "الرمز",
+        "codePlaceholder": "HRA",
+        "codeDescription": "يستخدم محرك الرواتب هذا الرمز للمطابقة — مثل BASIC وHRA.",
+        "typeLabel": "النوع",
+        "categoryLabel": "الفئة",
+        "displayOrderLabel": "ترتيب العرض",
+        "displayOrderPlaceholder": "10",
+        "displayOrderDescription": "الأرقام الأصغر تظهر أعلى في قسيمة الراتب.",
+        "glAccountLabel": "رمز حساب دفتر الأستاذ",
+        "glAccountPlaceholder": "5100",
+        "glAccountDescription": "الموضع الذي يُرحَّل إليه هذا المكوّن في القيد المحاسبي. اتركه فارغًا لاستخدام الرمز الافتراضي لنوعه.",
+        "taxableLabel": "خاضع للضريبة",
+        "statutoryLabel": "نظامي",
+        "descriptionLabel": "الوصف",
+        "descriptionPlaceholder": "الغرض من هذا المكوّن، حتى لا يضطر المسؤول التالي للتخمين."
+    },
+    "validation": {
+        "nameRequired": "أدخل اسمًا للمكوّن",
+        "codeMin": "يجب ألا يقل الرمز عن حرفين",
+        "codePattern": "أحرف كبيرة وأرقام وشرطات سفلية فقط — بدون مسافات (مثل BASIC وHRA وSPECIAL_ALLOWANCE)",
+        "descriptionMax": "اجعل الوصف أقل من 500 حرف",
+        "wholeNumbers": "أرقام صحيحة فقط",
+        "glAccountMax": "يبدو هذا طويلاً جدًا ليكون رمز حساب",
+        "codeDuplicate": "هناك مكوّن آخر يستخدم هذا الرمز بالفعل"
+    }
+}

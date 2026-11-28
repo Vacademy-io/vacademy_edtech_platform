@@ -1,0 +1,51 @@
+{
+    "backToAll": "सभी नॉलेज बेस",
+    "suggestions": {
+        "whatTopics": "{{title}} में कौन-कौन से टॉपिक शामिल हैं?",
+        "mainFormulas": "इस सामग्री के मुख्य सूत्र बताएं।",
+        "suggestExamQuestions": "इस सामग्री से पांच परीक्षा प्रश्न सुझाएं।"
+    },
+    "pageTitleWithName": "{{name}} — नॉलेज बेस",
+    "pageTitleDefault": "नॉलेज बेस",
+    "navHeadingDefault": "नॉलेज बेस",
+    "loadError": "यह नॉलेज बेस लोड नहीं हो सका।",
+    "tryAgainButton": "फिर से कोशिश करें",
+    "sharedLibraryBadge": "साझा लाइब्रेरी — केवल पढ़ने के लिए",
+    "whatItCoversButton": "यह क्या कवर करता है",
+    "createQuestionPaperButton": "प्रश्न पत्र बनाएं",
+    "createCourseButton": "कोर्स बनाएं",
+    "addMaterialButton": "सामग्री जोड़ें",
+    "stats": {
+        "sources": "स्रोत",
+        "pages": "पेज",
+        "searchablePassages": "खोजने योग्य अंश",
+        "diagramsAndTables": "आरेख और तालिकाएं"
+    },
+    "processingSources_one": "{{count}} स्रोत पढ़ा जा रहा है — आप यह पेज छोड़ सकते हैं, यह चलता रहेगा।",
+    "processingSources_other": "{{count}} स्रोत पढ़े जा रहे हैं — आप यह पेज छोड़ सकते हैं, यह चलता रहेगा।",
+    "reviewPagesWarning_one": "{{formatted}} पेज गलत हो सकता है",
+    "reviewPagesWarning_other": "{{formatted}} पेज गलत हो सकते हैं",
+    "materialHeading": "सामग्री",
+    "checkItWorksHeading": "जांचें कि यह काम करता है",
+    "madeFromHeading": "इस नॉलेज बेस से बनाया गया",
+    "purpose": {
+        "instituteInfo": "संस्थान की जानकारी",
+        "generalReference": "सामान्य संदर्भ"
+    },
+    "reviewDialog": {
+        "heading": "पेज जो गलत हो सकते हैं",
+        "description": "ये पेज डिजिटल के बजाय स्कैन किए गए थे, और पढ़ते समय अविश्वसनीय निकले। इस नॉलेज बेस में बाकी सब कुछ प्रभावित नहीं है। सामान्य समाधान यह है कि केवल इन पेजों का एक साफ़ स्कैन एक अलग दस्तावेज़ के रूप में दोबारा अपलोड करें।",
+        "empty": "अभी किसी चीज़ पर ध्यान देने की ज़रूरत नहीं है।",
+        "pageLabel": "पेज {{number}}",
+        "noTextRead": "कोई टेक्स्ट नहीं पढ़ा जा सका",
+        "charsRead": "केवल {{formatted}} अक्षर पढ़े गए",
+        "confidence": "{{percent}}% भरोसा"
+    },
+    "outlineDialog": {
+        "heading": "यह नॉलेज बेस क्या कवर करता है",
+        "description": "आपकी सामग्री पढ़ते समय बनाया गया। इसी का उपयोग AI कोर्स और प्रश्न पत्रों की योजना बनाने के लिए करेगा, इसलिए इसे एक बार देखना ज़रूरी है — अगर यहां कोई चैप्टर गायब है, तो वह बाद में बनने वाली किसी भी चीज़ में भी गायब रहेगा।",
+        "empty": "अभी तक कोई सारांश नहीं है। किसी दस्तावेज़ की प्रोसेसिंग पूरी होते ही यह बन जाता है।",
+        "untitled": "बिना शीर्षक",
+        "pagePrefix": "पृ. {{start}}"
+    }
+}

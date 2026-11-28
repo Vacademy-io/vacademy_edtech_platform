@@ -1,0 +1,73 @@
+package vacademy.io.auth_service.feature.selfsignup.service;
+
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwtException;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.SignatureAlgorithm;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import vacademy.io.common.auth.service.JwtService;
+import vacademy.io.common.exceptions.VacademyException;
+
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+
+/**
+ * Proof that a visitor owns an email address, from an email OTP or from Google, good for one
+ * sign-up form. Signed here so the form's later steps cannot name a different address.
+ */
+@Service
+public class SelfSignupTokenService {
+
+    public static final String METHOD_EMAIL_OTP = "EMAIL_OTP";
+    public static final String METHOD_GOOGLE = "GOOGLE";
+
+    private static final long TTL_MILLIS = 30 * 60 * 1000L;
+    private static final String PURPOSE = "self-signup";
+
+    public String issue(String email, String method, String name, String subjectId, String vendorId) {
+        return issue(email, method, name, subjectId, vendorId, null);
+    }
+
+    /**
+     * @param phone a phone number the visitor ALSO proved (WhatsApp code), digits with the country
+     *              code; null when only the email is proven.
+     */
+    public String issue(String email, String method, String name, String subjectId, String vendorId, String phone) {
+        long now = System.currentTimeMillis();
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("purpose", PURPOSE);
+        claims.put("email", email.trim().toLowerCase());
+        claims.put("method", method);
+        claims.put("name", name == null ? "" : name);
+        claims.put("subject_id", subjectId == null ? "" : subjectId);
+        claims.put("vendor_id", vendorId == null ? "" : vendorId);
+        claims.put("phone", phone == null ? "" : phone);
+        return Jwts.builder()
+                .setClaims(claims)
+                .setIssuedAt(new Date(now))
+                .setExpiration(new Date(now + TTL_MILLIS))
+                .signWith(JwtService.signingKey(), SignatureAlgorithm.HS256)
+                .compact();
+    }
+
+    public long ttlMillis() {
+        return TTL_MILLIS;
+    }
+
+    public Claims verify(String token) {
+        if (token == null || token.isBlank()) {
+            throw new VacademyException(HttpStatus.UNAUTHORIZED, "Please verify your email again");
+        }
+        try {
+            Claims claims = JwtService.parseSignedClaims(token);
+            if (!PURPOSE.equals(claims.get("purpose", String.class))) {
+                throw new VacademyException(HttpStatus.UNAUTHORIZED, "Please verify your email again");
+            }
+            return claims;
+        } catch (JwtException | IllegalArgumentException e) {
+            throw new VacademyException(HttpStatus.UNAUTHORIZED, "Your verification has expired. Please verify your email again");
+        }
+    }
+}

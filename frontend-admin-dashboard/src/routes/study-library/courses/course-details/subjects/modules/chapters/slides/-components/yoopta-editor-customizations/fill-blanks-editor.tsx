@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { YooptaPlugin, useYooptaEditor, Elements, PluginElementRenderProps } from '@yoopta/editor';
 
 // Pattern: {blank:answer}
@@ -34,6 +35,7 @@ export function FillBlanksBlock({
     children,
     blockId,
 }: PluginElementRenderProps) {
+    const { t } = useTranslation('studyLibraryFillBlanksEditor');
     const editor = useYooptaEditor();
     const [sentence, setSentence] = useState(element?.props?.sentence || '');
     const [isEditing, setIsEditing] = useState(!element?.props?.sentence);
@@ -110,7 +112,7 @@ export function FillBlanksBlock({
                 }}
             >
                 <span style={{ fontSize: '14px', fontWeight: 600, color: '#333' }}>
-                    Fill in the Blanks
+                    {t('block.title')}
                 </span>
                 <button
                     onClick={() => {
@@ -127,7 +129,7 @@ export function FillBlanksBlock({
                         cursor: 'pointer',
                     }}
                 >
-                    {isEditing ? 'Preview' : 'Edit'}
+                    {isEditing ? t('block.preview') : t('block.edit')}
                 </button>
             </div>
 
@@ -146,15 +148,18 @@ export function FillBlanksBlock({
                                 lineHeight: 1.6,
                             }}
                         >
-                            Use <code style={{ background: '#fff', padding: '2px 4px', borderRadius: '3px', fontSize: '12px' }}>{'{blank:answer}'}</code> to create blanks.
+                            {t('editor.usageHintPrefix')}{' '}
+                            <code style={{ background: '#fff', padding: '2px 4px', borderRadius: '3px', fontSize: '12px' }}>{'{blank:answer}'}</code>{' '}
+                            {t('editor.usageHintSuffix')}
                             <br />
-                            Example: <em>The capital of France is {'{blank:Paris}'}</em>
+                            {t('editor.exampleLabel')}{' '}
+                            <em>{t('editor.exampleSentence')}</em>
                         </div>
                         <textarea
                             value={sentence}
                             onChange={(e) => setSentence(e.target.value)}
                             onKeyDown={handleInputKeyDown}
-                            placeholder="The {blank:Sun} is the center of our {blank:solar system}."
+                            placeholder={t('editor.textareaPlaceholder')}
                             style={{
                                 width: '100%',
                                 minHeight: '80px',
@@ -170,7 +175,7 @@ export function FillBlanksBlock({
                         />
                         {blanks.length > 0 && (
                             <div style={{ marginTop: '8px', fontSize: '12px', color: '#666' }}>
-                                {blanks.length} blank{blanks.length > 1 ? 's' : ''} detected:{' '}
+                                {t('editor.blanksDetected', { count: blanks.length })}{' '}
                                 {blanks.map((b, i) => (
                                     <span key={i}>
                                         <strong>{b.value}</strong>
@@ -214,7 +219,7 @@ export function FillBlanksBlock({
                                                 setShowResults(false);
                                             }}
                                             onKeyDown={handleInputKeyDown}
-                                            placeholder={`blank ${idx + 1}`}
+                                            placeholder={t('preview.blankPlaceholder', { index: idx + 1 })}
                                             style={{
                                                 width: `${Math.max(part.value.length * 10, 80)}px`,
                                                 padding: '4px 8px',
@@ -271,7 +276,7 @@ export function FillBlanksBlock({
                                         cursor: 'pointer',
                                     }}
                                 >
-                                    Check Answers
+                                    {t('preview.checkAnswers')}
                                 </button>
                                 <button
                                     onClick={resetAnswers}
@@ -285,7 +290,7 @@ export function FillBlanksBlock({
                                         cursor: 'pointer',
                                     }}
                                 >
-                                    Reset
+                                    {t('preview.reset')}
                                 </button>
                                 {showResults && (
                                     <span
@@ -310,7 +315,7 @@ export function FillBlanksBlock({
                                                 (answers[i] || '').trim().toLowerCase() ===
                                                 b.value.trim().toLowerCase()
                                         ).length}
-                                        /{blanks.length} correct
+                                        /{blanks.length} {t('preview.correct')}
                                     </span>
                                 )}
                             </div>
@@ -327,7 +332,7 @@ export function FillBlanksBlock({
                                     cursor: 'pointer',
                                 }}
                             >
-                                Click Edit to add a fill-in-the-blanks sentence
+                                {t('preview.emptyState')}
                             </div>
                         )}
                     </div>

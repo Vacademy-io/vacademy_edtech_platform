@@ -3,6 +3,7 @@ package vacademy.io.admin_core_service.features.hr_approval.service;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import vacademy.io.admin_core_service.core.security.HrAccessGuard;
 import vacademy.io.admin_core_service.features.hr_approval.dto.ApprovalActionDTO;
 import vacademy.io.admin_core_service.features.hr_approval.dto.ApprovalActionInputDTO;
 import vacademy.io.admin_core_service.features.hr_approval.dto.ApprovalChainDTO;
@@ -34,20 +35,24 @@ public class ApprovalService {
     @Autowired
     private ApprovalActionRepository approvalActionRepository;
 
+    @Autowired
+    private HrAccessGuard hrAccessGuard;
+
     // ======================== Chain Management ========================
 
     @Transactional
-    public String saveChain(ApprovalChainDTO dto) {
-        // Upsert by instituteId + entityType
+    public String saveChain(ApprovalChainDTO dto, String instituteId) {
+        // Upsert by the VALIDATED instituteId + entityType — never the dto's instituteId,
+        // which would allow cross-tenant writes of approval chains
         Optional<ApprovalChain> existingOpt = approvalChainRepository
-                .findByInstituteIdAndEntityType(dto.getInstituteId(), dto.getEntityType());
+                .findByInstituteIdAndEntityType(instituteId, dto.getEntityType());
 
         ApprovalChain chain;
         if (existingOpt.isPresent()) {
             chain = existingOpt.get();
         } else {
             chain = new ApprovalChain();
-            chain.setInstituteId(dto.getInstituteId());
+            chain.setInstituteId(instituteId);
             chain.setEntityType(dto.getEntityType());
         }
 
@@ -99,9 +104,10 @@ public class ApprovalService {
     }
 
     @Transactional
-    public String processAction(String requestId, ApprovalActionInputDTO actionInputDTO, String actorUserId) {
+    public String processAction(String requestId, ApprovalActionInputDTO actionInputDTO, String actorUserId, String instituteId) {
         ApprovalRequest request = approvalRequestRepository.findById(requestId)
                 .orElseThrow(() -> new VacademyException("Approval request not found"));
+        hrAccessGuard.requireInstituteMatch(request.getInstituteId(), instituteId, "Approval request");
 
         if (!ApprovalStatus.PENDING.name().equals(request.getStatus())) {
             throw new VacademyException("Cannot process action on a " + request.getStatus() + " request");
@@ -110,6 +116,14 @@ public class ApprovalService {
         // BUG 5 FIX: Prevent self-approval — requester cannot approve their own request
         if (request.getRequesterId().equals(actorUserId)) {
             throw new VacademyException("Cannot approve your own request");
+        }
+
+        // Prevent the same actor from acting on more than one level of the same request
+        List<ApprovalAction> priorActions = approvalActionRepository.findByRequestIdAndActorId(requestId, actorUserId);
+        boolean actedAtOtherLevel = priorActions.stream()
+                .anyMatch(a -> a.getLevel() != null && !a.getLevel().equals(request.getCurrentLevel()));
+        if (actedAtOtherLevel) {
+            throw new VacademyException("You have already acted on another level of this request; a different approver is required for level " + request.getCurrentLevel());
         }
 
         String action = actionInputDTO.getAction();
@@ -152,9 +166,10 @@ public class ApprovalService {
     }
 
     @Transactional(readOnly = true)
-    public ApprovalRequestDTO getRequestHistory(String entityType, String entityId) {
+    public ApprovalRequestDTO getRequestHistory(String entityType, String entityId, String instituteId) {
         ApprovalRequest request = approvalRequestRepository.findByEntityTypeAndEntityId(entityType, entityId)
                 .orElseThrow(() -> new VacademyException("Approval request not found for entity"));
+        hrAccessGuard.requireInstituteMatch(request.getInstituteId(), instituteId, "Approval request");
 
         return toRequestDTO(request, true);
     }

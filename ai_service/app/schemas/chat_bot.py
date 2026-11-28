@@ -22,7 +22,10 @@ class CompletionRequest(BaseModel):
     own. Used by other services (e.g. the parent assistant in admin_core) so the
     LLM API key lives only here, never in the calling service."""
     prompt: str = Field(..., description="The full prompt to complete")
-    model: Optional[str] = Field(None, description="Optional model id override")
+    model: Optional[str] = Field(None, description="Optional model id override (honoured for platform staff only)")
+    use_case: Optional[str] = Field(
+        None, description="ai_model_defaults use case: 'parent_assistant' or 'chat' (default)"
+    )
     institute_id: Optional[str] = Field(None, description="Institute ID for credit deduction")
     user_id: Optional[str] = Field(None, description="User ID for usage tracking")
 

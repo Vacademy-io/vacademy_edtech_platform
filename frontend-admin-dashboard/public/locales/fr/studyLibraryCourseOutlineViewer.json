@@ -1,0 +1,99 @@
+{
+    "meta": {
+        "title": "Visionneuse de contenu de cours",
+        "description": "Consultez le contenu de cours que vous avez généré"
+    },
+    "header": {
+        "backToLibrary": "Retour à la bibliothèque de cours",
+        "create": "Créer",
+        "heading": "Dernière étape : confirmez votre cours",
+        "subheading": "Vérifiez attentivement l'ensemble du contenu du cours. Apportez les dernières modifications avant de créer votre cours."
+    },
+    "empty": {
+        "noContent": "Aucun contenu de cours disponible.",
+        "generateFirst": "Veuillez d'abord générer le contenu du cours depuis la page de génération."
+    },
+    "ordinal": {
+        "first": "première",
+        "second": "deuxième"
+    },
+    "session": {
+        "untitled": "Session sans titre",
+        "edit": "Modifier",
+        "delete": "Supprimer",
+        "save": "Enregistrer",
+        "cancel": "Annuler",
+        "pagesProgress_one": "{{completed}}/{{count}} page",
+        "pagesProgress_many": "{{completed}}/{{count}} pages",
+        "pagesProgress_other": "{{completed}}/{{count}} pages",
+        "confirmDelete": "Voulez-vous vraiment supprimer cette session ?"
+    },
+    "slide": {
+        "edit": "Modifier",
+        "delete": "Supprimer",
+        "save": "Enregistrer",
+        "cancel": "Annuler",
+        "confirmDelete": "Voulez-vous vraiment supprimer ce/cette {{term}} ?",
+        "noContent": "Aucun contenu disponible",
+        "regenerate": "Régénérer",
+        "regenerateCode": "Régénérer le code",
+        "regenerateVideo": "Régénérer la vidéo",
+        "regenerateVideoScript": "Régénérer le script vidéo",
+        "regenerateQuiz": "Régénérer le quiz",
+        "regenerateSolution": "Régénérer la solution",
+        "regenerateAssignment": "Régénérer le devoir",
+        "codeEditor": "Éditeur de code",
+        "videoPlayer": "Lecteur vidéo",
+        "videoWillBeDisplayed": "La vidéo s'affichera ici",
+        "uploadOrUrlHint": "Cliquez sur l'icône d'importation ou d'URL pour ajouter une vidéo",
+        "uploadVideoFromDevice": "Importer une vidéo depuis l'appareil",
+        "addVideoUrl": "Ajouter une URL vidéo",
+        "videoUrlLabel": "URL de la vidéo",
+        "videoUrlPlaceholder": "https://www.youtube.com/watch?v=...",
+        "selectVideoFileAlert": "Veuillez sélectionner un fichier vidéo",
+        "learningObjectives": "Objectifs d'apprentissage",
+        "document": "Document",
+        "videoScript": "Script vidéo",
+        "solutionCode": "Code de la solution",
+        "homework": "Devoir à la maison",
+        "assignment": "Devoir"
+    },
+    "quiz": {
+        "content": "Contenu du quiz",
+        "addQuestion": "Ajouter une question",
+        "noQuestions": "Aucune question pour l'instant. Cliquez sur « Ajouter une question » pour commencer.",
+        "questionLabel": "Question {{number}}",
+        "delete": "Supprimer",
+        "questionText": "Texte de la question",
+        "questionPlaceholder": "Saisissez votre question ici...",
+        "options": "Options",
+        "optionPlaceholder": "Option {{number}}",
+        "removeOption": "Supprimer l'option",
+        "addOption": "+ Ajouter une option"
+    },
+    "regenerateWarningDialog": {
+        "title": "Avertissement de limite de régénération",
+        "description": "Vous ne pouvez régénérer ce contenu que deux fois. C'est votre {{ordinal}} régénération.",
+        "body": "Veuillez vérifier attentivement votre contenu avant de continuer. Après deux régénérations, vous ne pourrez plus régénérer ce contenu.",
+        "cancel": "Annuler",
+        "proceed": "Continuer"
+    },
+    "regenerateDialog": {
+        "title": "Régénérer la page",
+        "warningTitle": "Avertissement de limite de régénération",
+        "warningBody": "Vous ne pouvez régénérer ce contenu que deux fois. C'est votre {{ordinal}} régénération. Après deux régénérations, vous ne pourrez plus régénérer ce contenu.",
+        "promptPlaceholder": "Décrivez comment vous souhaitez que cette page soit régénérée... (facultatif — laissez vide pour une régénération simple)",
+        "regenerate": "Régénérer"
+    },
+    "regenerationLimitAlert": {
+        "video": "Vous avez déjà régénéré ce contenu vidéo deux fois. Une nouvelle régénération n'est pas autorisée.",
+        "generic": "Vous avez déjà régénéré ce contenu deux fois. Une nouvelle régénération n'est pas autorisée."
+    },
+    "backToLibraryDialog": {
+        "title": "Retourner à la bibliothèque de cours ?",
+        "description": "Voulez-vous vraiment retourner à la bibliothèque de cours ? Vous pouvez soit abandonner votre cours actuel, soit l'enregistrer dans les brouillons.",
+        "cancel": "Annuler",
+        "discard": "Abandonner le cours",
+        "saveToDrafts": "Enregistrer dans les brouillons"
+    }
+}

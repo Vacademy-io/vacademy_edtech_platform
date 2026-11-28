@@ -1,0 +1,38 @@
+{
+    "defaults": {
+        "title": "स्क्रिप्ट की समीक्षा करें",
+        "subtitle": "नीचे स्क्रिप्ट संपादित करें, फिर ऑडियो और विज़ुअल जनरेट करने के लिए आगे बढ़ें।",
+        "ctaLabel": "वीडियो पर आगे बढ़ें",
+        "discardLabel": "फिर से शुरू करें"
+    },
+    "counts": {
+        "words_one": "{{count}} शब्द",
+        "words_other": "{{count}} शब्द",
+        "sentences_one": "{{count}} वाक्य",
+        "sentences_other": "{{count}} वाक्य"
+    },
+    "approxDuration": "≈ {{time}}",
+    "prompt": {
+        "toggleLabel": "मूल प्रॉम्प्ट"
+    },
+    "viewToggle": {
+        "timeline": "टाइमलाइन",
+        "editRaw": "रॉ संपादित करें",
+        "estimatesNote": "समय अनुमानित हैं (≈{{wpm}} शब्द/मिनट)। वास्तविक समय अगले चरण में TTS से मिलते हैं।"
+    },
+    "timeline": {
+        "empty": "कोई वाक्य नहीं मिला। कथन जोड़ने के लिए <strong>रॉ संपादित करें</strong> पर जाएं।"
+    },
+    "sentenceRow": {
+        "shortFragment": "बहुत छोटा अंश",
+        "longSentence": "लंबा वाक्य — विभाजित करने पर विचार करें",
+        "editTitle": "संपादित करें",
+        "insertTitle": "नीचे वाक्य जोड़ें",
+        "deleteTitle": "वाक्य हटाएं",
+        "newSentencePlaceholder": "नया वाक्य।"
+    },
+    "rawView": {
+        "placeholder": "स्क्रिप्ट यहां दिखाई देगी..."
+    },
+    "resuming": "फिर से शुरू हो रहा है..."
+}

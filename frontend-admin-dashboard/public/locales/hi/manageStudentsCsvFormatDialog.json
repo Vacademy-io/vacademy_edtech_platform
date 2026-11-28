@@ -1,0 +1,30 @@
+{
+    "title": "CSV प्रारूप चुनें",
+    "sections": {
+        "enrollmentPreferences": "नामांकन प्राथमिकताएं",
+        "optionalColumnSelection": "वैकल्पिक CSV कॉलम चयन"
+    },
+    "preferences": {
+        "autoGenerateUsername": "यूज़रनेम स्वतः जनरेट करें",
+        "autoGeneratePassword": "पासवर्ड स्वतः जनरेट करें",
+        "autoGenerateEnrollmentId": "नामांकन आईडी स्वतः जनरेट करें",
+        "setCommonExpiryDate": "सामान्य समाप्ति तिथि निर्धारित करें",
+        "daysFromToday": "आज से दिन",
+        "addStudentStatus": "विद्यार्थी स्थिति जोड़ें",
+        "selectStatusPlaceholder": "स्थिति चुनें",
+        "statusActive": "सक्रिय",
+        "statusInactive": "निष्क्रिय"
+    },
+    "columns": {
+        "fatherName": "पिता/पुरुष अभिभावक का नाम",
+        "collegeName": "कॉलेज/स्कूल का नाम",
+        "motherName": "माता/महिला अभिभावक का नाम",
+        "state": "राज्य",
+        "city": "शहर",
+        "fatherEmail": "पिता/पुरुष अभिभावक का ईमेल",
+        "motherEmail": "माता/महिला अभिभावक का ईमेल",
+        "pincode": "पिन कोड",
+        "fatherMobile": "पिता/पुरुष अभिभावक का मोबाइल नंबर",
+        "motherMobile": "माता/महिला अभिभावक का मोबाइल नंबर"
+    }
+}

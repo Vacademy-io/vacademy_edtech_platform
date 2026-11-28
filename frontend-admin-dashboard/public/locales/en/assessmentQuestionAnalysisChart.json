@@ -1,0 +1,17 @@
+{
+    "legend": {
+        "correct": "Correct",
+        "partiallyCorrect": "Partially Correct",
+        "wrongResponses": "Wrong Responses",
+        "skip": "Skip"
+    },
+    "checkInsightsButton": "Check Question Insights",
+    "dialogTitle": "Question Insights",
+    "xAxisLabel": "Question",
+    "yAxisLabel": "Number of Participants",
+    "header": {
+        "title": "Question Analysis",
+        "selectSectionPlaceholder": "Select Section",
+        "exportButton": "Export"
+    }
+}

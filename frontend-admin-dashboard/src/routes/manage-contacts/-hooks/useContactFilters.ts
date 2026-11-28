@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useSearch } from '@tanstack/react-router';
 import { ContactListRequest } from '../-types/contact-types';
 import { decodeSelectionToEntries } from '@/components/shared/leads/custom-field-filter-encoding';
+import { readUtmSelection, toUtmFiltersPayload } from '@/components/shared/leads/utm-filter-encoding';
 import { getCurrentInstituteId } from '@/lib/auth/instituteUtils';
 
 export const useContactFilters = () => {
@@ -129,6 +130,10 @@ export const useContactFilters = () => {
             package_session_ids: packageSessionIds && packageSessionIds.length > 0 ? packageSessionIds : undefined,
             campaign_filter: audienceIds && audienceIds.length > 0 ? { audience_ids: audienceIds } : {},
             custom_field_filters: customFieldFilters.length > 0 ? customFieldFilters : undefined,
+            // Campaign (UTM) filters ride columnFilters under `utm:<dimension>`
+            // (set by the UtmFilterControls dropdowns) and apply with the same
+            // Apply button. Undefined when nothing is selected.
+            utm_filters: toUtmFiltersPayload(readUtmSelection(filters)),
             page: 0,
         };
     };

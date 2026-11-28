@@ -1,5 +1,6 @@
 import authenticatedAxiosInstance from '@/lib/auth/axiosInstance';
 import axios from 'axios';
+import type { QueryClient } from '@tanstack/react-query';
 import {
     InstituteDetails,
     InstituteDetailsType,
@@ -17,6 +18,7 @@ import { getCurrentInstituteId } from '@/lib/auth/instituteUtils';
 import { useTheme } from '@/providers/theme/theme-provider';
 import { StorageKey } from '@/constants/storage/storage';
 import useLocalStorage from '@/hooks/use-local-storage';
+import { notifyNamingSettingsUpdated } from '@/hooks/useNamingSettingsVersion';
 import { isNullOrEmptyOrUndefined } from '@/lib/utils';
 import { NamingSettingsType } from '@/routes/settings/-constants/terms';
 import { THEME_ROLE_SETTINGS_KEY } from '@/types/theme-role-settings';
@@ -28,6 +30,27 @@ import {
 
 // Cache duration: 1 hour
 const CACHE_STALE_TIME = 3600000;
+
+/**
+ * Query keys whose queryFn writes `batches_for_sessions` into
+ * useInstituteDetailsStore. Any mutation that creates, renames or deletes a
+ * package session must invalidate these, otherwise every store reader
+ * (invite-links dialog, Enroll gate, BulkAssignDialog pre-selection, ...)
+ * keeps the pre-mutation snapshot until a hard reload.
+ * Prefix keys: the versioned suffix ('v4', 'v1') is matched by prefix.
+ *
+ * GET_INSTITUTE_LIGHTWEIGHT is deliberately NOT here: its queryFn stores
+ * `batches_for_sessions: []`, so refetching it alongside the full query would
+ * race and could blank the batches it was meant to refresh.
+ */
+const INSTITUTE_DETAILS_QUERY_KEYS = [['GET_BOTH_INSTITUTE_APIS'], ['GET_INSTITUTE_FULL']] as const;
+
+export const invalidateInstituteDetails = (queryClient: QueryClient) =>
+    Promise.all(
+        INSTITUTE_DETAILS_QUERY_KEYS.map((queryKey) =>
+            queryClient.invalidateQueries({ queryKey: [...queryKey] })
+        )
+    );
 
 /**
  * Caches setting.LANGUAGE_SETTING.data → localStorage 'languageSetting'
@@ -227,6 +250,8 @@ export const useInstituteLightweightQuery = () => {
                             localStorage.removeItem(THEME_ROLE_SETTINGS_KEY);
                         }
                         syncLanguageSettingCache(instituteSettings);
+                        // Terms feed the translation catalogs too (i18n/naming-terms.ts).
+                        notifyNamingSettingsUpdated();
                     }
                 }
                 if (data && !isNullOrEmptyOrUndefined(data.sub_modules)) {
@@ -291,6 +316,8 @@ export const useInstituteFullQuery = () => {
                             localStorage.removeItem(THEME_ROLE_SETTINGS_KEY);
                         }
                         syncLanguageSettingCache(instituteSettings);
+                        // Terms feed the translation catalogs too (i18n/naming-terms.ts).
+                        notifyNamingSettingsUpdated();
                     }
                 }
                 if (data && !isNullOrEmptyOrUndefined(data.sub_modules)) {
@@ -355,6 +382,8 @@ export const useInstituteQuery = () => {
                             localStorage.removeItem(THEME_ROLE_SETTINGS_KEY);
                         }
                         syncLanguageSettingCache(instituteSettings);
+                        // Terms feed the translation catalogs too (i18n/naming-terms.ts).
+                        notifyNamingSettingsUpdated();
                     }
                 }
                 if (data && !isNullOrEmptyOrUndefined(data.sub_modules)) {
@@ -371,6 +400,16 @@ export const useInstituteQuery = () => {
             }
 
             setInstituteDetails(data);
+
+            // Once per session: a role's Display Settings edited from the super-admin
+            // portal bumps the server's version, which busts the 24 h local cache.
+            // Fire-and-forget and silent on failure; loaded lazily so the
+            // display-settings module graph stays off this file's import path.
+            if (INSTITUTE_ID) {
+                void import('@/services/capabilities')
+                    .then((m) => m.syncCapabilitiesOnce(INSTITUTE_ID))
+                    .catch(() => undefined);
+            }
             return data;
         },
         staleTime: CACHE_STALE_TIME,

@@ -15,8 +15,11 @@ import {
   storeAssessmentInfo,
 } from "@/routes/assessment/examination/-utils.ts/useFetchAssessment";
 import { CheckCircle, Timer, ArrowRight, Sparkle } from "@phosphor-icons/react";
+import { useTranslation } from "react-i18next";
+import { useEffect, useRef } from "react";
 
 interface TimeLeft {
+  days: number;
   hours: number;
   minutes: number;
   seconds: number;
@@ -26,11 +29,18 @@ const AssessmentRegistrationCompleted = ({
   assessmentId,
   assessmentName,
   timeLeft,
+  autoOpenWhenLive = false,
 }: {
   assessmentId: string;
   assessmentName: string;
   timeLeft: TimeLeft;
+  /**
+   * Open the start page by itself once the test is live: at once when it is
+   * already live, or when the countdown ends. Pass false when the test is over.
+   */
+  autoOpenWhenLive?: boolean;
 }) => {
+  const { t } = useTranslation("registrationA");
   const navigate = useNavigate();
   const { data: instituteDetails } = useInstituteDetails();
 
@@ -41,7 +51,9 @@ const AssessmentRegistrationCompleted = ({
     instituteThemeCode: null,
     homeIconClickRoute: instituteDetails?.homeIconClickRoute ?? null,
   };
-  const handleNavigateAssessment = async () => {
+  // `replace` swaps this page out of the history, so Back from the start page
+  // does not land here and jump forward again.
+  const handleNavigateAssessment = async (replace = false) => {
     try {
       const { value } = await Preferences.get({ key: "accessToken" });
       console.log("access token after registration before login ", value);
@@ -54,6 +66,7 @@ const AssessmentRegistrationCompleted = ({
 
       if (authorityKeys.length > 1) {
         navigate({
+          replace,
           to: "/institute-selection",
           search: {
             redirect: assessmentRoute,
@@ -73,13 +86,15 @@ const AssessmentRegistrationCompleted = ({
             }
 
             navigate({
+              replace,
               to: assessmentRoute,
               search: { isPublicAssessment: true },
             });
           } catch (error) {
             console.error("Error fetching details:", error);
-            toast.error("Failed to fetch details");
+            toast.error(t("completed.toast.fetchDetailsError"));
             navigate({
+              replace,
               to: assessmentRoute,
               search: { isPublicAssessment: true },
             });
@@ -87,6 +102,7 @@ const AssessmentRegistrationCompleted = ({
         } else {
           console.error("Institute ID or User ID is undefined");
           navigate({
+            replace,
             to: assessmentRoute,
             search: { isPublicAssessment: true },
           });
@@ -95,12 +111,26 @@ const AssessmentRegistrationCompleted = ({
     } catch (error) {
       console.error("Error processing decoded data:", error);
       navigate({
+        replace,
         to: `/assessment/examination/${assessmentId}`,
       });
     }
   };
+  // `!days` also treats a missing value as 0, so the old rule still applies.
   const isLive =
-    timeLeft.hours === 0 && timeLeft.minutes === 0 && timeLeft.seconds === 0;
+    !timeLeft.days &&
+    timeLeft.hours === 0 &&
+    timeLeft.minutes === 0 &&
+    timeLeft.seconds === 0;
+
+  // Once only, so a re-render cannot navigate twice.
+  const autoOpened = useRef(false);
+  useEffect(() => {
+    if (!autoOpenWhenLive || !isLive || autoOpened.current) return;
+    autoOpened.current = true;
+    handleNavigateAssessment(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoOpenWhenLive, isLive]);
 
   return (
     <div className="flex min-h-screen w-full items-center justify-center bg-gradient-to-b from-primary-50/40 via-background to-background px-4 py-8">
@@ -118,7 +148,7 @@ const AssessmentRegistrationCompleted = ({
           />
 
           {/* Success icon with halo */}
-          <div className="relative -mt-6 flex items-center justify-center">
+          <div className="relative flex items-center justify-center">
             <div className="absolute inset-0 animate-ping rounded-full bg-success-200/60" />
             <div className="relative flex size-20 items-center justify-center rounded-full bg-gradient-to-br from-success-500 to-success-400 shadow-lg shadow-success-200">
               <CheckCircle size={44} weight="fill" className="text-white" />
@@ -129,10 +159,10 @@ const AssessmentRegistrationCompleted = ({
           <div className="flex flex-col items-center gap-1.5 text-center">
             <span className="inline-flex items-center gap-1 rounded-full bg-success-50 border border-success-200 px-3 py-0.5 text-caption font-semibold uppercase tracking-wide text-success-700">
               <Sparkle size={12} weight="fill" />
-              Registration Completed
+              {t("common.registrationCompletedBadge")}
             </span>
             <h1 className="text-xl sm:text-2xl font-semibold text-neutral-900">
-              You&apos;re all set!
+              {t("completed.title")}
             </h1>
             <p className="text-sm text-neutral-500 max-w-ch-26">
               {assessmentName}
@@ -145,24 +175,34 @@ const AssessmentRegistrationCompleted = ({
               <div className="flex flex-col items-center gap-1.5">
                 <div className="flex items-center gap-1.5 text-caption font-semibold uppercase tracking-wide text-success-700">
                   <span className="size-1.5 rounded-full bg-success-500 animate-pulse" />
-                  Live Now
+                  {t("completed.liveBadge")}
                 </div>
                 <span className="text-sm font-medium text-neutral-700">
-                  Your assessment is ready to begin
+                  {t("completed.liveMessage")}
                 </span>
               </div>
             ) : (
               <div className="flex flex-col items-center gap-2">
                 <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-primary-700">
                   <Timer size={14} weight="bold" />
-                  Assessment goes live in
+                  {t("completed.goesLiveIn")}
                 </div>
-                <span className="text-2xl sm:text-3xl font-bold tabular-nums text-primary-600">
-                  {String(timeLeft.hours).padStart(2, "0")}
-                  :
-                  {String(timeLeft.minutes).padStart(2, "0")}
-                  :
-                  {String(timeLeft.seconds).padStart(2, "0")}
+                <span className="flex items-baseline gap-2 text-2xl sm:text-3xl font-bold tabular-nums text-primary-600">
+                  {timeLeft.days > 0 && (
+                    <>
+                      <span>{timeLeft.days}</span>
+                      <span className="text-sm font-medium text-primary-500">
+                        {t("form.countdown.dayUnit", { count: timeLeft.days })}
+                      </span>
+                    </>
+                  )}
+                  <span>
+                    {String(timeLeft.hours).padStart(2, "0")}
+                    :
+                    {String(timeLeft.minutes).padStart(2, "0")}
+                    :
+                    {String(timeLeft.seconds).padStart(2, "0")}
+                  </span>
                 </span>
               </div>
             )}
@@ -176,9 +216,9 @@ const AssessmentRegistrationCompleted = ({
             layoutVariant="default"
             className="group w-full gap-2"
             disable={!isLive}
-            onClick={handleNavigateAssessment}
+            onClick={() => handleNavigateAssessment()}
           >
-            Go To Assessment
+            {t("completed.cta")}
             <ArrowRight
               size={16}
               weight="bold"
@@ -188,7 +228,7 @@ const AssessmentRegistrationCompleted = ({
 
           {!isLive && (
             <p className="text-center text-xs text-neutral-400">
-              This button will unlock automatically when the assessment begins.
+              {t("completed.unlockHint")}
             </p>
           )}
         </div>

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Trans, useTranslation } from 'react-i18next';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { MyDialog } from '@/components/design-system/dialog';
@@ -12,6 +13,13 @@ import {
 } from '../../-services/course-certificates';
 import { CourseCertificateTemplateUpload } from './CourseCertificateTemplateUpload';
 import { CourseCertificatePicker } from './CourseCertificatePicker';
+import { CertificateCriteriaSection } from './CertificateCriteriaSection';
+import {
+    criteriaDraftError,
+    criteriaDraftFrom,
+    criteriaPayloadFrom,
+    type CriteriaDraft,
+} from './certificate-criteria-utils';
 
 interface CourseCertificateSettingsDialogProps {
     open: boolean;
@@ -31,7 +39,11 @@ export const CourseCertificateSettingsDialog = ({
     packageId,
     settings,
 }: CourseCertificateSettingsDialogProps) => {
+    const { t } = useTranslation('studyLibraryCertificateCourseCertificateSettingsDialog');
+    const { t: tCriteria } = useTranslation('studyLibraryCertificateCriteria');
     const queryClient = useQueryClient();
+    // How the certificate is earned: progress (the default), test marks, or both.
+    const [criteria, setCriteria] = useState<CriteriaDraft>(() => criteriaDraftFrom(null));
 
     const [enabledChoice, setEnabledChoice] = useState<EnabledChoice>('INHERIT');
     const [overrideThreshold, setOverrideThreshold] = useState(false);
@@ -58,7 +70,10 @@ export const CourseCertificateSettingsDialog = ({
         // to show what is being issued rather than what was once chosen.
         setTemplateId(settings.course_template_id ?? null);
         setTemplateHtml(override?.templateHtml ?? null);
+        setCriteria(criteriaDraftFrom(override?.criteria));
     }, [open, settings]);
+
+    const criteriaError = criteriaDraftError(criteria);
 
     const saveMutation = useMutation({
         mutationFn: () =>
@@ -70,27 +85,33 @@ export const CourseCertificateSettingsDialog = ({
                 // Never both: a saved design and uploaded HTML would be two
                 // answers to "which certificate does this course print".
                 templateHtml: templateId ? null : templateHtml,
+                // Progress-only saves null, so the stored shape is unchanged for
+                // courses that never use a test-score rule.
+                criteria: criteriaPayloadFrom(criteria),
             }),
         onSuccess: () => {
-            toast.success('Course certificate settings saved');
+            toast.success(t('toast.saveSuccess'));
             queryClient.invalidateQueries({ queryKey: ['course-certificate-settings'] });
             queryClient.invalidateQueries({ queryKey: ['course-certificate-dashboard'] });
             queryClient.invalidateQueries({ queryKey: ['course-certificate-learners'] });
+            queryClient.invalidateQueries({ queryKey: ['course-certificate-eligibility'] });
             onOpenChange(false);
         },
-        onError: () => toast.error('Could not save course certificate settings'),
+        onError: () => toast.error(t('toast.saveFailed')),
     });
 
-    const instituteState = settings?.institute_enabled ? 'enabled' : 'disabled';
+    const instituteState = settings?.institute_enabled
+        ? t('instituteState.enabled')
+        : t('instituteState.disabled');
     const effectiveEnabled =
         enabledChoice === 'INHERIT' ? !!settings?.institute_enabled : enabledChoice === 'ON';
 
     return (
         <MyDialog
-            heading="Certificate Settings for this Course"
+            heading={t('heading')}
             open={open}
             onOpenChange={onOpenChange}
-            dialogWidth="max-w-xl"
+            dialogWidth="max-w-2xl"
             footer={
                 <div className="flex w-full items-center justify-end gap-2">
                     <MyButton
@@ -99,16 +120,22 @@ export const CourseCertificateSettingsDialog = ({
                         type="button"
                         onClick={() => onOpenChange(false)}
                     >
-                        Cancel
+                        {t('cancel')}
                     </MyButton>
                     <MyButton
                         buttonType="primary"
                         scale="medium"
                         type="button"
                         disable={saveMutation.isPending}
-                        onClick={() => saveMutation.mutate()}
+                        onClick={() => {
+                            if (criteriaError) {
+                                toast.error(tCriteria(`errors.${criteriaError}`));
+                                return;
+                            }
+                            saveMutation.mutate();
+                        }}
                     >
-                        {saveMutation.isPending ? 'Saving…' : 'Save'}
+                        {saveMutation.isPending ? t('saving') : t('save')}
                     </MyButton>
                 </div>
             }
@@ -116,23 +143,25 @@ export const CourseCertificateSettingsDialog = ({
             <div className="flex flex-col gap-6 p-2">
                 <div className="rounded-md bg-neutral-50 p-3">
                     <p className="text-caption text-neutral-500">
-                        Institute default: certificates are{' '}
-                        <span className="font-semibold text-neutral-700">{instituteState}</span> at{' '}
-                        <span className="font-semibold text-neutral-700">
-                            {settings?.institute_threshold_percent ?? 80}%
-                        </span>{' '}
-                        completion. Anything you set here applies to this course only.
+                        <Trans
+                            i18nKey="studyLibraryCertificateCourseCertificateSettingsDialog:instituteDefaultSummary"
+                            values={{
+                                state: instituteState,
+                                pct: settings?.institute_threshold_percent ?? 80,
+                            }}
+                            components={{ strong: <span className="font-semibold text-neutral-700" /> }}
+                        />
                     </p>
                 </div>
 
                 <div className="flex flex-col gap-3">
-                    <Label className="text-subtitle font-medium">Certificates for this course</Label>
+                    <Label className="text-subtitle font-medium">{t('certificatesForCourse')}</Label>
                     <div className="flex flex-wrap gap-2">
                         {(
                             [
-                                ['INHERIT', 'Use institute default'],
-                                ['ON', 'Enabled'],
-                                ['OFF', 'Disabled'],
+                                ['INHERIT', t('choice.inherit')],
+                                ['ON', t('choice.enabled')],
+                                ['OFF', t('choice.disabled')],
                             ] as const
                         ).map(([value, label]) => (
                             <MyButton
@@ -148,48 +177,64 @@ export const CourseCertificateSettingsDialog = ({
                     </div>
                     <p className="text-caption text-neutral-500">
                         {effectiveEnabled
-                            ? 'Learners on this course will receive certificates once they pass the threshold.'
-                            : 'No certificates will be generated for this course.'}
+                            ? criteria.mode === 'PROGRESS'
+                                ? t('willReceiveCertificates')
+                                : tCriteria('willReceiveByRule')
+                            : t('noCertificates')}
                         {enabledChoice === 'ON' &&
                             !settings?.institute_enabled &&
-                            ' The institute default is off — this course is an exception.'}
+                            ` ${t('instituteDefaultOffException')}`}
                     </p>
                 </div>
 
-                <div className="flex flex-col gap-3">
-                    <div className="flex items-center gap-2">
-                        <Switch
-                            id="override-threshold"
-                            checked={overrideThreshold}
-                            onCheckedChange={setOverrideThreshold}
-                        />
-                        <Label htmlFor="override-threshold" className="text-subtitle font-medium">
-                            Use a different completion threshold for this course
-                        </Label>
-                    </div>
-                    {overrideThreshold && (
-                        <div className="flex items-center gap-3">
-                            <MyInput
-                                inputType="number"
-                                input={String(threshold)}
-                                onChangeFunction={(e) =>
-                                    setThreshold(
-                                        Math.max(
-                                            0,
-                                            Math.min(100, Number(e.target.value) || 0)
-                                        )
-                                    )
-                                }
-                                inputPlaceholder="80"
-                                className="w-28"
+                <CertificateCriteriaSection
+                    draft={criteria}
+                    onChange={setCriteria}
+                    instituteId={instituteId}
+                    packageId={packageId}
+                    active={open}
+                    disabled={saveMutation.isPending}
+                />
+
+                {/* The completion threshold only matters when progress is part of the rule. */}
+                {criteria.mode !== 'SCORE' && (
+                    <div className="flex flex-col gap-3">
+                        <div className="flex items-center gap-2">
+                            <Switch
+                                id="override-threshold"
+                                checked={overrideThreshold}
+                                onCheckedChange={setOverrideThreshold}
                             />
-                            <span className="text-body text-neutral-500">% completion</span>
+                            <Label
+                                htmlFor="override-threshold"
+                                className="text-subtitle font-medium"
+                            >
+                                {t('overrideThresholdLabel')}
+                            </Label>
                         </div>
-                    )}
-                </div>
+                        {overrideThreshold && (
+                            <div className="flex items-center gap-3">
+                                <MyInput
+                                    inputType="number"
+                                    input={String(threshold)}
+                                    onChangeFunction={(e) =>
+                                        setThreshold(
+                                            Math.max(0, Math.min(100, Number(e.target.value) || 0))
+                                        )
+                                    }
+                                    inputPlaceholder="80"
+                                    className="w-28"
+                                />
+                                <span className="text-body text-neutral-500">
+                                    {t('percentCompletion')}
+                                </span>
+                            </div>
+                        )}
+                    </div>
+                )}
 
                 <div className="flex flex-col gap-3">
-                    <Label className="text-subtitle font-medium">Certificate design</Label>
+                    <Label className="text-subtitle font-medium">{t('certificateDesign')}</Label>
                     <CourseCertificatePicker
                         value={{ templateId, templateHtml }}
                         onChange={(next) => {

@@ -1,4 +1,6 @@
 import { useEffect } from "react";
+import { BASE_URL } from "@/constants/urls";
+import { captureUtmOnce, getStoredUtm } from "@/lib/utm-attribution";
 
 /**
  * Tracking for institute catalogue sites — GA4 / Meta Pixel / GTM, configured
@@ -29,6 +31,13 @@ declare global {
     _fbq?: unknown;
   }
 }
+
+/** The page editor's preview (`?preview=true`) is an admin looking at a
+ *  draft, not a visitor: no analytics event and no GA4/GTM/Pixel from it.
+ *  Checked here, at the lowest level, so every caller is covered. */
+const isEditorPreview = (): boolean =>
+  typeof window !== "undefined" &&
+  new URLSearchParams(window.location.search).get("preview") === "true";
 
 const once = (id: string): boolean => {
   if (document.getElementById(id)) return false;
@@ -109,6 +118,7 @@ export const useCatalogueTracking = (tracking?: TrackingSettings | null) => {
   const gtm = tracking?.gtmId?.trim();
 
   useEffect(() => {
+    if (isEditorPreview()) return;
     if (ga4) injectGa4(ga4);
     if (gtm) injectGtm(gtm);
     if (pixel) injectMetaPixel(pixel);
@@ -136,31 +146,109 @@ export const useCatalogueTracking = (tracking?: TrackingSettings | null) => {
 };
 
 /**
- * First-touch UTM capture. Stored on landing so the attribution survives
- * navigation to the page that actually holds the form.
+ * First-touch UTM capture.
+ *
+ * Re-exported from `@/lib/utm-attribution` rather than reimplemented: this file
+ * used to own its own copy of the store, so a UTM captured on a catalogue page
+ * was invisible to every other capture surface (and vice versa). One store, one
+ * key — see the header comment there.
  */
-const UTM_KEYS = ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term"] as const;
-const UTM_STORE = "vac_utm_first_touch";
+export { captureUtmOnce, getStoredUtm };
 
-export const captureUtmOnce = (): void => {
+/* ─── First-party page analytics ─────────────────────────────────────────
+ * GA4 and Pixel above are the institute's OWN tools; most never connect one,
+ * and even when they do the data lives somewhere we cannot join to the leads
+ * in our database. This beacon is the first-party half: it lets the admin
+ * dashboard answer "how many arrived, from where, and how many converted"
+ * without any setup.
+ *
+ * Deliberately minimal on the wire — no identifiers are sent. The visitor
+ * hash is derived server-side from IP + user-agent against a daily-rotating
+ * salt, so this call carries nothing that identifies a person. */
+
+const SESSION_KEY = "vacademy_cat_sid";
+
+/** Per browsing session, not per person: cleared when the tab closes. */
+const sessionId = (): string => {
   try {
-    if (sessionStorage.getItem(UTM_STORE)) return;
-    const params = new URLSearchParams(window.location.search);
-    const utm: Record<string, string> = {};
-    for (const k of UTM_KEYS) {
-      const v = params.get(k);
-      if (v) utm[k] = v.slice(0, 120);
+    let id = sessionStorage.getItem(SESSION_KEY);
+    if (!id) {
+      id =
+        typeof crypto !== "undefined" && "randomUUID" in crypto
+          ? crypto.randomUUID()
+          : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      sessionStorage.setItem(SESSION_KEY, id);
     }
-    if (Object.keys(utm).length > 0) sessionStorage.setItem(UTM_STORE, JSON.stringify(utm));
+    return id;
   } catch {
-    /* storage unavailable — attribution is best-effort */
+    return ""; // private mode — the view still counts, the session does not
   }
 };
 
-export const getStoredUtm = (): Record<string, string> => {
+const deviceClass = (): string => {
   try {
-    return JSON.parse(sessionStorage.getItem(UTM_STORE) || "{}");
+    return window.matchMedia("(max-width: 767px)").matches
+      ? "mobile"
+      : window.matchMedia("(max-width: 1024px)").matches
+        ? "tablet"
+        : "desktop";
   } catch {
-    return {};
+    return "desktop";
   }
+};
+
+export interface CatalogueEventInput {
+  instituteId: string;
+  catalogueId?: string;
+  /** '' for the site root, otherwise the page's route slug. */
+  pageRoute?: string;
+  eventType?: "VIEW" | "CTA" | "LEAD";
+}
+
+/**
+ * Send one analytics event. Uses sendBeacon so it survives the page being
+ * navigated away from — a plain fetch is cancelled on unload, which loses
+ * exactly the bounce views that matter most. Falls back to keepalive fetch.
+ */
+export const sendCatalogueEvent = (input: CatalogueEventInput): void => {
+  try {
+    if (!input?.instituteId || isEditorPreview()) return;
+    const utm = getStoredUtm();
+    const body = JSON.stringify({
+      instituteId: input.instituteId,
+      catalogueId: input.catalogueId,
+      pageRoute: input.pageRoute ?? "",
+      eventType: input.eventType ?? "VIEW",
+      sessionId: sessionId(),
+      referrer: document.referrer || undefined,
+      utmSource: utm.utm_source,
+      utmMedium: utm.utm_medium,
+      utmCampaign: utm.utm_campaign,
+      device: deviceClass(),
+    });
+    const url = `${BASE_URL}/admin-core-service/open/v1/catalogue-analytics/event`;
+    if (navigator.sendBeacon) {
+      navigator.sendBeacon(url, new Blob([body], { type: "application/json" }));
+      return;
+    }
+    void fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body,
+      keepalive: true,
+    });
+  } catch {
+    /* analytics must never break a page */
+  }
+};
+
+/** Record one page view. Re-fires when the route changes (SPA navigation). */
+export const useCataloguePageView = (input: CatalogueEventInput | null): void => {
+  const instituteId = input?.instituteId;
+  const catalogueId = input?.catalogueId;
+  const pageRoute = input?.pageRoute ?? "";
+  useEffect(() => {
+    if (!instituteId) return;
+    sendCatalogueEvent({ instituteId, catalogueId, pageRoute, eventType: "VIEW" });
+  }, [instituteId, catalogueId, pageRoute]);
 };

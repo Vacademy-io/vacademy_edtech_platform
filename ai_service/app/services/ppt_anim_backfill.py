@@ -175,8 +175,27 @@ def _update_slide(slide_doc_id: str, deck: str) -> int:
     sm = get_sessionmaker()
     with sm() as session:
         res = session.execute(_UPDATE_SQL, {"deck": deck, "id": slide_doc_id})
+        rows = res.rowcount or 0
+        if rows:
+            _enqueue_course_knowledge(session, slide_doc_id)
         session.commit()
-        return res.rowcount or 0
+        return rows
+
+
+def _enqueue_course_knowledge(session, slide_doc_id: str) -> None:
+    """Queue the lessons showing this document for course-knowledge re-indexing,
+    in the same transaction as the rewrite (only institutes that turned the
+    feature on get rows). A failure is logged and never undoes the rewrite:
+    the savepoint rolls back alone and the drift sweep catches up later."""
+    from .course_knowledge.queue import enqueue_document_lessons
+
+    try:
+        with session.begin_nested():
+            queued = enqueue_document_lessons(session, slide_doc_id, "PPT_ANIM_BACKFILL")
+        if queued:
+            logger.info(f"[ppt-anim-backfill] queued {queued} lesson(s) of {slide_doc_id} for course knowledge")
+    except Exception as e:  # noqa: BLE001
+        logger.warning(f"[ppt-anim-backfill] course-knowledge enqueue skipped for {slide_doc_id}: {e}")
 
 
 async def _convert(pptx_url: str, dpi: int) -> str:

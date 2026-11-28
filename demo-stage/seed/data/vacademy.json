@@ -1,0 +1,1639 @@
+{
+  "product": "vacademy",
+  "_about": "Curated demo dataset for seed.py. Every person is fictional. Dates are relative to the day the seed runs: {\"days\": -3, \"time\": \"17:00\"} means three days ago at 5 pm India time. Emails use the reserved domain example.com; phone numbers are 91 followed by a ten-digit number starting with 10, which is not an Indian mobile or landline pattern.",
+  "institute": {
+    "name": "Northlight Academy",
+    "city": "Bengaluru",
+    "state": "Karnataka",
+    "country": "India",
+    "type": "Coaching Institute",
+    "timezone": "Asia/Kolkata",
+    "currency": "INR"
+  },
+  "email_domain": "example.com",
+  "phone_pattern": "^9110\\d{8}$",
+  "session": {
+    "name": "2026-27",
+    "start": {
+      "days": -150
+    }
+  },
+  "courses": [
+    {
+      "key": "neet-2yr",
+      "name": "NEET 2-Year Classroom Programme",
+      "levels": [
+        "Class 11",
+        "Class 12"
+      ],
+      "tags": [
+        "NEET",
+        "Medical",
+        "Classroom"
+      ],
+      "about": "A two-year integrated programme for NEET-UG covering Physics, Chemistry and Biology alongside the PU/CBSE board syllabus, with weekly tests and an All-India test series in the second year.",
+      "session": "2026-27",
+      "catalogue": true,
+      "thumbnail_file": "thumbnails/neet-2yr.png",
+      "why_learn": "Small batches, a published weekly plan, and a test after every chapter so that gaps show up early.",
+      "who_should_learn": "Students in Class 11 and Class 12 who want structured preparation with regular feedback."
+    },
+    {
+      "key": "jee-2yr",
+      "name": "JEE Main + Advanced 2-Year Programme",
+      "levels": [
+        "Class 11",
+        "Class 12"
+      ],
+      "tags": [
+        "JEE",
+        "Engineering",
+        "Classroom"
+      ],
+      "about": "Concept-first preparation for JEE Main and Advanced: daily practice problems, fortnightly part tests and one-to-one doubt hours with the Physics, Chemistry and Mathematics faculty.",
+      "session": "2026-27",
+      "catalogue": true,
+      "thumbnail_file": "thumbnails/jee-2yr.png",
+      "why_learn": "Small batches, a published weekly plan, and a test after every chapter so that gaps show up early.",
+      "who_should_learn": "Students in Class 11 and Class 12 who want structured preparation with regular feedback."
+    },
+    {
+      "key": "neet-dropper",
+      "name": "NEET Achiever (Dropper) Batch",
+      "levels": [
+        "Dropper"
+      ],
+      "tags": [
+        "NEET",
+        "Dropper"
+      ],
+      "about": "A one-year full-day programme for students repeating NEET. The complete syllabus is finished by December, followed by twelve full-length mock tests with paper discussions.",
+      "session": "2026-27",
+      "catalogue": true,
+      "thumbnail_file": "thumbnails/neet-dropper.png",
+      "why_learn": "Small batches, a published weekly plan, and a test after every chapter so that gaps show up early.",
+      "who_should_learn": "Students in Dropper who want structured preparation with regular feedback."
+    },
+    {
+      "key": "foundation",
+      "name": "Foundation Programme (Class 9 and 10)",
+      "levels": [
+        "Class 9",
+        "Class 10"
+      ],
+      "tags": [
+        "Foundation",
+        "Class 9",
+        "Class 10"
+      ],
+      "about": "Strong basics in Science and Mathematics for Classes 9 and 10, with an early introduction to competitive-exam style reasoning. Aligned to CBSE, ICSE and Karnataka State boards.",
+      "session": "2026-27",
+      "catalogue": true,
+      "thumbnail_file": "thumbnails/foundation.png",
+      "why_learn": "Small batches, a published weekly plan, and a test after every chapter so that gaps show up early.",
+      "who_should_learn": "Students in Class 9 and Class 10 who want structured preparation with regular feedback."
+    },
+    {
+      "key": "jee-crash",
+      "name": "JEE Main Crash Course 2027",
+      "levels": [
+        "Class 12"
+      ],
+      "tags": [
+        "JEE",
+        "Crash course",
+        "Online"
+      ],
+      "about": "A ten-week online revision sprint before JEE Main: high-yield chapters, previous-year papers and three mock tests every week.",
+      "session": "2026-27",
+      "catalogue": true,
+      "thumbnail_file": "thumbnails/jee-crash.png",
+      "why_learn": "Small batches, a published weekly plan, and a test after every chapter so that gaps show up early.",
+      "who_should_learn": "Students in Class 12 who want structured preparation with regular feedback."
+    },
+    {
+      "key": "olympiad",
+      "name": "Olympiad and NTSE Prep (Online)",
+      "levels": [
+        "Class 9",
+        "Class 10"
+      ],
+      "tags": [
+        "Olympiad",
+        "NTSE",
+        "Online"
+      ],
+      "about": "Weekend online classes for students aiming at the Science and Mathematics Olympiads and scholarship examinations.",
+      "session": "2026-27",
+      "catalogue": true,
+      "thumbnail_file": "thumbnails/olympiad.png",
+      "why_learn": "Small batches, a published weekly plan, and a test after every chapter so that gaps show up early.",
+      "who_should_learn": "Students in Class 9 and Class 10 who want structured preparation with regular feedback."
+    }
+  ],
+  "content": [
+    {
+      "batch": "neet-2yr/Class 11",
+      "subjects": [
+        {
+          "name": "Physics",
+          "modules": [
+            {
+              "name": "Mechanics",
+              "chapters": [
+                {
+                  "name": "Units and Measurements",
+                  "slides": [
+                    {
+                      "type": "DOC",
+                      "title": "Class notes: SI units and dimensions",
+                      "html": "<h2>Class notes: SI units and dimensions</h2><ul><li>The seven SI base quantities and their units.</li><li>Dimensional formula of a derived quantity: write it in terms of M, L and T.</li><li>Uses of dimensional analysis: checking an equation, converting units, deriving a relation.</li><li>Limitation: dimensionless constants cannot be found this way.</li></ul>"
+                    },
+                    {
+                      "type": "DOC",
+                      "title": "Worksheet: significant figures and errors",
+                      "html": "<h2>Worksheet: significant figures and errors</h2><ul><li>Rules for counting significant figures, with ten practice values.</li><li>Absolute, relative and percentage error.</li><li>Combination of errors in sums, products and powers.</li><li>Homework: questions 1 to 15 before the next class.</li></ul>"
+                    },
+                    {
+                      "type": "VIDEO",
+                      "title": "Lecture recording: dimensional analysis",
+                      "url": "https://www.youtube.com/watch?v=REPLACE_ME"
+                    }
+                  ]
+                },
+                {
+                  "name": "Motion in a Straight Line",
+                  "slides": [
+                    {
+                      "type": "DOC",
+                      "title": "Class notes: equations of motion",
+                      "html": "<h2>Class notes: equations of motion</h2><ul><li>Distance and displacement; speed and velocity.</li><li>v = u + at, s = ut + (1/2)at^2, v^2 = u^2 + 2as for constant acceleration.</li><li>Reading position-time and velocity-time graphs: slope and area.</li><li>Free fall as a special case with a = g.</li></ul>"
+                    },
+                    {
+                      "type": "DOC",
+                      "title": "Daily practice problems: set 4",
+                      "html": "<h2>Daily practice problems: set 4</h2><ul><li>Twenty questions on uniformly accelerated motion.</li><li>Five graph-based questions from previous NEET papers.</li><li>Answer key is released after the Friday test.</li></ul>"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Biology",
+          "modules": [
+            {
+              "name": "Diversity in the Living World",
+              "chapters": [
+                {
+                  "name": "The Living World",
+                  "slides": [
+                    {
+                      "type": "DOC",
+                      "title": "Class notes: what is living?",
+                      "html": "<h2>Class notes: what is living?</h2><ul><li>Growth, reproduction, metabolism, cellular organisation and consciousness as characteristics.</li><li>Biodiversity and the need for classification.</li><li>Taxonomic categories from species to kingdom.</li><li>Binomial nomenclature: rules and examples.</li></ul>"
+                    },
+                    {
+                      "type": "VIDEO",
+                      "title": "Lecture recording: taxonomic hierarchy",
+                      "url": "https://www.youtube.com/watch?v=REPLACE_ME"
+                    }
+                  ]
+                },
+                {
+                  "name": "Biological Classification",
+                  "slides": [
+                    {
+                      "type": "DOC",
+                      "title": "Class notes: the five kingdoms",
+                      "html": "<h2>Class notes: the five kingdoms</h2><ul><li>Whittaker's five-kingdom classification and its criteria.</li><li>Monera: archaebacteria and eubacteria.</li><li>Protista, Fungi, Plantae and Animalia at a glance.</li><li>Viruses, viroids and lichens: why they sit outside the five kingdoms.</li></ul>"
+                    },
+                    {
+                      "type": "DOC",
+                      "title": "NCERT line-by-line: revision sheet",
+                      "html": "<h2>NCERT line-by-line: revision sheet</h2><ul><li>Forty one-line statements to mark true or false.</li><li>Flowchart of fungal classes with one example each.</li></ul>"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "batch": "jee-2yr/Class 11",
+      "subjects": [
+        {
+          "name": "Mathematics",
+          "modules": [
+            {
+              "name": "Algebra",
+              "chapters": [
+                {
+                  "name": "Sets, Relations and Functions",
+                  "slides": [
+                    {
+                      "type": "DOC",
+                      "title": "Class notes: sets and Venn diagrams",
+                      "html": "<h2>Class notes: sets and Venn diagrams</h2><ul><li>Roster and set-builder forms.</li><li>Union, intersection, difference and complement.</li><li>n(A U B) = n(A) + n(B) - n(A n B) and its three-set version.</li><li>Cartesian product and the idea of a relation.</li></ul>"
+                    },
+                    {
+                      "type": "DOC",
+                      "title": "Practice sheet: domain and range",
+                      "html": "<h2>Practice sheet: domain and range</h2><ul><li>Twenty-five functions: find the domain and range.</li><li>Ten questions on types of functions.</li><li>Starred questions are of JEE Advanced level.</li></ul>"
+                    }
+                  ]
+                },
+                {
+                  "name": "Complex Numbers",
+                  "slides": [
+                    {
+                      "type": "DOC",
+                      "title": "Class notes: algebra of complex numbers",
+                      "html": "<h2>Class notes: algebra of complex numbers</h2><ul><li>i and its powers; the Argand plane.</li><li>Modulus, argument and conjugate.</li><li>Polar form and multiplication as rotation.</li><li>Cube roots of unity and their properties.</li></ul>"
+                    },
+                    {
+                      "type": "VIDEO",
+                      "title": "Lecture recording: geometry of complex numbers",
+                      "url": "https://www.youtube.com/watch?v=REPLACE_ME"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Chemistry",
+          "modules": [
+            {
+              "name": "Physical Chemistry",
+              "chapters": [
+                {
+                  "name": "Some Basic Concepts of Chemistry",
+                  "slides": [
+                    {
+                      "type": "DOC",
+                      "title": "Class notes: mole concept",
+                      "html": "<h2>Class notes: mole concept</h2><ul><li>One mole = 6.022 x 10^23 entities.</li><li>Molar mass and the link between mass, moles and number of particles.</li><li>Empirical and molecular formulae.</li><li>Limiting reagent: a four-step method.</li></ul>"
+                    },
+                    {
+                      "type": "DOC",
+                      "title": "Daily practice problems: stoichiometry",
+                      "html": "<h2>Daily practice problems: stoichiometry</h2><ul><li>Fifteen numerical questions.</li><li>Five questions on concentration terms: molarity, molality, mole fraction.</li></ul>"
+                    }
+                  ]
+                },
+                {
+                  "name": "Structure of Atom",
+                  "slides": [
+                    {
+                      "type": "DOC",
+                      "title": "Class notes: Bohr model and quantum numbers",
+                      "html": "<h2>Class notes: Bohr model and quantum numbers</h2><ul><li>Postulates of the Bohr model and the hydrogen spectrum.</li><li>de Broglie relation and the uncertainty principle.</li><li>The four quantum numbers and what each one describes.</li><li>Aufbau principle, Pauli exclusion principle and Hund's rule.</li></ul>"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "batch": "foundation/Class 10",
+      "subjects": [
+        {
+          "name": "Science",
+          "modules": [
+            {
+              "name": "Physics",
+              "chapters": [
+                {
+                  "name": "Light: Reflection and Refraction",
+                  "slides": [
+                    {
+                      "type": "DOC",
+                      "title": "Class notes: mirrors and lenses",
+                      "html": "<h2>Class notes: mirrors and lenses</h2><ul><li>Laws of reflection; image formation by spherical mirrors.</li><li>Mirror formula and magnification with the sign convention.</li><li>Refraction, refractive index and Snell's law.</li><li>Lens formula and power of a lens.</li></ul>"
+                    },
+                    {
+                      "type": "DOC",
+                      "title": "Board practice: ray diagrams",
+                      "html": "<h2>Board practice: ray diagrams</h2><ul><li>Eight ray diagrams to complete.</li><li>Five numericals from previous CBSE board papers.</li></ul>"
+                    }
+                  ]
+                },
+                {
+                  "name": "Electricity",
+                  "slides": [
+                    {
+                      "type": "DOC",
+                      "title": "Class notes: Ohm's law and circuits",
+                      "html": "<h2>Class notes: Ohm's law and circuits</h2><ul><li>Charge, current and potential difference.</li><li>Ohm's law and the V-I graph.</li><li>Resistors in series and in parallel.</li><li>Heating effect of current and electric power.</li></ul>"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Mathematics",
+          "modules": [
+            {
+              "name": "Algebra",
+              "chapters": [
+                {
+                  "name": "Quadratic Equations",
+                  "slides": [
+                    {
+                      "type": "DOC",
+                      "title": "Class notes: solving quadratics",
+                      "html": "<h2>Class notes: solving quadratics</h2><ul><li>Standard form ax^2 + bx + c = 0.</li><li>Factorisation and completing the square.</li><li>The quadratic formula and the discriminant.</li><li>Nature of roots from the discriminant.</li></ul>"
+                    },
+                    {
+                      "type": "DOC",
+                      "title": "Worksheet: word problems",
+                      "html": "<h2>Worksheet: word problems</h2><ul><li>Twelve word problems on ages, areas and speed.</li><li>Challenge: three questions from Olympiad papers.</li></ul>"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "fee_plans": [
+    {
+      "key": "two-year-annual",
+      "name": "NEET/JEE 2-Year Programme: Annual Fee 2026-27",
+      "batches": [
+        "neet-2yr/Class 11",
+        "neet-2yr/Class 12",
+        "jee-2yr/Class 11",
+        "jee-2yr/Class 12"
+      ],
+      "fee_types": [
+        {
+          "name": "Tuition Fee",
+          "code": "TUITION",
+          "amount": 140000,
+          "installments": [
+            {
+              "number": 1,
+              "amount": 35000,
+              "due": {
+                "days": -120
+              }
+            },
+            {
+              "number": 2,
+              "amount": 35000,
+              "due": {
+                "days": -45
+              }
+            },
+            {
+              "number": 3,
+              "amount": 35000,
+              "due": {
+                "days": 30
+              }
+            },
+            {
+              "number": 4,
+              "amount": 35000,
+              "due": {
+                "days": 110
+              }
+            }
+          ]
+        },
+        {
+          "name": "Study Material and Test Series",
+          "code": "MATERIAL",
+          "amount": 12000,
+          "installments": [
+            {
+              "number": 1,
+              "amount": 12000,
+              "due": {
+                "days": -120
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "dropper-annual",
+      "name": "NEET Achiever Batch: Fee 2026-27",
+      "batches": [
+        "neet-dropper/Dropper"
+      ],
+      "fee_types": [
+        {
+          "name": "Tuition Fee",
+          "code": "TUITION",
+          "amount": 110000,
+          "installments": [
+            {
+              "number": 1,
+              "amount": 40000,
+              "due": {
+                "days": -100
+              }
+            },
+            {
+              "number": 2,
+              "amount": 40000,
+              "due": {
+                "days": -20
+              }
+            },
+            {
+              "number": 3,
+              "amount": 30000,
+              "due": {
+                "days": 60
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "foundation-annual",
+      "name": "Foundation Programme: Annual Fee 2026-27",
+      "batches": [
+        "foundation/Class 9",
+        "foundation/Class 10"
+      ],
+      "fee_types": [
+        {
+          "name": "Tuition Fee",
+          "code": "TUITION",
+          "amount": 64000,
+          "installments": [
+            {
+              "number": 1,
+              "amount": 16000,
+              "due": {
+                "days": -120
+              }
+            },
+            {
+              "number": 2,
+              "amount": 16000,
+              "due": {
+                "days": -45
+              }
+            },
+            {
+              "number": 3,
+              "amount": 16000,
+              "due": {
+                "days": 30
+              }
+            },
+            {
+              "number": 4,
+              "amount": 16000,
+              "due": {
+                "days": 110
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "learners": [
+    {"n": 1, "name": "Zoya Kamath", "gender": "FEMALE", "batch": "neet-2yr/Class 11", "username": "nla.zoya.kamath001", "email": "zoya.kamath.nla001@example.com", "phone": "911002020001", "dob": "2010-07-10", "city": "Bengaluru", "area": "Hebbal", "father": "Ishaan Kamath", "parent_phone": "911002030001", "payments": [{"amount": 47000, "on": {"days": -119}, "mode": "UPI", "reference": "NLA-RCPT-1003"}]},
+    {"n": 2, "name": "Kavya Kulkarni", "gender": "FEMALE", "batch": "neet-2yr/Class 11", "username": "nla.kavya.kulkarni002", "email": "kavya.kulkarni.nla002@example.com", "phone": "911002020002", "dob": "2010-05-07", "city": "Bengaluru", "area": "Basavanagudi", "father": "Varun Kulkarni", "parent_phone": "911002030002", "payments": [{"amount": 47000, "on": {"days": -121}, "mode": "BANK_TRANSFER", "reference": "NLA-RCPT-1006"}, {"amount": 35000, "on": {"days": -49}, "mode": "UPI", "reference": "NLA-RCPT-1007"}]},
+    {"n": 3, "name": "Diya Shetty", "gender": "FEMALE", "batch": "neet-2yr/Class 11", "username": "nla.diya.shetty003", "email": "diya.shetty.nla003@example.com", "phone": "911002020003", "dob": "2010-12-12", "city": "Bengaluru", "area": "Marathahalli", "father": "Chirag Shetty", "parent_phone": "911002030003", "payments": [{"amount": 47000, "on": {"days": -120}, "mode": "BANK_TRANSFER", "reference": "NLA-RCPT-1009"}]},
+    {"n": 4, "name": "Trisha Mehta", "gender": "FEMALE", "batch": "neet-2yr/Class 11", "username": "nla.trisha.mehta004", "email": "trisha.mehta.nla004@example.com", "phone": "911002020004", "dob": "2010-06-01", "city": "Bengaluru", "area": "JP Nagar", "father": "Harsh Mehta", "parent_phone": "911002030004", "payments": [{"amount": 47000, "on": {"days": -120}, "mode": "UPI", "reference": "NLA-RCPT-1012"}]},
+    {"n": 5, "name": "Lakshmi Nair", "gender": "FEMALE", "batch": "neet-2yr/Class 11", "username": "nla.lakshmi.nair005", "email": "lakshmi.nair.nla005@example.com", "phone": "911002020005", "dob": "2010-12-14", "city": "Bengaluru", "area": "Malleshwaram", "father": "Vihaan Nair", "parent_phone": "911002030005", "payments": [{"amount": 47000, "on": {"days": -117}, "mode": "BANK_TRANSFER", "reference": "NLA-RCPT-1015"}]},
+    {"n": 6, "name": "Divya Krishnan", "gender": "FEMALE", "batch": "neet-2yr/Class 11", "username": "nla.divya.krishnan006", "email": "divya.krishnan.nla006@example.com", "phone": "911002020006", "dob": "2010-07-09", "city": "Bengaluru", "area": "Rajajinagar", "father": "Rudra Krishnan", "parent_phone": "911002030006", "payments": [{"amount": 47000, "on": {"days": -119}, "mode": "BANK_TRANSFER", "reference": "NLA-RCPT-1018"}, {"amount": 35000, "on": {"days": -51}, "mode": "UPI", "reference": "NLA-RCPT-1019"}]},
+    {"n": 7, "name": "Manav Menon", "gender": "MALE", "batch": "neet-2yr/Class 11", "username": "nla.manav.menon007", "email": "manav.menon.nla007@example.com", "phone": "911002020007", "dob": "2010-02-05", "city": "Bengaluru", "area": "Electronic City", "father": "Gautam Menon", "parent_phone": "911002030007", "payments": [{"amount": 47000, "on": {"days": -121}, "mode": "UPI", "reference": "NLA-RCPT-1021"}, {"amount": 35000, "on": {"days": -45}, "mode": "UPI", "reference": "NLA-RCPT-1022"}]},
+    {"n": 8, "name": "Vivek Subramanian", "gender": "MALE", "batch": "neet-2yr/Class 11", "username": "nla.vivek.subramanian008", "email": "vivek.subramanian.nla008@example.com", "phone": "911002020008", "dob": "2010-05-01", "city": "Bengaluru", "area": "HSR Layout", "father": "Sameer Subramanian", "parent_phone": "911002030008", "payments": [{"amount": 47000, "on": {"days": -126}, "mode": "UPI", "reference": "NLA-RCPT-1024"}, {"amount": 35000, "on": {"days": -50}, "mode": "BANK_TRANSFER", "reference": "NLA-RCPT-1025"}]},
+    {"n": 9, "name": "Riya Sheikh", "gender": "FEMALE", "batch": "neet-2yr/Class 11", "username": "nla.riya.sheikh009", "email": "riya.sheikh.nla009@example.com", "phone": "911002020009", "dob": "2010-05-02", "city": "Bengaluru", "area": "Malleshwaram", "father": "Harsh Sheikh", "parent_phone": "911002030009", "payments": [{"amount": 47000, "on": {"days": -125}, "mode": "BANK_TRANSFER", "reference": "NLA-RCPT-1027"}, {"amount": 35000, "on": {"days": -51}, "mode": "UPI", "reference": "NLA-RCPT-1028"}]},
+    {"n": 10, "name": "Krishna Prabhu", "gender": "MALE", "batch": "neet-2yr/Class 11", "username": "nla.krishna.prabhu010", "email": "krishna.prabhu.nla010@example.com", "phone": "911002020010", "dob": "2010-01-16", "city": "Bengaluru", "area": "Yelahanka", "father": "Vivek Prabhu", "parent_phone": "911002030010", "payments": [{"amount": 20000, "on": {"days": -116}, "mode": "CASH", "reference": "NLA-RCPT-1030"}]},
+    {"n": 11, "name": "Nandini Yadav", "gender": "FEMALE", "batch": "neet-2yr/Class 11", "username": "nla.nandini.yadav011", "email": "nandini.yadav.nla011@example.com", "phone": "911002020011", "dob": "2010-08-02", "city": "Bengaluru", "area": "Koramangala", "father": "Farhan Yadav", "parent_phone": "911002030011", "payments": [{"amount": 47000, "on": {"days": -125}, "mode": "CASH", "reference": "NLA-RCPT-1033"}, {"amount": 35000, "on": {"days": -46}, "mode": "CASH", "reference": "NLA-RCPT-1034"}]},
+    {"n": 12, "name": "Aniket Murthy", "gender": "MALE", "batch": "neet-2yr/Class 11", "username": "nla.aniket.murthy012", "email": "aniket.murthy.nla012@example.com", "phone": "911002020012", "dob": "2010-03-25", "city": "Bengaluru", "area": "Indiranagar", "father": "Naveen Murthy", "parent_phone": "911002030012", "payments": [{"amount": 47000, "on": {"days": -120}, "mode": "CASH", "reference": "NLA-RCPT-1036"}]},
+    {"n": 13, "name": "Pooja Chopra", "gender": "FEMALE", "batch": "neet-2yr/Class 11", "username": "nla.pooja.chopra013", "email": "pooja.chopra.nla013@example.com", "phone": "911002020013", "dob": "2010-06-09", "city": "Bengaluru", "area": "BTM Layout", "father": "Vihaan Chopra", "parent_phone": "911002030013", "payments": [{"amount": 47000, "on": {"days": -120}, "mode": "BANK_TRANSFER", "reference": "NLA-RCPT-1039"}, {"amount": 35000, "on": {"days": -45}, "mode": "CASH", "reference": "NLA-RCPT-1040"}]},
+    {"n": 14, "name": "Rohan D'Souza", "gender": "MALE", "batch": "neet-2yr/Class 11", "username": "nla.rohan.dsouza014", "email": "rohan.dsouza.nla014@example.com", "phone": "911002020014", "dob": "2010-12-02", "city": "Bengaluru", "area": "JP Nagar", "father": "Harsh D'Souza", "parent_phone": "911002030014", "payments": [{"amount": 47000, "on": {"days": -124}, "mode": "UPI", "reference": "NLA-RCPT-1042"}, {"amount": 35000, "on": {"days": -51}, "mode": "CASH", "reference": "NLA-RCPT-1043"}]},
+    {"n": 15, "name": "Rohan Acharya", "gender": "MALE", "batch": "neet-2yr/Class 11", "username": "nla.rohan.acharya015", "email": "rohan.acharya.nla015@example.com", "phone": "911002020015", "dob": "2010-05-06", "city": "Bengaluru", "area": "Marathahalli", "father": "Siddharth Acharya", "parent_phone": "911002030015", "payments": [{"amount": 47000, "on": {"days": -119}, "mode": "UPI", "reference": "NLA-RCPT-1045"}, {"amount": 35000, "on": {"days": -49}, "mode": "CASH", "reference": "NLA-RCPT-1046"}]},
+    {"n": 16, "name": "Aadhya Rao", "gender": "FEMALE", "batch": "neet-2yr/Class 11", "username": "nla.aadhya.rao016", "email": "aadhya.rao.nla016@example.com", "phone": "911002020016", "dob": "2010-09-25", "city": "Bengaluru", "area": "Malleshwaram", "father": "Rudra Rao", "parent_phone": "911002030016", "payments": [{"amount": 47000, "on": {"days": -118}, "mode": "UPI", "reference": "NLA-RCPT-1048"}]},
+    {"n": 17, "name": "Pallavi Agarwal", "gender": "FEMALE", "batch": "neet-2yr/Class 11", "username": "nla.pallavi.agarwal017", "email": "pallavi.agarwal.nla017@example.com", "phone": "911002020017", "dob": "2010-02-22", "city": "Bengaluru", "area": "Jayanagar", "father": "Aarav Agarwal", "parent_phone": "911002030017", "payments": [{"amount": 47000, "on": {"days": -122}, "mode": "UPI", "reference": "NLA-RCPT-1051"}, {"amount": 35000, "on": {"days": -44}, "mode": "CASH", "reference": "NLA-RCPT-1052"}]},
+    {"n": 18, "name": "Manav Bose", "gender": "MALE", "batch": "neet-2yr/Class 11", "username": "nla.manav.bose018", "email": "manav.bose.nla018@example.com", "phone": "911002020018", "dob": "2010-06-21", "city": "Bengaluru", "area": "Banashankari", "father": "Nikhil Bose", "parent_phone": "911002030018", "payments": [{"amount": 47000, "on": {"days": -121}, "mode": "UPI", "reference": "NLA-RCPT-1054"}]},
+    {"n": 19, "name": "Krishna Gowda", "gender": "MALE", "batch": "neet-2yr/Class 11", "username": "nla.krishna.gowda019", "email": "krishna.gowda.nla019@example.com", "phone": "911002020019", "dob": "2010-03-07", "city": "Bengaluru", "area": "JP Nagar", "father": "Gautam Gowda", "parent_phone": "911002030019", "payments": [{"amount": 10000, "on": {"days": -113}, "mode": "UPI", "reference": "NLA-RCPT-1057"}]},
+    {"n": 20, "name": "Diya Menon", "gender": "FEMALE", "batch": "neet-2yr/Class 11", "username": "nla.diya.menon020", "email": "diya.menon.nla020@example.com", "phone": "911002020020", "dob": "2010-11-19", "city": "Bengaluru", "area": "BTM Layout", "father": "Ayaan Menon", "parent_phone": "911002030020", "payments": [{"amount": 47000, "on": {"days": -125}, "mode": "BANK_TRANSFER", "reference": "NLA-RCPT-1060"}, {"amount": 35000, "on": {"days": -44}, "mode": "UPI", "reference": "NLA-RCPT-1061"}]},
+    {"n": 21, "name": "Charvi Reddy", "gender": "FEMALE", "batch": "neet-2yr/Class 12", "username": "nla.charvi.reddy021", "email": "charvi.reddy.nla021@example.com", "phone": "911002020021", "dob": "2009-09-07", "city": "Bengaluru", "area": "Indiranagar", "father": "Nikhil Reddy", "parent_phone": "911002030021", "payments": [{"amount": 47000, "on": {"days": -119}, "mode": "BANK_TRANSFER", "reference": "NLA-RCPT-1063"}, {"amount": 35000, "on": {"days": -46}, "mode": "UPI", "reference": "NLA-RCPT-1064"}]},
+    {"n": 22, "name": "Divya Saxena", "gender": "FEMALE", "batch": "neet-2yr/Class 12", "username": "nla.divya.saxena022", "email": "divya.saxena.nla022@example.com", "phone": "911002020022", "dob": "2009-05-07", "city": "Bengaluru", "area": "Jayanagar", "father": "Arjun Saxena", "parent_phone": "911002030022", "payments": [{"amount": 47000, "on": {"days": -118}, "mode": "UPI", "reference": "NLA-RCPT-1066"}, {"amount": 35000, "on": {"days": -51}, "mode": "CASH", "reference": "NLA-RCPT-1067"}]},
+    {"n": 23, "name": "Keerthana Subramanian", "gender": "FEMALE", "batch": "neet-2yr/Class 12", "username": "nla.keerthana.subramanian023", "email": "keerthana.subramanian.nla023@example.com", "phone": "911002020023", "dob": "2009-07-01", "city": "Bengaluru", "area": "Indiranagar", "father": "Gautam Subramanian", "parent_phone": "911002030023", "payments": [{"amount": 47000, "on": {"days": -124}, "mode": "UPI", "reference": "NLA-RCPT-1069"}, {"amount": 35000, "on": {"days": -47}, "mode": "UPI", "reference": "NLA-RCPT-1070"}]},
+    {"n": 24, "name": "Pallavi Kulkarni", "gender": "FEMALE", "batch": "neet-2yr/Class 12", "username": "nla.pallavi.kulkarni024", "email": "pallavi.kulkarni.nla024@example.com", "phone": "911002020024", "dob": "2009-10-06", "city": "Bengaluru", "area": "Indiranagar", "father": "Pranav Kulkarni", "parent_phone": "911002030024", "payments": [{"amount": 15000, "on": {"days": -113}, "mode": "CASH", "reference": "NLA-RCPT-1072"}]},
+    {"n": 25, "name": "Sameer Prabhu", "gender": "MALE", "batch": "neet-2yr/Class 12", "username": "nla.sameer.prabhu025", "email": "sameer.prabhu.nla025@example.com", "phone": "911002020025", "dob": "2009-11-16", "city": "Bengaluru", "area": "Koramangala", "father": "Sameer Prabhu", "parent_phone": "911002030025", "payments": [{"amount": 47000, "on": {"days": -125}, "mode": "BANK_TRANSFER", "reference": "NLA-RCPT-1075"}]},
+    {"n": 26, "name": "Farhan Thomas", "gender": "MALE", "batch": "neet-2yr/Class 12", "username": "nla.farhan.thomas026", "email": "farhan.thomas.nla026@example.com", "phone": "911002020026", "dob": "2009-07-16", "city": "Bengaluru", "area": "Indiranagar", "father": "Ayaan Thomas", "parent_phone": "911002030026", "payments": [{"amount": 47000, "on": {"days": -118}, "mode": "CASH", "reference": "NLA-RCPT-1078"}]},
+    {"n": 27, "name": "Nandini Bose", "gender": "FEMALE", "batch": "neet-2yr/Class 12", "username": "nla.nandini.bose027", "email": "nandini.bose.nla027@example.com", "phone": "911002020027", "dob": "2009-01-23", "city": "Bengaluru", "area": "HSR Layout", "father": "Karthik Bose", "parent_phone": "911002030027", "payments": [{"amount": 47000, "on": {"days": -119}, "mode": "BANK_TRANSFER", "reference": "NLA-RCPT-1081"}, {"amount": 35000, "on": {"days": -46}, "mode": "CASH", "reference": "NLA-RCPT-1082"}]},
+    {"n": 28, "name": "Nandini Banerjee", "gender": "FEMALE", "batch": "neet-2yr/Class 12", "username": "nla.nandini.banerjee028", "email": "nandini.banerjee.nla028@example.com", "phone": "911002020028", "dob": "2009-04-25", "city": "Bengaluru", "area": "JP Nagar", "father": "Ayaan Banerjee", "parent_phone": "911002030028", "payments": [{"amount": 47000, "on": {"days": -122}, "mode": "UPI", "reference": "NLA-RCPT-1084"}, {"amount": 35000, "on": {"days": -51}, "mode": "CASH", "reference": "NLA-RCPT-1085"}]},
+    {"n": 29, "name": "Aishwarya Naidu", "gender": "FEMALE", "batch": "neet-2yr/Class 12", "username": "nla.aishwarya.naidu029", "email": "aishwarya.naidu.nla029@example.com", "phone": "911002020029", "dob": "2009-12-23", "city": "Bengaluru", "area": "HSR Layout", "father": "Rudra Naidu", "parent_phone": "911002030029", "payments": [{"amount": 20000, "on": {"days": -114}, "mode": "CASH", "reference": "NLA-RCPT-1087"}]},
+    {"n": 30, "name": "Vivek Naidu", "gender": "MALE", "batch": "neet-2yr/Class 12", "username": "nla.vivek.naidu030", "email": "vivek.naidu.nla030@example.com", "phone": "911002020030", "dob": "2009-07-24", "city": "Bengaluru", "area": "Whitefield", "father": "Manav Naidu", "parent_phone": "911002030030", "payments": [{"amount": 47000, "on": {"days": -121}, "mode": "CASH", "reference": "NLA-RCPT-1090"}]},
+    {"n": 31, "name": "Deepika Murthy", "gender": "FEMALE", "batch": "neet-2yr/Class 12", "username": "nla.deepika.murthy031", "email": "deepika.murthy.nla031@example.com", "phone": "911002020031", "dob": "2009-11-05", "city": "Bengaluru", "area": "JP Nagar", "father": "Ayaan Murthy", "parent_phone": "911002030031", "payments": []},
+    {"n": 32, "name": "Sameer Kamath", "gender": "MALE", "batch": "neet-2yr/Class 12", "username": "nla.sameer.kamath032", "email": "sameer.kamath.nla032@example.com", "phone": "911002020032", "dob": "2009-07-21", "city": "Bengaluru", "area": "HSR Layout", "father": "Kabir Kamath", "parent_phone": "911002030032", "payments": [{"amount": 10000, "on": {"days": -120}, "mode": "UPI", "reference": "NLA-RCPT-1096"}]},
+    {"n": 33, "name": "Reyansh Rao", "gender": "MALE", "batch": "neet-2yr/Class 12", "username": "nla.reyansh.rao033", "email": "reyansh.rao.nla033@example.com", "phone": "911002020033", "dob": "2009-10-03", "city": "Bengaluru", "area": "BTM Layout", "father": "Tarun Rao", "parent_phone": "911002030033", "payments": [{"amount": 47000, "on": {"days": -122}, "mode": "BANK_TRANSFER", "reference": "NLA-RCPT-1099"}, {"amount": 35000, "on": {"days": -49}, "mode": "CASH", "reference": "NLA-RCPT-1100"}]},
+    {"n": 34, "name": "Nandini Chatterjee", "gender": "FEMALE", "batch": "neet-2yr/Class 12", "username": "nla.nandini.chatterjee034", "email": "nandini.chatterjee.nla034@example.com", "phone": "911002020034", "dob": "2009-07-06", "city": "Bengaluru", "area": "Indiranagar", "father": "Sameer Chatterjee", "parent_phone": "911002030034", "payments": [{"amount": 47000, "on": {"days": -122}, "mode": "CASH", "reference": "NLA-RCPT-1102"}]},
+    {"n": 35, "name": "Vivek Pillai", "gender": "MALE", "batch": "neet-2yr/Class 12", "username": "nla.vivek.pillai035", "email": "vivek.pillai.nla035@example.com", "phone": "911002020035", "dob": "2009-09-08", "city": "Bengaluru", "area": "Marathahalli", "father": "Sameer Pillai", "parent_phone": "911002030035", "payments": [{"amount": 47000, "on": {"days": -126}, "mode": "UPI", "reference": "NLA-RCPT-1105"}, {"amount": 35000, "on": {"days": -50}, "mode": "BANK_TRANSFER", "reference": "NLA-RCPT-1106"}]},
+    {"n": 36, "name": "Farhan Mehta", "gender": "MALE", "batch": "neet-2yr/Class 12", "username": "nla.farhan.mehta036", "email": "farhan.mehta.nla036@example.com", "phone": "911002020036", "dob": "2009-06-27", "city": "Bengaluru", "area": "Indiranagar", "father": "Aarav Mehta", "parent_phone": "911002030036", "payments": [{"amount": 47000, "on": {"days": -123}, "mode": "UPI", "reference": "NLA-RCPT-1108"}]},
+    {"n": 37, "name": "Nisha Shetty", "gender": "FEMALE", "batch": "jee-2yr/Class 11", "username": "nla.nisha.shetty037", "email": "nisha.shetty.nla037@example.com", "phone": "911002020037", "dob": "2010-10-15", "city": "Bengaluru", "area": "Jayanagar", "father": "Naveen Shetty", "parent_phone": "911002030037", "payments": [{"amount": 47000, "on": {"days": -123}, "mode": "CASH", "reference": "NLA-RCPT-1111"}, {"amount": 35000, "on": {"days": -49}, "mode": "UPI", "reference": "NLA-RCPT-1112"}]},
+    {"n": 38, "name": "Rudra Bhat", "gender": "MALE", "batch": "jee-2yr/Class 11", "username": "nla.rudra.bhat038", "email": "rudra.bhat.nla038@example.com", "phone": "911002020038", "dob": "2010-01-08", "city": "Bengaluru", "area": "Yelahanka", "father": "Rohan Bhat", "parent_phone": "911002030038", "payments": []},
+    {"n": 39, "name": "Chirag Naidu", "gender": "MALE", "batch": "jee-2yr/Class 11", "username": "nla.chirag.naidu039", "email": "chirag.naidu.nla039@example.com", "phone": "911002020039", "dob": "2010-07-02", "city": "Bengaluru", "area": "Marathahalli", "father": "Rudra Naidu", "parent_phone": "911002030039", "payments": [{"amount": 47000, "on": {"days": -122}, "mode": "UPI", "reference": "NLA-RCPT-1117"}]},
+    {"n": 40, "name": "Naveen Kamath", "gender": "MALE", "batch": "jee-2yr/Class 11", "username": "nla.naveen.kamath040", "email": "naveen.kamath.nla040@example.com", "phone": "911002020040", "dob": "2010-09-04", "city": "Bengaluru", "area": "Electronic City", "father": "Arjun Kamath", "parent_phone": "911002030040", "payments": [{"amount": 20000, "on": {"days": -118}, "mode": "UPI", "reference": "NLA-RCPT-1120"}]},
+    {"n": 41, "name": "Sneha Nair", "gender": "FEMALE", "batch": "jee-2yr/Class 11", "username": "nla.sneha.nair041", "email": "sneha.nair.nla041@example.com", "phone": "911002020041", "dob": "2010-03-26", "city": "Bengaluru", "area": "Banashankari", "father": "Aniket Nair", "parent_phone": "911002030041", "payments": [{"amount": 47000, "on": {"days": -123}, "mode": "CASH", "reference": "NLA-RCPT-1123"}, {"amount": 35000, "on": {"days": -46}, "mode": "CASH", "reference": "NLA-RCPT-1124"}]},
+    {"n": 42, "name": "Aarav Menon", "gender": "MALE", "batch": "jee-2yr/Class 11", "username": "nla.aarav.menon042", "email": "aarav.menon.nla042@example.com", "phone": "911002020042", "dob": "2010-05-18", "city": "Bengaluru", "area": "Marathahalli", "father": "Tejas Menon", "parent_phone": "911002030042", "payments": [{"amount": 47000, "on": {"days": -122}, "mode": "BANK_TRANSFER", "reference": "NLA-RCPT-1126"}]},
+    {"n": 43, "name": "Naveen Sheikh", "gender": "MALE", "batch": "jee-2yr/Class 11", "username": "nla.naveen.sheikh043", "email": "naveen.sheikh.nla043@example.com", "phone": "911002020043", "dob": "2010-03-11", "city": "Bengaluru", "area": "BTM Layout", "father": "Reyansh Sheikh", "parent_phone": "911002030043", "payments": [{"amount": 47000, "on": {"days": -124}, "mode": "UPI", "reference": "NLA-RCPT-1129"}, {"amount": 35000, "on": {"days": -48}, "mode": "BANK_TRANSFER", "reference": "NLA-RCPT-1130"}]},
+    {"n": 44, "name": "Diya Pillai", "gender": "FEMALE", "batch": "jee-2yr/Class 11", "username": "nla.diya.pillai044", "email": "diya.pillai.nla044@example.com", "phone": "911002020044", "dob": "2010-11-07", "city": "Bengaluru", "area": "Malleshwaram", "father": "Reyansh Pillai", "parent_phone": "911002030044", "payments": [{"amount": 47000, "on": {"days": -121}, "mode": "UPI", "reference": "NLA-RCPT-1132"}, {"amount": 35000, "on": {"days": -46}, "mode": "CASH", "reference": "NLA-RCPT-1133"}]},
+    {"n": 45, "name": "Gayatri Bose", "gender": "FEMALE", "batch": "jee-2yr/Class 11", "username": "nla.gayatri.bose045", "email": "gayatri.bose.nla045@example.com", "phone": "911002020045", "dob": "2010-01-08", "city": "Bengaluru", "area": "Electronic City", "father": "Arjun Bose", "parent_phone": "911002030045", "payments": [{"amount": 20000, "on": {"days": -118}, "mode": "CASH", "reference": "NLA-RCPT-1135"}]},
+    {"n": 46, "name": "Manav Verma", "gender": "MALE", "batch": "jee-2yr/Class 11", "username": "nla.manav.verma046", "email": "manav.verma.nla046@example.com", "phone": "911002020046", "dob": "2010-03-04", "city": "Bengaluru", "area": "Koramangala", "father": "Gautam Verma", "parent_phone": "911002030046", "payments": [{"amount": 47000, "on": {"days": -126}, "mode": "CASH", "reference": "NLA-RCPT-1138"}, {"amount": 35000, "on": {"days": -50}, "mode": "BANK_TRANSFER", "reference": "NLA-RCPT-1139"}]},
+    {"n": 47, "name": "Karthik Pandey", "gender": "MALE", "batch": "jee-2yr/Class 11", "username": "nla.karthik.pandey047", "email": "karthik.pandey.nla047@example.com", "phone": "911002020047", "dob": "2010-01-01", "city": "Bengaluru", "area": "Electronic City", "father": "Ayaan Pandey", "parent_phone": "911002030047", "payments": [{"amount": 47000, "on": {"days": -123}, "mode": "CASH", "reference": "NLA-RCPT-1141"}, {"amount": 35000, "on": {"days": -51}, "mode": "UPI", "reference": "NLA-RCPT-1142"}]},
+    {"n": 48, "name": "Swathi Agarwal", "gender": "FEMALE", "batch": "jee-2yr/Class 11", "username": "nla.swathi.agarwal048", "email": "swathi.agarwal.nla048@example.com", "phone": "911002020048", "dob": "2010-10-07", "city": "Bengaluru", "area": "JP Nagar", "father": "Ayaan Agarwal", "parent_phone": "911002030048", "payments": [{"amount": 47000, "on": {"days": -123}, "mode": "CASH", "reference": "NLA-RCPT-1144"}, {"amount": 35000, "on": {"days": -47}, "mode": "CASH", "reference": "NLA-RCPT-1145"}]},
+    {"n": 49, "name": "Diya Krishnan", "gender": "FEMALE", "batch": "jee-2yr/Class 11", "username": "nla.diya.krishnan049", "email": "diya.krishnan.nla049@example.com", "phone": "911002020049", "dob": "2010-05-02", "city": "Bengaluru", "area": "HSR Layout", "father": "Chirag Krishnan", "parent_phone": "911002030049", "payments": [{"amount": 47000, "on": {"days": -121}, "mode": "CASH", "reference": "NLA-RCPT-1147"}, {"amount": 35000, "on": {"days": -49}, "mode": "UPI", "reference": "NLA-RCPT-1148"}]},
+    {"n": 50, "name": "Nisha Gowda", "gender": "FEMALE", "batch": "jee-2yr/Class 11", "username": "nla.nisha.gowda050", "email": "nisha.gowda.nla050@example.com", "phone": "911002020050", "dob": "2010-03-04", "city": "Bengaluru", "area": "Malleshwaram", "father": "Rohan Gowda", "parent_phone": "911002030050", "payments": [{"amount": 47000, "on": {"days": -120}, "mode": "CASH", "reference": "NLA-RCPT-1150"}]},
+    {"n": 51, "name": "Kavya Menon", "gender": "FEMALE", "batch": "jee-2yr/Class 11", "username": "nla.kavya.menon051", "email": "kavya.menon.nla051@example.com", "phone": "911002020051", "dob": "2010-02-27", "city": "Bengaluru", "area": "HSR Layout", "father": "Manav Menon", "parent_phone": "911002030051", "payments": [{"amount": 47000, "on": {"days": -121}, "mode": "UPI", "reference": "NLA-RCPT-1153"}, {"amount": 35000, "on": {"days": -48}, "mode": "UPI", "reference": "NLA-RCPT-1154"}]},
+    {"n": 52, "name": "Swathi Iyer", "gender": "FEMALE", "batch": "jee-2yr/Class 11", "username": "nla.swathi.iyer052", "email": "swathi.iyer.nla052@example.com", "phone": "911002020052", "dob": "2010-04-10", "city": "Bengaluru", "area": "Koramangala", "father": "Tejas Iyer", "parent_phone": "911002030052", "payments": [{"amount": 47000, "on": {"days": -118}, "mode": "CASH", "reference": "NLA-RCPT-1156"}, {"amount": 35000, "on": {"days": -47}, "mode": "UPI", "reference": "NLA-RCPT-1157"}]},
+    {"n": 53, "name": "Kabir Iyer", "gender": "MALE", "batch": "jee-2yr/Class 11", "username": "nla.kabir.iyer053", "email": "kabir.iyer.nla053@example.com", "phone": "911002020053", "dob": "2010-03-11", "city": "Bengaluru", "area": "Basavanagudi", "father": "Rudra Iyer", "parent_phone": "911002030053", "payments": [{"amount": 47000, "on": {"days": -124}, "mode": "UPI", "reference": "NLA-RCPT-1159"}, {"amount": 35000, "on": {"days": -46}, "mode": "CASH", "reference": "NLA-RCPT-1160"}]},
+    {"n": 54, "name": "Trisha Singh", "gender": "FEMALE", "batch": "jee-2yr/Class 11", "username": "nla.trisha.singh054", "email": "trisha.singh.nla054@example.com", "phone": "911002020054", "dob": "2010-02-10", "city": "Bengaluru", "area": "Rajajinagar", "father": "Dhruv Singh", "parent_phone": "911002030054", "payments": []},
+    {"n": 55, "name": "Pooja Reddy", "gender": "FEMALE", "batch": "jee-2yr/Class 12", "username": "nla.pooja.reddy055", "email": "pooja.reddy.nla055@example.com", "phone": "911002020055", "dob": "2009-05-20", "city": "Bengaluru", "area": "Banashankari", "father": "Vihaan Reddy", "parent_phone": "911002030055", "payments": [{"amount": 47000, "on": {"days": -120}, "mode": "UPI", "reference": "NLA-RCPT-1165"}, {"amount": 35000, "on": {"days": -44}, "mode": "UPI", "reference": "NLA-RCPT-1166"}]},
+    {"n": 56, "name": "Saanvi Patil", "gender": "FEMALE", "batch": "jee-2yr/Class 12", "username": "nla.saanvi.patil056", "email": "saanvi.patil.nla056@example.com", "phone": "911002020056", "dob": "2009-06-24", "city": "Bengaluru", "area": "Koramangala", "father": "Ishaan Patil", "parent_phone": "911002030056", "payments": [{"amount": 47000, "on": {"days": -125}, "mode": "UPI", "reference": "NLA-RCPT-1168"}, {"amount": 35000, "on": {"days": -48}, "mode": "BANK_TRANSFER", "reference": "NLA-RCPT-1169"}]},
+    {"n": 57, "name": "Sameer Agarwal", "gender": "MALE", "batch": "jee-2yr/Class 12", "username": "nla.sameer.agarwal057", "email": "sameer.agarwal.nla057@example.com", "phone": "911002020057", "dob": "2009-08-01", "city": "Bengaluru", "area": "Malleshwaram", "father": "Farhan Agarwal", "parent_phone": "911002030057", "payments": [{"amount": 47000, "on": {"days": -125}, "mode": "CASH", "reference": "NLA-RCPT-1171"}, {"amount": 35000, "on": {"days": -43}, "mode": "UPI", "reference": "NLA-RCPT-1172"}]},
+    {"n": 58, "name": "Ayaan Kamath", "gender": "MALE", "batch": "jee-2yr/Class 12", "username": "nla.ayaan.kamath058", "email": "ayaan.kamath.nla058@example.com", "phone": "911002020058", "dob": "2009-07-12", "city": "Bengaluru", "area": "Jayanagar", "father": "Arjun Kamath", "parent_phone": "911002030058", "payments": [{"amount": 47000, "on": {"days": -118}, "mode": "UPI", "reference": "NLA-RCPT-1174"}]},
+    {"n": 59, "name": "Bhavana Saxena", "gender": "FEMALE", "batch": "jee-2yr/Class 12", "username": "nla.bhavana.saxena059", "email": "bhavana.saxena.nla059@example.com", "phone": "911002020059", "dob": "2009-05-05", "city": "Bengaluru", "area": "Jayanagar", "father": "Manav Saxena", "parent_phone": "911002030059", "payments": [{"amount": 47000, "on": {"days": -119}, "mode": "BANK_TRANSFER", "reference": "NLA-RCPT-1177"}]},
+    {"n": 60, "name": "Pooja Yadav", "gender": "FEMALE", "batch": "jee-2yr/Class 12", "username": "nla.pooja.yadav060", "email": "pooja.yadav.nla060@example.com", "phone": "911002020060", "dob": "2009-02-05", "city": "Bengaluru", "area": "Hebbal", "father": "Gautam Yadav", "parent_phone": "911002030060", "payments": [{"amount": 47000, "on": {"days": -118}, "mode": "CASH", "reference": "NLA-RCPT-1180"}, {"amount": 35000, "on": {"days": -49}, "mode": "UPI", "reference": "NLA-RCPT-1181"}]},
+    {"n": 61, "name": "Aishwarya Fernandes", "gender": "FEMALE", "batch": "jee-2yr/Class 12", "username": "nla.aishwarya.fernandes061", "email": "aishwarya.fernandes.nla061@example.com", "phone": "911002020061", "dob": "2009-09-12", "city": "Bengaluru", "area": "Yelahanka", "father": "Tejas Fernandes", "parent_phone": "911002030061", "payments": [{"amount": 47000, "on": {"days": -118}, "mode": "UPI", "reference": "NLA-RCPT-1183"}, {"amount": 35000, "on": {"days": -47}, "mode": "BANK_TRANSFER", "reference": "NLA-RCPT-1184"}]},
+    {"n": 62, "name": "Ayaan Yadav", "gender": "MALE", "batch": "jee-2yr/Class 12", "username": "nla.ayaan.yadav062", "email": "ayaan.yadav.nla062@example.com", "phone": "911002020062", "dob": "2009-12-15", "city": "Bengaluru", "area": "Yelahanka", "father": "Dhruv Yadav", "parent_phone": "911002030062", "payments": [{"amount": 47000, "on": {"days": -120}, "mode": "CASH", "reference": "NLA-RCPT-1186"}, {"amount": 35000, "on": {"days": -45}, "mode": "CASH", "reference": "NLA-RCPT-1187"}]},
+    {"n": 63, "name": "Varun Acharya", "gender": "MALE", "batch": "jee-2yr/Class 12", "username": "nla.varun.acharya063", "email": "varun.acharya.nla063@example.com", "phone": "911002020063", "dob": "2009-08-15", "city": "Bengaluru", "area": "Indiranagar", "father": "Siddharth Acharya", "parent_phone": "911002030063", "payments": [{"amount": 47000, "on": {"days": -118}, "mode": "UPI", "reference": "NLA-RCPT-1189"}, {"amount": 35000, "on": {"days": -43}, "mode": "BANK_TRANSFER", "reference": "NLA-RCPT-1190"}]},
+    {"n": 64, "name": "Anjali Desai", "gender": "FEMALE", "batch": "jee-2yr/Class 12", "username": "nla.anjali.desai064", "email": "anjali.desai.nla064@example.com", "phone": "911002020064", "dob": "2009-04-08", "city": "Bengaluru", "area": "Jayanagar", "father": "Pranav Desai", "parent_phone": "911002030064", "payments": [{"amount": 47000, "on": {"days": -123}, "mode": "UPI", "reference": "NLA-RCPT-1192"}, {"amount": 35000, "on": {"days": -44}, "mode": "CASH", "reference": "NLA-RCPT-1193"}]},
+    {"n": 65, "name": "Diya Sharma", "gender": "FEMALE", "batch": "jee-2yr/Class 12", "username": "nla.diya.sharma065", "email": "diya.sharma.nla065@example.com", "phone": "911002020065", "dob": "2009-09-01", "city": "Bengaluru", "area": "Koramangala", "father": "Yash Sharma", "parent_phone": "911002030065", "payments": [{"amount": 47000, "on": {"days": -121}, "mode": "UPI", "reference": "NLA-RCPT-1195"}, {"amount": 35000, "on": {"days": -44}, "mode": "UPI", "reference": "NLA-RCPT-1196"}]},
+    {"n": 66, "name": "Karthik D'Souza", "gender": "MALE", "batch": "jee-2yr/Class 12", "username": "nla.karthik.dsouza066", "email": "karthik.dsouza.nla066@example.com", "phone": "911002020066", "dob": "2009-05-13", "city": "Bengaluru", "area": "Marathahalli", "father": "Tarun D'Souza", "parent_phone": "911002030066", "payments": [{"amount": 47000, "on": {"days": -125}, "mode": "UPI", "reference": "NLA-RCPT-1198"}, {"amount": 35000, "on": {"days": -48}, "mode": "CASH", "reference": "NLA-RCPT-1199"}]},
+    {"n": 67, "name": "Gautam Patil", "gender": "MALE", "batch": "jee-2yr/Class 12", "username": "nla.gautam.patil067", "email": "gautam.patil.nla067@example.com", "phone": "911002020067", "dob": "2009-05-26", "city": "Bengaluru", "area": "Indiranagar", "father": "Pranav Patil", "parent_phone": "911002030067", "payments": [{"amount": 47000, "on": {"days": -118}, "mode": "CASH", "reference": "NLA-RCPT-1201"}]},
+    {"n": 68, "name": "Bhavana Verma", "gender": "FEMALE", "batch": "jee-2yr/Class 12", "username": "nla.bhavana.verma068", "email": "bhavana.verma.nla068@example.com", "phone": "911002020068", "dob": "2009-03-19", "city": "Bengaluru", "area": "Basavanagudi", "father": "Aniket Verma", "parent_phone": "911002030068", "payments": [{"amount": 47000, "on": {"days": -118}, "mode": "UPI", "reference": "NLA-RCPT-1204"}, {"amount": 35000, "on": {"days": -46}, "mode": "BANK_TRANSFER", "reference": "NLA-RCPT-1205"}]},
+    {"n": 69, "name": "Anjali D'Souza", "gender": "FEMALE", "batch": "neet-dropper/Dropper", "username": "nla.anjali.dsouza069", "email": "anjali.dsouza.nla069@example.com", "phone": "911002020069", "dob": "2008-10-16", "city": "Bengaluru", "area": "Hebbal", "father": "Rudra D'Souza", "parent_phone": "911002030069", "payments": [{"amount": 20000, "on": {"days": -97}, "mode": "UPI", "reference": "NLA-RCPT-1207"}]},
+    {"n": 70, "name": "Harsh Agarwal", "gender": "MALE", "batch": "neet-dropper/Dropper", "username": "nla.harsh.agarwal070", "email": "harsh.agarwal.nla070@example.com", "phone": "911002020070", "dob": "2008-08-01", "city": "Bengaluru", "area": "Rajajinagar", "father": "Yash Agarwal", "parent_phone": "911002030070", "payments": [{"amount": 40000, "on": {"days": -99}, "mode": "UPI", "reference": "NLA-RCPT-1210"}, {"amount": 40000, "on": {"days": -25}, "mode": "CASH", "reference": "NLA-RCPT-1211"}]},
+    {"n": 71, "name": "Aditya Mehta", "gender": "MALE", "batch": "neet-dropper/Dropper", "username": "nla.aditya.mehta071", "email": "aditya.mehta.nla071@example.com", "phone": "911002020071", "dob": "2008-03-26", "city": "Bengaluru", "area": "Banashankari", "father": "Manav Mehta", "parent_phone": "911002030071", "payments": [{"amount": 40000, "on": {"days": -103}, "mode": "BANK_TRANSFER", "reference": "NLA-RCPT-1213"}, {"amount": 40000, "on": {"days": -22}, "mode": "UPI", "reference": "NLA-RCPT-1214"}]},
+    {"n": 72, "name": "Pallavi Khan", "gender": "FEMALE", "batch": "neet-dropper/Dropper", "username": "nla.pallavi.khan072", "email": "pallavi.khan.nla072@example.com", "phone": "911002020072", "dob": "2008-02-01", "city": "Bengaluru", "area": "Rajajinagar", "father": "Aarav Khan", "parent_phone": "911002030072", "payments": [{"amount": 20000, "on": {"days": -100}, "mode": "UPI", "reference": "NLA-RCPT-1216"}]},
+    {"n": 73, "name": "Charvi Naidu", "gender": "FEMALE", "batch": "neet-dropper/Dropper", "username": "nla.charvi.naidu073", "email": "charvi.naidu.nla073@example.com", "phone": "911002020073", "dob": "2008-11-28", "city": "Bengaluru", "area": "Yelahanka", "father": "Siddharth Naidu", "parent_phone": "911002030073", "payments": [{"amount": 40000, "on": {"days": -105}, "mode": "BANK_TRANSFER", "reference": "NLA-RCPT-1219"}, {"amount": 40000, "on": {"days": -19}, "mode": "UPI", "reference": "NLA-RCPT-1220"}]},
+    {"n": 74, "name": "Deepika D'Souza", "gender": "FEMALE", "batch": "neet-dropper/Dropper", "username": "nla.deepika.dsouza074", "email": "deepika.dsouza.nla074@example.com", "phone": "911002020074", "dob": "2008-10-23", "city": "Bengaluru", "area": "Koramangala", "father": "Pranav D'Souza", "parent_phone": "911002030074", "payments": [{"amount": 10000, "on": {"days": -97}, "mode": "UPI", "reference": "NLA-RCPT-1222"}]},
+    {"n": 75, "name": "Sameer Mehta", "gender": "MALE", "batch": "neet-dropper/Dropper", "username": "nla.sameer.mehta075", "email": "sameer.mehta.nla075@example.com", "phone": "911002020075", "dob": "2008-02-13", "city": "Bengaluru", "area": "JP Nagar", "father": "Varun Mehta", "parent_phone": "911002030075", "payments": [{"amount": 40000, "on": {"days": -98}, "mode": "CASH", "reference": "NLA-RCPT-1225"}]},
+    {"n": 76, "name": "Naveen Bose", "gender": "MALE", "batch": "neet-dropper/Dropper", "username": "nla.naveen.bose076", "email": "naveen.bose.nla076@example.com", "phone": "911002020076", "dob": "2008-04-24", "city": "Bengaluru", "area": "Yelahanka", "father": "Pranav Bose", "parent_phone": "911002030076", "payments": [{"amount": 40000, "on": {"days": -100}, "mode": "UPI", "reference": "NLA-RCPT-1228"}, {"amount": 40000, "on": {"days": -20}, "mode": "UPI", "reference": "NLA-RCPT-1229"}]},
+    {"n": 77, "name": "Kavya Agarwal", "gender": "FEMALE", "batch": "neet-dropper/Dropper", "username": "nla.kavya.agarwal077", "email": "kavya.agarwal.nla077@example.com", "phone": "911002020077", "dob": "2008-06-11", "city": "Bengaluru", "area": "Koramangala", "father": "Vivek Agarwal", "parent_phone": "911002030077", "payments": [{"amount": 40000, "on": {"days": -100}, "mode": "UPI", "reference": "NLA-RCPT-1231"}, {"amount": 40000, "on": {"days": -20}, "mode": "UPI", "reference": "NLA-RCPT-1232"}]},
+    {"n": 78, "name": "Shruti Sharma", "gender": "FEMALE", "batch": "neet-dropper/Dropper", "username": "nla.shruti.sharma078", "email": "shruti.sharma.nla078@example.com", "phone": "911002020078", "dob": "2008-01-22", "city": "Bengaluru", "area": "Whitefield", "father": "Pranav Sharma", "parent_phone": "911002030078", "payments": [{"amount": 40000, "on": {"days": -101}, "mode": "CASH", "reference": "NLA-RCPT-1234"}, {"amount": 40000, "on": {"days": -20}, "mode": "CASH", "reference": "NLA-RCPT-1235"}]},
+    {"n": 79, "name": "Meera Agarwal", "gender": "FEMALE", "batch": "neet-dropper/Dropper", "username": "nla.meera.agarwal079", "email": "meera.agarwal.nla079@example.com", "phone": "911002020079", "dob": "2008-05-05", "city": "Bengaluru", "area": "Indiranagar", "father": "Aditya Agarwal", "parent_phone": "911002030079", "payments": [{"amount": 40000, "on": {"days": -104}, "mode": "CASH", "reference": "NLA-RCPT-1237"}, {"amount": 40000, "on": {"days": -25}, "mode": "UPI", "reference": "NLA-RCPT-1238"}]},
+    {"n": 80, "name": "Pooja Kulkarni", "gender": "FEMALE", "batch": "neet-dropper/Dropper", "username": "nla.pooja.kulkarni080", "email": "pooja.kulkarni.nla080@example.com", "phone": "911002020080", "dob": "2008-08-24", "city": "Bengaluru", "area": "Marathahalli", "father": "Yash Kulkarni", "parent_phone": "911002030080", "payments": [{"amount": 40000, "on": {"days": -99}, "mode": "BANK_TRANSFER", "reference": "NLA-RCPT-1240"}, {"amount": 40000, "on": {"days": -23}, "mode": "BANK_TRANSFER", "reference": "NLA-RCPT-1241"}]},
+    {"n": 81, "name": "Nikhil Bhat", "gender": "MALE", "batch": "neet-dropper/Dropper", "username": "nla.nikhil.bhat081", "email": "nikhil.bhat.nla081@example.com", "phone": "911002020081", "dob": "2008-04-07", "city": "Bengaluru", "area": "Marathahalli", "father": "Arjun Bhat", "parent_phone": "911002030081", "payments": [{"amount": 40000, "on": {"days": -106}, "mode": "UPI", "reference": "NLA-RCPT-1243"}, {"amount": 40000, "on": {"days": -18}, "mode": "UPI", "reference": "NLA-RCPT-1244"}]},
+    {"n": 82, "name": "Rudra Patil", "gender": "MALE", "batch": "neet-dropper/Dropper", "username": "nla.rudra.patil082", "email": "rudra.patil.nla082@example.com", "phone": "911002020082", "dob": "2008-11-16", "city": "Bengaluru", "area": "Basavanagudi", "father": "Tarun Patil", "parent_phone": "911002030082", "payments": [{"amount": 40000, "on": {"days": -106}, "mode": "BANK_TRANSFER", "reference": "NLA-RCPT-1246"}, {"amount": 40000, "on": {"days": -20}, "mode": "BANK_TRANSFER", "reference": "NLA-RCPT-1247"}]},
+    {"n": 83, "name": "Ayaan Chopra", "gender": "MALE", "batch": "foundation/Class 9", "username": "nla.ayaan.chopra083", "email": "ayaan.chopra.nla083@example.com", "phone": "911002020083", "dob": "2012-02-17", "city": "Bengaluru", "area": "JP Nagar", "father": "Aarav Chopra", "parent_phone": "911002030083", "payments": [{"amount": 16000, "on": {"days": -122}, "mode": "CASH", "reference": "NLA-RCPT-1249"}, {"amount": 16000, "on": {"days": -50}, "mode": "UPI", "reference": "NLA-RCPT-1250"}]},
+    {"n": 84, "name": "Aadhya Bose", "gender": "FEMALE", "batch": "foundation/Class 9", "username": "nla.aadhya.bose084", "email": "aadhya.bose.nla084@example.com", "phone": "911002020084", "dob": "2012-05-03", "city": "Bengaluru", "area": "Basavanagudi", "father": "Aarav Bose", "parent_phone": "911002030084", "payments": [{"amount": 16000, "on": {"days": -124}, "mode": "UPI", "reference": "NLA-RCPT-1252"}, {"amount": 16000, "on": {"days": -44}, "mode": "UPI", "reference": "NLA-RCPT-1253"}]},
+    {"n": 85, "name": "Vihaan Hegde", "gender": "MALE", "batch": "foundation/Class 9", "username": "nla.vihaan.hegde085", "email": "vihaan.hegde.nla085@example.com", "phone": "911002020085", "dob": "2012-09-19", "city": "Bengaluru", "area": "Hebbal", "father": "Kabir Hegde", "parent_phone": "911002030085", "payments": [{"amount": 16000, "on": {"days": -122}, "mode": "UPI", "reference": "NLA-RCPT-1255"}, {"amount": 16000, "on": {"days": -49}, "mode": "BANK_TRANSFER", "reference": "NLA-RCPT-1256"}]},
+    {"n": 86, "name": "Aishwarya Shetty", "gender": "FEMALE", "batch": "foundation/Class 9", "username": "nla.aishwarya.shetty086", "email": "aishwarya.shetty.nla086@example.com", "phone": "911002020086", "dob": "2012-08-01", "city": "Bengaluru", "area": "Yelahanka", "father": "Pranav Shetty", "parent_phone": "911002030086", "payments": [{"amount": 16000, "on": {"days": -118}, "mode": "BANK_TRANSFER", "reference": "NLA-RCPT-1258"}, {"amount": 16000, "on": {"days": -49}, "mode": "UPI", "reference": "NLA-RCPT-1259"}]},
+    {"n": 87, "name": "Mahima Joshi", "gender": "FEMALE", "batch": "foundation/Class 9", "username": "nla.mahima.joshi087", "email": "mahima.joshi.nla087@example.com", "phone": "911002020087", "dob": "2012-01-19", "city": "Bengaluru", "area": "Koramangala", "father": "Aniket Joshi", "parent_phone": "911002030087", "payments": [{"amount": 16000, "on": {"days": -120}, "mode": "UPI", "reference": "NLA-RCPT-1261"}, {"amount": 16000, "on": {"days": -48}, "mode": "UPI", "reference": "NLA-RCPT-1262"}]},
+    {"n": 88, "name": "Anjali Prabhu", "gender": "FEMALE", "batch": "foundation/Class 9", "username": "nla.anjali.prabhu088", "email": "anjali.prabhu.nla088@example.com", "phone": "911002020088", "dob": "2012-06-10", "city": "Bengaluru", "area": "Whitefield", "father": "Ayaan Prabhu", "parent_phone": "911002030088", "payments": [{"amount": 16000, "on": {"days": -121}, "mode": "CASH", "reference": "NLA-RCPT-1264"}, {"amount": 16000, "on": {"days": -49}, "mode": "BANK_TRANSFER", "reference": "NLA-RCPT-1265"}]},
+    {"n": 89, "name": "Karthik Thomas", "gender": "MALE", "batch": "foundation/Class 9", "username": "nla.karthik.thomas089", "email": "karthik.thomas.nla089@example.com", "phone": "911002020089", "dob": "2012-08-18", "city": "Bengaluru", "area": "Hebbal", "father": "Rohan Thomas", "parent_phone": "911002030089", "payments": [{"amount": 16000, "on": {"days": -118}, "mode": "BANK_TRANSFER", "reference": "NLA-RCPT-1267"}, {"amount": 16000, "on": {"days": -46}, "mode": "UPI", "reference": "NLA-RCPT-1268"}]},
+    {"n": 90, "name": "Nikhil Hegde", "gender": "MALE", "batch": "foundation/Class 9", "username": "nla.nikhil.hegde090", "email": "nikhil.hegde.nla090@example.com", "phone": "911002020090", "dob": "2012-02-13", "city": "Bengaluru", "area": "Whitefield", "father": "Siddharth Hegde", "parent_phone": "911002030090", "payments": []},
+    {"n": 91, "name": "Aditya Chopra", "gender": "MALE", "batch": "foundation/Class 9", "username": "nla.aditya.chopra091", "email": "aditya.chopra.nla091@example.com", "phone": "911002020091", "dob": "2012-06-10", "city": "Bengaluru", "area": "JP Nagar", "father": "Tejas Chopra", "parent_phone": "911002030091", "payments": [{"amount": 16000, "on": {"days": -126}, "mode": "UPI", "reference": "NLA-RCPT-1273"}, {"amount": 16000, "on": {"days": -50}, "mode": "UPI", "reference": "NLA-RCPT-1274"}]},
+    {"n": 92, "name": "Trisha Shetty", "gender": "FEMALE", "batch": "foundation/Class 9", "username": "nla.trisha.shetty092", "email": "trisha.shetty.nla092@example.com", "phone": "911002020092", "dob": "2012-01-01", "city": "Bengaluru", "area": "Whitefield", "father": "Reyansh Shetty", "parent_phone": "911002030092", "payments": [{"amount": 16000, "on": {"days": -118}, "mode": "CASH", "reference": "NLA-RCPT-1276"}, {"amount": 16000, "on": {"days": -47}, "mode": "UPI", "reference": "NLA-RCPT-1277"}]},
+    {"n": 93, "name": "Kavya Sheikh", "gender": "FEMALE", "batch": "foundation/Class 10", "username": "nla.kavya.sheikh093", "email": "kavya.sheikh.nla093@example.com", "phone": "911002020093", "dob": "2011-12-02", "city": "Bengaluru", "area": "Indiranagar", "father": "Farhan Sheikh", "parent_phone": "911002030093", "payments": [{"amount": 15000, "on": {"days": -112}, "mode": "BANK_TRANSFER", "reference": "NLA-RCPT-1279"}]},
+    {"n": 94, "name": "Ishita Sharma", "gender": "FEMALE", "batch": "foundation/Class 10", "username": "nla.ishita.sharma094", "email": "ishita.sharma.nla094@example.com", "phone": "911002020094", "dob": "2011-10-28", "city": "Bengaluru", "area": "Marathahalli", "father": "Nikhil Sharma", "parent_phone": "911002030094", "payments": [{"amount": 16000, "on": {"days": -121}, "mode": "CASH", "reference": "NLA-RCPT-1282"}]},
+    {"n": 95, "name": "Charvi Menon", "gender": "FEMALE", "batch": "foundation/Class 10", "username": "nla.charvi.menon095", "email": "charvi.menon.nla095@example.com", "phone": "911002020095", "dob": "2011-09-26", "city": "Bengaluru", "area": "JP Nagar", "father": "Ishaan Menon", "parent_phone": "911002030095", "payments": [{"amount": 16000, "on": {"days": -118}, "mode": "UPI", "reference": "NLA-RCPT-1285"}, {"amount": 16000, "on": {"days": -51}, "mode": "BANK_TRANSFER", "reference": "NLA-RCPT-1286"}]},
+    {"n": 96, "name": "Charvi Sharma", "gender": "FEMALE", "batch": "foundation/Class 10", "username": "nla.charvi.sharma096", "email": "charvi.sharma.nla096@example.com", "phone": "911002020096", "dob": "2011-12-02", "city": "Bengaluru", "area": "Rajajinagar", "father": "Kabir Sharma", "parent_phone": "911002030096", "payments": [{"amount": 16000, "on": {"days": -122}, "mode": "CASH", "reference": "NLA-RCPT-1288"}, {"amount": 16000, "on": {"days": -48}, "mode": "BANK_TRANSFER", "reference": "NLA-RCPT-1289"}]},
+    {"n": 97, "name": "Ishaan Joshi", "gender": "MALE", "batch": "foundation/Class 10", "username": "nla.ishaan.joshi097", "email": "ishaan.joshi.nla097@example.com", "phone": "911002020097", "dob": "2011-10-19", "city": "Bengaluru", "area": "Yelahanka", "father": "Rudra Joshi", "parent_phone": "911002030097", "payments": [{"amount": 16000, "on": {"days": -123}, "mode": "UPI", "reference": "NLA-RCPT-1291"}, {"amount": 16000, "on": {"days": -44}, "mode": "CASH", "reference": "NLA-RCPT-1292"}]},
+    {"n": 98, "name": "Divya Agarwal", "gender": "FEMALE", "batch": "foundation/Class 10", "username": "nla.divya.agarwal098", "email": "divya.agarwal.nla098@example.com", "phone": "911002020098", "dob": "2011-11-14", "city": "Bengaluru", "area": "BTM Layout", "father": "Reyansh Agarwal", "parent_phone": "911002030098", "payments": [{"amount": 16000, "on": {"days": -119}, "mode": "UPI", "reference": "NLA-RCPT-1294"}, {"amount": 16000, "on": {"days": -49}, "mode": "BANK_TRANSFER", "reference": "NLA-RCPT-1295"}]},
+    {"n": 99, "name": "Charvi Patil", "gender": "FEMALE", "batch": "foundation/Class 10", "username": "nla.charvi.patil099", "email": "charvi.patil.nla099@example.com", "phone": "911002020099", "dob": "2011-01-25", "city": "Bengaluru", "area": "Electronic City", "father": "Krishna Patil", "parent_phone": "911002030099", "payments": [{"amount": 16000, "on": {"days": -126}, "mode": "UPI", "reference": "NLA-RCPT-1297"}, {"amount": 16000, "on": {"days": -47}, "mode": "UPI", "reference": "NLA-RCPT-1298"}]},
+    {"n": 100, "name": "Pooja Acharya", "gender": "FEMALE", "batch": "foundation/Class 10", "username": "nla.pooja.acharya100", "email": "pooja.acharya.nla100@example.com", "phone": "911002020100", "dob": "2011-04-02", "city": "Bengaluru", "area": "Electronic City", "father": "Tarun Acharya", "parent_phone": "911002030100", "payments": [{"amount": 10000, "on": {"days": -114}, "mode": "UPI", "reference": "NLA-RCPT-1300"}]},
+    {"n": 101, "name": "Aditya Kamath", "gender": "MALE", "batch": "foundation/Class 10", "username": "nla.aditya.kamath101", "email": "aditya.kamath.nla101@example.com", "phone": "911002020101", "dob": "2011-03-13", "city": "Bengaluru", "area": "Koramangala", "father": "Aditya Kamath", "parent_phone": "911002030101", "payments": [{"amount": 16000, "on": {"days": -120}, "mode": "UPI", "reference": "NLA-RCPT-1303"}, {"amount": 16000, "on": {"days": -46}, "mode": "BANK_TRANSFER", "reference": "NLA-RCPT-1304"}]},
+    {"n": 102, "name": "Ishaan Kamath", "gender": "MALE", "batch": "foundation/Class 10", "username": "nla.ishaan.kamath102", "email": "ishaan.kamath.nla102@example.com", "phone": "911002020102", "dob": "2011-12-25", "city": "Bengaluru", "area": "Whitefield", "father": "Tejas Kamath", "parent_phone": "911002030102", "payments": []},
+    {"n": 103, "name": "Sneha Sharma", "gender": "FEMALE", "batch": "foundation/Class 10", "username": "nla.sneha.sharma103", "email": "sneha.sharma.nla103@example.com", "phone": "911002020103", "dob": "2011-04-28", "city": "Bengaluru", "area": "Indiranagar", "father": "Gautam Sharma", "parent_phone": "911002030103", "payments": [{"amount": 16000, "on": {"days": -118}, "mode": "BANK_TRANSFER", "reference": "NLA-RCPT-1309"}, {"amount": 16000, "on": {"days": -47}, "mode": "UPI", "reference": "NLA-RCPT-1310"}]},
+    {"n": 104, "name": "Ishita Pandey", "gender": "FEMALE", "batch": "foundation/Class 10", "username": "nla.ishita.pandey104", "email": "ishita.pandey.nla104@example.com", "phone": "911002020104", "dob": "2011-10-10", "city": "Bengaluru", "area": "Electronic City", "father": "Pranav Pandey", "parent_phone": "911002030104", "payments": [{"amount": 10000, "on": {"days": -108}, "mode": "CASH", "reference": "NLA-RCPT-1312"}]},
+    {"n": 105, "name": "Rohan Chopra", "gender": "MALE", "batch": "jee-crash/Class 12", "username": "nla.rohan.chopra105", "email": "rohan.chopra.nla105@example.com", "phone": "911002020105", "dob": "2009-05-14", "city": "Bengaluru", "area": "Hebbal", "father": "Vivek Chopra", "parent_phone": "911002030105"},
+    {"n": 106, "name": "Saanvi Prabhu", "gender": "FEMALE", "batch": "jee-crash/Class 12", "username": "nla.saanvi.prabhu106", "email": "saanvi.prabhu.nla106@example.com", "phone": "911002020106", "dob": "2009-11-12", "city": "Bengaluru", "area": "JP Nagar", "father": "Varun Prabhu", "parent_phone": "911002030106"},
+    {"n": 107, "name": "Kavya Khan", "gender": "FEMALE", "batch": "jee-crash/Class 12", "username": "nla.kavya.khan107", "email": "kavya.khan.nla107@example.com", "phone": "911002020107", "dob": "2009-12-16", "city": "Bengaluru", "area": "Whitefield", "father": "Rohan Khan", "parent_phone": "911002030107"},
+    {"n": 108, "name": "Mahima Banerjee", "gender": "FEMALE", "batch": "jee-crash/Class 12", "username": "nla.mahima.banerjee108", "email": "mahima.banerjee.nla108@example.com", "phone": "911002020108", "dob": "2009-02-07", "city": "Bengaluru", "area": "Rajajinagar", "father": "Arjun Banerjee", "parent_phone": "911002030108"},
+    {"n": 109, "name": "Meera Pillai", "gender": "FEMALE", "batch": "jee-crash/Class 12", "username": "nla.meera.pillai109", "email": "meera.pillai.nla109@example.com", "phone": "911002020109", "dob": "2009-02-17", "city": "Bengaluru", "area": "Electronic City", "father": "Varun Pillai", "parent_phone": "911002030109"},
+    {"n": 110, "name": "Reyansh Gowda", "gender": "MALE", "batch": "jee-crash/Class 12", "username": "nla.reyansh.gowda110", "email": "reyansh.gowda.nla110@example.com", "phone": "911002020110", "dob": "2009-12-13", "city": "Bengaluru", "area": "HSR Layout", "father": "Ishaan Gowda", "parent_phone": "911002030110"},
+    {"n": 111, "name": "Joel Naidu", "gender": "MALE", "batch": "jee-crash/Class 12", "username": "nla.joel.naidu111", "email": "joel.naidu.nla111@example.com", "phone": "911002020111", "dob": "2009-11-13", "city": "Bengaluru", "area": "Jayanagar", "father": "Varun Naidu", "parent_phone": "911002030111"},
+    {"n": 112, "name": "Bhavana Mehta", "gender": "FEMALE", "batch": "jee-crash/Class 12", "username": "nla.bhavana.mehta112", "email": "bhavana.mehta.nla112@example.com", "phone": "911002020112", "dob": "2009-02-14", "city": "Bengaluru", "area": "Marathahalli", "father": "Kabir Mehta", "parent_phone": "911002030112"},
+    {"n": 113, "name": "Charvi Khan", "gender": "FEMALE", "batch": "olympiad/Class 9", "username": "nla.charvi.khan113", "email": "charvi.khan.nla113@example.com", "phone": "911002020113", "dob": "2012-10-24", "city": "Bengaluru", "area": "BTM Layout", "father": "Gautam Khan", "parent_phone": "911002030113"},
+    {"n": 114, "name": "Nisha Saxena", "gender": "FEMALE", "batch": "olympiad/Class 9", "username": "nla.nisha.saxena114", "email": "nisha.saxena.nla114@example.com", "phone": "911002020114", "dob": "2012-10-17", "city": "Bengaluru", "area": "HSR Layout", "father": "Ayaan Saxena", "parent_phone": "911002030114"},
+    {"n": 115, "name": "Rudra Nair", "gender": "MALE", "batch": "olympiad/Class 9", "username": "nla.rudra.nair115", "email": "rudra.nair.nla115@example.com", "phone": "911002020115", "dob": "2012-12-06", "city": "Bengaluru", "area": "Electronic City", "father": "Naveen Nair", "parent_phone": "911002030115"},
+    {"n": 116, "name": "Ananya Gowda", "gender": "FEMALE", "batch": "olympiad/Class 9", "username": "nla.ananya.gowda116", "email": "ananya.gowda.nla116@example.com", "phone": "911002020116", "dob": "2012-09-18", "city": "Bengaluru", "area": "Rajajinagar", "father": "Reyansh Gowda", "parent_phone": "911002030116"},
+    {"n": 117, "name": "Chirag Menon", "gender": "MALE", "batch": "olympiad/Class 10", "username": "nla.chirag.menon117", "email": "chirag.menon.nla117@example.com", "phone": "911002020117", "dob": "2011-10-06", "city": "Bengaluru", "area": "Electronic City", "father": "Dhruv Menon", "parent_phone": "911002030117"},
+    {"n": 118, "name": "Lakshmi Pillai", "gender": "FEMALE", "batch": "olympiad/Class 10", "username": "nla.lakshmi.pillai118", "email": "lakshmi.pillai.nla118@example.com", "phone": "911002020118", "dob": "2011-12-27", "city": "Bengaluru", "area": "Whitefield", "father": "Harsh Pillai", "parent_phone": "911002030118"},
+    {"n": 119, "name": "Varun Patil", "gender": "MALE", "batch": "olympiad/Class 10", "username": "nla.varun.patil119", "email": "varun.patil.nla119@example.com", "phone": "911002020119", "dob": "2011-02-22", "city": "Bengaluru", "area": "Whitefield", "father": "Ayaan Patil", "parent_phone": "911002030119"},
+    {"n": 120, "name": "Vivek Murthy", "gender": "MALE", "batch": "olympiad/Class 10", "username": "nla.vivek.murthy120", "email": "vivek.murthy.nla120@example.com", "phone": "911002020120", "dob": "2011-02-27", "city": "Bengaluru", "area": "Hebbal", "father": "Krishna Murthy", "parent_phone": "911002030120"}
+  ],
+  "team": [
+    {"key": "priya", "name": "Priya Raghavan", "role": "COUNSELLOR", "phone": "911002040001", "email": null},
+    {"key": "rahul", "name": "Rahul Deshpande", "role": "COUNSELLOR", "phone": "911002040002", "email": null},
+    {"key": "sneha", "name": "Sneha Kurian", "role": "COUNSELLOR", "phone": "911002040003", "email": null},
+    {"key": "imran", "name": "Imran Qureshi", "role": "COUNSELLOR", "phone": "911002040004", "email": null}
+  ],
+  "lead_statuses": [
+    {"key": "LEAD", "label": "New", "color": "#64748B", "order": 1},
+    {"key": "CONTACTED", "label": "Contacted", "color": "#0EA5E9", "order": 2},
+    {"key": "DEMO_BOOKED", "label": "Demo class booked", "color": "#8B5CF6", "order": 3},
+    {"key": "DEMO_ATTENDED", "label": "Demo class attended", "color": "#F59E0B", "order": 4},
+    {"key": "FEE_DISCUSSION", "label": "Fee discussion", "color": "#F97316", "order": 5},
+    {"key": "CONVERTED", "label": "Admitted", "color": "#16A34A", "order": 6},
+    {"key": "LOST", "label": "Lost", "color": "#DC2626", "order": 7}
+  ],
+  "campaigns": [
+    {
+      "key": "website",
+      "name": "Admissions 2027: Website Enquiries",
+      "type": "WEBSITE",
+      "description": "Enquiry form on the Northlight Academy website and course pages.",
+      "objective": "LEAD_GENERATION",
+      "start": {
+        "days": -60
+      },
+      "end": {
+        "days": 120
+      }
+    },
+    {
+      "key": "nsat",
+      "name": "Northlight Scholarship Test (NSAT) Registrations",
+      "type": "WEBSITE",
+      "description": "Registrations for the scholarship test for Classes 8 to 11 moving up next year.",
+      "objective": "LEAD_GENERATION",
+      "start": {
+        "days": -35
+      },
+      "end": {
+        "days": 25
+      }
+    },
+    {
+      "key": "walkin",
+      "name": "Walk-ins: Indiranagar Centre",
+      "type": "WALK_IN",
+      "description": "Parents and students who visited the Indiranagar centre front desk.",
+      "objective": "LEAD_GENERATION",
+      "start": {
+        "days": -90
+      },
+      "end": {
+        "days": 180
+      }
+    }
+  ],
+  "leads": [
+    {"n": 1, "name": "Pranav Bose", "campaign": "website", "source_type": "GOOGLE_ADS", "source_id": "google-jee-coaching-bengaluru", "email": "pranav.bose.nlq001@example.com", "phone": "911002010001", "status": "DEMO_ATTENDED", "interest": "NEET Achiever (Dropper) Batch", "counsellor": "imran", "follow_up": {"at": {"days": 0, "time": "21:00"}, "content": "Take feedback on the demo class and discuss the scholarship test. Interested in: NEET Achiever (Dropper) Batch.", "mode": "WHATSAPP", "interest_level": "LOW"}},
+    {"n": 2, "name": "Aishwarya Kulkarni", "campaign": "nsat", "source_type": "INSTAGRAM_ADS", "source_id": "insta-nsat-scholarship", "email": "aishwarya.kulkarni.nlq002@example.com", "phone": "911002010002", "status": "FEE_DISCUSSION", "interest": "NEET 2-Year Classroom Programme", "counsellor": "imran"},
+    {"n": 3, "name": "Bhavana Prabhu", "campaign": "nsat", "source_type": "WEBSITE", "source_id": "nsat-landing-page", "email": "bhavana.prabhu.nlq003@example.com", "phone": "911002010003", "status": "LEAD", "interest": "NEET Achiever (Dropper) Batch", "counsellor": "priya", "follow_up": {"at": {"days": 1, "time": "15:00"}, "content": "Call back, the parent asked for a call after 6 pm. Interested in: NEET Achiever (Dropper) Batch.", "mode": "VISIT", "interest_level": "MEDIUM"}},
+    {"n": 4, "name": "Aditya Sharma", "campaign": "website", "source_type": "WEBSITE", "source_id": "northlight-website-enquiry", "email": "aditya.sharma.nlq004@example.com", "phone": "911002010004", "status": "DEMO_BOOKED", "interest": "JEE Main Crash Course 2027", "counsellor": "rahul", "follow_up": {"at": {"days": 0, "time": "23:00"}, "content": "Reminder call a day before the demo class. Interested in: JEE Main Crash Course 2027.", "mode": "CALL", "interest_level": "LOW"}},
+    {"n": 5, "name": "Tejas Sharma", "campaign": "website", "source_type": "REFERRAL", "source_id": "parent-referral", "email": "tejas.sharma.nlq005@example.com", "phone": "911002010005", "status": "CONTACTED", "interest": "JEE Main + Advanced 2-Year Programme", "counsellor": "imran", "follow_up": {"at": {"days": 0, "time": "21:00"}, "content": "Invite to Saturday's demo class. Interested in: JEE Main + Advanced 2-Year Programme.", "mode": "VISIT", "interest_level": "LOW"}},
+    {"n": 6, "name": "Nisha Mishra", "campaign": "website", "source_type": "WEBSITE", "source_id": "northlight-website-enquiry", "email": "nisha.mishra.nlq006@example.com", "phone": "911002010006", "status": "CONTACTED", "interest": "JEE Main Crash Course 2027", "counsellor": "imran"},
+    {"n": 7, "name": "Tarun Khan", "campaign": "website", "source_type": "REFERRAL", "source_id": "parent-referral", "email": "tarun.khan.nlq007@example.com", "phone": "911002010007", "status": "CONTACTED", "interest": "JEE Main + Advanced 2-Year Programme", "counsellor": "rahul"},
+    {"n": 8, "name": "Keerthana Iyer", "campaign": "nsat", "source_type": "FACEBOOK_ADS", "source_id": "fb-nsat-scholarship", "email": "keerthana.iyer.nlq008@example.com", "phone": "911002010008", "status": "DEMO_ATTENDED", "interest": "NEET 2-Year Classroom Programme", "counsellor": "sneha"},
+    {"n": 9, "name": "Saanvi Shetty", "campaign": "website", "source_type": "WEBSITE", "source_id": "northlight-website-enquiry", "email": "saanvi.shetty.nlq009@example.com", "phone": "911002010009", "status": "LEAD", "interest": "JEE Main Crash Course 2027", "counsellor": "rahul", "follow_up": {"at": {"days": -2, "time": "13:30"}, "content": "First call: introduce the programme and ask about the current school and board. Interested in: JEE Main Crash Course 2027.", "mode": "VISIT", "interest_level": "MEDIUM"}},
+    {"n": 10, "name": "Ananya Yadav", "campaign": "walkin", "source_type": "REFERRAL", "source_id": "student-referral", "email": "ananya.yadav.nlq010@example.com", "phone": "911002010010", "status": "CONTACTED", "interest": "JEE Main Crash Course 2027", "counsellor": "sneha", "follow_up": {"at": {"days": 0, "time": "22:30"}, "content": "Invite to Saturday's demo class. Interested in: JEE Main Crash Course 2027.", "mode": "WHATSAPP", "interest_level": "LOW"}},
+    {"n": 11, "name": "Aarav Murthy", "campaign": "nsat", "source_type": "INSTAGRAM_ADS", "source_id": "insta-nsat-scholarship", "email": "aarav.murthy.nlq011@example.com", "phone": "911002010011", "status": "DEMO_ATTENDED", "interest": "NEET Achiever (Dropper) Batch", "counsellor": "imran"},
+    {"n": 12, "name": "Deepika Pillai", "campaign": "website", "source_type": "GOOGLE_ADS", "source_id": "google-jee-coaching-bengaluru", "email": "deepika.pillai.nlq012@example.com", "phone": "911002010012", "status": "CONTACTED", "interest": "Olympiad and NTSE Prep (Online)", "counsellor": "priya", "follow_up": {"at": {"days": 3, "time": "15:30"}, "content": "Invite to Saturday's demo class. Interested in: Olympiad and NTSE Prep (Online).", "mode": "CALL", "interest_level": "HIGH"}},
+    {"n": 13, "name": "Pooja Nair", "campaign": "website", "source_type": "INSTAGRAM_ADS", "source_id": "insta-reel-toppers-2026", "email": "pooja.nair.nlq013@example.com", "phone": "911002010013", "status": "DEMO_ATTENDED", "interest": "JEE Main Crash Course 2027", "counsellor": "imran", "follow_up": {"at": {"days": -4, "time": "13:30"}, "content": "Take feedback on the demo class and discuss the scholarship test. Interested in: JEE Main Crash Course 2027.", "mode": "CALL", "interest_level": "HIGH"}},
+    {"n": 14, "name": "Irene Mishra", "campaign": "nsat", "source_type": "SCHOOL_SEMINAR", "source_id": "seminar-jayanagar-schools", "email": "irene.mishra.nlq014@example.com", "phone": "911002010014", "status": "LOST", "interest": "JEE Main + Advanced 2-Year Programme", "counsellor": "rahul"},
+    {"n": 15, "name": "Chirag Verma", "campaign": "nsat", "source_type": "WEBSITE", "source_id": "nsat-landing-page", "email": "chirag.verma.nlq015@example.com", "phone": "911002010015", "status": "LEAD", "interest": "NEET Achiever (Dropper) Batch", "counsellor": "sneha", "follow_up": {"at": {"days": -3, "time": "11:30"}, "content": "Call back, the parent asked for a call after 6 pm. Interested in: NEET Achiever (Dropper) Batch.", "mode": "WHATSAPP", "interest_level": "MEDIUM"}},
+    {"n": 16, "name": "Varun Pillai", "campaign": "nsat", "source_type": "WEBSITE", "source_id": "nsat-landing-page", "email": "varun.pillai.nlq016@example.com", "phone": "911002010016", "status": "CONTACTED", "interest": "JEE Main Crash Course 2027", "counsellor": "sneha"},
+    {"n": 17, "name": "Pooja Mehta", "campaign": "nsat", "source_type": "SCHOOL_SEMINAR", "source_id": "seminar-jayanagar-schools", "email": "pooja.mehta.nlq017@example.com", "phone": "911002010017", "status": "FEE_DISCUSSION", "interest": "JEE Main Crash Course 2027", "counsellor": "rahul", "follow_up": {"at": {"days": -2, "time": "13:30"}, "content": "Parent asked for the instalment plan in writing; confirm receipt. Interested in: JEE Main Crash Course 2027.", "mode": "CALL", "interest_level": "MEDIUM"}},
+    {"n": 18, "name": "Farhan Joshi", "campaign": "website", "source_type": "REFERRAL", "source_id": "parent-referral", "email": "farhan.joshi.nlq018@example.com", "phone": "911002010018", "status": "LEAD", "interest": "JEE Main + Advanced 2-Year Programme", "counsellor": "priya", "follow_up": {"at": {"days": 6, "time": "17:00"}, "content": "First call: introduce the programme and ask about the current school and board. Interested in: JEE Main + Advanced 2-Year Programme.", "mode": "CALL", "interest_level": "MEDIUM"}},
+    {"n": 19, "name": "Nisha Chopra", "campaign": "website", "source_type": "GOOGLE_ADS", "source_id": "google-neet-coaching-bengaluru", "email": "nisha.chopra.nlq019@example.com", "phone": "911002010019", "status": "FEE_DISCUSSION", "interest": "NEET Achiever (Dropper) Batch", "counsellor": "sneha"},
+    {"n": 20, "name": "Vihaan Menon", "campaign": "nsat", "source_type": "FACEBOOK_ADS", "source_id": "fb-nsat-scholarship", "email": "vihaan.menon.nlq020@example.com", "phone": "911002010020", "status": "CONTACTED", "interest": "NEET Achiever (Dropper) Batch", "counsellor": "sneha"},
+    {"n": 21, "name": "Ishaan Pillai", "campaign": "website", "source_type": "WEBSITE", "source_id": "northlight-website-enquiry", "email": "ishaan.pillai.nlq021@example.com", "phone": "911002010021", "status": "FEE_DISCUSSION", "interest": "JEE Main + Advanced 2-Year Programme", "counsellor": "rahul"},
+    {"n": 22, "name": "Aniket Joshi", "campaign": "website", "source_type": "GOOGLE_ADS", "source_id": "google-jee-coaching-bengaluru", "email": "aniket.joshi.nlq022@example.com", "phone": "911002010022", "status": "CONVERTED", "interest": "NEET Achiever (Dropper) Batch", "counsellor": "priya"},
+    {"n": 23, "name": "Aarav Subramanian", "campaign": "website", "source_type": "REFERRAL", "source_id": "parent-referral", "email": "aarav.subramanian.nlq023@example.com", "phone": "911002010023", "status": "LEAD", "interest": "NEET 2-Year Classroom Programme", "counsellor": "imran"},
+    {"n": 24, "name": "Joel Yadav", "campaign": "walkin", "source_type": "WALK_IN", "source_id": "indiranagar-front-desk", "email": "joel.yadav.nlq024@example.com", "phone": "911002010024", "status": "LEAD", "interest": "NEET 2-Year Classroom Programme", "counsellor": "imran", "follow_up": {"at": {"days": 0, "time": "23:30"}, "content": "First call: introduce the programme and ask about the current school and board. Interested in: NEET 2-Year Classroom Programme.", "mode": "CALL", "interest_level": "LOW"}},
+    {"n": 25, "name": "Ishaan Fernandes", "campaign": "website", "source_type": "WEBSITE", "source_id": "northlight-website-enquiry", "email": "ishaan.fernandes.nlq025@example.com", "phone": "911002010025", "status": "CONTACTED", "interest": "Olympiad and NTSE Prep (Online)", "counsellor": "rahul", "follow_up": {"at": {"days": 6, "time": "18:00"}, "content": "Invite to Saturday's demo class. Interested in: Olympiad and NTSE Prep (Online).", "mode": "CALL", "interest_level": "HIGH"}},
+    {"n": 26, "name": "Nikhil Chatterjee", "campaign": "website", "source_type": "FACEBOOK_ADS", "source_id": "fb-parents-foundation-class9", "email": "nikhil.chatterjee.nlq026@example.com", "phone": "911002010026", "status": "FEE_DISCUSSION", "interest": "Foundation Programme (Class 9 and 10)", "counsellor": "imran", "follow_up": {"at": {"days": 5, "time": "18:30"}, "content": "Follow up on the scholarship slab and the admission form. Interested in: Foundation Programme (Class 9 and 10).", "mode": "CALL", "interest_level": "LOW"}},
+    {"n": 27, "name": "Ananya Murthy", "campaign": "walkin", "source_type": "NEWSPAPER_AD", "source_id": "deccan-herald-insert", "email": "ananya.murthy.nlq027@example.com", "phone": "911002010027", "status": "CONTACTED", "interest": "NEET 2-Year Classroom Programme", "counsellor": "imran", "follow_up": {"at": {"days": -3, "time": "11:00"}, "content": "Parent wants to compare with one more institute; call again. Interested in: NEET 2-Year Classroom Programme.", "mode": "VISIT", "interest_level": "MEDIUM"}},
+    {"n": 28, "name": "Mahima Rao", "campaign": "nsat", "source_type": "WEBSITE", "source_id": "nsat-landing-page", "email": "mahima.rao.nlq028@example.com", "phone": "911002010028", "status": "CONVERTED", "interest": "NEET Achiever (Dropper) Batch", "counsellor": "sneha"},
+    {"n": 29, "name": "Arjun Chopra", "campaign": "website", "source_type": "WEBSITE", "source_id": "northlight-website-enquiry", "email": "arjun.chopra.nlq029@example.com", "phone": "911002010029", "status": "FEE_DISCUSSION", "interest": "Olympiad and NTSE Prep (Online)", "counsellor": "rahul"},
+    {"n": 30, "name": "Tarun Chatterjee", "campaign": "nsat", "source_type": "WEBSITE", "source_id": "nsat-landing-page", "email": "tarun.chatterjee.nlq030@example.com", "phone": "911002010030", "status": "LEAD", "interest": "JEE Main + Advanced 2-Year Programme", "counsellor": "rahul", "follow_up": {"at": {"days": 0, "time": "19:30"}, "content": "Call back, the parent asked for a call after 6 pm. Interested in: JEE Main + Advanced 2-Year Programme.", "mode": "CALL", "interest_level": "HIGH"}},
+    {"n": 31, "name": "Varun Fernandes", "campaign": "nsat", "source_type": "SCHOOL_SEMINAR", "source_id": "seminar-jayanagar-schools", "email": "varun.fernandes.nlq031@example.com", "phone": "911002010031", "status": "DEMO_ATTENDED", "interest": "NEET Achiever (Dropper) Batch", "counsellor": "imran", "follow_up": {"at": {"days": 2, "time": "13:00"}, "content": "Take feedback on the demo class and discuss the scholarship test. Interested in: NEET Achiever (Dropper) Batch.", "mode": "WHATSAPP", "interest_level": "LOW"}},
+    {"n": 32, "name": "Shruti Chopra", "campaign": "website", "source_type": "GOOGLE_ADS", "source_id": "google-neet-coaching-bengaluru", "email": "shruti.chopra.nlq032@example.com", "phone": "911002010032", "status": "DEMO_BOOKED", "interest": "JEE Main Crash Course 2027", "counsellor": "imran"},
+    {"n": 33, "name": "Siddharth Gupta", "campaign": "website", "source_type": "GOOGLE_ADS", "source_id": "google-neet-coaching-bengaluru", "email": "siddharth.gupta.nlq033@example.com", "phone": "911002010033", "status": "CONVERTED", "interest": "Foundation Programme (Class 9 and 10)", "counsellor": "imran"},
+    {"n": 34, "name": "Gautam Hegde", "campaign": "website", "source_type": "WEBSITE", "source_id": "northlight-website-enquiry", "email": "gautam.hegde.nlq034@example.com", "phone": "911002010034", "status": "LEAD", "interest": "NEET 2-Year Classroom Programme", "counsellor": "rahul", "follow_up": {"at": {"days": 7, "time": "15:00"}, "content": "Call back, the parent asked for a call after 6 pm. Interested in: NEET 2-Year Classroom Programme.", "mode": "WHATSAPP", "interest_level": "MEDIUM"}},
+    {"n": 35, "name": "Saanvi Subramanian", "campaign": "website", "source_type": "FACEBOOK_ADS", "source_id": "fb-parents-foundation-class9", "email": "saanvi.subramanian.nlq035@example.com", "phone": "911002010035", "status": "DEMO_BOOKED", "interest": "Olympiad and NTSE Prep (Online)", "counsellor": "priya"},
+    {"n": 36, "name": "Nisha Chatterjee", "campaign": "walkin", "source_type": "REFERRAL", "source_id": "student-referral", "email": "nisha.chatterjee.nlq036@example.com", "phone": "911002010036", "status": "LEAD", "interest": "JEE Main + Advanced 2-Year Programme", "counsellor": "priya", "follow_up": {"at": {"days": 0, "time": "20:30"}, "content": "Call back, the parent asked for a call after 6 pm. Interested in: JEE Main + Advanced 2-Year Programme.", "mode": "CALL", "interest_level": "LOW"}},
+    {"n": 37, "name": "Rudra Saxena", "campaign": "nsat", "source_type": "WEBSITE", "source_id": "nsat-landing-page", "email": "rudra.saxena.nlq037@example.com", "phone": "911002010037", "status": "DEMO_BOOKED", "interest": "Foundation Programme (Class 9 and 10)", "counsellor": "priya", "follow_up": {"at": {"days": 7, "time": "17:00"}, "content": "Confirm the demo slot and share the centre location. Interested in: Foundation Programme (Class 9 and 10).", "mode": "VISIT", "interest_level": "LOW"}},
+    {"n": 38, "name": "Ishita Shetty", "campaign": "website", "source_type": "WEBSITE", "source_id": "northlight-website-enquiry", "email": "ishita.shetty.nlq038@example.com", "phone": "911002010038", "status": "CONTACTED", "interest": "NEET Achiever (Dropper) Batch", "counsellor": "priya", "follow_up": {"at": {"days": -5, "time": "17:00"}, "content": "Parent wants to compare with one more institute; call again. Interested in: NEET Achiever (Dropper) Batch.", "mode": "VISIT", "interest_level": "HIGH"}},
+    {"n": 39, "name": "Trisha Menon", "campaign": "website", "source_type": "WEBSITE", "source_id": "northlight-website-enquiry", "email": "trisha.menon.nlq039@example.com", "phone": "911002010039", "status": "CONTACTED", "interest": "JEE Main + Advanced 2-Year Programme", "counsellor": "rahul"},
+    {"n": 40, "name": "Pooja D'Souza", "campaign": "nsat", "source_type": "FACEBOOK_ADS", "source_id": "fb-nsat-scholarship", "email": "pooja.dsouza.nlq040@example.com", "phone": "911002010040", "status": "CONVERTED", "interest": "Foundation Programme (Class 9 and 10)", "counsellor": "rahul"},
+    {"n": 41, "name": "Arjun Patil", "campaign": "walkin", "source_type": "WALK_IN", "source_id": "indiranagar-front-desk", "email": "arjun.patil.nlq041@example.com", "phone": "911002010041", "status": "FEE_DISCUSSION", "interest": "Foundation Programme (Class 9 and 10)", "counsellor": "rahul"},
+    {"n": 42, "name": "Farhan Shetty", "campaign": "website", "source_type": "WEBSITE", "source_id": "northlight-website-enquiry", "email": "farhan.shetty.nlq042@example.com", "phone": "911002010042", "status": "CONTACTED", "interest": "JEE Main Crash Course 2027", "counsellor": "priya", "follow_up": {"at": {"days": -3, "time": "11:30"}, "content": "Share the fee structure and batch timings on a call. Interested in: JEE Main Crash Course 2027.", "mode": "CALL", "interest_level": "HIGH"}},
+    {"n": 43, "name": "Ishaan Nair", "campaign": "website", "source_type": "REFERRAL", "source_id": "parent-referral", "email": "ishaan.nair.nlq043@example.com", "phone": "911002010043", "status": "CONVERTED", "interest": "Olympiad and NTSE Prep (Online)", "counsellor": "imran"},
+    {"n": 44, "name": "Ananya Hegde", "campaign": "website", "source_type": "GOOGLE_ADS", "source_id": "google-jee-coaching-bengaluru", "email": "ananya.hegde.nlq044@example.com", "phone": "911002010044", "status": "LEAD", "interest": "NEET 2-Year Classroom Programme", "counsellor": "imran"},
+    {"n": 45, "name": "Riya Thomas", "campaign": "website", "source_type": "GOOGLE_ADS", "source_id": "google-jee-coaching-bengaluru", "email": "riya.thomas.nlq045@example.com", "phone": "911002010045", "status": "LOST", "interest": "JEE Main + Advanced 2-Year Programme", "counsellor": "sneha"},
+    {"n": 46, "name": "Aarav Thomas", "campaign": "website", "source_type": "INSTAGRAM_ADS", "source_id": "insta-reel-toppers-2026", "email": "aarav.thomas.nlq046@example.com", "phone": "911002010046", "status": "LEAD", "interest": "Foundation Programme (Class 9 and 10)", "counsellor": "priya"},
+    {"n": 47, "name": "Tarun Singh", "campaign": "website", "source_type": "GOOGLE_ADS", "source_id": "google-jee-coaching-bengaluru", "email": "tarun.singh.nlq047@example.com", "phone": "911002010047", "status": "DEMO_BOOKED", "interest": "Foundation Programme (Class 9 and 10)", "counsellor": "imran", "follow_up": {"at": {"days": -5, "time": "10:30"}, "content": "Reminder call a day before the demo class. Interested in: Foundation Programme (Class 9 and 10).", "mode": "CALL", "interest_level": "MEDIUM"}},
+    {"n": 48, "name": "Shruti Shetty", "campaign": "website", "source_type": "GOOGLE_ADS", "source_id": "google-neet-coaching-bengaluru", "email": "shruti.shetty.nlq048@example.com", "phone": "911002010048", "status": "CONTACTED", "interest": "JEE Main + Advanced 2-Year Programme", "counsellor": "sneha"},
+    {"n": 49, "name": "Zoya Khan", "campaign": "website", "source_type": "INSTAGRAM_ADS", "source_id": "insta-reel-toppers-2026", "email": "zoya.khan.nlq049@example.com", "phone": "911002010049", "status": "DEMO_BOOKED", "interest": "Olympiad and NTSE Prep (Online)", "counsellor": "priya"},
+    {"n": 50, "name": "Ishita Krishnan", "campaign": "website", "source_type": "REFERRAL", "source_id": "parent-referral", "email": "ishita.krishnan.nlq050@example.com", "phone": "911002010050", "status": "FEE_DISCUSSION", "interest": "NEET Achiever (Dropper) Batch", "counsellor": "priya", "follow_up": {"at": {"days": 5, "time": "16:00"}, "content": "Follow up on the scholarship slab and the admission form. Interested in: NEET Achiever (Dropper) Batch.", "mode": "CALL", "interest_level": "LOW"}},
+    {"n": 51, "name": "Varun Joshi", "campaign": "nsat", "source_type": "FACEBOOK_ADS", "source_id": "fb-nsat-scholarship", "email": "varun.joshi.nlq051@example.com", "phone": "911002010051", "status": "LEAD", "interest": "NEET Achiever (Dropper) Batch", "counsellor": "rahul", "follow_up": {"at": {"days": 3, "time": "17:30"}, "content": "First call: introduce the programme and ask about the current school and board. Interested in: NEET Achiever (Dropper) Batch.", "mode": "CALL", "interest_level": "MEDIUM"}},
+    {"n": 52, "name": "Siddharth Krishnan", "campaign": "walkin", "source_type": "WALK_IN", "source_id": "indiranagar-front-desk", "email": "siddharth.krishnan.nlq052@example.com", "phone": "911002010052", "status": "CONTACTED", "interest": "NEET Achiever (Dropper) Batch", "counsellor": "imran"},
+    {"n": 53, "name": "Gayatri Pillai", "campaign": "nsat", "source_type": "WEBSITE", "source_id": "nsat-landing-page", "email": "gayatri.pillai.nlq053@example.com", "phone": "911002010053", "status": "CONTACTED", "interest": "JEE Main Crash Course 2027", "counsellor": "priya", "follow_up": {"at": {"days": 0, "time": "23:00"}, "content": "Share the fee structure and batch timings on a call. Interested in: JEE Main Crash Course 2027.", "mode": "CALL", "interest_level": "MEDIUM"}},
+    {"n": 54, "name": "Fatima Sheikh", "campaign": "nsat", "source_type": "FACEBOOK_ADS", "source_id": "fb-nsat-scholarship", "email": "fatima.sheikh.nlq054@example.com", "phone": "911002010054", "status": "LEAD", "interest": "Foundation Programme (Class 9 and 10)", "counsellor": "imran", "follow_up": {"at": {"days": 3, "time": "10:00"}, "content": "Call back, the parent asked for a call after 6 pm. Interested in: Foundation Programme (Class 9 and 10).", "mode": "WHATSAPP", "interest_level": "LOW"}},
+    {"n": 55, "name": "Ishita Mehta", "campaign": "nsat", "source_type": "FACEBOOK_ADS", "source_id": "fb-nsat-scholarship", "email": "ishita.mehta.nlq055@example.com", "phone": "911002010055", "status": "DEMO_ATTENDED", "interest": "NEET 2-Year Classroom Programme", "counsellor": "imran"},
+    {"n": 56, "name": "Anjali Kulkarni", "campaign": "nsat", "source_type": "INSTAGRAM_ADS", "source_id": "insta-nsat-scholarship", "email": "anjali.kulkarni.nlq056@example.com", "phone": "911002010056", "status": "CONTACTED", "interest": "NEET 2-Year Classroom Programme", "counsellor": "rahul", "follow_up": {"at": {"days": 5, "time": "13:00"}, "content": "Invite to Saturday's demo class. Interested in: NEET 2-Year Classroom Programme.", "mode": "CALL", "interest_level": "LOW"}},
+    {"n": 57, "name": "Reyansh Bose", "campaign": "walkin", "source_type": "WALK_IN", "source_id": "indiranagar-front-desk", "email": "reyansh.bose.nlq057@example.com", "phone": "911002010057", "status": "LOST", "interest": "NEET 2-Year Classroom Programme", "counsellor": "rahul"},
+    {"n": 58, "name": "Ayaan Banerjee", "campaign": "walkin", "source_type": "NEWSPAPER_AD", "source_id": "deccan-herald-insert", "email": "ayaan.banerjee.nlq058@example.com", "phone": "911002010058", "status": "FEE_DISCUSSION", "interest": "NEET Achiever (Dropper) Batch", "counsellor": "priya"},
+    {"n": 59, "name": "Nandini Verma", "campaign": "website", "source_type": "FACEBOOK_ADS", "source_id": "fb-parents-foundation-class9", "email": "nandini.verma.nlq059@example.com", "phone": "911002010059", "status": "FEE_DISCUSSION", "interest": "JEE Main Crash Course 2027", "counsellor": "sneha"},
+    {"n": 60, "name": "Pooja Sharma", "campaign": "walkin", "source_type": "WALK_IN", "source_id": "indiranagar-front-desk", "email": "pooja.sharma.nlq060@example.com", "phone": "911002010060", "status": "CONTACTED", "interest": "Foundation Programme (Class 9 and 10)", "counsellor": "sneha", "follow_up": {"at": {"days": -1, "time": "12:30"}, "content": "Share the fee structure and batch timings on a call. Interested in: Foundation Programme (Class 9 and 10).", "mode": "CALL", "interest_level": "MEDIUM"}},
+    {"n": 61, "name": "Nandini Kamath", "campaign": "nsat", "source_type": "WEBSITE", "source_id": "nsat-landing-page", "email": "nandini.kamath.nlq061@example.com", "phone": "911002010061", "status": "DEMO_BOOKED", "interest": "JEE Main + Advanced 2-Year Programme", "counsellor": "rahul", "follow_up": {"at": {"days": 1, "time": "12:00"}, "content": "Confirm the demo slot and share the centre location. Interested in: JEE Main + Advanced 2-Year Programme.", "mode": "CALL", "interest_level": "MEDIUM"}},
+    {"n": 62, "name": "Charvi Iyer", "campaign": "walkin", "source_type": "WALK_IN", "source_id": "indiranagar-front-desk", "email": "charvi.iyer.nlq062@example.com", "phone": "911002010062", "status": "DEMO_BOOKED", "interest": "JEE Main + Advanced 2-Year Programme", "counsellor": "rahul"},
+    {"n": 63, "name": "Chirag Bhat", "campaign": "nsat", "source_type": "INSTAGRAM_ADS", "source_id": "insta-nsat-scholarship", "email": "chirag.bhat.nlq063@example.com", "phone": "911002010063", "status": "LEAD", "interest": "NEET 2-Year Classroom Programme", "counsellor": "sneha"},
+    {"n": 64, "name": "Aditya Pillai", "campaign": "nsat", "source_type": "WEBSITE", "source_id": "nsat-landing-page", "email": "aditya.pillai.nlq064@example.com", "phone": "911002010064", "status": "LEAD", "interest": "Foundation Programme (Class 9 and 10)", "counsellor": "imran", "follow_up": {"at": {"days": 0, "time": "21:30"}, "content": "First call: introduce the programme and ask about the current school and board. Interested in: Foundation Programme (Class 9 and 10).", "mode": "WHATSAPP", "interest_level": "HIGH"}},
+    {"n": 65, "name": "Aditya Fernandes", "campaign": "website", "source_type": "INSTAGRAM_ADS", "source_id": "insta-reel-toppers-2026", "email": "aditya.fernandes.nlq065@example.com", "phone": "911002010065", "status": "DEMO_ATTENDED", "interest": "NEET 2-Year Classroom Programme", "counsellor": "sneha", "follow_up": {"at": {"days": -5, "time": "13:30"}, "content": "Take feedback on the demo class and discuss the scholarship test. Interested in: NEET 2-Year Classroom Programme.", "mode": "CALL", "interest_level": "MEDIUM"}},
+    {"n": 66, "name": "Deepika Sharma", "campaign": "nsat", "source_type": "FACEBOOK_ADS", "source_id": "fb-nsat-scholarship", "email": "deepika.sharma.nlq066@example.com", "phone": "911002010066", "status": "CONVERTED", "interest": "JEE Main Crash Course 2027", "counsellor": "imran"},
+    {"n": 67, "name": "Aniket Kulkarni", "campaign": "website", "source_type": "GOOGLE_ADS", "source_id": "google-jee-coaching-bengaluru", "email": "aniket.kulkarni.nlq067@example.com", "phone": "911002010067", "status": "LEAD", "interest": "Olympiad and NTSE Prep (Online)", "counsellor": "imran"},
+    {"n": 68, "name": "Naveen Menon", "campaign": "nsat", "source_type": "INSTAGRAM_ADS", "source_id": "insta-nsat-scholarship", "email": "naveen.menon.nlq068@example.com", "phone": "911002010068", "status": "DEMO_ATTENDED", "interest": "Foundation Programme (Class 9 and 10)", "counsellor": "imran", "follow_up": {"at": {"days": -5, "time": "13:30"}, "content": "Take feedback on the demo class and discuss the scholarship test. Interested in: Foundation Programme (Class 9 and 10).", "mode": "CALL", "interest_level": "MEDIUM"}},
+    {"n": 69, "name": "Trisha Pandey", "campaign": "website", "source_type": "GOOGLE_ADS", "source_id": "google-neet-coaching-bengaluru", "email": "trisha.pandey.nlq069@example.com", "phone": "911002010069", "status": "CONTACTED", "interest": "NEET Achiever (Dropper) Batch", "counsellor": "priya"},
+    {"n": 70, "name": "Trisha Iyer", "campaign": "website", "source_type": "FACEBOOK_ADS", "source_id": "fb-parents-foundation-class9", "email": "trisha.iyer.nlq070@example.com", "phone": "911002010070", "status": "LOST", "interest": "Olympiad and NTSE Prep (Online)", "counsellor": "sneha"},
+    {"n": 71, "name": "Saanvi D'Souza", "campaign": "website", "source_type": "REFERRAL", "source_id": "parent-referral", "email": "saanvi.dsouza.nlq071@example.com", "phone": "911002010071", "status": "DEMO_ATTENDED", "interest": "Olympiad and NTSE Prep (Online)", "counsellor": "sneha"},
+    {"n": 72, "name": "Rohan Menon", "campaign": "nsat", "source_type": "FACEBOOK_ADS", "source_id": "fb-nsat-scholarship", "email": "rohan.menon.nlq072@example.com", "phone": "911002010072", "status": "DEMO_ATTENDED", "interest": "Foundation Programme (Class 9 and 10)", "counsellor": "sneha", "follow_up": {"at": {"days": 2, "time": "16:00"}, "content": "Student liked the Physics demo; talk to the father about admission. Interested in: Foundation Programme (Class 9 and 10).", "mode": "CALL", "interest_level": "MEDIUM"}},
+    {"n": 73, "name": "Meera Gupta", "campaign": "nsat", "source_type": "INSTAGRAM_ADS", "source_id": "insta-nsat-scholarship", "email": "meera.gupta.nlq073@example.com", "phone": "911002010073", "status": "LEAD", "interest": "NEET 2-Year Classroom Programme", "counsellor": "sneha", "follow_up": {"at": {"days": 2, "time": "10:00"}, "content": "Call back, the parent asked for a call after 6 pm. Interested in: NEET 2-Year Classroom Programme.", "mode": "CALL", "interest_level": "MEDIUM"}},
+    {"n": 74, "name": "Nisha Singh", "campaign": "website", "source_type": "REFERRAL", "source_id": "parent-referral", "email": "nisha.singh.nlq074@example.com", "phone": "911002010074", "status": "LOST", "interest": "JEE Main Crash Course 2027", "counsellor": "imran"},
+    {"n": 75, "name": "Pallavi Naidu", "campaign": "walkin", "source_type": "WALK_IN", "source_id": "indiranagar-front-desk", "email": "pallavi.naidu.nlq075@example.com", "phone": "911002010075", "status": "LEAD", "interest": "NEET 2-Year Classroom Programme", "counsellor": "rahul", "follow_up": {"at": {"days": 4, "time": "15:00"}, "content": "First call: introduce the programme and ask about the current school and board. Interested in: NEET 2-Year Classroom Programme.", "mode": "VISIT", "interest_level": "LOW"}},
+    {"n": 76, "name": "Tarun Subramanian", "campaign": "website", "source_type": "GOOGLE_ADS", "source_id": "google-neet-coaching-bengaluru", "email": "tarun.subramanian.nlq076@example.com", "phone": "911002010076", "status": "LEAD", "interest": "Olympiad and NTSE Prep (Online)", "counsellor": "sneha"},
+    {"n": 77, "name": "Tarun Pillai", "campaign": "website", "source_type": "GOOGLE_ADS", "source_id": "google-jee-coaching-bengaluru", "email": "tarun.pillai.nlq077@example.com", "phone": "911002010077", "status": "CONTACTED", "interest": "JEE Main + Advanced 2-Year Programme", "counsellor": "rahul", "follow_up": {"at": {"days": 0, "time": "22:30"}, "content": "Share the fee structure and batch timings on a call. Interested in: JEE Main + Advanced 2-Year Programme.", "mode": "VISIT", "interest_level": "MEDIUM"}},
+    {"n": 78, "name": "Sneha Naidu", "campaign": "walkin", "source_type": "WALK_IN", "source_id": "indiranagar-front-desk", "email": "sneha.naidu.nlq078@example.com", "phone": "911002010078", "status": "LOST", "interest": "JEE Main + Advanced 2-Year Programme", "counsellor": "sneha"},
+    {"n": 79, "name": "Zoya Singh", "campaign": "nsat", "source_type": "FACEBOOK_ADS", "source_id": "fb-nsat-scholarship", "email": "zoya.singh.nlq079@example.com", "phone": "911002010079", "status": "LOST", "interest": "JEE Main + Advanced 2-Year Programme", "counsellor": "priya"},
+    {"n": 80, "name": "Reyansh Joshi", "campaign": "website", "source_type": "WEBSITE", "source_id": "northlight-website-enquiry", "email": "reyansh.joshi.nlq080@example.com", "phone": "911002010080", "status": "DEMO_ATTENDED", "interest": "Olympiad and NTSE Prep (Online)", "counsellor": "rahul", "follow_up": {"at": {"days": 5, "time": "12:30"}, "content": "Take feedback on the demo class and discuss the scholarship test. Interested in: Olympiad and NTSE Prep (Online).", "mode": "CALL", "interest_level": "MEDIUM"}},
+    {"n": 81, "name": "Lakshmi Acharya", "campaign": "website", "source_type": "INSTAGRAM_ADS", "source_id": "insta-reel-toppers-2026", "email": "lakshmi.acharya.nlq081@example.com", "phone": "911002010081", "status": "LEAD", "interest": "Olympiad and NTSE Prep (Online)", "counsellor": "rahul", "follow_up": {"at": {"days": 3, "time": "15:30"}, "content": "Call back, the parent asked for a call after 6 pm. Interested in: Olympiad and NTSE Prep (Online).", "mode": "WHATSAPP", "interest_level": "MEDIUM"}},
+    {"n": 82, "name": "Meera Bhat", "campaign": "website", "source_type": "WEBSITE", "source_id": "northlight-website-enquiry", "email": "meera.bhat.nlq082@example.com", "phone": "911002010082", "status": "CONVERTED", "interest": "NEET Achiever (Dropper) Batch", "counsellor": "priya"},
+    {"n": 83, "name": "Farhan Chatterjee", "campaign": "website", "source_type": "INSTAGRAM_ADS", "source_id": "insta-reel-toppers-2026", "email": "farhan.chatterjee.nlq083@example.com", "phone": "911002010083", "status": "DEMO_BOOKED", "interest": "JEE Main + Advanced 2-Year Programme", "counsellor": "priya"},
+    {"n": 84, "name": "Bhavana Bose", "campaign": "website", "source_type": "WEBSITE", "source_id": "northlight-website-enquiry", "email": "bhavana.bose.nlq084@example.com", "phone": "911002010084", "status": "DEMO_BOOKED", "interest": "NEET Achiever (Dropper) Batch", "counsellor": "priya"},
+    {"n": 85, "name": "Aniket Nair", "campaign": "walkin", "source_type": "REFERRAL", "source_id": "student-referral", "email": "aniket.nair.nlq085@example.com", "phone": "911002010085", "status": "LEAD", "interest": "Foundation Programme (Class 9 and 10)", "counsellor": "sneha"},
+    {"n": 86, "name": "Riya Mishra", "campaign": "nsat", "source_type": "WEBSITE", "source_id": "nsat-landing-page", "email": "riya.mishra.nlq086@example.com", "phone": "911002010086", "status": "CONVERTED", "interest": "Olympiad and NTSE Prep (Online)", "counsellor": "imran"},
+    {"n": 87, "name": "Tanvi Khan", "campaign": "nsat", "source_type": "WEBSITE", "source_id": "nsat-landing-page", "email": "tanvi.khan.nlq087@example.com", "phone": "911002010087", "status": "CONTACTED", "interest": "Foundation Programme (Class 9 and 10)", "counsellor": "imran"},
+    {"n": 88, "name": "Saanvi Bhat", "campaign": "nsat", "source_type": "INSTAGRAM_ADS", "source_id": "insta-nsat-scholarship", "email": "saanvi.bhat.nlq088@example.com", "phone": "911002010088", "status": "LEAD", "interest": "NEET 2-Year Classroom Programme", "counsellor": "priya", "follow_up": {"at": {"days": -6, "time": "18:00"}, "content": "Call back, the parent asked for a call after 6 pm. Interested in: NEET 2-Year Classroom Programme.", "mode": "CALL", "interest_level": "MEDIUM"}},
+    {"n": 89, "name": "Ayaan Acharya", "campaign": "website", "source_type": "FACEBOOK_ADS", "source_id": "fb-parents-foundation-class9", "email": "ayaan.acharya.nlq089@example.com", "phone": "911002010089", "status": "CONVERTED", "interest": "Foundation Programme (Class 9 and 10)", "counsellor": "imran"},
+    {"n": 90, "name": "Rohan Khan", "campaign": "nsat", "source_type": "WEBSITE", "source_id": "nsat-landing-page", "email": "rohan.khan.nlq090@example.com", "phone": "911002010090", "status": "CONVERTED", "interest": "NEET Achiever (Dropper) Batch", "counsellor": "rahul"},
+    {"n": 91, "name": "Meera Singh", "campaign": "website", "source_type": "INSTAGRAM_ADS", "source_id": "insta-reel-toppers-2026", "email": "meera.singh.nlq091@example.com", "phone": "911002010091", "status": "CONTACTED", "interest": "Foundation Programme (Class 9 and 10)", "counsellor": "sneha", "follow_up": {"at": {"days": 1, "time": "13:00"}, "content": "Invite to Saturday's demo class. Interested in: Foundation Programme (Class 9 and 10).", "mode": "CALL", "interest_level": "LOW"}},
+    {"n": 92, "name": "Lakshmi Singh", "campaign": "website", "source_type": "REFERRAL", "source_id": "parent-referral", "email": "lakshmi.singh.nlq092@example.com", "phone": "911002010092", "status": "LEAD", "interest": "NEET 2-Year Classroom Programme", "counsellor": "imran", "follow_up": {"at": {"days": -3, "time": "10:30"}, "content": "First call: introduce the programme and ask about the current school and board. Interested in: NEET 2-Year Classroom Programme.", "mode": "VISIT", "interest_level": "HIGH"}},
+    {"n": 93, "name": "Lakshmi Subramanian", "campaign": "website", "source_type": "WEBSITE", "source_id": "northlight-website-enquiry", "email": "lakshmi.subramanian.nlq093@example.com", "phone": "911002010093", "status": "LEAD", "interest": "NEET 2-Year Classroom Programme", "counsellor": "imran", "follow_up": {"at": {"days": 7, "time": "10:00"}, "content": "First call: introduce the programme and ask about the current school and board. Interested in: NEET 2-Year Classroom Programme.", "mode": "CALL", "interest_level": "MEDIUM"}},
+    {"n": 94, "name": "Divya Kamath", "campaign": "nsat", "source_type": "SCHOOL_SEMINAR", "source_id": "seminar-jayanagar-schools", "email": "divya.kamath.nlq094@example.com", "phone": "911002010094", "status": "LEAD", "interest": "JEE Main + Advanced 2-Year Programme", "counsellor": "sneha"},
+    {"n": 95, "name": "Joel Bhat", "campaign": "walkin", "source_type": "WALK_IN", "source_id": "indiranagar-front-desk", "email": "joel.bhat.nlq095@example.com", "phone": "911002010095", "status": "CONVERTED", "interest": "NEET Achiever (Dropper) Batch", "counsellor": "priya"},
+    {"n": 96, "name": "Zoya Saxena", "campaign": "website", "source_type": "GOOGLE_ADS", "source_id": "google-neet-coaching-bengaluru", "email": "zoya.saxena.nlq096@example.com", "phone": "911002010096", "status": "LOST", "interest": "NEET 2-Year Classroom Programme", "counsellor": "sneha"},
+    {"n": 97, "name": "Bhavana Chopra", "campaign": "website", "source_type": "WEBSITE", "source_id": "northlight-website-enquiry", "email": "bhavana.chopra.nlq097@example.com", "phone": "911002010097", "status": "DEMO_BOOKED", "interest": "NEET Achiever (Dropper) Batch", "counsellor": "priya", "follow_up": {"at": {"days": 7, "time": "10:30"}, "content": "Reminder call a day before the demo class. Interested in: NEET Achiever (Dropper) Batch.", "mode": "CALL", "interest_level": "HIGH"}},
+    {"n": 98, "name": "Nandini Menon", "campaign": "website", "source_type": "WEBSITE", "source_id": "northlight-website-enquiry", "email": "nandini.menon.nlq098@example.com", "phone": "911002010098", "status": "LEAD", "interest": "NEET 2-Year Classroom Programme", "counsellor": "sneha", "follow_up": {"at": {"days": 3, "time": "15:30"}, "content": "First call: introduce the programme and ask about the current school and board. Interested in: NEET 2-Year Classroom Programme.", "mode": "CALL", "interest_level": "HIGH"}},
+    {"n": 99, "name": "Nandini Desai", "campaign": "website", "source_type": "GOOGLE_ADS", "source_id": "google-jee-coaching-bengaluru", "email": "nandini.desai.nlq099@example.com", "phone": "911002010099", "status": "DEMO_BOOKED", "interest": "JEE Main Crash Course 2027", "counsellor": "priya"},
+    {"n": 100, "name": "Aniket Saxena", "campaign": "nsat", "source_type": "WEBSITE", "source_id": "nsat-landing-page", "email": "aniket.saxena.nlq100@example.com", "phone": "911002010100", "status": "CONVERTED", "interest": "NEET 2-Year Classroom Programme", "counsellor": "rahul"},
+    {"n": 101, "name": "Harsh Kulkarni", "campaign": "walkin", "source_type": "WALK_IN", "source_id": "indiranagar-front-desk", "email": "harsh.kulkarni.nlq101@example.com", "phone": "911002010101", "status": "FEE_DISCUSSION", "interest": "JEE Main + Advanced 2-Year Programme", "counsellor": "sneha", "follow_up": {"at": {"days": -5, "time": "13:30"}, "content": "Follow up on the scholarship slab and the admission form. Interested in: JEE Main + Advanced 2-Year Programme.", "mode": "CALL", "interest_level": "MEDIUM"}},
+    {"n": 102, "name": "Irene Gowda", "campaign": "walkin", "source_type": "NEWSPAPER_AD", "source_id": "deccan-herald-insert", "email": "irene.gowda.nlq102@example.com", "phone": "911002010102", "status": "CONVERTED", "interest": "Foundation Programme (Class 9 and 10)", "counsellor": "imran"},
+    {"n": 103, "name": "Aishwarya Pillai", "campaign": "walkin", "source_type": "REFERRAL", "source_id": "student-referral", "email": "aishwarya.pillai.nlq103@example.com", "phone": "911002010103", "status": "LEAD", "interest": "Foundation Programme (Class 9 and 10)", "counsellor": "imran"},
+    {"n": 104, "name": "Ananya Kamath", "campaign": "nsat", "source_type": "FACEBOOK_ADS", "source_id": "fb-nsat-scholarship", "email": "ananya.kamath.nlq104@example.com", "phone": "911002010104", "status": "CONTACTED", "interest": "Olympiad and NTSE Prep (Online)", "counsellor": "imran", "follow_up": {"at": {"days": 1, "time": "14:00"}, "content": "Parent wants to compare with one more institute; call again. Interested in: Olympiad and NTSE Prep (Online).", "mode": "VISIT", "interest_level": "HIGH"}},
+    {"n": 105, "name": "Sneha Mishra", "campaign": "nsat", "source_type": "WEBSITE", "source_id": "nsat-landing-page", "email": "sneha.mishra.nlq105@example.com", "phone": "911002010105", "status": "LEAD", "interest": "JEE Main + Advanced 2-Year Programme", "counsellor": "priya"},
+    {"n": 106, "name": "Tanvi Chopra", "campaign": "website", "source_type": "INSTAGRAM_ADS", "source_id": "insta-reel-toppers-2026", "email": "tanvi.chopra.nlq106@example.com", "phone": "911002010106", "status": "DEMO_ATTENDED", "interest": "NEET Achiever (Dropper) Batch", "counsellor": "priya", "follow_up": {"at": {"days": 0, "time": "22:30"}, "content": "Student liked the Physics demo; talk to the father about admission. Interested in: NEET Achiever (Dropper) Batch.", "mode": "CALL", "interest_level": "HIGH"}},
+    {"n": 107, "name": "Riya Acharya", "campaign": "website", "source_type": "REFERRAL", "source_id": "parent-referral", "email": "riya.acharya.nlq107@example.com", "phone": "911002010107", "status": "CONVERTED", "interest": "JEE Main Crash Course 2027", "counsellor": "priya"},
+    {"n": 108, "name": "Vivek Mishra", "campaign": "walkin", "source_type": "WALK_IN", "source_id": "indiranagar-front-desk", "email": "vivek.mishra.nlq108@example.com", "phone": "911002010108", "status": "CONVERTED", "interest": "NEET Achiever (Dropper) Batch", "counsellor": "imran"},
+    {"n": 109, "name": "Bhavana Desai", "campaign": "website", "source_type": "GOOGLE_ADS", "source_id": "google-neet-coaching-bengaluru", "email": "bhavana.desai.nlq109@example.com", "phone": "911002010109", "status": "CONTACTED", "interest": "NEET 2-Year Classroom Programme", "counsellor": "priya"},
+    {"n": 110, "name": "Vihaan Fernandes", "campaign": "nsat", "source_type": "INSTAGRAM_ADS", "source_id": "insta-nsat-scholarship", "email": "vihaan.fernandes.nlq110@example.com", "phone": "911002010110", "status": "DEMO_ATTENDED", "interest": "NEET 2-Year Classroom Programme", "counsellor": "priya"},
+    {"n": 111, "name": "Swathi Krishnan", "campaign": "website", "source_type": "GOOGLE_ADS", "source_id": "google-neet-coaching-bengaluru", "email": "swathi.krishnan.nlq111@example.com", "phone": "911002010111", "status": "CONTACTED", "interest": "JEE Main + Advanced 2-Year Programme", "counsellor": "sneha", "follow_up": {"at": {"days": -6, "time": "16:00"}, "content": "Parent wants to compare with one more institute; call again. Interested in: JEE Main + Advanced 2-Year Programme.", "mode": "VISIT", "interest_level": "HIGH"}},
+    {"n": 112, "name": "Tarun Iyer", "campaign": "walkin", "source_type": "NEWSPAPER_AD", "source_id": "deccan-herald-insert", "email": "tarun.iyer.nlq112@example.com", "phone": "911002010112", "status": "LEAD", "interest": "NEET 2-Year Classroom Programme", "counsellor": "priya"},
+    {"n": 113, "name": "Keerthana Nair", "campaign": "website", "source_type": "WEBSITE", "source_id": "northlight-website-enquiry", "email": "keerthana.nair.nlq113@example.com", "phone": "911002010113", "status": "CONVERTED", "interest": "Foundation Programme (Class 9 and 10)", "counsellor": "sneha"},
+    {"n": 114, "name": "Chirag Patil", "campaign": "walkin", "source_type": "WALK_IN", "source_id": "indiranagar-front-desk", "email": "chirag.patil.nlq114@example.com", "phone": "911002010114", "status": "CONTACTED", "interest": "JEE Main Crash Course 2027", "counsellor": "sneha", "follow_up": {"at": {"days": 2, "time": "12:00"}, "content": "Invite to Saturday's demo class. Interested in: JEE Main Crash Course 2027.", "mode": "CALL", "interest_level": "MEDIUM"}},
+    {"n": 115, "name": "Harsh Yadav", "campaign": "website", "source_type": "WEBSITE", "source_id": "northlight-website-enquiry", "email": "harsh.yadav.nlq115@example.com", "phone": "911002010115", "status": "DEMO_ATTENDED", "interest": "Olympiad and NTSE Prep (Online)", "counsellor": "priya"},
+    {"n": 116, "name": "Tejas Gowda", "campaign": "nsat", "source_type": "FACEBOOK_ADS", "source_id": "fb-nsat-scholarship", "email": "tejas.gowda.nlq116@example.com", "phone": "911002010116", "status": "DEMO_BOOKED", "interest": "NEET Achiever (Dropper) Batch", "counsellor": "rahul", "follow_up": {"at": {"days": -6, "time": "10:30"}, "content": "Reminder call a day before the demo class. Interested in: NEET Achiever (Dropper) Batch.", "mode": "CALL", "interest_level": "LOW"}},
+    {"n": 117, "name": "Kabir Fernandes", "campaign": "website", "source_type": "GOOGLE_ADS", "source_id": "google-neet-coaching-bengaluru", "email": "kabir.fernandes.nlq117@example.com", "phone": "911002010117", "status": "DEMO_ATTENDED", "interest": "JEE Main + Advanced 2-Year Programme", "counsellor": "priya"},
+    {"n": 118, "name": "Vivek Singh", "campaign": "walkin", "source_type": "WALK_IN", "source_id": "indiranagar-front-desk", "email": "vivek.singh.nlq118@example.com", "phone": "911002010118", "status": "LEAD", "interest": "Olympiad and NTSE Prep (Online)", "counsellor": "rahul"},
+    {"n": 119, "name": "Varun Prabhu", "campaign": "walkin", "source_type": "NEWSPAPER_AD", "source_id": "deccan-herald-insert", "email": "varun.prabhu.nlq119@example.com", "phone": "911002010119", "status": "CONTACTED", "interest": "JEE Main Crash Course 2027", "counsellor": "sneha"},
+    {"n": 120, "name": "Farhan Prabhu", "campaign": "nsat", "source_type": "SCHOOL_SEMINAR", "source_id": "seminar-jayanagar-schools", "email": "farhan.prabhu.nlq120@example.com", "phone": "911002010120", "status": "DEMO_BOOKED", "interest": "Olympiad and NTSE Prep (Online)", "counsellor": "priya"},
+    {"n": 121, "name": "Aishwarya Rao", "campaign": "website", "source_type": "GOOGLE_ADS", "source_id": "google-neet-coaching-bengaluru", "email": "aishwarya.rao.nlq121@example.com", "phone": "911002010121", "status": "CONTACTED", "interest": "NEET 2-Year Classroom Programme", "counsellor": "sneha", "follow_up": {"at": {"days": 5, "time": "12:00"}, "content": "Share the fee structure and batch timings on a call. Interested in: NEET 2-Year Classroom Programme.", "mode": "WHATSAPP", "interest_level": "MEDIUM"}},
+    {"n": 122, "name": "Gayatri Krishnan", "campaign": "website", "source_type": "INSTAGRAM_ADS", "source_id": "insta-reel-toppers-2026", "email": "gayatri.krishnan.nlq122@example.com", "phone": "911002010122", "status": "FEE_DISCUSSION", "interest": "JEE Main + Advanced 2-Year Programme", "counsellor": "sneha", "follow_up": {"at": {"days": 0, "time": "19:00"}, "content": "Parent asked for the instalment plan in writing; confirm receipt. Interested in: JEE Main + Advanced 2-Year Programme.", "mode": "VISIT", "interest_level": "MEDIUM"}},
+    {"n": 123, "name": "Arjun Nair", "campaign": "website", "source_type": "GOOGLE_ADS", "source_id": "google-neet-coaching-bengaluru", "email": "arjun.nair.nlq123@example.com", "phone": "911002010123", "status": "LOST", "interest": "Olympiad and NTSE Prep (Online)", "counsellor": "rahul"},
+    {"n": 124, "name": "Nisha Kulkarni", "campaign": "website", "source_type": "GOOGLE_ADS", "source_id": "google-neet-coaching-bengaluru", "email": "nisha.kulkarni.nlq124@example.com", "phone": "911002010124", "status": "LEAD", "interest": "Foundation Programme (Class 9 and 10)", "counsellor": "imran", "follow_up": {"at": {"days": 3, "time": "17:00"}, "content": "First call: introduce the programme and ask about the current school and board. Interested in: Foundation Programme (Class 9 and 10).", "mode": "CALL", "interest_level": "MEDIUM"}},
+    {"n": 125, "name": "Karthik Sheikh", "campaign": "website", "source_type": "REFERRAL", "source_id": "parent-referral", "email": "karthik.sheikh.nlq125@example.com", "phone": "911002010125", "status": "CONTACTED", "interest": "JEE Main Crash Course 2027", "counsellor": "sneha", "follow_up": {"at": {"days": -6, "time": "11:30"}, "content": "Invite to Saturday's demo class. Interested in: JEE Main Crash Course 2027.", "mode": "WHATSAPP", "interest_level": "MEDIUM"}},
+    {"n": 126, "name": "Kabir Bose", "campaign": "website", "source_type": "WEBSITE", "source_id": "northlight-website-enquiry", "email": "kabir.bose.nlq126@example.com", "phone": "911002010126", "status": "LEAD", "interest": "JEE Main Crash Course 2027", "counsellor": "rahul"},
+    {"n": 127, "name": "Karthik Pillai", "campaign": "nsat", "source_type": "WEBSITE", "source_id": "nsat-landing-page", "email": "karthik.pillai.nlq127@example.com", "phone": "911002010127", "status": "LEAD", "interest": "NEET 2-Year Classroom Programme", "counsellor": "imran", "follow_up": {"at": {"days": 7, "time": "15:00"}, "content": "First call: introduce the programme and ask about the current school and board. Interested in: NEET 2-Year Classroom Programme.", "mode": "VISIT", "interest_level": "HIGH"}},
+    {"n": 128, "name": "Divya Chopra", "campaign": "website", "source_type": "GOOGLE_ADS", "source_id": "google-neet-coaching-bengaluru", "email": "divya.chopra.nlq128@example.com", "phone": "911002010128", "status": "LEAD", "interest": "Foundation Programme (Class 9 and 10)", "counsellor": "rahul"},
+    {"n": 129, "name": "Krishna Bose", "campaign": "website", "source_type": "INSTAGRAM_ADS", "source_id": "insta-reel-toppers-2026", "email": "krishna.bose.nlq129@example.com", "phone": "911002010129", "status": "DEMO_BOOKED", "interest": "JEE Main Crash Course 2027", "counsellor": "sneha", "follow_up": {"at": {"days": 6, "time": "14:00"}, "content": "Reminder call a day before the demo class. Interested in: JEE Main Crash Course 2027.", "mode": "WHATSAPP", "interest_level": "LOW"}},
+    {"n": 130, "name": "Trisha Hegde", "campaign": "nsat", "source_type": "FACEBOOK_ADS", "source_id": "fb-nsat-scholarship", "email": "trisha.hegde.nlq130@example.com", "phone": "911002010130", "status": "CONTACTED", "interest": "NEET 2-Year Classroom Programme", "counsellor": "imran", "follow_up": {"at": {"days": -5, "time": "14:00"}, "content": "Parent wants to compare with one more institute; call again. Interested in: NEET 2-Year Classroom Programme.", "mode": "WHATSAPP", "interest_level": "LOW"}},
+    {"n": 131, "name": "Tejas Subramanian", "campaign": "nsat", "source_type": "INSTAGRAM_ADS", "source_id": "insta-nsat-scholarship", "email": "tejas.subramanian.nlq131@example.com", "phone": "911002010131", "status": "LOST", "interest": "JEE Main + Advanced 2-Year Programme", "counsellor": "rahul"},
+    {"n": 132, "name": "Dhruv Chopra", "campaign": "nsat", "source_type": "SCHOOL_SEMINAR", "source_id": "seminar-jayanagar-schools", "email": "dhruv.chopra.nlq132@example.com", "phone": "911002010132", "status": "LEAD", "interest": "Olympiad and NTSE Prep (Online)", "counsellor": "imran", "follow_up": {"at": {"days": 7, "time": "13:00"}, "content": "First call: introduce the programme and ask about the current school and board. Interested in: Olympiad and NTSE Prep (Online).", "mode": "WHATSAPP", "interest_level": "HIGH"}},
+    {"n": 133, "name": "Fatima Mehta", "campaign": "website", "source_type": "INSTAGRAM_ADS", "source_id": "insta-reel-toppers-2026", "email": "fatima.mehta.nlq133@example.com", "phone": "911002010133", "status": "FEE_DISCUSSION", "interest": "JEE Main Crash Course 2027", "counsellor": "imran"},
+    {"n": 134, "name": "Ishita Kamath", "campaign": "walkin", "source_type": "WALK_IN", "source_id": "indiranagar-front-desk", "email": "ishita.kamath.nlq134@example.com", "phone": "911002010134", "status": "DEMO_BOOKED", "interest": "JEE Main Crash Course 2027", "counsellor": "rahul", "follow_up": {"at": {"days": 4, "time": "12:30"}, "content": "Confirm the demo slot and share the centre location. Interested in: JEE Main Crash Course 2027.", "mode": "WHATSAPP", "interest_level": "HIGH"}},
+    {"n": 135, "name": "Meera Shetty", "campaign": "website", "source_type": "GOOGLE_ADS", "source_id": "google-neet-coaching-bengaluru", "email": "meera.shetty.nlq135@example.com", "phone": "911002010135", "status": "LEAD", "interest": "NEET 2-Year Classroom Programme", "counsellor": "priya", "follow_up": {"at": {"days": 1, "time": "13:30"}, "content": "Call back, the parent asked for a call after 6 pm. Interested in: NEET 2-Year Classroom Programme.", "mode": "CALL", "interest_level": "MEDIUM"}},
+    {"n": 136, "name": "Ananya Acharya", "campaign": "nsat", "source_type": "WEBSITE", "source_id": "nsat-landing-page", "email": "ananya.acharya.nlq136@example.com", "phone": "911002010136", "status": "LOST", "interest": "JEE Main Crash Course 2027", "counsellor": "imran"},
+    {"n": 137, "name": "Reyansh Shetty", "campaign": "walkin", "source_type": "WALK_IN", "source_id": "indiranagar-front-desk", "email": "reyansh.shetty.nlq137@example.com", "phone": "911002010137", "status": "LEAD", "interest": "Olympiad and NTSE Prep (Online)", "counsellor": "sneha"},
+    {"n": 138, "name": "Siddharth Joshi", "campaign": "nsat", "source_type": "WEBSITE", "source_id": "nsat-landing-page", "email": "siddharth.joshi.nlq138@example.com", "phone": "911002010138", "status": "DEMO_BOOKED", "interest": "Olympiad and NTSE Prep (Online)", "counsellor": "imran"},
+    {"n": 139, "name": "Krishna D'Souza", "campaign": "website", "source_type": "WEBSITE", "source_id": "northlight-website-enquiry", "email": "krishna.dsouza.nlq139@example.com", "phone": "911002010139", "status": "CONTACTED", "interest": "Foundation Programme (Class 9 and 10)", "counsellor": "rahul"},
+    {"n": 140, "name": "Shruti Naidu", "campaign": "website", "source_type": "WEBSITE", "source_id": "northlight-website-enquiry", "email": "shruti.naidu.nlq140@example.com", "phone": "911002010140", "status": "DEMO_BOOKED", "interest": "Olympiad and NTSE Prep (Online)", "counsellor": "rahul"},
+    {"n": 141, "name": "Vivek D'Souza", "campaign": "nsat", "source_type": "INSTAGRAM_ADS", "source_id": "insta-nsat-scholarship", "email": "vivek.dsouza.nlq141@example.com", "phone": "911002010141", "status": "DEMO_BOOKED", "interest": "NEET Achiever (Dropper) Batch", "counsellor": "sneha", "follow_up": {"at": {"days": 7, "time": "15:30"}, "content": "Reminder call a day before the demo class. Interested in: NEET Achiever (Dropper) Batch.", "mode": "VISIT", "interest_level": "MEDIUM"}},
+    {"n": 142, "name": "Kabir Pandey", "campaign": "nsat", "source_type": "INSTAGRAM_ADS", "source_id": "insta-nsat-scholarship", "email": "kabir.pandey.nlq142@example.com", "phone": "911002010142", "status": "LEAD", "interest": "Olympiad and NTSE Prep (Online)", "counsellor": "imran", "follow_up": {"at": {"days": 6, "time": "10:30"}, "content": "First call: introduce the programme and ask about the current school and board. Interested in: Olympiad and NTSE Prep (Online).", "mode": "CALL", "interest_level": "MEDIUM"}},
+    {"n": 143, "name": "Swathi Saxena", "campaign": "website", "source_type": "INSTAGRAM_ADS", "source_id": "insta-reel-toppers-2026", "email": "swathi.saxena.nlq143@example.com", "phone": "911002010143", "status": "CONTACTED", "interest": "Foundation Programme (Class 9 and 10)", "counsellor": "priya"},
+    {"n": 144, "name": "Divya Acharya", "campaign": "nsat", "source_type": "FACEBOOK_ADS", "source_id": "fb-nsat-scholarship", "email": "divya.acharya.nlq144@example.com", "phone": "911002010144", "status": "DEMO_BOOKED", "interest": "NEET 2-Year Classroom Programme", "counsellor": "priya", "follow_up": {"at": {"days": 3, "time": "18:30"}, "content": "Reminder call a day before the demo class. Interested in: NEET 2-Year Classroom Programme.", "mode": "CALL", "interest_level": "MEDIUM"}},
+    {"n": 145, "name": "Karthik Chatterjee", "campaign": "website", "source_type": "GOOGLE_ADS", "source_id": "google-jee-coaching-bengaluru", "email": "karthik.chatterjee.nlq145@example.com", "phone": "911002010145", "status": "CONTACTED", "interest": "NEET 2-Year Classroom Programme", "counsellor": "imran", "follow_up": {"at": {"days": 0, "time": "22:30"}, "content": "Parent wants to compare with one more institute; call again. Interested in: NEET 2-Year Classroom Programme.", "mode": "CALL", "interest_level": "LOW"}},
+    {"n": 146, "name": "Aditya Kulkarni", "campaign": "website", "source_type": "GOOGLE_ADS", "source_id": "google-jee-coaching-bengaluru", "email": "aditya.kulkarni.nlq146@example.com", "phone": "911002010146", "status": "DEMO_ATTENDED", "interest": "NEET 2-Year Classroom Programme", "counsellor": "priya", "follow_up": {"at": {"days": 4, "time": "16:00"}, "content": "Student liked the Physics demo; talk to the father about admission. Interested in: NEET 2-Year Classroom Programme.", "mode": "VISIT", "interest_level": "HIGH"}},
+    {"n": 147, "name": "Deepika Hegde", "campaign": "website", "source_type": "REFERRAL", "source_id": "parent-referral", "email": "deepika.hegde.nlq147@example.com", "phone": "911002010147", "status": "LEAD", "interest": "NEET Achiever (Dropper) Batch", "counsellor": "sneha"},
+    {"n": 148, "name": "Kabir Gowda", "campaign": "nsat", "source_type": "INSTAGRAM_ADS", "source_id": "insta-nsat-scholarship", "email": "kabir.gowda.nlq148@example.com", "phone": "911002010148", "status": "DEMO_BOOKED", "interest": "Foundation Programme (Class 9 and 10)", "counsellor": "priya", "follow_up": {"at": {"days": 3, "time": "10:00"}, "content": "Reminder call a day before the demo class. Interested in: Foundation Programme (Class 9 and 10).", "mode": "VISIT", "interest_level": "MEDIUM"}},
+    {"n": 149, "name": "Charvi Bose", "campaign": "nsat", "source_type": "WEBSITE", "source_id": "nsat-landing-page", "email": "charvi.bose.nlq149@example.com", "phone": "911002010149", "status": "LEAD", "interest": "NEET 2-Year Classroom Programme", "counsellor": "priya", "follow_up": {"at": {"days": -2, "time": "15:00"}, "content": "First call: introduce the programme and ask about the current school and board. Interested in: NEET 2-Year Classroom Programme.", "mode": "WHATSAPP", "interest_level": "LOW"}},
+    {"n": 150, "name": "Vihaan Chatterjee", "campaign": "website", "source_type": "WEBSITE", "source_id": "northlight-website-enquiry", "email": "vihaan.chatterjee.nlq150@example.com", "phone": "911002010150", "status": "LEAD", "interest": "Olympiad and NTSE Prep (Online)", "counsellor": "imran", "follow_up": {"at": {"days": 1, "time": "10:30"}, "content": "Call back, the parent asked for a call after 6 pm. Interested in: Olympiad and NTSE Prep (Online).", "mode": "WHATSAPP", "interest_level": "HIGH"}},
+    {"n": 151, "name": "Ananya Gupta", "campaign": "website", "source_type": "WEBSITE", "source_id": "northlight-website-enquiry", "email": "ananya.gupta.nlq151@example.com", "phone": "911002010151", "status": "LEAD", "interest": "JEE Main Crash Course 2027", "counsellor": "priya", "follow_up": {"at": {"days": 0, "time": "19:00"}, "content": "First call: introduce the programme and ask about the current school and board. Interested in: JEE Main Crash Course 2027.", "mode": "WHATSAPP", "interest_level": "HIGH"}},
+    {"n": 152, "name": "Lakshmi Saxena", "campaign": "walkin", "source_type": "WALK_IN", "source_id": "indiranagar-front-desk", "email": "lakshmi.saxena.nlq152@example.com", "phone": "911002010152", "status": "LEAD", "interest": "NEET Achiever (Dropper) Batch", "counsellor": "rahul", "follow_up": {"at": {"days": -5, "time": "15:00"}, "content": "First call: introduce the programme and ask about the current school and board. Interested in: NEET Achiever (Dropper) Batch.", "mode": "CALL", "interest_level": "MEDIUM"}},
+    {"n": 153, "name": "Ishaan Naidu", "campaign": "nsat", "source_type": "FACEBOOK_ADS", "source_id": "fb-nsat-scholarship", "email": "ishaan.naidu.nlq153@example.com", "phone": "911002010153", "status": "LEAD", "interest": "JEE Main + Advanced 2-Year Programme", "counsellor": "imran", "follow_up": {"at": {"days": -2, "time": "16:00"}, "content": "Call back, the parent asked for a call after 6 pm. Interested in: JEE Main + Advanced 2-Year Programme.", "mode": "VISIT", "interest_level": "MEDIUM"}},
+    {"n": 154, "name": "Joel Acharya", "campaign": "walkin", "source_type": "WALK_IN", "source_id": "indiranagar-front-desk", "email": "joel.acharya.nlq154@example.com", "phone": "911002010154", "status": "CONTACTED", "interest": "Foundation Programme (Class 9 and 10)", "counsellor": "imran"},
+    {"n": 155, "name": "Swathi Rao", "campaign": "nsat", "source_type": "WEBSITE", "source_id": "nsat-landing-page", "email": "swathi.rao.nlq155@example.com", "phone": "911002010155", "status": "LEAD", "interest": "NEET 2-Year Classroom Programme", "counsellor": "sneha"},
+    {"n": 156, "name": "Ananya Nair", "campaign": "nsat", "source_type": "FACEBOOK_ADS", "source_id": "fb-nsat-scholarship", "email": "ananya.nair.nlq156@example.com", "phone": "911002010156", "status": "CONVERTED", "interest": "NEET 2-Year Classroom Programme", "counsellor": "imran"},
+    {"n": 157, "name": "Ayaan Menon", "campaign": "website", "source_type": "GOOGLE_ADS", "source_id": "google-jee-coaching-bengaluru", "email": "ayaan.menon.nlq157@example.com", "phone": "911002010157", "status": "LEAD", "interest": "JEE Main Crash Course 2027", "counsellor": "priya", "follow_up": {"at": {"days": 4, "time": "15:00"}, "content": "Call back, the parent asked for a call after 6 pm. Interested in: JEE Main Crash Course 2027.", "mode": "WHATSAPP", "interest_level": "MEDIUM"}},
+    {"n": 158, "name": "Aarav Iyer", "campaign": "website", "source_type": "GOOGLE_ADS", "source_id": "google-jee-coaching-bengaluru", "email": "aarav.iyer.nlq158@example.com", "phone": "911002010158", "status": "DEMO_ATTENDED", "interest": "Foundation Programme (Class 9 and 10)", "counsellor": "rahul"},
+    {"n": 159, "name": "Sameer Verma", "campaign": "website", "source_type": "GOOGLE_ADS", "source_id": "google-jee-coaching-bengaluru", "email": "sameer.verma.nlq159@example.com", "phone": "911002010159", "status": "CONVERTED", "interest": "JEE Main Crash Course 2027", "counsellor": "imran"},
+    {"n": 160, "name": "Bhavana Shetty", "campaign": "website", "source_type": "GOOGLE_ADS", "source_id": "google-neet-coaching-bengaluru", "email": "bhavana.shetty.nlq160@example.com", "phone": "911002010160", "status": "CONTACTED", "interest": "JEE Main Crash Course 2027", "counsellor": "imran"},
+    {"n": 161, "name": "Tarun Sharma", "campaign": "walkin", "source_type": "NEWSPAPER_AD", "source_id": "deccan-herald-insert", "email": "tarun.sharma.nlq161@example.com", "phone": "911002010161", "status": "CONVERTED", "interest": "NEET Achiever (Dropper) Batch", "counsellor": "priya"},
+    {"n": 162, "name": "Zoya Naidu", "campaign": "walkin", "source_type": "WALK_IN", "source_id": "indiranagar-front-desk", "email": "zoya.naidu.nlq162@example.com", "phone": "911002010162", "status": "FEE_DISCUSSION", "interest": "Olympiad and NTSE Prep (Online)", "counsellor": "rahul", "follow_up": {"at": {"days": -2, "time": "12:30"}, "content": "Follow up on the scholarship slab and the admission form. Interested in: Olympiad and NTSE Prep (Online).", "mode": "CALL", "interest_level": "MEDIUM"}},
+    {"n": 163, "name": "Nikhil D'Souza", "campaign": "nsat", "source_type": "FACEBOOK_ADS", "source_id": "fb-nsat-scholarship", "email": "nikhil.dsouza.nlq163@example.com", "phone": "911002010163", "status": "DEMO_ATTENDED", "interest": "JEE Main Crash Course 2027", "counsellor": "priya"},
+    {"n": 164, "name": "Keerthana Gowda", "campaign": "website", "source_type": "INSTAGRAM_ADS", "source_id": "insta-reel-toppers-2026", "email": "keerthana.gowda.nlq164@example.com", "phone": "911002010164", "status": "DEMO_BOOKED", "interest": "Olympiad and NTSE Prep (Online)", "counsellor": "priya"},
+    {"n": 165, "name": "Aniket Acharya", "campaign": "website", "source_type": "GOOGLE_ADS", "source_id": "google-neet-coaching-bengaluru", "email": "aniket.acharya.nlq165@example.com", "phone": "911002010165", "status": "DEMO_BOOKED", "interest": "JEE Main Crash Course 2027", "counsellor": "sneha"},
+    {"n": 166, "name": "Aadhya Pandey", "campaign": "walkin", "source_type": "WALK_IN", "source_id": "indiranagar-front-desk", "email": "aadhya.pandey.nlq166@example.com", "phone": "911002010166", "status": "CONTACTED", "interest": "NEET Achiever (Dropper) Batch", "counsellor": "sneha"},
+    {"n": 167, "name": "Aditya Reddy", "campaign": "walkin", "source_type": "WALK_IN", "source_id": "indiranagar-front-desk", "email": "aditya.reddy.nlq167@example.com", "phone": "911002010167", "status": "LEAD", "interest": "JEE Main Crash Course 2027", "counsellor": "priya"},
+    {"n": 168, "name": "Ananya Sheikh", "campaign": "website", "source_type": "GOOGLE_ADS", "source_id": "google-jee-coaching-bengaluru", "email": "ananya.sheikh.nlq168@example.com", "phone": "911002010168", "status": "LEAD", "interest": "JEE Main + Advanced 2-Year Programme", "counsellor": "sneha"},
+    {"n": 169, "name": "Rohan Bhat", "campaign": "website", "source_type": "REFERRAL", "source_id": "parent-referral", "email": "rohan.bhat.nlq169@example.com", "phone": "911002010169", "status": "LEAD", "interest": "JEE Main + Advanced 2-Year Programme", "counsellor": "rahul"},
+    {"n": 170, "name": "Tejas Nair", "campaign": "website", "source_type": "GOOGLE_ADS", "source_id": "google-jee-coaching-bengaluru", "email": "tejas.nair.nlq170@example.com", "phone": "911002010170", "status": "LEAD", "interest": "NEET Achiever (Dropper) Batch", "counsellor": "sneha"},
+    {"n": 171, "name": "Varun Thomas", "campaign": "walkin", "source_type": "WALK_IN", "source_id": "indiranagar-front-desk", "email": "varun.thomas.nlq171@example.com", "phone": "911002010171", "status": "CONTACTED", "interest": "JEE Main + Advanced 2-Year Programme", "counsellor": "priya"},
+    {"n": 172, "name": "Ananya Joshi", "campaign": "walkin", "source_type": "WALK_IN", "source_id": "indiranagar-front-desk", "email": "ananya.joshi.nlq172@example.com", "phone": "911002010172", "status": "LEAD", "interest": "JEE Main Crash Course 2027", "counsellor": "sneha"},
+    {"n": 173, "name": "Chirag Hegde", "campaign": "website", "source_type": "GOOGLE_ADS", "source_id": "google-neet-coaching-bengaluru", "email": "chirag.hegde.nlq173@example.com", "phone": "911002010173", "status": "CONTACTED", "interest": "Olympiad and NTSE Prep (Online)", "counsellor": "rahul"},
+    {"n": 174, "name": "Lakshmi Iyer", "campaign": "walkin", "source_type": "WALK_IN", "source_id": "indiranagar-front-desk", "email": "lakshmi.iyer.nlq174@example.com", "phone": "911002010174", "status": "LOST", "interest": "NEET 2-Year Classroom Programme", "counsellor": "rahul"},
+    {"n": 175, "name": "Deepika Kulkarni", "campaign": "nsat", "source_type": "WEBSITE", "source_id": "nsat-landing-page", "email": "deepika.kulkarni.nlq175@example.com", "phone": "911002010175", "status": "CONVERTED", "interest": "NEET Achiever (Dropper) Batch", "counsellor": "priya"},
+    {"n": 176, "name": "Aniket Mehta", "campaign": "website", "source_type": "INSTAGRAM_ADS", "source_id": "insta-reel-toppers-2026", "email": "aniket.mehta.nlq176@example.com", "phone": "911002010176", "status": "CONTACTED", "interest": "Foundation Programme (Class 9 and 10)", "counsellor": "sneha"},
+    {"n": 177, "name": "Arjun Krishnan", "campaign": "walkin", "source_type": "WALK_IN", "source_id": "indiranagar-front-desk", "email": "arjun.krishnan.nlq177@example.com", "phone": "911002010177", "status": "DEMO_BOOKED", "interest": "NEET Achiever (Dropper) Batch", "counsellor": "rahul"},
+    {"n": 178, "name": "Ananya Subramanian", "campaign": "walkin", "source_type": "WALK_IN", "source_id": "indiranagar-front-desk", "email": "ananya.subramanian.nlq178@example.com", "phone": "911002010178", "status": "LOST", "interest": "JEE Main + Advanced 2-Year Programme", "counsellor": "priya"},
+    {"n": 179, "name": "Krishna Banerjee", "campaign": "nsat", "source_type": "INSTAGRAM_ADS", "source_id": "insta-nsat-scholarship", "email": "krishna.banerjee.nlq179@example.com", "phone": "911002010179", "status": "LEAD", "interest": "JEE Main Crash Course 2027", "counsellor": "rahul"},
+    {"n": 180, "name": "Dhruv Yadav", "campaign": "website", "source_type": "INSTAGRAM_ADS", "source_id": "insta-reel-toppers-2026", "email": "dhruv.yadav.nlq180@example.com", "phone": "911002010180", "status": "CONTACTED", "interest": "NEET 2-Year Classroom Programme", "counsellor": "rahul"},
+    {"n": 181, "name": "Farhan Banerjee", "campaign": "nsat", "source_type": "FACEBOOK_ADS", "source_id": "fb-nsat-scholarship", "email": "farhan.banerjee.nlq181@example.com", "phone": "911002010181", "status": "LEAD", "interest": "Olympiad and NTSE Prep (Online)", "counsellor": "imran"},
+    {"n": 182, "name": "Aishwarya Patil", "campaign": "website", "source_type": "GOOGLE_ADS", "source_id": "google-neet-coaching-bengaluru", "email": "aishwarya.patil.nlq182@example.com", "phone": "911002010182", "status": "CONTACTED", "interest": "Olympiad and NTSE Prep (Online)", "counsellor": "rahul"},
+    {"n": 183, "name": "Siddharth Pillai", "campaign": "website", "source_type": "FACEBOOK_ADS", "source_id": "fb-parents-foundation-class9", "email": "siddharth.pillai.nlq183@example.com", "phone": "911002010183", "status": "CONTACTED", "interest": "Olympiad and NTSE Prep (Online)", "counsellor": "priya"},
+    {"n": 184, "name": "Chirag Khan", "campaign": "nsat", "source_type": "SCHOOL_SEMINAR", "source_id": "seminar-jayanagar-schools", "email": "chirag.khan.nlq184@example.com", "phone": "911002010184", "status": "LEAD", "interest": "Olympiad and NTSE Prep (Online)", "counsellor": "priya"},
+    {"n": 185, "name": "Harsh Chopra", "campaign": "website", "source_type": "GOOGLE_ADS", "source_id": "google-neet-coaching-bengaluru", "email": "harsh.chopra.nlq185@example.com", "phone": "911002010185", "status": "LEAD", "interest": "NEET 2-Year Classroom Programme", "counsellor": "priya"},
+    {"n": 186, "name": "Arjun Fernandes", "campaign": "website", "source_type": "GOOGLE_ADS", "source_id": "google-neet-coaching-bengaluru", "email": "arjun.fernandes.nlq186@example.com", "phone": "911002010186", "status": "FEE_DISCUSSION", "interest": "JEE Main Crash Course 2027", "counsellor": "sneha"},
+    {"n": 187, "name": "Kabir Kulkarni", "campaign": "website", "source_type": "REFERRAL", "source_id": "parent-referral", "email": "kabir.kulkarni.nlq187@example.com", "phone": "911002010187", "status": "DEMO_ATTENDED", "interest": "JEE Main Crash Course 2027", "counsellor": "imran"},
+    {"n": 188, "name": "Aarav Singh", "campaign": "website", "source_type": "FACEBOOK_ADS", "source_id": "fb-parents-foundation-class9", "email": "aarav.singh.nlq188@example.com", "phone": "911002010188", "status": "LEAD", "interest": "NEET Achiever (Dropper) Batch", "counsellor": "imran"},
+    {"n": 189, "name": "Vihaan Yadav", "campaign": "nsat", "source_type": "WEBSITE", "source_id": "nsat-landing-page", "email": "vihaan.yadav.nlq189@example.com", "phone": "911002010189", "status": "CONTACTED", "interest": "Olympiad and NTSE Prep (Online)", "counsellor": "sneha"},
+    {"n": 190, "name": "Aadhya Singh", "campaign": "nsat", "source_type": "WEBSITE", "source_id": "nsat-landing-page", "email": "aadhya.singh.nlq190@example.com", "phone": "911002010190", "status": "CONTACTED", "interest": "Foundation Programme (Class 9 and 10)", "counsellor": "sneha"},
+    {"n": 191, "name": "Chirag Subramanian", "campaign": "website", "source_type": "FACEBOOK_ADS", "source_id": "fb-parents-foundation-class9", "email": "chirag.subramanian.nlq191@example.com", "phone": "911002010191", "status": "CONTACTED", "interest": "JEE Main + Advanced 2-Year Programme", "counsellor": "rahul"},
+    {"n": 192, "name": "Harsh Bhat", "campaign": "website", "source_type": "WEBSITE", "source_id": "northlight-website-enquiry", "email": "harsh.bhat.nlq192@example.com", "phone": "911002010192", "status": "DEMO_ATTENDED", "interest": "JEE Main Crash Course 2027", "counsellor": "imran"},
+    {"n": 193, "name": "Ishita Iyer", "campaign": "walkin", "source_type": "WALK_IN", "source_id": "indiranagar-front-desk", "email": "ishita.iyer.nlq193@example.com", "phone": "911002010193", "status": "DEMO_BOOKED", "interest": "Olympiad and NTSE Prep (Online)", "counsellor": "rahul"},
+    {"n": 194, "name": "Aditya Verma", "campaign": "walkin", "source_type": "WALK_IN", "source_id": "indiranagar-front-desk", "email": "aditya.verma.nlq194@example.com", "phone": "911002010194", "status": "LOST", "interest": "JEE Main + Advanced 2-Year Programme", "counsellor": "sneha"},
+    {"n": 195, "name": "Aadhya Nair", "campaign": "website", "source_type": "GOOGLE_ADS", "source_id": "google-neet-coaching-bengaluru", "email": "aadhya.nair.nlq195@example.com", "phone": "911002010195", "status": "LEAD", "interest": "Foundation Programme (Class 9 and 10)", "counsellor": "sneha"},
+    {"n": 196, "name": "Kavya Singh", "campaign": "nsat", "source_type": "INSTAGRAM_ADS", "source_id": "insta-nsat-scholarship", "email": "kavya.singh.nlq196@example.com", "phone": "911002010196", "status": "CONTACTED", "interest": "Olympiad and NTSE Prep (Online)", "counsellor": "imran"},
+    {"n": 197, "name": "Kavya D'Souza", "campaign": "nsat", "source_type": "FACEBOOK_ADS", "source_id": "fb-nsat-scholarship", "email": "kavya.dsouza.nlq197@example.com", "phone": "911002010197", "status": "CONTACTED", "interest": "JEE Main Crash Course 2027", "counsellor": "priya"},
+    {"n": 198, "name": "Aniket Kamath", "campaign": "nsat", "source_type": "WEBSITE", "source_id": "nsat-landing-page", "email": "aniket.kamath.nlq198@example.com", "phone": "911002010198", "status": "FEE_DISCUSSION", "interest": "JEE Main + Advanced 2-Year Programme", "counsellor": "sneha"},
+    {"n": 199, "name": "Farhan Sharma", "campaign": "website", "source_type": "INSTAGRAM_ADS", "source_id": "insta-reel-toppers-2026", "email": "farhan.sharma.nlq199@example.com", "phone": "911002010199", "status": "LEAD", "interest": "JEE Main + Advanced 2-Year Programme", "counsellor": "rahul"},
+    {"n": 200, "name": "Bhavana Sheikh", "campaign": "website", "source_type": "INSTAGRAM_ADS", "source_id": "insta-reel-toppers-2026", "email": "bhavana.sheikh.nlq200@example.com", "phone": "911002010200", "status": "DEMO_BOOKED", "interest": "NEET Achiever (Dropper) Batch", "counsellor": "priya"}
+  ],
+  "ai_agents": [
+    {
+      "name": "Asha: Admissions Counsellor",
+      "enabled": true,
+      "direction": "OUTBOUND",
+      "language": "hinglish",
+      "openingLine": "Hello, this is Asha, an AI assistant from Northlight Academy. You had asked about our courses. Is this a good time to talk for two minutes?",
+      "systemPrompt": "You are Asha, a calling assistant for Northlight Academy, a coaching institute in Bengaluru for NEET, JEE and Classes 9 to 12. Always say at the start that you are an AI assistant. Your job is to understand which class the student is in, which exam they are preparing for, and to offer a free demo class at the Indiranagar centre. Speak in short sentences, in the language the caller uses (English, Hindi or Kannada). Never promise ranks, results or discounts. If the caller asks for a person, offer a call back from a counsellor during working hours (9 am to 7 pm).",
+      "extractionQuestions": [
+        "Which class is the student in?",
+        "Which exam: NEET, JEE or board preparation?",
+        "Preferred day for a demo class?"
+      ],
+      "dispositions": [
+        "Demo booked",
+        "Call back later",
+        "Not interested",
+        "Wrong number"
+      ],
+      "maxCallMinutes": 6
+    },
+    {
+      "name": "Meera: Enquiry Desk",
+      "enabled": true,
+      "direction": "INBOUND",
+      "language": "english",
+      "openingLine": "Thank you for calling Northlight Academy. I am Meera, an AI assistant. How can I help you today?",
+      "systemPrompt": "You are Meera, a calling assistant for Northlight Academy, a coaching institute in Bengaluru for NEET, JEE and Classes 9 to 12. Always say at the start that you are an AI assistant. Your job is to answer questions about courses, batch timings and the centre address, and to note the caller's name and the student's class. Speak in short sentences, in the language the caller uses (English, Hindi or Kannada). Never promise ranks, results or discounts. If the caller asks for a person, offer a call back from a counsellor during working hours (9 am to 7 pm).",
+      "extractionQuestions": [
+        "Caller's name?",
+        "Student's class?",
+        "What did they want to know?"
+      ],
+      "dispositions": [
+        "Answered",
+        "Counsellor call back requested",
+        "Existing parent"
+      ],
+      "maxCallMinutes": 5
+    },
+    {
+      "name": "Kiran: Fee Reminder Assistant",
+      "enabled": false,
+      "direction": "OUTBOUND",
+      "language": "hinglish",
+      "openingLine": "Hello, this is Kiran, an AI assistant from the Northlight Academy accounts office.",
+      "systemPrompt": "You are Kiran, a calling assistant for Northlight Academy, a coaching institute in Bengaluru for NEET, JEE and Classes 9 to 12. Always say at the start that you are an AI assistant. Your job is to politely remind parents of an instalment that is due and to note the date by which they plan to pay. Speak in short sentences, in the language the caller uses (English, Hindi or Kannada). Never promise ranks, results or discounts. If the caller asks for a person, offer a call back from a counsellor during working hours (9 am to 7 pm).",
+      "extractionQuestions": [
+        "Expected payment date?",
+        "Preferred payment mode?"
+      ],
+      "dispositions": [
+        "Will pay by date",
+        "Already paid",
+        "Needs a call from accounts"
+      ],
+      "maxCallMinutes": 4
+    }
+  ],
+  "question_papers": [
+    {
+      "key": "phy-kinematics",
+      "title": "Physics: Motion in a Straight Line (Weekly Test)",
+      "questions": [
+        {
+          "text": "A car starts from rest and accelerates uniformly at 2 m/s^2. Its speed after 5 s is",
+          "options": [
+            "5 m/s",
+            "10 m/s",
+            "20 m/s",
+            "25 m/s"
+          ],
+          "answer": 1
+        },
+        {
+          "text": "The slope of a velocity-time graph gives",
+          "options": [
+            "displacement",
+            "speed",
+            "acceleration",
+            "distance"
+          ],
+          "answer": 2
+        },
+        {
+          "text": "The area under a velocity-time graph gives",
+          "options": [
+            "acceleration",
+            "displacement",
+            "force",
+            "momentum"
+          ],
+          "answer": 1
+        },
+        {
+          "text": "A body is thrown vertically upwards. At the highest point its",
+          "options": [
+            "velocity and acceleration are both zero",
+            "velocity is zero and acceleration is g downwards",
+            "velocity is maximum",
+            "acceleration is zero"
+          ],
+          "answer": 1
+        },
+        {
+          "text": "A stone dropped from rest falls for 2 s. Taking g = 10 m/s^2, the distance fallen is",
+          "options": [
+            "10 m",
+            "20 m",
+            "30 m",
+            "40 m"
+          ],
+          "answer": 1
+        },
+        {
+          "text": "Which of these is a vector quantity?",
+          "options": [
+            "Distance",
+            "Speed",
+            "Displacement",
+            "Time"
+          ],
+          "answer": 2
+        },
+        {
+          "text": "A train moving at 20 m/s stops in 10 s under uniform retardation. The retardation is",
+          "options": [
+            "0.5 m/s^2",
+            "1 m/s^2",
+            "2 m/s^2",
+            "4 m/s^2"
+          ],
+          "answer": 2
+        },
+        {
+          "text": "For uniform motion, the position-time graph is",
+          "options": [
+            "a parabola",
+            "a straight line inclined to the time axis",
+            "a circle",
+            "a straight line parallel to the position axis"
+          ],
+          "answer": 1
+        },
+        {
+          "text": "A body covers the first half of a distance at 40 km/h and the second half at 60 km/h. Its average speed is",
+          "options": [
+            "48 km/h",
+            "50 km/h",
+            "52 km/h",
+            "45 km/h"
+          ],
+          "answer": 0
+        },
+        {
+          "text": "The dimensional formula of acceleration is",
+          "options": [
+            "[L T^-1]",
+            "[L T^-2]",
+            "[M L T^-2]",
+            "[L^2 T^-2]"
+          ],
+          "answer": 1
+        }
+      ]
+    },
+    {
+      "key": "chem-mole",
+      "title": "Chemistry: Some Basic Concepts (Chapter Test)",
+      "questions": [
+        {
+          "text": "The number of moles in 36 g of water (molar mass 18 g/mol) is",
+          "options": [
+            "1",
+            "2",
+            "3",
+            "0.5"
+          ],
+          "answer": 1
+        },
+        {
+          "text": "The molar mass of CO2 is (C = 12, O = 16)",
+          "options": [
+            "28 g/mol",
+            "32 g/mol",
+            "44 g/mol",
+            "48 g/mol"
+          ],
+          "answer": 2
+        },
+        {
+          "text": "One mole of any gas at STP (0 degrees C, 1 atm) occupies about",
+          "options": [
+            "11.2 L",
+            "22.4 L",
+            "24.8 L",
+            "44.8 L"
+          ],
+          "answer": 1
+        },
+        {
+          "text": "The empirical formula of glucose, C6H12O6, is",
+          "options": [
+            "CHO",
+            "CH2O",
+            "C2H4O2",
+            "C6H12O6"
+          ],
+          "answer": 1
+        },
+        {
+          "text": "The number of atoms in 0.5 mol of helium is about",
+          "options": [
+            "6.022 x 10^23",
+            "3.011 x 10^23",
+            "1.2044 x 10^24",
+            "6.022 x 10^22"
+          ],
+          "answer": 1
+        },
+        {
+          "text": "Molarity is defined as moles of solute per",
+          "options": [
+            "kilogram of solvent",
+            "litre of solution",
+            "litre of solvent",
+            "kilogram of solution"
+          ],
+          "answer": 1
+        },
+        {
+          "text": "In 2H2 + O2 -> 2H2O, the mass of water formed from 4 g of H2 with excess O2 is",
+          "options": [
+            "18 g",
+            "36 g",
+            "32 g",
+            "40 g"
+          ],
+          "answer": 1
+        },
+        {
+          "text": "Which of these has the largest number of molecules?",
+          "options": [
+            "18 g of H2O",
+            "28 g of N2",
+            "4 g of H2",
+            "44 g of CO2"
+          ],
+          "answer": 2
+        },
+        {
+          "text": "The percentage of carbon by mass in CH4 is (C = 12, H = 1)",
+          "options": [
+            "25%",
+            "50%",
+            "75%",
+            "80%"
+          ],
+          "answer": 2
+        },
+        {
+          "text": "The SI unit of amount of substance is the",
+          "options": [
+            "gram",
+            "kilogram",
+            "mole",
+            "litre"
+          ],
+          "answer": 2
+        }
+      ]
+    },
+    {
+      "key": "bio-classification",
+      "title": "Biology: Biological Classification (Chapter Test)",
+      "questions": [
+        {
+          "text": "The five-kingdom classification was proposed by",
+          "options": [
+            "Linnaeus",
+            "Whittaker",
+            "Haeckel",
+            "Darwin"
+          ],
+          "answer": 1
+        },
+        {
+          "text": "Bacteria are placed in the kingdom",
+          "options": [
+            "Protista",
+            "Monera",
+            "Fungi",
+            "Plantae"
+          ],
+          "answer": 1
+        },
+        {
+          "text": "The cell wall of fungi is made mainly of",
+          "options": [
+            "cellulose",
+            "chitin",
+            "peptidoglycan",
+            "pectin"
+          ],
+          "answer": 1
+        },
+        {
+          "text": "Which of these is a unicellular eukaryote?",
+          "options": [
+            "Amoeba",
+            "Escherichia coli",
+            "Nostoc",
+            "Rhizopus"
+          ],
+          "answer": 0
+        },
+        {
+          "text": "Viruses are not included in the five-kingdom system mainly because they",
+          "options": [
+            "are very small",
+            "are not truly living outside a host cell",
+            "cause disease",
+            "contain protein"
+          ],
+          "answer": 1
+        },
+        {
+          "text": "Lichens are a symbiotic association of",
+          "options": [
+            "algae and fungi",
+            "fungi and roots",
+            "bacteria and algae",
+            "bacteria and fungi"
+          ],
+          "answer": 0
+        },
+        {
+          "text": "Binomial nomenclature was introduced by",
+          "options": [
+            "Whittaker",
+            "Linnaeus",
+            "Mendel",
+            "Aristotle"
+          ],
+          "answer": 1
+        },
+        {
+          "text": "Members of which kingdom are all heterotrophic and lack a cell wall?",
+          "options": [
+            "Plantae",
+            "Fungi",
+            "Animalia",
+            "Monera"
+          ],
+          "answer": 2
+        },
+        {
+          "text": "Diatoms belong to the kingdom",
+          "options": [
+            "Monera",
+            "Protista",
+            "Plantae",
+            "Fungi"
+          ],
+          "answer": 1
+        },
+        {
+          "text": "The basic unit of classification is the",
+          "options": [
+            "genus",
+            "species",
+            "family",
+            "order"
+          ],
+          "answer": 1
+        }
+      ]
+    }
+  ],
+  "assessments": [
+    {
+      "key": "live-phy",
+      "name": "NEET Practice Window: Physics (Motion in a Straight Line)",
+      "paper": "phy-kinematics",
+      "batches": [
+        "neet-2yr/Class 11"
+      ],
+      "start": {
+        "days": -1,
+        "time": "09:00"
+      },
+      "end": {
+        "days": 21,
+        "time": "21:00"
+      },
+      "duration_min": 40,
+      "result_type": "NO_AUTO_RELEASE",
+      "instructions": "Ten questions, +4 for a correct answer and -1 for a wrong one. You may attempt once."
+    },
+    {
+      "key": "up-chem",
+      "name": "JEE Weekly Test 15: Chemistry (Some Basic Concepts)",
+      "paper": "chem-mole",
+      "batches": [
+        "jee-2yr/Class 11"
+      ],
+      "start": {
+        "days": 2,
+        "time": "17:00"
+      },
+      "end": {
+        "days": 2,
+        "time": "18:00"
+      },
+      "duration_min": 45,
+      "result_type": "NO_AUTO_RELEASE",
+      "instructions": "Ten questions, +4 and -1. The test opens at 5 pm sharp."
+    },
+    {
+      "key": "up-bio",
+      "name": "NEET Weekly Test 15: Biology (Biological Classification)",
+      "paper": "bio-classification",
+      "batches": [
+        "neet-2yr/Class 11",
+        "neet-dropper/Dropper"
+      ],
+      "start": {
+        "days": 5,
+        "time": "17:00"
+      },
+      "end": {
+        "days": 5,
+        "time": "18:00"
+      },
+      "duration_min": 45,
+      "result_type": "NO_AUTO_RELEASE",
+      "instructions": "Ten questions, +4 and -1."
+    },
+    {
+      "key": "up-phy",
+      "name": "Dropper Batch Part Test 6: Physics",
+      "paper": "phy-kinematics",
+      "batches": [
+        "neet-dropper/Dropper"
+      ],
+      "start": {
+        "days": 9,
+        "time": "10:00"
+      },
+      "end": {
+        "days": 9,
+        "time": "11:00"
+      },
+      "duration_min": 45,
+      "result_type": "NO_AUTO_RELEASE",
+      "instructions": "Ten questions, +4 and -1."
+    },
+    {
+      "key": "past-phy",
+      "name": "NEET Weekly Test 14: Physics (Motion in a Straight Line)",
+      "paper": "phy-kinematics",
+      "batches": [
+        "neet-2yr/Class 11"
+      ],
+      "start": {
+        "days": -6,
+        "time": "17:00"
+      },
+      "end": {
+        "days": -6,
+        "time": "18:00"
+      },
+      "duration_min": 45,
+      "result_type": "NO_AUTO_RELEASE",
+      "instructions": "Ten questions, +4 and -1.",
+      "attempts": {
+        "batch": "neet-2yr/Class 11",
+        "count": 18,
+        "ability": [
+          0.45,
+          0.95
+        ],
+        "seed": 14
+      }
+    },
+    {
+      "key": "past-chem",
+      "name": "JEE Weekly Test 13: Chemistry (Some Basic Concepts)",
+      "paper": "chem-mole",
+      "batches": [
+        "jee-2yr/Class 11"
+      ],
+      "start": {
+        "days": -13,
+        "time": "17:00"
+      },
+      "end": {
+        "days": -13,
+        "time": "18:00"
+      },
+      "duration_min": 45,
+      "result_type": "NO_AUTO_RELEASE",
+      "instructions": "Ten questions, +4 and -1.",
+      "attempts": {
+        "batch": "jee-2yr/Class 11",
+        "count": 16,
+        "ability": [
+          0.4,
+          0.9
+        ],
+        "seed": 13
+      }
+    },
+    {
+      "key": "past-bio",
+      "name": "Dropper Batch Part Test 5: Biology",
+      "paper": "bio-classification",
+      "batches": [
+        "neet-dropper/Dropper"
+      ],
+      "start": {
+        "days": -20,
+        "time": "10:00"
+      },
+      "end": {
+        "days": -20,
+        "time": "11:00"
+      },
+      "duration_min": 45,
+      "result_type": "NO_AUTO_RELEASE",
+      "instructions": "Ten questions, +4 and -1.",
+      "attempts": {
+        "batch": "neet-dropper/Dropper",
+        "count": 12,
+        "ability": [
+          0.5,
+          0.95
+        ],
+        "seed": 5
+      }
+    }
+  ],
+  "live_classes": [
+    {
+      "key": "phy-nlm",
+      "title": "Physics: Laws of Motion, part 2",
+      "subject": "Physics",
+      "batches": [
+        "neet-2yr/Class 11"
+      ],
+      "start": {
+        "days": -3,
+        "time": "17:00"
+      },
+      "end": {
+        "days": -3,
+        "time": "18:30"
+      },
+      "link": "https://meet.google.com/northlight-demo-phy-nlm",
+      "link_type": "GMEET",
+      "description": "Regular class for neet-2yr/Class 11. Keep your notebook and the previous worksheet ready.",
+      "attendance": {
+        "present_rate": 0.85,
+        "seed": 3
+      }
+    },
+    {
+      "key": "math-cn",
+      "title": "Mathematics: Complex Numbers, problem session",
+      "subject": "Mathematics",
+      "batches": [
+        "jee-2yr/Class 11"
+      ],
+      "start": {
+        "days": -2,
+        "time": "17:00"
+      },
+      "end": {
+        "days": -2,
+        "time": "18:30"
+      },
+      "link": "https://meet.google.com/northlight-demo-math-cn",
+      "link_type": "GMEET",
+      "description": "Regular class for jee-2yr/Class 11. Keep your notebook and the previous worksheet ready.",
+      "attendance": {
+        "present_rate": 0.78,
+        "seed": 2
+      }
+    },
+    {
+      "key": "bio-cell",
+      "title": "Biology: Cell, the Unit of Life",
+      "subject": "Biology",
+      "batches": [
+        "neet-dropper/Dropper"
+      ],
+      "start": {
+        "days": -1,
+        "time": "10:00"
+      },
+      "end": {
+        "days": -1,
+        "time": "11:30"
+      },
+      "link": "https://meet.google.com/northlight-demo-bio-cell",
+      "link_type": "GMEET",
+      "description": "Regular class for neet-dropper/Dropper. Keep your notebook and the previous worksheet ready.",
+      "attendance": {
+        "present_rate": 0.9,
+        "seed": 1
+      }
+    },
+    {
+      "key": "chem-atom",
+      "title": "Chemistry: Structure of Atom, doubt class",
+      "subject": "Chemistry",
+      "batches": [
+        "jee-2yr/Class 11"
+      ],
+      "start": {
+        "days": 0,
+        "time": "19:00"
+      },
+      "end": {
+        "days": 0,
+        "time": "20:00"
+      },
+      "link": "https://meet.google.com/northlight-demo-chem-atom",
+      "link_type": "GMEET",
+      "description": "Regular class for jee-2yr/Class 11. Keep your notebook and the previous worksheet ready."
+    },
+    {
+      "key": "phy-wep",
+      "title": "Physics: Work, Energy and Power",
+      "subject": "Physics",
+      "batches": [
+        "neet-2yr/Class 11"
+      ],
+      "start": {
+        "days": 1,
+        "time": "17:00"
+      },
+      "end": {
+        "days": 1,
+        "time": "18:30"
+      },
+      "link": "https://meet.google.com/northlight-demo-phy-wep",
+      "link_type": "GMEET",
+      "description": "Regular class for neet-2yr/Class 11. Keep your notebook and the previous worksheet ready."
+    },
+    {
+      "key": "sci-light",
+      "title": "Science: Light, numericals practice",
+      "subject": "Science",
+      "batches": [
+        "foundation/Class 10"
+      ],
+      "start": {
+        "days": 2,
+        "time": "16:00"
+      },
+      "end": {
+        "days": 2,
+        "time": "17:00"
+      },
+      "link": "https://meet.google.com/northlight-demo-sci-light",
+      "link_type": "GMEET",
+      "description": "Regular class for foundation/Class 10. Keep your notebook and the previous worksheet ready."
+    },
+    {
+      "key": "math-quad",
+      "title": "Mathematics: Quadratic Equations, revision",
+      "subject": "Mathematics",
+      "batches": [
+        "foundation/Class 10"
+      ],
+      "start": {
+        "days": 3,
+        "time": "16:00"
+      },
+      "end": {
+        "days": 3,
+        "time": "17:00"
+      },
+      "link": "https://meet.google.com/northlight-demo-math-quad",
+      "link_type": "GMEET",
+      "description": "Regular class for foundation/Class 10. Keep your notebook and the previous worksheet ready."
+    },
+    {
+      "key": "jee-pyq",
+      "title": "JEE Main previous-year paper discussion",
+      "subject": "Mathematics",
+      "batches": [
+        "jee-crash/Class 12"
+      ],
+      "start": {
+        "days": 4,
+        "time": "18:00"
+      },
+      "end": {
+        "days": 4,
+        "time": "20:00"
+      },
+      "link": "https://meet.google.com/northlight-demo-jee-pyq",
+      "link_type": "GMEET",
+      "description": "Regular class for jee-crash/Class 12. Keep your notebook and the previous worksheet ready."
+    }
+  ],
+  "announcements": [
+    {
+      "key": "ptm",
+      "title": "Parent-teacher meeting on Saturday",
+      "html": "<p>The parent-teacher meeting for Class 11 batches is on Saturday from 10 am to 1 pm at the Indiranagar centre. Please carry the latest test report.</p>",
+      "batches": [
+        "neet-2yr/Class 11",
+        "jee-2yr/Class 11"
+      ],
+      "mode": "SYSTEM_ALERT"
+    },
+    {
+      "key": "holiday",
+      "title": "Centre closed on Monday",
+      "html": "<p>The centre will remain closed on Monday. Online classes will run as per the timetable.</p>",
+      "batches": [
+        "neet-2yr/Class 11",
+        "neet-2yr/Class 12",
+        "jee-2yr/Class 11",
+        "jee-2yr/Class 12",
+        "neet-dropper/Dropper"
+      ],
+      "mode": "SYSTEM_ALERT"
+    },
+    {
+      "key": "test-series",
+      "title": "All-India test series schedule released",
+      "html": "<p>The schedule for the All-India test series is now on the dashboard. The first test covers Mechanics and Physical Chemistry.</p>",
+      "batches": [
+        "neet-2yr/Class 12",
+        "jee-2yr/Class 12"
+      ],
+      "mode": "DASHBOARD_PIN"
+    }
+  ]
+}

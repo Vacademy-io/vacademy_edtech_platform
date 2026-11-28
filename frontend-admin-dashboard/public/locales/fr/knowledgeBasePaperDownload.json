@@ -1,0 +1,42 @@
+{
+    "button": "Télécharger le PDF",
+    "preparing": "Préparation du PDF…",
+    "questionPaper": "Sujet d’examen",
+    "withAnswerKey": "Sujet + corrigé",
+    "failed": "Impossible de préparer le PDF. Veuillez réessayer.",
+    "shareLink": "Partager le lien…",
+    "share": {
+        "heading": "Partager ce sujet",
+        "description": "Publiez le PDF derrière un lien à envoyer par WhatsApp ou e-mail. Toute personne disposant du lien peut le télécharger.",
+        "questionPaperHint": "Pour les élèves — questions uniquement.",
+        "answerKeyHint": "Contient les réponses et le barème. À partager uniquement avec les enseignants.",
+        "createLink": "Créer le lien",
+        "publishing": "Publication…",
+        "republish": "Publier à nouveau (nouveau lien)",
+        "ready": "Lien prêt · PDF {{size}}",
+        "linkLabel": "Lien de partage",
+        "copy": "Copier",
+        "copiedButton": "Copié",
+        "copied": "Lien copié",
+        "copyFailed": "Impossible de copier le lien",
+        "whatsapp": "Partager sur WhatsApp",
+        "failed": "Impossible de publier le sujet. Veuillez réessayer."
+    },
+    "preview": {
+        "menuItem": "Aperçu du sujet",
+        "heading": "Aperçu du sujet",
+        "answerKeyTab": "Avec corrigé",
+        "download": "Télécharger",
+        "share": "Partager le lien",
+        "close": "Fermer",
+        "rendering": "Mise en page du sujet…",
+        "failed": "Impossible d’afficher le sujet.",
+        "retry": "Réessayer"
+    },
+    "theme": {
+        "label": "Mise en page",
+        "classic": "Classique (style examen)",
+        "compact": "Compacte deux colonnes",
+        "coaching": "Cours privés (réponses en ligne)"
+    }
+}

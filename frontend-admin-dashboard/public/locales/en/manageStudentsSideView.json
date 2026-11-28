@@ -1,0 +1,20 @@
+{
+    "profile": {
+        "avatarAlt": "Profile",
+        "unknownName": "Unknown"
+    },
+    "status": {
+        "cancelledMember": "Cancelled Member",
+        "cancelledMemberTooltip": "Membership cancelled — access continues until the plan expires"
+    },
+    "actions": {
+        "deleteLead": "Delete lead",
+        "openFullProfile": "Open full profile",
+        "closePanel": "Close panel"
+    },
+    "tabBar": {
+        "ariaLabel": "Profile sections",
+        "scrollLeft": "Scroll tabs left",
+        "scrollRight": "Scroll tabs right"
+    }
+}

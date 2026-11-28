@@ -1,0 +1,47 @@
+{
+    "header": {
+        "title": "Identité visuelle"
+    },
+    "emptyState": {
+        "noIdentity": "Aucune identité visuelle n'était associée à cette décision."
+    },
+    "styleframe": {
+        "altText": "Image de style — {{name}}",
+        "caption": "Image de style — le rendu que suit chaque plan",
+        "notRendered": "Aucune image de style générée pour cette exécution"
+    },
+    "typography": {
+        "label": "Typographie",
+        "lockedByBrand": "Verrouillé par votre kit de marque : {{display}} / {{body}}",
+        "pairingCaption": "{{display}} pour les titres · {{body}} pour le texte"
+    },
+    "motion": {
+        "label": "Personnalité du mouvement"
+    },
+    "finishing": {
+        "groups": {
+            "grain": "Grain",
+            "vignette": "Vignette",
+            "light": "Lumière"
+        },
+        "options": {
+            "none": "Aucun",
+            "soft": "Doux",
+            "film": "Film",
+            "medium": "Moyen",
+            "glow": "Lueur"
+        }
+    },
+    "advanced": {
+        "toggle": "Avancé",
+        "colorArc": "Évolution des couleurs",
+        "colorArcPlaceholder": "Comment la couleur évolue au fil de la vidéo",
+        "imageArtDirection": "Direction artistique des images",
+        "imageArtPlaceholder": "L'apparence que doivent avoir les images générées"
+    },
+    "actions": {
+        "letAiDecide": "Laisser l'IA décider",
+        "saveAndContinue": "Enregistrer et continuer",
+        "approveAndContinue": "Approuver et continuer"
+    }
+}

@@ -1,0 +1,30 @@
+{
+  "nodeLabels": {
+    "pitch": "Pitch",
+    "research": "Research",
+    "beats": "Beats",
+    "screenplay": "Screenplay",
+    "narration": "Narration",
+    "storyboard": "Storyboard",
+    "shotPlanner": "Shot Planner",
+    "narrationWriter": "Narration Writer",
+    "filming": "Filming",
+    "talent": "Talent",
+    "score": "Score",
+    "finalCut": "Final Cut"
+  },
+  "activeSubStatus": {
+    "pitch": "Brief in hand",
+    "research": "Investigating sources…",
+    "beats": "Outlining story beats…",
+    "screenplay": "Writer at work…",
+    "narration": "Recording the voiceover…",
+    "storyboard": "Director planning shots…",
+    "shotPlanner": "Planning shots…",
+    "narrationWriter": "Writing per-shot narration…",
+    "filming": "On set, rolling cameras…",
+    "talent": "Recording lead performance…",
+    "score": "Composing the score…",
+    "finalCut": "Assembling the cut…"
+  }
+}

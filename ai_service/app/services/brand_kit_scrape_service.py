@@ -24,7 +24,6 @@ import asyncio
 import ipaddress
 import json
 import logging
-import os
 import re
 import socket
 from pathlib import Path
@@ -46,6 +45,7 @@ from ..schemas.brand_kit_scrape import (
     WatermarkDraft,
 )
 from .s3_service import S3Service
+from .use_case_chat import chat_json, models_for
 
 logger = logging.getLogger(__name__)
 
@@ -83,24 +83,18 @@ _FONT_ALLOWLIST: Tuple[str, ...] = (
 
 # Vision-capable model. We don't use the OpenRouterOutlineLLMClient here
 # because it's text-only and doesn't support response_format=json_object.
-# Direct httpx call mirrors the Director's multimodal pattern.
 #
-# Default: google/gemini-3-flash-preview — empirically used elsewhere in the
-# pipeline (automation_pipeline.py) with multimodal `image_url` parts AND
-# response_format=json_object, so we know the combination works on the deployed
-# OpenRouter account. settings.llm_default_model (gemini-3.1-pro-preview at
-# time of writing) was rejecting the request with HTTP 400 on the stage env.
-# Override via BRAND_KIT_SCRAPE_MODEL.
+# The model comes from the 'brand_kit' use case (ai_model_defaults, set in the
+# super-admin portal; GLM by default) and the call walks its fallback chain
+# through llm_router.chat_with_chain (GLM gets reasoning low + max_tokens
+# headroom on both gateway legs). BRAND_KIT_SCRAPE_MODEL, when set, is tried
+# first (emergency override).
+_USE_CASE = "brand_kit"
 _LLM_MODEL_ENV = "BRAND_KIT_SCRAPE_MODEL"
-_LLM_DEFAULT_MODEL = "google/gemini-3-flash-preview"
 _LLM_TIMEOUT_S = 45.0
-
-
-def _resolve_llm_model() -> str:
-    explicit = os.getenv(_LLM_MODEL_ENV, "").strip()
-    if explicit:
-        return explicit
-    return _LLM_DEFAULT_MODEL
+# The draft is a small JSON object (palette, fonts, three short HTML snippets);
+# the cap only bounds a runaway reply.
+_LLM_MAX_TOKENS = 4000
 
 
 class BrandKitScrapeService:
@@ -528,78 +522,30 @@ class BrandKitScrapeService:
         if logo_url:
             content_parts.append({"type": "image_url", "image_url": {"url": logo_url}})
 
-        model = _resolve_llm_model()
         base_payload: Dict[str, Any] = {
-            "model": model,
             "messages": [
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": content_parts},
             ],
             "temperature": 0.4,
-        }
-        headers = {
-            "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json",
+            "max_tokens": _LLM_MAX_TOKENS,
         }
 
-        # Two-attempt strategy: first try with response_format=json_object (the
-        # ideal — guarantees parseable output); if OpenRouter / the underlying
-        # provider returns 400 (some models reject the param), retry without
-        # it. The system prompt already instructs "JSON only", so the second
-        # attempt usually still parses.
-        raw: Optional[str] = None
-        try:
-            async with httpx.AsyncClient(timeout=_LLM_TIMEOUT_S) as client:
-                attempts = [
-                    {**base_payload, "response_format": {"type": "json_object"}},
-                    base_payload,  # plain retry
-                ]
-                last_error_body: Optional[str] = None
-                for idx, payload in enumerate(attempts):
-                    try:
-                        resp = await client.post(
-                            settings.llm_base_url, headers=headers, json=payload
-                        )
-                    except httpx.HTTPError as e:
-                        warnings.append(f"LLM transport error: {e}")
-                        logger.warning(f"[BrandKitScrape] LLM transport error: {e}")
-                        return None
-                    if resp.status_code == 200:
-                        try:
-                            data = resp.json()
-                            raw = data["choices"][0]["message"]["content"]
-                            break
-                        except Exception as e:
-                            warnings.append(f"LLM response not parseable: {e}")
-                            logger.warning(
-                                f"[BrandKitScrape] LLM response unwrap failed: {e}; "
-                                f"body={resp.text[:500]!r}"
-                            )
-                            return None
-                    last_error_body = resp.text[:1000]
-                    logger.warning(
-                        f"[BrandKitScrape] LLM HTTP {resp.status_code} "
-                        f"(attempt {idx + 1}/{len(attempts)}, model={model}): "
-                        f"{last_error_body!r}"
-                    )
-                    # Only retry on 400 — other statuses (401/402/429/5xx) are
-                    # not fixed by dropping response_format.
-                    if resp.status_code != 400:
-                        break
-                else:
-                    # All attempts failed
-                    pass
-        except Exception as e:
-            warnings.append(f"LLM extraction failed: {e}")
-            logger.warning(f"[BrandKitScrape] LLM call failed: {e}")
+        # response_format=json_object first (guarantees parseable output); a
+        # model that rejects the parameter (400) gets the chain walked again
+        # without it — the system prompt already says "JSON only".
+        result = await chat_json(
+            base_payload,
+            use_case=_USE_CASE,
+            models=models_for(_USE_CASE, env=_LLM_MODEL_ENV),
+            api_key=api_key,
+            timeout=_LLM_TIMEOUT_S,
+            label="BrandKitScrape",
+        )
+        if result is None:
+            warnings.append("LLM extraction failed on every model (see logs).")
             return None
-
-        if raw is None:
-            warnings.append(
-                f"LLM rejected request (HTTP error from OpenRouter; see logs). "
-                f"Last response: {last_error_body[:200] if last_error_body else 'n/a'}"
-            )
-            return None
+        raw: Optional[str] = result.content
 
         try:
             parsed = json.loads(raw) if isinstance(raw, str) else raw

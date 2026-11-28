@@ -1,0 +1,34 @@
+{
+    "toasts": {
+        "selectLevelFirst": "الرجاء اختيار مستوى الدورة أولاً",
+        "loadFailed": "فشل تحميل الطلاب من الدورة",
+        "alreadyInList": "جميع الطلاب المحددين موجودون بالفعل في قائمتك",
+        "added_zero": "لم تتم إضافة أي طالب ({{count}})",
+        "added_one": "تمت إضافة طالب واحد ({{count}})",
+        "added_two": "تمت إضافة طالبين ({{count}})",
+        "added_few": "تمت إضافة {{count}} طلاب",
+        "added_many": "تمت إضافة {{count}} طالبًا",
+        "added_other": "تمت إضافة {{count}} طالب"
+    },
+    "labels": {
+        "sourceCourse": "مصدر {{courseTerm}}",
+        "statusFilter": "تصفية الحالة"
+    },
+    "placeholders": {
+        "select": "اختر {{term}}"
+    },
+    "status": {
+        "active": "نشط",
+        "inactive": "غير نشط",
+        "invited": "مدعو"
+    },
+    "actions": {
+        "loading": "جارٍ التحميل…",
+        "load": "تحميل {{learnersTerm}}",
+        "add": "إضافة {{count}} {{term}}"
+    },
+    "list": {
+        "selectedCount": "{{checked}}/{{total}} محدد",
+        "empty": "لم يتم العثور على {{learnersTerm}}. انقر على \"{{loadLabel}}\" للبحث."
+    }
+}

@@ -1,14 +1,17 @@
 import { cn } from '@/lib/utils';
+import { tierChipStyle, useLeadTiers } from '@/hooks/use-lead-tiers';
 
-export type LeadTier = 'HOT' | 'WARM' | 'COLD';
+/** Tier key — one of the institute's lead_tier catalog keys (HOT/WARM/COLD by default). */
+export type LeadTier = string;
 
 interface LeadScoreBadgeProps {
     score: number | null | undefined;
     /**
      * Explicit tier from the backend (UserLeadProfile.lead_tier).
-     * When present (HOT/WARM/COLD), it wins over score-derived tier — this is how
-     * manual admin overrides surface in the UI. When null/undefined, tier is
-     * inferred from `score` using the default 80/50/0 thresholds.
+     * When present it wins over the score-derived tier — this is how manual
+     * admin overrides surface in the UI. When null/undefined, the tier is
+     * inferred from `score` using the institute's tier bands (Hot ≥80 /
+     * Warm ≥50 / Cold by default).
      */
     tier?: LeadTier | string | null | undefined;
     /** Show raw score number next to tier label. Default: true */
@@ -18,25 +21,6 @@ interface LeadScoreBadgeProps {
     className?: string;
 }
 
-const TIER_STYLES: Record<LeadTier, { bg: string; text: string }> = {
-    HOT: { bg: 'bg-red-100', text: 'text-red-700' },
-    WARM: { bg: 'bg-amber-100', text: 'text-amber-700' },
-    COLD: { bg: 'bg-blue-100', text: 'text-blue-700' },
-};
-
-function inferTierFromScore(score: number): LeadTier {
-    if (score >= 80) return 'HOT';
-    if (score >= 50) return 'WARM';
-    return 'COLD';
-}
-
-function normalizeTier(tier: LeadScoreBadgeProps['tier']): LeadTier | null {
-    if (!tier) return null;
-    const upper = String(tier).toUpperCase();
-    if (upper === 'HOT' || upper === 'WARM' || upper === 'COLD') return upper;
-    return null;
-}
-
 export function LeadScoreBadge({
     score,
     tier,
@@ -44,26 +28,42 @@ export function LeadScoreBadge({
     size = 'sm',
     className,
 }: LeadScoreBadgeProps) {
-    const explicitTier = normalizeTier(tier);
-
-    if (explicitTier == null && score == null) return null;
-
-    const resolvedTier: LeadTier = explicitTier ?? inferTierFromScore(score as number);
-    const { bg, text } = TIER_STYLES[resolvedTier];
+    const catalog = useLeadTiers();
+    const resolvedKey = catalog.resolve(tier, score);
+    if (resolvedKey == null) return null;
     const isSmall = size === 'sm';
+    const color = catalog.colorFor(resolvedKey);
+    const label = catalog.labelFor(resolvedKey);
+    const withScore = showScore && score != null;
 
+    // One line always: institute tier labels can be long ("May Be Interested (Warm)"), so the
+    // label truncates inside a narrow cell (full text on hover) while the score never wraps.
     return (
         <span
             className={cn(
-                'inline-flex items-center gap-1 rounded-full font-medium',
-                bg,
-                text,
+                'inline-flex max-w-full items-center gap-1.5 whitespace-nowrap rounded-full border font-medium',
                 isSmall ? 'px-2 py-0.5 text-xs' : 'px-3 py-1 text-sm',
                 className
             )}
+            // Inline style: tier colour is admin-picked hex with no design-token equivalent.
+            style={tierChipStyle(color)}
+            title={withScore ? `${label} · ${score}` : label}
         >
-            {resolvedTier}
-            {showScore && score != null && <span className="opacity-70">· {score}</span>}
+            {/* Dot + score divider take the same admin-picked tier hex, hence inline styles. */}
+            <span
+                aria-hidden
+                className="size-1.5 shrink-0 rounded-full"
+                style={{ backgroundColor: color }}
+            />
+            <span className="min-w-0 truncate">{label}</span>
+            {withScore && (
+                <span
+                    className="shrink-0 border-l pl-1.5 tabular-nums opacity-80"
+                    style={{ borderColor: `${color}55` }}
+                >
+                    {score}
+                </span>
+            )}
         </span>
     );
 }

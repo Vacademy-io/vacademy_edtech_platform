@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Vacademy Classroom: shown by MainActivity when the WebView renderer died
+     3+ times within 60 s, so a Home-app install never enters a kill/restart loop. -->
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/panel_background"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:padding="48dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/panel_crash_title"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/panel_crash_title"
+                android:textColor="@color/panel_text"
+                android:textSize="40sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/panel_crash_body"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:textColor="@color/panel_text_muted"
+                android:textSize="24sp" />
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="40dp"
+                android:orientation="horizontal">
+
+                <Button
+                    android:id="@+id/panel_btn_restart"
+                    android:layout_width="wrap_content"
+                    android:layout_height="72dp"
+                    android:minWidth="200dp"
+                    android:backgroundTint="@color/panel_brand"
+                    android:text="@string/panel_action_restart"
+                    android:textAllCaps="false"
+                    android:textColor="@color/panel_surface"
+                    android:textSize="22sp" />
+
+                <Button
+                    android:id="@+id/panel_btn_home"
+                    android:layout_width="wrap_content"
+                    android:layout_height="72dp"
+                    android:layout_marginStart="16dp"
+                    android:minWidth="200dp"
+                    android:text="@string/panel_action_choose_home"
+                    android:textAllCaps="false"
+                    android:textColor="@color/panel_text"
+                    android:textSize="22sp" />
+
+                <Button
+                    android:id="@+id/panel_btn_settings"
+                    android:layout_width="wrap_content"
+                    android:layout_height="72dp"
+                    android:layout_marginStart="16dp"
+                    android:minWidth="200dp"
+                    android:text="@string/panel_action_settings"
+                    android:textAllCaps="false"
+                    android:textColor="@color/panel_text"
+                    android:textSize="22sp" />
+            </LinearLayout>
+        </LinearLayout>
+    </LinearLayout>
+</ScrollView>

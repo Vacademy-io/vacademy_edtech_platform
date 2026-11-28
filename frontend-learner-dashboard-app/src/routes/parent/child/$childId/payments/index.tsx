@@ -40,7 +40,7 @@ function PaymentsScreen() {
       emptyTitle={t("payments.emptyTitle")}
       emptyBody={t("payments.emptyBody")}
     >
-      <ul className="flex flex-col gap-3">
+      <ul className="flex flex-col gap-stack">
         {invoices?.map((inv, i) => {
           const paid = isPaid(inv.status);
           const invoiceId = String(inv.id ?? inv.invoiceId ?? "");

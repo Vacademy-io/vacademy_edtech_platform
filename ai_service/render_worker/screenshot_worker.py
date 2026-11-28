@@ -142,9 +142,17 @@ class ScreenshotWorker:
             # means tween delays inside the shot HTML compose against globalTimeline=0,
             # which is exactly what we want for screenshot timestamps that are
             # shot-relative seconds.
+            # x/y/w/h are not optional. __updateSnippets sizes the shot's host
+            # from them (`e.w | 0`), so an entry without them gets a 0x0 host
+            # and a shot laid out as 100% of its container collapses: every
+            # frame came back as the bare background colour. The vision
+            # reviewer and creativity critic were judging blank frames — on a
+            # 2026-10-01 run all 21 review screenshots were one identical
+            # single-colour PNG. The preview-MP4 path below already passed them.
             await page.evaluate(
                 "async (entries) => { await window.__updateSnippets(entries); }",
-                [{"id": "screenshot-shot", "html": html, "inTime": 0}],
+                [{"id": "screenshot-shot", "html": html, "inTime": 0,
+                  "x": 0, "y": 0, "w": int(width), "h": int(height)}],
             )
 
             # Wait for shadow-DOM stylesheets and document fonts — same sequence
@@ -248,9 +256,26 @@ class ScreenshotWorker:
         height: int,
         timestamps: List[float],
         background: str = "#0a0e27",
+        keep_out: Optional[List[Dict[str, object]]] = None,
+        check_squeeze: bool = False,
+        check_overlap: bool = False,
     ) -> List[Dict[str, object]]:
         """Render `html` in the harness and check whether any visible text or
         media overflows the viewport at each timestamp.
+
+        `keep_out` (optional): canvas rects `{l, t, r, b, name}` the shot must
+        leave empty — e.g. a lesson's teacher corner or caption strip. Visible
+        text / media overlapping one is reported with `zone=name`. Full-canvas
+        backgrounds (> half the canvas) are exempt.
+
+        `check_squeeze`: also report text squeezed into a column so narrow its
+        words break letter by letter (zone="squeezed") — a lesson recap once
+        shipped "Veri / fy / the / 90°" one syllable per line.
+
+        `check_overlap`: also report visible text drawn over other visible
+        text (zone="overlap") — a lesson recap once printed its closing quote
+        on top of the takeaway list. Opacity counts every ancestor, so text
+        inside a faded-out group is not "visible".
 
         Returns a list of violation dicts:
             {"t": float, "selector": str, "rect": {l, t, r, b}, "text": str}
@@ -313,9 +338,13 @@ class ScreenshotWorker:
                 logger.error(f"bbox_check_shot: __updateSnippets failed to install — {exc}")
                 raise
 
+            # Same as /screenshot: without x/y/w/h the host is 0x0 and the
+            # overflow check measures a collapsed shot, so it cannot see the
+            # overflow it exists to catch.
             await page.evaluate(
                 "async (entries) => { await window.__updateSnippets(entries); }",
-                [{"id": "bbox-check-shot", "html": html, "inTime": 0}],
+                [{"id": "bbox-check-shot", "html": html, "inTime": 0,
+                  "x": 0, "y": 0, "w": int(width), "h": int(height)}],
             )
 
             # Stylesheet + font load. Without these waits the bbox check fires
@@ -396,7 +425,7 @@ class ScreenshotWorker:
             # EVERY shot of the run). Pack both dimensions into a single
             # object argument and destructure on the JS side.
             walker_js = """
-                ({W, H}) => {
+                ({W, H, KO, SQ, OV}) => {
                     function cssPath(el) {
                         if (!el) return '?';
                         if (el.id) return '#' + el.id;
@@ -408,6 +437,18 @@ class ScreenshotWorker:
                         return p;
                     }
                     const out = [];
+                    const texts = [];  // visible leaf text, for the overlap check
+                    function effOpacity(el, view) {
+                        let o = 1;
+                        for (let n = el; n && n.nodeType === 1; n = n.parentElement) {
+                            const c = view.getComputedStyle(n);
+                            if (!c) break;
+                            if (c.display === 'none' || c.visibility === 'hidden') return 0;
+                            const v = parseFloat(c.opacity);
+                            if (!isNaN(v)) o *= v;
+                        }
+                        return o;
+                    }
                     const hosts = document.querySelectorAll('[id="bbox-check-shot"]');
                     hosts.forEach(host => {
                         const root = host.shadowRoot;
@@ -453,6 +494,57 @@ class ScreenshotWorker:
                             // 1-pixel tolerance on each edge — sub-pixel rendering and
                             // text antialiasing routinely push fractional pixels past
                             // the canvas edge without any visible glyph clip.
+                            // Squeezed text: a multi-line text block narrower than
+                            // ~2.5 characters breaks words letter by letter.
+                            if (SQ && isLeafText && text.length >= 6) {
+                                const fs = parseFloat(cs.fontSize) || 16;
+                                const lh = parseFloat(cs.lineHeight) || fs * 1.2;
+                                if (r.width < fs * 2.5 && r.height >= lh * 2.6) {
+                                    out.push({
+                                        selector: cssPath(el),
+                                        rect: {
+                                            l: Math.round(r.left * 10) / 10,
+                                            t: Math.round(r.top * 10) / 10,
+                                            r: Math.round(r.right * 10) / 10,
+                                            b: Math.round(r.bottom * 10) / 10,
+                                        },
+                                        text: text.slice(0, 80),
+                                        is_media: false,
+                                        zone: 'squeezed',
+                                    });
+                                    return;
+                                }
+                            }
+                            if (OV && isLeafText && r.height >= 8 && effOpacity(el, view) >= 0.3) {
+                                // Line boxes, not the bounding rect: two inline spans
+                                // wrapping in one paragraph have bounding rects that
+                                // intersect while their glyphs never touch.
+                                const lines = Array.from(el.getClientRects()).filter(q => q.width > 0 && q.height > 0);
+                                texts.push({el: el, rects: lines.length ? lines : [r], text: text});
+                            }
+                            // Keep-out zones (lesson teacher area / caption strip).
+                            const area = r.width * r.height;
+                            if (KO && KO.length && area < 0.5 * W * H) {
+                                for (const z of KO) {
+                                    const ix = Math.min(r.right, z.r) - Math.max(r.left, z.l);
+                                    const iy = Math.min(r.bottom, z.b) - Math.max(r.top, z.t);
+                                    if (ix > 8 && iy > 8 && ix * iy > 0.15 * area) {
+                                        out.push({
+                                            selector: cssPath(el),
+                                            rect: {
+                                                l: Math.round(r.left * 10) / 10,
+                                                t: Math.round(r.top * 10) / 10,
+                                                r: Math.round(r.right * 10) / 10,
+                                                b: Math.round(r.bottom * 10) / 10,
+                                            },
+                                            text: text.slice(0, 80),
+                                            is_media: isMedia,
+                                            zone: String(z.name || 'keep_out'),
+                                        });
+                                        return;
+                                    }
+                                }
+                            }
                             if (r.left < -1 || r.right > W + 1 || r.top < -1 || r.bottom > H + 1) {
                                 out.push({
                                     selector: cssPath(el),
@@ -468,6 +560,49 @@ class ScreenshotWorker:
                             }
                         });
                     });
+                    // Text drawn over text: two visible leaf text boxes sharing
+                    // a meaningful area. Same-text pairs are layered effects
+                    // (shadow / outline copies), not collisions.
+                    if (OV) {
+                        const seen = new Set();
+                        for (let i = 0; i < texts.length; i++) {
+                            for (let j = i + 1; j < texts.length; j++) {
+                                const a = texts[i], b = texts[j];
+                                if (a.text === b.text) continue;
+                                if (a.el.contains(b.el) || b.el.contains(a.el)) continue;
+                                let hit = null;
+                                for (const ra of a.rects) {
+                                    for (const rb of b.rects) {
+                                        const ix = Math.min(ra.right, rb.right) - Math.max(ra.left, rb.left);
+                                        const iy = Math.min(ra.bottom, rb.bottom) - Math.max(ra.top, rb.top);
+                                        if (ix <= 6 || iy <= 6) continue;
+                                        const small = Math.min(ra.width * ra.height, rb.width * rb.height);
+                                        if (ix * iy < 0.2 * small) continue;
+                                        hit = [ra, rb];
+                                        break;
+                                    }
+                                    if (hit) break;
+                                }
+                                if (!hit) continue;
+                                const key = a.text + '|' + b.text;
+                                if (seen.has(key)) continue;
+                                seen.add(key);
+                                const [ra, rb] = hit;
+                                out.push({
+                                    selector: cssPath(a.el) + ' × ' + cssPath(b.el),
+                                    rect: {
+                                        l: Math.round(Math.max(ra.left, rb.left) * 10) / 10,
+                                        t: Math.round(Math.max(ra.top, rb.top) * 10) / 10,
+                                        r: Math.round(Math.min(ra.right, rb.right) * 10) / 10,
+                                        b: Math.round(Math.min(ra.bottom, rb.bottom) * 10) / 10,
+                                    },
+                                    text: (a.text.slice(0, 38) + ' × ' + b.text.slice(0, 38)),
+                                    is_media: false,
+                                    zone: 'overlap',
+                                });
+                            }
+                        }
+                    }
                     return out;
                 }
             """
@@ -484,7 +619,10 @@ class ScreenshotWorker:
                     await page.evaluate(
                         "() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)))"
                     )
-                    rows = await page.evaluate(walker_js, {"W": width, "H": height})
+                    rows = await page.evaluate(
+                        walker_js, {"W": width, "H": height, "KO": list(keep_out or []),
+                                    "SQ": bool(check_squeeze), "OV": bool(check_overlap)}
+                    )
                     for row in rows or []:
                         violations.append({
                             "t": float(t),
@@ -492,6 +630,7 @@ class ScreenshotWorker:
                             "rect": dict(row.get("rect") or {}),
                             "text": str(row.get("text") or ""),
                             "is_media": bool(row.get("is_media")),
+                            "zone": str(row.get("zone") or ""),
                         })
                 except Exception as exc:
                     logger.warning(f"bbox_check_shot: failed at t={t}: {exc}")

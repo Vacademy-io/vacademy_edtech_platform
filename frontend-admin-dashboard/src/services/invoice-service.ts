@@ -1,18 +1,23 @@
+import type { OfflinePaymentDetails } from '@/services/offline-payment-modes';
 import authenticatedAxiosInstance from '@/lib/auth/axiosInstance';
 import {
     GET_INVOICES_BY_USER,
     GET_INVOICES_BY_INSTITUTE,
     GET_INVOICE_DOWNLOAD_URL,
+    GET_INVOICES_BULK_DOWNLOAD,
     GET_INVOICE_BY_ID,
     POST_ADMIN_CREATE_INVOICE,
     POST_ADMIN_PREVIEW_INVOICE,
     POST_REJECT_INVOICE,
+    DELETE_INVOICE,
     GET_USER_ACCOUNT_SUMMARY,
     GET_USER_ACCOUNT_LEDGER,
     POST_MARK_INVOICE_PAID_MANUAL,
     PUT_UPDATE_INVOICE,
     POST_INVOICES_BY_PAYMENT_LOGS,
+    POST_APPLY_INVOICE_PRODUCT_LINK,
 } from '@/constants/urls';
+import type { AdminDiscountRequest } from '@/services/admin-discounts';
 
 // Field names must match the wire format exactly: the backend InvoiceLineItemDTO is
 // @JsonNaming(SnakeCaseStrategy) — item_type/unit_price, NOT itemType/unitPrice.
@@ -61,6 +66,70 @@ export interface InvoiceDTO {
     source_id?: string | null;
     /** Gateway payment link — present on ADMIN_MANUAL and USER_PLAN invoices when a payment option is configured. */
     payment_link?: string | null;
+    /** Admin who gave the discount on this invoice (admin invoice, or the discounted enrollment it bills). */
+    discount_granted_by_user_id?: string | null;
+    /** That admin's internal reason for the discount. Admin views only. */
+    discount_reason?: string | null;
+    /** Installment rows still owing money: what has been paid on it so far. */
+    amount_paid?: number | null;
+    /** Installment rows still owing money: the latest receipt for what was paid (view/download open it). */
+    receipt_number?: string | null;
+    /** Admin invoices: the membership renewal / course enrolment this invoice pays for. */
+    product_link?: InvoiceProductLink | null;
+}
+
+export type InvoiceProductLinkType = 'RENEWAL' | 'NEW_ENROLLMENT';
+/** PENDING until paid; then IN_PROGRESS → FULFILLED, or FAILED (retryable). */
+export type InvoiceProductLinkStatus = 'PENDING' | 'IN_PROGRESS' | 'FULFILLED' | 'FAILED';
+
+/**
+ * The product an admin invoice pays for. Sent on create (the admin's choice); read back with
+ * the fulfilment state. Applied once — when the invoice is paid.
+ */
+export interface InvoiceProductLink {
+    type: InvoiceProductLinkType;
+    /** RENEWAL: the membership to renew. */
+    user_plan_id?: string | null;
+    /** NEW_ENROLLMENT: the course (package session); invite / option / plan default when omitted. */
+    package_session_id?: string | null;
+    enroll_invite_id?: string | null;
+    payment_option_id?: string | null;
+    plan_id?: string | null;
+    /** RENEWAL: access until this day (yyyy-MM-dd); omitted = the plan's normal renewal. */
+    new_end_date?: string | null;
+    /**
+     * Charge this invoice's total on future renewals too: the membership is put on a plan at that
+     * price (an existing one, or a private plan the server creates; never shown to other learners).
+     */
+    apply_as_member_price?: boolean | null;
+    /** NEW_ENROLLMENT: send the institute's enrolment email. */
+    notify_learner?: boolean | null;
+    /** Renew / enrol as soon as the invoice is raised ("apply now, collect later"). */
+    apply_now?: boolean | null;
+    // Read back only
+    status?: InvoiceProductLinkStatus | null;
+    label?: string | null;
+    error?: string | null;
+    fulfilled_at?: string | null;
+    result_user_plan_id?: string | null;
+    result_end_date?: string | null;
+    /** The renewal price set from this invoice, and the plan the membership now renews on. */
+    /** Sent: the price future renewals charge (else the invoice total). Read back: the plan's price. */
+    renewal_price?: number | null;
+    price_plan_id?: string | null;
+    price_plan_name?: string | null;
+    /** The paid invoice's payment is recorded on the membership. */
+    payment_recorded?: boolean | null;
+}
+
+/** Re-applies the renewal / enrolment of a paid invoice after it failed; returns the refreshed invoice. */
+export async function applyInvoiceProductLink(invoiceId: string, instituteId: string): Promise<InvoiceDTO> {
+    const response = await authenticatedAxiosInstance.post<InvoiceDTO>(
+        POST_APPLY_INVOICE_PRODUCT_LINK(invoiceId),
+        {},
+        { params: { instituteId } }
+    );
+    return response.data;
 }
 
 export interface UserAccountLedgerEntryDTO {
@@ -68,6 +137,8 @@ export interface UserAccountLedgerEntryDTO {
     // DEBIT_ACCRUAL | CREDIT_PAYMENT | CREDIT_WAIVER | CREDIT_ADJUSTMENT | DEBIT_PENALTY
     // | DEBIT_REVERSAL (obligation voided before any money moved — cancels the accrual out
     //   of total_accrued rather than counting as money received)
+    // | CREDIT_REVERSAL (a payment recorded by mistake was voided — takes it back out of
+    //   total_paid)
     event_type: string;
     amount: number;
     currency: string;
@@ -82,6 +153,10 @@ export interface UserAccountLedgerEntryDTO {
     gross_amount?: number | null;
     /** Discounted accruals only: the coupon/discount applied. */
     discount_amount?: number | null;
+    /** CREDIT_PAYMENT rows: status of the payment behind the credit (VOIDED once voided). */
+    payment_status?: string | null;
+    /** CREDIT_PAYMENT rows: how it was paid — MANUAL / OFFLINE ones can be voided. */
+    payment_vendor?: string | null;
 }
 
 export interface LedgerPageResponse {
@@ -153,7 +228,7 @@ export async function fetchUserAccountLedger(
 
 export async function markInvoicePaidManual(
     invoiceId: string,
-    body: { transaction_id?: string; notes?: string }
+    body: { transaction_id?: string; notes?: string; payment_details?: OfflinePaymentDetails | null }
 ): Promise<InvoiceDTO> {
     const response = await authenticatedAxiosInstance.post<InvoiceDTO>(
         POST_MARK_INVOICE_PAID_MANUAL(invoiceId),
@@ -227,6 +302,55 @@ export async function fetchInvoicesForPaymentLogs(
     return response.data ?? [];
 }
 
+/**
+ * Download every invoice issued in the window as one ZIP (PDFs + an `invoices.csv` manifest).
+ * One invoice per payment — a payment that was invoiced twice keeps its first-issued invoice and
+ * the manifest lists the extra. Dates are UTC instants; empty = unbounded.
+ *
+ * The server refuses an empty period (404) or one with too many invoices (400) with a message;
+ * with a blob response that message arrives as a Blob, so it is unpacked into the thrown Error.
+ */
+export async function downloadInvoicesZip(
+    instituteId: string,
+    range: { startDate?: string; endDate?: string },
+    fileName: string
+): Promise<void> {
+    const params: Record<string, string> = {};
+    if (range.startDate) params['startDate'] = range.startDate;
+    if (range.endDate) params['endDate'] = range.endDate;
+    let data: Blob;
+    try {
+        const response = await authenticatedAxiosInstance.get<Blob>(
+            GET_INVOICES_BULK_DOWNLOAD(instituteId),
+            // A large period takes a while to assemble; don't let a default timeout cut it off.
+            { params, responseType: 'blob', timeout: 0 }
+        );
+        data = response.data;
+    } catch (error) {
+        const body = (error as { response?: { data?: unknown } })?.response?.data;
+        if (body instanceof Blob) {
+            try {
+                const parsed = JSON.parse(await body.text());
+                const message = parsed?.ex ?? parsed?.message ?? parsed?.error;
+                if (typeof message === 'string' && message) throw new Error(message);
+            } catch (parseError) {
+                if (parseError instanceof Error && !(parseError instanceof SyntaxError)) {
+                    throw parseError;
+                }
+            }
+        }
+        throw error;
+    }
+    const url = URL.createObjectURL(new Blob([data], { type: 'application/zip' }));
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+}
+
 export function getInvoiceDownloadUrl(invoiceId: string): string {
     return GET_INVOICE_DOWNLOAD_URL(invoiceId);
 }
@@ -250,6 +374,8 @@ export interface AdminUpdateInvoiceRequest {
     overrides?: Record<string, string>;
     tax_enabled?: boolean;
     tax_rate_percent?: number;
+    /** Change the product: omitted = keep it; `{ type: '' }` removes it. */
+    product_link?: InvoiceProductLink | { type: '' };
 }
 
 /**
@@ -286,6 +412,22 @@ export async function rejectInvoice(
     return response.data;
 }
 
+/**
+ * PERMANENTLY deletes an invoice. Only offered when the viewer's role has Display Settings →
+ * Learner Management → "delete payments & invoices" on (off by default); the server checks the
+ * same setting and refuses otherwise, and refuses an invoice with a live payment against it.
+ */
+export async function deleteInvoicePermanently(
+    invoiceId: string,
+    instituteId: string
+): Promise<{ invoice_id: string; invoice_number: string }> {
+    const response = await authenticatedAxiosInstance.delete<{ invoice_id: string; invoice_number: string }>(
+        DELETE_INVOICE(invoiceId),
+        { params: { instituteId } }
+    );
+    return response.data;
+}
+
 // ─── Admin Invoice Creation ───────────────────────────────────────────────────
 
 export interface AdminInvoiceLineItemRequest {
@@ -315,6 +457,13 @@ export interface AdminCreateInvoiceRequest {
     tax_enabled?: boolean;
     /** Override the tax rate (percentage, e.g. 18) for this invoice only. Ignored when tax_enabled is false. */
     tax_rate_percent?: number;
+    /**
+     * Admin-granted discount, applied as a DISCOUNT line on the pre-tax subtotal. COUPON mode
+     * accepts institute-wide coupons only. apply_for_cycles is not used here.
+     */
+    admin_discount?: AdminDiscountRequest;
+    /** Product this invoice pays for — renewed / enrolled once it is paid. Single learner only. */
+    product_link?: InvoiceProductLink;
 }
 
 /** One editable/derived dynamic value discovered in the institute's invoice template. */

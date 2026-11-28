@@ -1,6 +1,7 @@
 package vacademy.io.admin_core_service.features.audience.controller;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -10,7 +11,12 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
+import vacademy.io.admin_core_service.core.security.InstituteAccessValidator;
+import vacademy.io.admin_core_service.features.admin_activity_logs.annotation.Auditable;
 import vacademy.io.admin_core_service.features.audience.dto.AdConnectorSetupRequest;
+import vacademy.io.admin_core_service.features.audience.dto.CampaignRouteUpdateRequest;
+import vacademy.io.admin_core_service.features.audience.dto.CampaignRouteUpdateResponse;
+import vacademy.io.admin_core_service.features.audience.dto.CampaignRoutesResponse;
 import vacademy.io.admin_core_service.features.audience.dto.ConnectorHealthDTO;
 import vacademy.io.admin_core_service.features.audience.dto.ConnectorListItemDTO;
 import vacademy.io.admin_core_service.features.audience.dto.ConnectorUpdateRequest;
@@ -20,15 +26,20 @@ import vacademy.io.admin_core_service.features.audience.dto.PlatformFormField;
 import vacademy.io.admin_core_service.features.audience.dto.WebhookSubscriptionResult;
 import vacademy.io.admin_core_service.features.audience.entity.FormWebhookConnector;
 import vacademy.io.admin_core_service.features.audience.entity.OAuthConnectState;
+import vacademy.io.admin_core_service.features.audience.repository.AdCampaignRouteRepository;
+import vacademy.io.admin_core_service.features.audience.repository.AudienceRepository;
 import vacademy.io.admin_core_service.features.audience.repository.FormWebhookConnectorRepository;
 import vacademy.io.admin_core_service.features.audience.repository.OAuthConnectStateRepository;
+import vacademy.io.admin_core_service.features.audience.service.AdCampaignRouteService;
 import vacademy.io.admin_core_service.features.audience.service.AdPlatformWebhookService;
 import vacademy.io.admin_core_service.features.audience.service.MetaConnectorHealthService;
 import vacademy.io.admin_core_service.features.audience.service.OAuthRedirectResolver;
 import vacademy.io.admin_core_service.features.audience.service.TokenEncryptionService;
 import vacademy.io.admin_core_service.features.audience.strategy.MetaLeadAdsStrategy;
+import vacademy.io.common.auth.model.CustomUserDetails;
 import vacademy.io.common.exceptions.VacademyException;
 
+import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.*;
@@ -64,7 +75,13 @@ import java.util.stream.Collectors;
  *        → Server resolves page access token from session, creates connector, keeps session AUTHORIZED (TTL refreshed) for more connectors
  *        → Subscribes page to Meta leadgen webhooks
  *
- *   6. POST /google/connector  (no OAuth — static key flow)
+ *   6. POST /google/connector  (no OAuth — server-generated static key)
+ *
+ * Tenant scope: every endpoint that names an institute or a connector requires the
+ * caller to be STAFF of that institute (requireInstituteStaff — no root bypass, since
+ * learners are created as root users). Before this, any logged-in user could list,
+ * edit or disconnect another institute's connectors, read their Google keys, and
+ * re-point a Google key to their own audience.
  */
 @RestController
 @RequestMapping("/admin-core-service/v1/oauth/meta")
@@ -80,6 +97,15 @@ public class MetaOAuthController {
     private final TokenEncryptionService tokenEncryptionService;
     private final OAuthRedirectResolver redirectResolver;
     private final ObjectMapper objectMapper;
+    private final InstituteAccessValidator instituteAccessValidator;
+    private final AudienceRepository audienceRepository;
+    private final AdCampaignRouteService campaignRouteService;
+    private final AdCampaignRouteRepository campaignRouteRepository;
+
+    private static final SecureRandom GOOGLE_KEY_RANDOM = new SecureRandom();
+    /** A caller-supplied Google key must look like a generated one: long and URL-safe. */
+    private static final java.util.regex.Pattern GOOGLE_KEY_PATTERN =
+            java.util.regex.Pattern.compile("^[A-Za-z0-9_-]{24,128}$");
 
     @Value("${meta.oauth.redirect.uri:}")
     private String metaRedirectUri;
@@ -101,7 +127,9 @@ public class MetaOAuthController {
             @RequestParam(required = false) String initiatedBy,
             @RequestParam(required = false) String frontendOrigin,
             @RequestHeader(value = "Origin", required = false) String originHeader,
-            @RequestHeader(value = "Referer", required = false) String refererHeader) {
+            @RequestHeader(value = "Referer", required = false) String refererHeader,
+            @RequestAttribute("user") CustomUserDetails user) {
+        instituteAccessValidator.requireInstituteStaff(user, instituteId);
 
         // Remember which frontend origin started the flow so /callback can send the
         // browser back to the SAME (white-label) domain. Explicit param wins; else
@@ -396,8 +424,23 @@ public class MetaOAuthController {
      */
     @PostMapping("/connector")
     @Transactional
+    @Auditable(
+            entityType = "LEAD_CONNECTOR",
+            action = "CREATE",
+            entityIdExpr = "#result?.body != null ? #result.body['connector_id'] : null",
+            // This mapping answers a missing sessionKey/formId with a 400-carrying
+            // ResponseEntity instead of throwing, and the aspect only ever sees a
+            // successful return — without this guard a rejected request would be
+            // logged as a connector that was created.
+            conditionExpr = "#result?.body != null and #result.body['connector_id'] != null",
+            // The body carries OAuth session keys — never persist it.
+            payload = Auditable.PayloadMode.NONE,
+            descriptionExpr = "'connected Meta lead form ' + (#request?.platformFormName "
+                    + "?: #request?.platformFormId) + (#request?.audienceId != null ? ' to audience ' "
+                    + "+ @crmAuditNarrator.audienceFor(#request.audienceId) : '')")
     public ResponseEntity<Map<String, String>> saveConnector(
-            @RequestBody AdConnectorSetupRequest request) {
+            @RequestBody AdConnectorSetupRequest request,
+            @RequestAttribute("user") CustomUserDetails user) {
 
         if (request.getSessionKey() == null || request.getSelectedPageId() == null) {
             return ResponseEntity.badRequest()
@@ -426,6 +469,8 @@ public class MetaOAuthController {
                 ? request.getInstituteId() : state.getInstituteId();
         String audienceId = request.getAudienceId() != null
                 ? request.getAudienceId() : state.getAudienceId();
+        instituteAccessValidator.requireInstituteStaff(user, instituteId);
+        requireAudiencesInInstitute(instituteId, audienceId, request.getRoutingRulesJson());
 
         // Upsert: update if connector already exists for this vendor + formId
         FormWebhookConnector connector = connectorRepository
@@ -506,25 +551,62 @@ public class MetaOAuthController {
     // ── Google connector (no OAuth) ───────────────────────────────────────────
 
     @PostMapping("/google/connector")
+    @Auditable(
+            entityType = "LEAD_CONNECTOR",
+            action = "CREATE",
+            entityIdExpr = "#result?.body != null ? #result.body['connector_id'] : null",
+            // Same 400-without-throwing shape as the Meta connector above.
+            conditionExpr = "#result?.body != null and #result.body['connector_id'] != null",
+            // googleKey is a credential — keep it out of the audit table.
+            payload = Auditable.PayloadMode.NONE,
+            descriptionExpr = "'connected a Google lead form' + (#request?.audienceId != null "
+                    + "? ' to audience ' + @crmAuditNarrator.audienceFor(#request.audienceId) : '')")
     public ResponseEntity<Map<String, String>> saveGoogleConnector(
-            @RequestBody AdConnectorSetupRequest request) {
+            @RequestBody AdConnectorSetupRequest request,
+            @RequestAttribute("user") CustomUserDetails user) {
 
-        if (request.getGoogleKey() == null || request.getAudienceId() == null) {
+        if (request.getAudienceId() == null) {
             return ResponseEntity.badRequest()
-                    .body(Map.of("error", "googleKey and audienceId are required"));
+                    .body(Map.of("error", "audienceId is required"));
+        }
+        instituteAccessValidator.requireInstituteStaff(user, request.getInstituteId());
+        requireAudiencesInInstitute(request.getInstituteId(), request.getAudienceId(),
+                request.getRoutingRulesJson());
+
+        // The key is the webhook's only credential, so by default the server mints it
+        // (32 URL-safe chars from SecureRandom). An admin-typed key like "my-leads-1" was
+        // guessable, and anyone holding it could inject leads that run the workflows.
+        String googleKey = request.getGoogleKey();
+        if (googleKey == null || googleKey.isBlank()) {
+            googleKey = newGoogleKey();
+        } else if (!GOOGLE_KEY_PATTERN.matcher(googleKey).matches()) {
+            return ResponseEntity.badRequest().body(Map.of("error",
+                    "googleKey must be 24-128 letters, digits, '-' or '_'. Leave it empty to generate one."));
         }
 
-        // Upsert: update if connector already exists for this vendor + key
-        FormWebhookConnector connector = connectorRepository
-                .findByVendorAndVendorId("GOOGLE_LEAD_ADS", request.getGoogleKey())
-                .orElse(FormWebhookConnector.builder()
-                        .vendor("GOOGLE_LEAD_ADS")
-                        .vendorId(request.getGoogleKey())
-                        .build());
+        // Upsert within the caller's institute only. The key used to be matched across
+        // ALL institutes, so saving someone else's key re-pointed their connector (and
+        // their leads) at the caller's audience.
+        Optional<FormWebhookConnector> existing =
+                connectorRepository.findByVendorAndVendorId("GOOGLE_LEAD_ADS", googleKey);
+        if (existing.isPresent() && !request.getInstituteId().equals(existing.get().getInstituteId())) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error",
+                    "This key is already used by another connector. Leave the key empty to generate a new one."));
+        }
+        final String key = googleKey;
+        FormWebhookConnector connector = existing.orElseGet(() -> FormWebhookConnector.builder()
+                .vendor("GOOGLE_LEAD_ADS")
+                .vendorId(key)
+                .build());
 
         connector.setInstituteId(request.getInstituteId());
         connector.setAudienceId(request.getAudienceId());
-        connector.setPlatformFormId(request.getPlatformFormId());
+        // The connector list builds the "copy webhook URL" action from platform_form_id.
+        connector.setPlatformFormId(googleKey);
+        // The name the list shows instead of the key (which is a credential).
+        if (request.getPlatformFormName() != null) {
+            connector.setPlatformFormName(cleanConnectorName(request.getPlatformFormName()));
+        }
         connector.setRoutingRulesJson(request.getRoutingRulesJson());
         connector.setFieldMappingJson(request.getFieldMappingJson());
         connector.setProducesSourceType("GOOGLE_ADS");
@@ -535,10 +617,67 @@ public class MetaOAuthController {
 
         return ResponseEntity.ok(Map.of(
                 "connector_id", saved.getId(),
-                "webhook_url", "/admin-core-service/api/v1/webhook/google/" + request.getGoogleKey(),
+                "google_key", googleKey,
+                "webhook_url", "/admin-core-service/api/v1/webhook/google/" + googleKey,
                 "status", "ACTIVE",
-                "message", "Google Lead Form connector created. Paste the webhook_url in Google Ads."
+                "message", "Google Lead Form connector created. Paste the webhook URL and the key into Google Ads."
         ));
+    }
+
+    /** Trimmed, at most the column's 255 chars; blank clears the name. */
+    private static String cleanConnectorName(String name) {
+        String trimmed = name.trim();
+        if (trimmed.isEmpty()) return null;
+        return trimmed.length() > 255 ? trimmed.substring(0, 255) : trimmed;
+    }
+
+    /** 24 random bytes → 32 URL-safe characters. */
+    private static String newGoogleKey() {
+        byte[] bytes = new byte[24];
+        GOOGLE_KEY_RANDOM.nextBytes(bytes);
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
+    }
+
+    // ── Tenant scope ──────────────────────────────────────────────────────────
+
+    /** Load a connector the caller may act on: they must be staff of its institute. */
+    private FormWebhookConnector loadConnectorForStaff(String connectorId, CustomUserDetails user) {
+        FormWebhookConnector connector = connectorRepository.findById(connectorId)
+                .orElseThrow(() -> new VacademyException("Connector not found"));
+        instituteAccessValidator.requireInstituteStaff(user, connector.getInstituteId());
+        return connector;
+    }
+
+    /**
+     * Every audience a connector can deliver into — its default plus any routing-rule
+     * target — must belong to the connector's institute, or a connector could feed
+     * leads into another institute's audience. Malformed routing JSON is left alone:
+     * the webhook falls back to the (checked) default audience when it can't parse it.
+     */
+    private void requireAudiencesInInstitute(String instituteId, String audienceId, String routingRulesJson) {
+        Set<String> audienceIds = new LinkedHashSet<>();
+        if (audienceId != null && !audienceId.isBlank()) audienceIds.add(audienceId);
+        if (routingRulesJson != null && !routingRulesJson.isBlank()) {
+            try {
+                JsonNode root = objectMapper.readTree(routingRulesJson);
+                String fallback = root.path("default_audience_id").asText(null);
+                if (fallback != null && !fallback.isBlank()) audienceIds.add(fallback);
+                for (JsonNode rule : root.path("rules")) {
+                    String target = rule.path("target_audience_id").asText(null);
+                    if (target != null && !target.isBlank()) audienceIds.add(target);
+                }
+            } catch (Exception e) {
+                log.warn("Unparseable routing_rules_json on connector save — not validating its targets");
+            }
+        }
+        for (String id : audienceIds) {
+            boolean sameInstitute = audienceRepository.findById(id)
+                    .map(a -> instituteId.equals(a.getInstituteId()))
+                    .orElse(false);
+            if (!sameInstitute) {
+                throw new VacademyException("Audience " + id + " does not belong to this institute");
+            }
+        }
     }
 
     // ── Connector list + deactivate (both platforms) ────────────────────────
@@ -550,7 +689,10 @@ public class MetaOAuthController {
     @GetMapping("/connectors")
     public ResponseEntity<List<ConnectorListItemDTO>> listConnectors(
             @RequestParam String instituteId,
-            @RequestParam(name = "includeAllVendors", defaultValue = "false") boolean includeAllVendors) {
+            @RequestParam(name = "includeAllVendors", defaultValue = "false") boolean includeAllVendors,
+            @RequestAttribute("user") CustomUserDetails user) {
+        // The DTO carries vendorId — for Google that is the webhook key itself.
+        instituteAccessValidator.requireInstituteStaff(user, instituteId);
         List<FormWebhookConnector> connectors = connectorRepository
                 .findByInstituteIdAndIsActiveTrue(instituteId);
 
@@ -563,6 +705,23 @@ public class MetaOAuthController {
                         || "GOOGLE_LEAD_ADS".equals(c.getVendor()))
                 .map(ConnectorListItemDTO::from)
                 .collect(Collectors.toList());
+
+        // Google rows: how many campaigns still need a list (their leads go to the catch-all).
+        List<String> googleIds = result.stream()
+                .filter(c -> "GOOGLE_LEAD_ADS".equals(c.getVendor()))
+                .map(ConnectorListItemDTO::getId)
+                .toList();
+        if (!googleIds.isEmpty()) {
+            Map<String, Integer> unmapped = new HashMap<>();
+            for (Object[] row : campaignRouteRepository.countUnmapped(googleIds)) {
+                unmapped.put((String) row[0], ((Number) row[1]).intValue());
+            }
+            result.forEach(c -> {
+                if ("GOOGLE_LEAD_ADS".equals(c.getVendor())) {
+                    c.setUnmappedCampaigns(unmapped.getOrDefault(c.getId(), 0));
+                }
+            });
+        }
         return ResponseEntity.ok(result);
     }
 
@@ -571,10 +730,15 @@ public class MetaOAuthController {
      */
     @DeleteMapping("/connectors/{connectorId}")
     @Transactional
+    @Auditable(
+            entityType = "LEAD_CONNECTOR",
+            action = "DELETE",
+            entityIdExpr = "#connectorId",
+            descriptionExpr = "'disconnected a lead connector'")
     public ResponseEntity<Map<String, String>> deactivateConnector(
-            @PathVariable String connectorId) {
-        FormWebhookConnector connector = connectorRepository.findById(connectorId)
-                .orElseThrow(() -> new VacademyException("Connector not found"));
+            @PathVariable String connectorId,
+            @RequestAttribute("user") CustomUserDetails user) {
+        FormWebhookConnector connector = loadConnectorForStaff(connectorId, user);
         connector.setIsActive(false);
         connector.setConnectionStatus("REVOKED");
         connectorRepository.save(connector);
@@ -587,9 +751,9 @@ public class MetaOAuthController {
      * (no encrypted tokens) plus default_values_json so the admin UI can edit per-center metadata.
      */
     @GetMapping("/connectors/{connectorId}")
-    public ResponseEntity<ConnectorListItemDTO> getConnector(@PathVariable String connectorId) {
-        FormWebhookConnector connector = connectorRepository.findById(connectorId)
-                .orElseThrow(() -> new VacademyException("Connector not found"));
+    public ResponseEntity<ConnectorListItemDTO> getConnector(@PathVariable String connectorId,
+            @RequestAttribute("user") CustomUserDetails user) {
+        FormWebhookConnector connector = loadConnectorForStaff(connectorId, user);
         return ResponseEntity.ok(ConnectorListItemDTO.from(connector));
     }
 
@@ -600,11 +764,20 @@ public class MetaOAuthController {
      */
     @PutMapping("/connectors/{connectorId}")
     @Transactional
+    @Auditable(
+            entityType = "LEAD_CONNECTOR",
+            action = "UPDATE",
+            entityIdExpr = "#connectorId",
+            descriptionExpr = "'updated lead connector ' + (#result?.body?.platformFormName ?: #connectorId)")
     public ResponseEntity<ConnectorListItemDTO> updateConnector(
             @PathVariable String connectorId,
-            @RequestBody ConnectorUpdateRequest request) {
-        FormWebhookConnector connector = connectorRepository.findById(connectorId)
-                .orElseThrow(() -> new VacademyException("Connector not found"));
+            @RequestBody ConnectorUpdateRequest request,
+            @RequestAttribute("user") CustomUserDetails user) {
+        FormWebhookConnector connector = loadConnectorForStaff(connectorId, user);
+
+        if (request.getPlatformFormName() != null) {
+            connector.setPlatformFormName(cleanConnectorName(request.getPlatformFormName()));
+        }
 
         if (request.getDefaultValuesJson() != null) {
             String trimmed = request.getDefaultValuesJson().trim();
@@ -634,6 +807,76 @@ public class MetaOAuthController {
         return ResponseEntity.ok(ConnectorListItemDTO.from(saved));
     }
 
+    // ── Google campaign → lead list routing ──────────────────────────────────
+
+    /** A Google connector's campaigns and the list each one's leads go to. */
+    @GetMapping("/connectors/{connectorId}/campaign-routes")
+    public ResponseEntity<CampaignRoutesResponse> campaignRoutes(
+            @PathVariable String connectorId,
+            @RequestAttribute("user") CustomUserDetails user) {
+        FormWebhookConnector connector = loadGoogleConnectorForStaff(connectorId, user);
+        return ResponseEntity.ok(campaignRouteService.list(connector));
+    }
+
+    /**
+     * Route one campaign to an existing list or a new one, optionally moving its existing
+     * leads. Also how an admin maps a campaign id before its first lead arrives.
+     */
+    @PutMapping("/connectors/{connectorId}/campaign-routes/{campaignId}")
+    @Auditable(
+            entityType = "LEAD_CONNECTOR",
+            action = "UPDATE",
+            entityIdExpr = "#connectorId",
+            descriptionExpr = "'routed Google campaign ' + #campaignId + ' to a lead list'")
+    public ResponseEntity<CampaignRouteUpdateResponse> updateCampaignRoute(
+            @PathVariable String connectorId,
+            @PathVariable String campaignId,
+            @RequestBody CampaignRouteUpdateRequest request,
+            @RequestAttribute("user") CustomUserDetails user) {
+        FormWebhookConnector connector = loadGoogleConnectorForStaff(connectorId, user);
+        return ResponseEntity.ok(campaignRouteService.update(connector, campaignId, request, user));
+    }
+
+    /** Remove a campaign added by mistake (only while it has sent no leads). */
+    @DeleteMapping("/connectors/{connectorId}/campaign-routes/{campaignId}")
+    @Auditable(
+            entityType = "LEAD_CONNECTOR",
+            action = "UPDATE",
+            entityIdExpr = "#connectorId",
+            descriptionExpr = "'removed Google campaign ' + #campaignId + ' from a connector'")
+    public ResponseEntity<Map<String, String>> deleteCampaignRoute(
+            @PathVariable String connectorId,
+            @PathVariable String campaignId,
+            @RequestAttribute("user") CustomUserDetails user) {
+        FormWebhookConnector connector = loadGoogleConnectorForStaff(connectorId, user);
+        campaignRouteService.delete(connector, campaignId);
+        return ResponseEntity.ok(Map.of("status", "deleted"));
+    }
+
+    /** Turn "a new list for each new campaign" on or off for a Google connector. */
+    @PutMapping("/connectors/{connectorId}/campaign-auto-lists")
+    @Auditable(
+            entityType = "LEAD_CONNECTOR",
+            action = "UPDATE",
+            entityIdExpr = "#connectorId",
+            descriptionExpr = "'changed automatic lead lists per Google campaign'")
+    public ResponseEntity<CampaignRoutesResponse> setCampaignAutoLists(
+            @PathVariable String connectorId,
+            @RequestBody Map<String, Boolean> body,
+            @RequestAttribute("user") CustomUserDetails user) {
+        FormWebhookConnector connector = loadGoogleConnectorForStaff(connectorId, user);
+        boolean enabled = body != null && Boolean.TRUE.equals(body.get("enabled"));
+        return ResponseEntity.ok(campaignRouteService.setAutoCreateLists(connector, enabled));
+    }
+
+    private FormWebhookConnector loadGoogleConnectorForStaff(String connectorId, CustomUserDetails user) {
+        FormWebhookConnector connector = loadConnectorForStaff(connectorId, user);
+        if (!"GOOGLE_LEAD_ADS".equals(connector.getVendor())) {
+            throw new VacademyException("Campaign routing is only available for Google Lead Form connectors");
+        }
+        return connector;
+    }
+
     // ── Connection health + re-subscribe ─────────────────────────────────────
 
     /**
@@ -643,7 +886,9 @@ public class MetaOAuthController {
      * connector's status so the list view stays honest.
      */
     @GetMapping("/connectors/{connectorId}/health")
-    public ResponseEntity<ConnectorHealthDTO> connectorHealth(@PathVariable String connectorId) {
+    public ResponseEntity<ConnectorHealthDTO> connectorHealth(@PathVariable String connectorId,
+            @RequestAttribute("user") CustomUserDetails user) {
+        loadConnectorForStaff(connectorId, user);
         return ResponseEntity.ok(connectorHealthService.checkHealth(connectorId));
     }
 
@@ -654,10 +899,15 @@ public class MetaOAuthController {
      */
     @PostMapping("/connectors/{connectorId}/resubscribe")
     @Transactional
+    @Auditable(
+            entityType = "LEAD_CONNECTOR",
+            action = "RESUBSCRIBE",
+            entityIdExpr = "#connectorId",
+            descriptionExpr = "'re-subscribed a lead connector to its page webhook'")
     public ResponseEntity<Map<String, String>> resubscribeConnector(
-            @PathVariable String connectorId) {
-        FormWebhookConnector connector = connectorRepository.findById(connectorId)
-                .orElseThrow(() -> new VacademyException("Connector not found"));
+            @PathVariable String connectorId,
+            @RequestAttribute("user") CustomUserDetails user) {
+        FormWebhookConnector connector = loadConnectorForStaff(connectorId, user);
         if (!"META_LEAD_ADS".equals(connector.getVendor())) {
             throw new VacademyException("Re-subscribe is only supported for Meta connectors");
         }
@@ -710,9 +960,9 @@ public class MetaOAuthController {
     @PostMapping("/connectors/{connectorId}/poll")
     public ResponseEntity<Map<String, Object>> pollConnectorNow(
             @PathVariable String connectorId,
-            @RequestParam(required = false, defaultValue = "1440") int sinceMinutes) {
-        FormWebhookConnector connector = connectorRepository.findById(connectorId)
-                .orElseThrow(() -> new VacademyException("Connector not found"));
+            @RequestParam(required = false, defaultValue = "1440") int sinceMinutes,
+            @RequestAttribute("user") CustomUserDetails user) {
+        FormWebhookConnector connector = loadConnectorForStaff(connectorId, user);
         if (!"META_LEAD_ADS".equals(connector.getVendor())) {
             throw new VacademyException("Polling is only supported for Meta connectors");
         }

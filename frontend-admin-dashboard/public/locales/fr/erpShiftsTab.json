@@ -1,0 +1,24 @@
+{
+    "columns": {
+        "shift": "Équipe",
+        "timing": "Horaires",
+        "break": "Pause",
+        "grace": "Tolérance",
+        "thresholds": "Jour complet / demi-journée"
+    },
+    "defaultShiftName": "Équipe",
+    "defaultChip": "Par défaut",
+    "nightTag": "nuit",
+    "minutesValue_one": "{{count}} min",
+    "minutesValue_many": "{{count}} min",
+    "minutesValue_other": "{{count}} min",
+    "editAriaLabel": "Modifier {{name}}",
+    "defaultShiftFallback": "équipe",
+    "intro": "Horaires de travail, pauses et seuils qui déterminent si un jour compte comme complet, demi-journée ou absent. Les employés sans affectation relèvent de l'équipe par défaut.",
+    "assignToEmployees": "Affecter des employés",
+    "addShift": "Ajouter une équipe",
+    "loadError": "Impossible de charger les équipes.",
+    "emptyTitle": "Aucune équipe définie pour l'instant",
+    "emptyDescription": "Ajoutez au moins une équipe et marquez-la par défaut — sans cela, un pointage n'a aucune référence d'heures.",
+    "addFirstShift": "Ajouter la première équipe"
+}

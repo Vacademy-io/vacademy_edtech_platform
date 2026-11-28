@@ -1,0 +1,104 @@
+{
+    "dialog": {
+        "heading": "कोर्स में जोड़ें",
+        "cancel": "रद्द करें",
+        "createSlide": "स्लाइड बनाएं",
+        "publishAssessment": "असेसमेंट प्रकाशित करें",
+        "loading": {
+            "publishing": "प्रकाशित हो रहा है…",
+            "renderingPdf": "PDF तैयार हो रही है…",
+            "adding": "जोड़ा जा रहा है…"
+        }
+    },
+    "defaultTitle": {
+        "notes": "व्याख्यान नोट्स",
+        "assessment": "असेसमेंट"
+    },
+    "destinationLabel": {
+        "notesPdf": "व्याख्यान नोट्स → PDF स्लाइड",
+        "notesDoc": "व्याख्यान नोट्स → दस्तावेज़ स्लाइड",
+        "quiz": "असेसमेंट → क्विज़ स्लाइड",
+        "assessmentOnly": "असेसमेंट → असेसमेंट सेंटर (कोई स्लाइड नहीं)",
+        "assessment": "असेसमेंट → असेसमेंट स्लाइड (लिंक की गई)"
+    },
+    "questionCount_one": "{{count}} प्रश्न",
+    "questionCount_other": "{{count}} प्रश्न",
+    "withoutMarkedAnswer": " · {{count}} बिना चिह्नित उत्तर के",
+    "slideTitleLabel": "स्लाइड शीर्षक",
+    "slideTitlePlaceholder": "स्लाइड को एक शीर्षक दें",
+    "addAs": "इस रूप में जोड़ें",
+    "notesFormat": {
+        "docLabel": "दस्तावेज़ स्लाइड",
+        "docHint": "संपादन योग्य रिच टेक्स्ट",
+        "pdfLabel": "PDF स्लाइड",
+        "pdfHint": "निश्चित पृष्ठ लेआउट"
+    },
+    "watermark": {
+        "label": "इंस्टिट्यूट लोगो वॉटरमार्क जोड़ें",
+        "noLogo": "(कोई लोगो सेट नहीं है)"
+    },
+    "assessmentMode": {
+        "quizLabel": "क्विज़ स्लाइड",
+        "quizHint": "प्रश्नों को एम्बेड करती है",
+        "assessmentLabel": "असेसमेंट स्लाइड",
+        "assessmentHintLinked": "प्रकाशित असेसमेंट को लिंक करती है",
+        "assessmentHintPublishThenLink": "पहले प्रकाशित करती है, फिर लिंक करती है",
+        "assessmentHintPublishFirst": "पहले प्रकाशित करें",
+        "onlyLabel": "केवल असेसमेंट",
+        "onlyHint": "असेसमेंट सेंटर · कोई स्लाइड नहीं"
+    },
+    "publishNote": "असेसमेंट अपनी वर्तमान सेटिंग्स के साथ प्रकाशित होगा और शेड्यूल की गई असेसमेंट स्लाइड के रूप में लिंक होगा।",
+    "assignToBatches": "बैचों को असाइन करें",
+    "selectBatchesPlaceholder": "बैच चुनें",
+    "batchInfo_one": "असेसमेंट सेंटर पर प्रकाशित होगा, {{count}} बैच द्वारा लिया जा सकेगा। कोई कोर्स स्लाइड नहीं बनाई जाती।",
+    "batchInfo_other": "असेसमेंट सेंटर पर प्रकाशित होगा, {{count}} बैचों द्वारा लिया जा सकेगा। कोई कोर्स स्लाइड नहीं बनाई जाती।",
+    "noBatchSelected": "कोई बैच चयनित नहीं — बिना असाइन किए प्रकाशित होगा; बैच बाद में असेसमेंट सेंटर से जोड़ें।",
+    "linkNeedsPublish": "इसे असेसमेंट स्लाइड के रूप में लिंक करने से पहले असेसमेंट (Create Assessment) प्रकाशित करें।",
+    "scheduleAndMarking": "शेड्यूल और मार्किंग",
+    "saveAs": "इस रूप में सहेजें",
+    "status": {
+        "draftLabel": "ड्राफ्ट",
+        "draftHint": "शिक्षार्थियों से छिपा हुआ",
+        "publishedLabel": "प्रकाशित",
+        "publishedHint": "शिक्षार्थियों को दिखाई देता है"
+    },
+    "destination": "गंतव्य",
+    "fields": {
+        "course": "कोर्स",
+        "selectCourse": "कोर्स चुनें",
+        "session": "सत्र",
+        "selectSession": "सत्र चुनें",
+        "level": "स्तर",
+        "selectLevel": "स्तर चुनें",
+        "subject": "विषय",
+        "selectSubject": "विषय चुनें",
+        "module": "मॉड्यूल",
+        "selectModule": "मॉड्यूल चुनें",
+        "chapter": "अध्याय",
+        "selectChapter": "अध्याय चुनें"
+    },
+    "pickChapter": "इस स्लाइड को जोड़ने के लिए एक अध्याय चुनें।",
+    "addingToCourses_one": "{{count}} कोर्स में जोड़ा जा रहा है",
+    "addingToCourses_other": "{{count}} कोर्सों में जोड़ा जा रहा है",
+    "selectChapterAbove": "ऊपर एक अध्याय चुनें",
+    "addAnotherCourse": "एक और कोर्स जोड़ें",
+    "fromSelection": "चयन से",
+    "removeDestination": "गंतव्य हटाएं",
+    "preview": "पूर्वावलोकन",
+    "noNotesContent": "_कोई नोट्स सामग्री नहीं है।_",
+    "noQuestions": "जोड़ने के लिए कोई प्रश्न नहीं है।",
+    "untitledQuestion": "शीर्षकहीन प्रश्न",
+    "searchPlaceholder": "{{field}} खोजें…",
+    "noMatches": "कोई मिलान नहीं",
+    "toast": {
+        "publishedToAssessmentCenter_one": "असेसमेंट सेंटर पर प्रकाशित ({{count}} बैच)",
+        "publishedToAssessmentCenter_other": "असेसमेंट सेंटर पर प्रकाशित ({{count}} बैच)",
+        "publishedUnassigned": "असेसमेंट सेंटर पर (बिना असाइन किए) प्रकाशित",
+        "couldNotPublish": "असेसमेंट प्रकाशित नहीं किया जा सका।",
+        "addedPartial": "{{added}} में जोड़ा गया; {{failed}} विफल — शेष को नीचे से पुनः प्रयास करें।",
+        "addedSuccess": "{{summary}} में जोड़ा गया",
+        "chapterCount_one": "{{count}} अध्याय",
+        "chapterCount_other": "{{count}} अध्याय",
+        "couldNotAdd": "कोर्स में जोड़ा नहीं जा सका"
+    }
+}

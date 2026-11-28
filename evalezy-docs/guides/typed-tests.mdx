@@ -1,0 +1,416 @@
+---
+title: "Typed online tests"
+description: "Grade typed answers the moment a student submits, and show marks and feedback in your test player."
+icon: "keyboard"
+---
+
+This guide is for online test platforms: the student types answers in your test player, presses **Submit**, and sees marks and feedback shortly after. Objective questions are marked instantly; long answers are graded by the AI, usually in well under a minute.
+
+The example is a Class X Science chapter test with three objective questions and one long answer.
+
+<Steps>
+  <Step title="Create the test once">
+    Create a `typed` exam with `"open": true` when the teacher publishes the test.
+  </Step>
+  <Step title="Submit on student submit">
+    Post the student's answers from your backend.
+  </Step>
+  <Step title="Wait for the result">
+    Poll the submission until it is graded.
+  </Step>
+  <Step title="Show marks and feedback">
+    Read the question-wise result and render it in your player.
+  </Step>
+</Steps>
+
+<Accordion title="Setup for the code samples" icon="gear">
+The Python and Node samples on this page assume this setup. The Node samples use top-level `await`, so run them as ES modules (a `.mjs` file, or `"type": "module"` in `package.json`).
+
+<CodeGroup>
+
+```python Python
+import os
+import requests
+
+API = "https://api.evalezy.com/v1"
+HEADERS = {"X-API-Key": os.environ["EVALEZY_API_KEY"]}
+```
+
+```javascript Node
+const API = "https://api.evalezy.com/v1";
+const headers = {
+  "X-API-Key": process.env.EVALEZY_API_KEY,
+  "Content-Type": "application/json",
+};
+```
+
+</CodeGroup>
+</Accordion>
+
+## 1. Create the test
+
+Create one exam per test, with `"mode": "typed"` and `"open": true` so it accepts submissions straight away. Use your test ID as `external_ref`.
+
+<CodeGroup>
+
+```bash curl
+curl https://api.evalezy.com/v1/exams \
+  -H "X-API-Key: $EVALEZY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: test-ch6-life-processes-v1" \
+  -d '{
+    "title": "Chapter 6 Test: Life Processes",
+    "mode": "typed",
+    "external_ref": "lms-test-90311",
+    "subject": "Biology",
+    "level": "school",
+    "class": "X",
+    "open": true,
+    "questions": [
+      {
+        "label": "1",
+        "type": "mcq_single",
+        "text": "Where does the breakdown of pyruvate to give carbon dioxide, water and energy take place?",
+        "max_marks": 1,
+        "negative_marks": 0.25,
+        "options": [
+          { "label": "A", "text": "Cytoplasm" },
+          { "label": "B", "text": "Mitochondria" },
+          { "label": "C", "text": "Chloroplast" },
+          { "label": "D", "text": "Nucleus" }
+        ],
+        "correct_options": ["B"]
+      },
+      {
+        "label": "2",
+        "type": "mcq_multi",
+        "text": "Which of these are products of photosynthesis?",
+        "max_marks": 2,
+        "options": [
+          { "label": "A", "text": "Glucose" },
+          { "label": "B", "text": "Oxygen" },
+          { "label": "C", "text": "Carbon dioxide" }
+        ],
+        "correct_options": ["A", "B"]
+      },
+      {
+        "label": "3",
+        "type": "numeric",
+        "text": "How many chambers does the human heart have?",
+        "max_marks": 1,
+        "answer": 4
+      },
+      {
+        "label": "4",
+        "type": "long_answer",
+        "text": "Why is respiration considered an exothermic reaction? Explain.",
+        "max_marks": 3,
+        "model_answer": "During respiration, glucose is oxidised to carbon dioxide and water in the cells. This releases energy, so respiration is an exothermic reaction.",
+        "rubric": {
+          "criteria": [
+            { "name": "Oxidation of glucose", "marks": 1, "guidance": "Glucose is oxidised to carbon dioxide and water." },
+            { "name": "Energy released", "marks": 1, "guidance": "States that energy is released." },
+            { "name": "Conclusion", "marks": 1, "guidance": "A reaction that releases energy is exothermic." }
+          ]
+        }
+      }
+    ]
+  }'
+```
+
+```python Python
+resp = requests.post(
+    f"{API}/exams",
+    json={
+        "title": "Chapter 6 Test: Life Processes",
+        "mode": "typed",
+        "external_ref": f"lms-test-{test.id}",
+        "subject": "Biology",
+        "level": "school",
+        "open": True,
+        "questions": [q.to_evalezy() for q in test.questions],
+    },
+    headers={**HEADERS, "Idempotency-Key": f"test-{test.id}-v{test.version}"},
+    timeout=30,
+)
+resp.raise_for_status()
+exam = resp.json()
+test.evalezy_exam_id = exam["id"]
+```
+
+```javascript Node
+const res = await fetch(`${API}/exams`, {
+  method: "POST",
+  headers: { ...headers, "Idempotency-Key": `test-${test.id}-v${test.version}` },
+  body: JSON.stringify({
+    title: test.title,
+    mode: "typed",
+    external_ref: `lms-test-${test.id}`,
+    subject: "Biology",
+    level: "school",
+    open: true,
+    questions: test.questions.map(toEvalezyQuestion),
+  }),
+});
+const exam = await res.json();
+```
+
+</CodeGroup>
+
+Question types for typed tests:
+
+| `type` | Answer key on the question | Marked by |
+| --- | --- | --- |
+| `mcq_single`, `true_false` | `options` and exactly one `correct_options` label | Automatically |
+| `mcq_multi` | `options` and one or more `correct_options` labels | Automatically |
+| `numeric` | `answer`: a number, or a list of accepted numbers | Automatically |
+| `one_word` | `answer`: the expected word (up to 255 characters) | Automatically |
+| `long_answer` | `model_answer` and/or `rubric` | The AI |
+
+`negative_marks` applies to objective questions on typed tests. Marks are in steps of 0.5, up to 1,000 per question, and an exam has at most 200 questions. A long answer with neither a rubric nor a model answer gets an `auto_rubric` warning; send at least a model answer.
+
+<Note>
+Once a test is open, you cannot add or remove questions. You can still correct a question's `text`, `model_answer` and `rubric`. To change the paper itself, create a new exam (for example `lms-test-90311-v2`).
+</Note>
+
+## 2. Submit on student submit
+
+When the student presses **Submit**, your backend posts their answers. Refer to questions by `question_label` (the label you sent) or `question_id`. Each answer uses the field that matches the question type:
+
+| Question type | Answer field |
+| --- | --- |
+| `long_answer` | `text`: plain text, up to 20,000 characters |
+| `mcq_single`, `true_false` | `option_labels`: one label |
+| `mcq_multi` | `option_labels`: one or more labels |
+| `numeric` | `value`: a number |
+| `one_word` | `value`: a string, up to 1,000 characters |
+
+<CodeGroup>
+
+```bash curl
+curl https://api.evalezy.com/v1/exams/$EXAM_ID/submissions \
+  -H "X-API-Key: $EVALEZY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: attempt-7f3c9a" \
+  -d '{
+    "candidate": { "external_id": "user_58213", "name": "Diya Patel" },
+    "answers": [
+      { "question_label": "1", "option_labels": ["B"] },
+      { "question_label": "2", "option_labels": ["A", "B"] },
+      { "question_label": "3", "value": 4 },
+      { "question_label": "4", "text": "In respiration glucose is broken down into carbon dioxide and water and energy is released. Since energy is released it is exothermic." }
+    ],
+    "metadata": { "attempt_id": "attempt-7f3c9a" }
+  }'
+```
+
+```python Python
+def submit_attempt(attempt):
+    resp = requests.post(
+        f"{API}/exams/{attempt.test.evalezy_exam_id}/submissions",
+        json={
+            "candidate": {"external_id": attempt.user.id, "name": attempt.user.name},
+            "answers": [a.to_evalezy() for a in attempt.answers],
+            "metadata": {"attempt_id": attempt.id},
+        },
+        headers={**HEADERS, "Idempotency-Key": f"attempt-{attempt.id}"},
+        timeout=30,
+    )
+    resp.raise_for_status()
+    sub = resp.json()
+    attempt.submission_id = sub["id"]
+    return sub
+```
+
+```javascript Node
+// POST /attempts/:id/submit in your backend
+app.post("/attempts/:id/submit", async (req, res) => {
+  const attempt = await db.attempts.get(req.params.id);
+  const r = await fetch(`${API}/exams/${attempt.examId}/submissions`, {
+    method: "POST",
+    headers: { ...headers, "Idempotency-Key": `attempt-${attempt.id}` },
+    body: JSON.stringify({
+      candidate: { external_id: attempt.userId, name: attempt.userName },
+      answers: attempt.answers, // [{ question_label, text | option_labels | value }]
+      metadata: { attempt_id: attempt.id },
+    }),
+  });
+  const sub = await r.json();
+  if (!r.ok) return res.status(502).json({ error: sub.error.code });
+  await db.attempts.update(attempt.id, { submissionId: sub.id });
+  res.json({ status: sub.status }); // the player starts polling your backend
+});
+```
+
+</CodeGroup>
+
+The response is `202 Accepted` with the submission's `status` and a fixed-price `quote`. A student is created the first time you send their `external_id`, so you don't need a separate sign-up call.
+
+Things to know about answers:
+
+- **Blank answers are "not answered".** An empty `text` or empty `option_labels` scores 0, never reaches the AI and is never billed. You can leave unanswered questions out.
+- **Only English.** A long or one-word answer in which more than 20% of the letters are Devanagari is refused with `422 language_not_supported` (`details.question_label` says which one). A few Hindi words in an English answer are fine.
+- **Mistakes are refused together.** A wrong field for the question type, an unknown label or a duplicate answer returns `422 validation_failed` with every problem in `details.errors[]`. An option label the question doesn't have returns `422 unknown_option_label`.
+- **One live submission per student per test.** A second submission returns `409 submission_exists`. For a retake, send `"replace": true`: the old submission becomes `replaced` and the new one is graded and charged. If you keep every attempt, create one exam per attempt instead.
+
+### What a submission costs
+
+| Submission | Price |
+| --- | --- |
+| Objective answers only | Free. Graded instantly, `status` is `graded` in the create response. |
+| With long answers | 1 credit per non-blank long answer. |
+| Failed or cancelled | Free. |
+
+Contract prices per institute are possible; the `quote` then shows `"rate_source": "contract"`. See [Pricing and credits](/platform/pricing).
+
+## 3. Wait for the result
+
+Typed submissions run in their own lane, separate from scanned copies, and a short test usually comes back in well under a minute. Times are not guaranteed and grow at peak hours. `queue.estimated_ready_at` is a deliberately cautious estimate (never less than 30 seconds away), so poll instead of sleeping until it.
+
+Poll `GET /submissions/{id}` from your backend every 2 to 5 seconds, backing off to 10 seconds, until `status` is final:
+
+<CodeGroup>
+
+```python Python
+import time
+
+FINAL = {"graded", "partially_graded", "failed", "cancelled"}
+
+def wait_for_result(submission_id, timeout_s=180):
+    delay = 2
+    deadline = time.monotonic() + timeout_s
+    while time.monotonic() < deadline:
+        sub = requests.get(f"{API}/submissions/{submission_id}",
+                           headers=HEADERS, timeout=15).json()
+        if sub["status"] in FINAL:
+            return sub
+        time.sleep(delay)
+        delay = min(delay * 1.5, 10)
+    return None  # still running: show "Results will appear here" and let your sync worker pick it up
+```
+
+```javascript Node
+const FINAL = new Set(["graded", "partially_graded", "failed", "cancelled"]);
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+async function waitForResult(submissionId, timeoutMs = 180_000) {
+  let delay = 2000;
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    const sub = await (await fetch(`${API}/submissions/${submissionId}`, { headers })).json();
+    if (FINAL.has(sub.status)) return sub;
+    await sleep(delay);
+    delay = Math.min(delay * 1.5, 10_000);
+  }
+  return null; // still running
+}
+```
+
+</CodeGroup>
+
+<Tip>
+Polling one submission is right for a student waiting on screen. For everything else, such as students who closed the tab, run one [sync worker](/guides/syncing-results) over `GET /submissions?updated_since=` instead of a poll per student.
+</Tip>
+
+<Warning>
+Every poll counts against your [rate limits](/platform/rate-limits). On the standard tier a key may make 600 reads per minute, and an institute 40 reads per second across all its keys. Per-student polling suits a handful of students waiting at the same time. When a whole class submits at once, for example at the end of a timed test, have one sync worker read the feed and push updates to your players, or ask [hello@evalezy.com](mailto:hello@evalezy.com) for the high tier.
+</Warning>
+
+## 4. Show marks and feedback
+
+Fetch the question-wise result. Add `include=model_answer` to show the model answer next to the student's.
+
+```bash
+curl "https://api.evalezy.com/v1/submissions/$SUBMISSION_ID/result?include=model_answer" \
+  -H "X-API-Key: $EVALEZY_API_KEY"
+```
+
+```json Response (abridged)
+{
+  "submission_id": "c8d2a4f1-6e93-4b5c-a0f7-19e3b6d8c240",
+  "status": "graded",
+  "needs_review": false,
+  "finalized": false,
+  "totals": { "awarded": 6.5, "max": 7, "percentage": 92.9, "questions_graded": 4, "questions_failed": 0 },
+  "questions": [
+    {
+      "label": "1",
+      "status": "graded",
+      "awarded": 1,
+      "max": 1,
+      "source": "auto",
+      "confidence": null,
+      "feedback": null,
+      "criteria": []
+    },
+    {
+      "label": "4",
+      "status": "graded",
+      "awarded": 2.5,
+      "max": 3,
+      "source": "ai",
+      "confidence": 0.92,
+      "needs_review": false,
+      "extracted_answer": "In respiration glucose is broken down into carbon dioxide and water and energy is released. Since energy is released it is exothermic.",
+      "feedback": "You explained the breakdown of glucose and the release of energy well. Say clearly that glucose is oxidised to get full marks.",
+      "criteria": [
+        { "name": "Oxidation of glucose", "awarded": 0.5, "max": 1, "reason": "Says glucose is broken down but not that it is oxidised." },
+        { "name": "Energy released", "awarded": 1, "max": 1, "reason": "States that energy is released." },
+        { "name": "Conclusion", "awarded": 1, "max": 1, "reason": "Links energy release to an exothermic reaction." }
+      ],
+      "model_answer": "During respiration, glucose is oxidised to carbon dioxide and water in the cells. This releases energy, so respiration is an exothermic reaction."
+    }
+  ],
+  "credits_charged": 1
+}
+```
+
+What to render for each question:
+
+<ResponseField name="awarded / max" type="number">
+  Marks for the question. Objective questions have `source: "auto"`. AI-graded questions have `source: "ai"`, or `"ai_reviewed"` once a teacher overrode the marks. Approval leaves `source` as `"ai"` and sets `review.approved` to `true`.
+</ResponseField>
+
+<ResponseField name="feedback" type="string">
+  Written feedback for the student, in plain text. Render it as text, not HTML.
+</ResponseField>
+
+<ResponseField name="criteria" type="array">
+  The per-criterion breakdown from your rubric: `name`, `awarded`, `max` and a short `reason`. Shows the student exactly where marks were lost.
+</ResponseField>
+
+<ResponseField name="extracted_answer" type="string">
+  The text the grader worked from. For typed answers this is the text you sent, but spacing and line breaks may differ; angle brackets and markup are kept as plain text. Show the student's original answer from your own records if you need it verbatim.
+</ResponseField>
+
+<ResponseField name="model_answer" type="string">
+  Only with `include=model_answer`.
+</ResponseField>
+
+<ResponseField name="needs_review" type="boolean">
+  `true` when the AI could not grade the answer or had low confidence. Consider showing such marks as provisional until a teacher checks them.
+</ResponseField>
+
+## Drafts and final marks
+
+AI marks are drafts until you finalize them. For a practice test, showing draft feedback straight away is usually fine. For a test that counts towards a grade, label marks as provisional, let teachers review on the dashboard (the test appears there tagged **Source: API**) or through `PATCH /submissions/{id}/questions/{question_id}`, then finalize:
+
+```bash
+curl -X POST https://api.evalezy.com/v1/exams/$EXAM_ID/finalize \
+  -H "X-API-Key: $EVALEZY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "all_graded": true }'
+```
+
+After finalizing, overrides and re-grading are refused with `409 submission_finalized` until you unfinalize the submission with a reason.
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Syncing results" icon="arrows-rotate" href="/guides/syncing-results">
+    Catch every result, including the ones nobody waited for.
+  </Card>
+  <Card title="Going live" icon="rocket" href="/guides/going-live">
+    Retries, error handling and credit alerts.
+  </Card>
+</CardGroup>

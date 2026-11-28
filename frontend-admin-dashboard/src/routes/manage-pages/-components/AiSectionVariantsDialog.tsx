@@ -1,5 +1,12 @@
 import { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { useTranslation } from 'react-i18next';
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogFooter,
+} from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Sparkle, ArrowClockwise, CheckCircle, WarningCircle } from '@phosphor-icons/react';
@@ -8,6 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 import { generateSectionVariants, SectionVariant } from '../-services/ai-page-service';
 import { renderComponentPreview } from './ComponentPreviews';
 import { componentLabel } from '../-utils/component-labels';
+import { describeKeptSettings } from '../-utils/section-edits';
 import type { Component } from '../-types/editor-types';
 
 /**
@@ -21,6 +29,10 @@ import type { Component } from '../-types/editor-types';
  *
  * The server discards any version that would render broken, so fewer cards than
  * requested is a good sign, not a failure.
+ *
+ * `previewOf` turns a version into the section the editor will really get
+ * (what Apply writes), so the preview matches the result; each card also says
+ * which settings the version leaves out and will be kept.
  */
 export const AiSectionVariantsDialog = ({
     open,
@@ -31,6 +43,7 @@ export const AiSectionVariantsDialog = ({
     instituteName,
     terminology,
     onApply,
+    previewOf,
 }: {
     open: boolean;
     onOpenChange: (open: boolean) => void;
@@ -40,7 +53,9 @@ export const AiSectionVariantsDialog = ({
     instituteName?: string;
     terminology?: Record<string, string>;
     onApply: (next: Component) => void;
+    previewOf?: (next: Component) => { component: Component; kept: string[] };
 }) => {
+    const { t } = useTranslation('managePagesPropertyPanel');
     const { toast } = useToast();
     const [instruction, setInstruction] = useState('');
     const [loading, setLoading] = useState(false);
@@ -135,7 +150,8 @@ export const AiSectionVariantsDialog = ({
                     {!loading && !variants && (
                         <div className="rounded-lg border border-dashed border-neutral-200 py-12 text-center">
                             <p className="text-sm text-gray-500">
-                                You&apos;ll get a few different treatments of this section to choose from.
+                                You&apos;ll get a few different treatments of this section to choose
+                                from.
                             </p>
                             <p className="mt-1 text-caption text-gray-400">Costs 15 credits.</p>
                         </div>
@@ -157,38 +173,54 @@ export const AiSectionVariantsDialog = ({
                                     {notice}
                                 </p>
                             )}
-                            {variants.map((v, i) => (
-                                <button
-                                    key={i}
-                                    type="button"
-                                    onClick={() => setSelected(i)}
-                                    className={`block w-full rounded-lg border p-3 text-left transition-colors ${
-                                        selected === i
-                                            ? 'border-primary-400 bg-primary-50'
-                                            : 'border-neutral-200 hover:border-neutral-300'
-                                    }`}
-                                >
-                                    <div className="mb-2 flex items-center gap-2">
-                                        {selected === i ? (
-                                            <CheckCircle
-                                                className="size-4 shrink-0 text-primary-500"
-                                                weight="fill"
-                                            />
-                                        ) : (
-                                            <span className="size-4 shrink-0 rounded-full border border-neutral-300" />
-                                        )}
-                                        <span className="text-sm font-medium text-gray-800">{v.label}</span>
-                                        <span className="truncate text-caption text-gray-500">
-                                            {v.rationale}
-                                        </span>
-                                    </div>
-                                    {/* Non-interactive preview: this is a picker, and a live
+                            {variants.map((v, i) => {
+                                const preview = previewOf?.(v.component as Component);
+                                const kept = describeKeptSettings(preview?.kept ?? []);
+                                return (
+                                    <button
+                                        key={i}
+                                        type="button"
+                                        onClick={() => setSelected(i)}
+                                        className={`block w-full rounded-lg border p-3 text-start transition-colors ${
+                                            selected === i
+                                                ? 'border-primary-400 bg-primary-50'
+                                                : 'border-neutral-200 hover:border-neutral-300'
+                                        }`}
+                                    >
+                                        <div className="mb-2 flex items-center gap-2">
+                                            {selected === i ? (
+                                                <CheckCircle
+                                                    className="size-4 shrink-0 text-primary-500"
+                                                    weight="fill"
+                                                />
+                                            ) : (
+                                                <span className="size-4 shrink-0 rounded-full border border-neutral-300" />
+                                            )}
+                                            <span className="text-sm font-medium text-gray-800">
+                                                {v.label}
+                                            </span>
+                                            <span className="truncate text-caption text-gray-500">
+                                                {v.rationale}
+                                            </span>
+                                        </div>
+                                        {/* Non-interactive preview: this is a picker, and a live
                                         component inside a radio row would swallow the click. */}
-                                    <div className="pointer-events-none overflow-hidden rounded border border-neutral-100 bg-white">
-                                        {renderComponentPreview(v.component as Component)}
-                                    </div>
-                                </button>
-                            ))}
+                                        <div className="pointer-events-none overflow-hidden rounded border border-neutral-100 bg-white">
+                                            {renderComponentPreview(
+                                                preview?.component ?? (v.component as Component)
+                                            )}
+                                        </div>
+                                        {kept.length > 0 && (
+                                            <p className="mt-2 text-caption text-gray-500">
+                                                {t('sectionVersion.keepsNote', {
+                                                    count: kept.length,
+                                                    names: kept.join(', '),
+                                                })}
+                                            </p>
+                                        )}
+                                    </button>
+                                );
+                            })}
                         </div>
                     )}
                 </div>

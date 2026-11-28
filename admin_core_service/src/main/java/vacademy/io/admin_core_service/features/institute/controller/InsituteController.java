@@ -1,5 +1,6 @@
 package vacademy.io.admin_core_service.features.institute.controller;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.cache.annotation.Cacheable;
@@ -7,6 +8,7 @@ import org.springframework.web.bind.annotation.*;
 import vacademy.io.admin_core_service.features.institute.dto.InstituteInfoDTO;
 import vacademy.io.admin_core_service.features.institute.service.InstituteService;
 import vacademy.io.admin_core_service.features.institute.service.setting.InstituteSettingService;
+import vacademy.io.admin_core_service.features.media_service.service.MediaService;
 import vacademy.io.admin_core_service.config.cache.ClientCacheable;
 import vacademy.io.admin_core_service.config.cache.CacheScope;
 import vacademy.io.common.institute.entity.Institute;
@@ -15,6 +17,7 @@ import vacademy.io.admin_core_service.features.institute.repository.InstituteRep
 import java.util.Map;
 import java.util.Optional;
 
+@Slf4j
 @RestController
 @RequestMapping("/admin-core-service/internal/institute/v1")
 public class InsituteController {
@@ -27,11 +30,15 @@ public class InsituteController {
     @Autowired
     private InstituteRepository instituteRepository;
 
+    @Autowired
+    private MediaService mediaService;
+
     @GetMapping("/{instituteId}")
     @ClientCacheable(maxAgeSeconds = 600, scope = CacheScope.PUBLIC)
     @Cacheable(value = "instituteById", key = "#instituteId")
     public ResponseEntity<InstituteInfoDTO> getInstituteById(@PathVariable String instituteId) {
         InstituteInfoDTO institute = service.getInstituteById(instituteId);
+        institute.setInstituteLogoUrl(logoUrl(institute.getInstituteLogoFileId(), instituteId));
         return ResponseEntity.ok(institute);
     }
 
@@ -67,4 +74,19 @@ public class InsituteController {
         return ResponseEntity.ok(java.util.Collections.singletonMap("leadTag", leadTag));
     }
 
+    /**
+     * Permanent public URL of the logo, for callers without a media client (the OTP mail).
+     * Best effort: a media-service failure must not fail the institute lookup that every
+     * service's sender and branding hang off, so it only costs the logo.
+     */
+    private String logoUrl(String logoFileId, String instituteId) {
+        if (logoFileId == null || logoFileId.isBlank()) return null;
+        try {
+            String url = mediaService.getFilePublicUrlByIdWithoutExpiry(logoFileId);
+            return url != null && url.startsWith("http") ? url.trim() : null;
+        } catch (Exception e) {
+            log.warn("Logo URL for institute {} not resolved: {}", instituteId, e.getMessage());
+            return null;
+        }
+    }
 }

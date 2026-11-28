@@ -1,0 +1,228 @@
+{
+    "status": {
+        "PENDING": "En attente",
+        "APPROVED": "Approuvé",
+        "REJECTED": "Refusé"
+    },
+    "tabs": {
+        "PENDING": "En attente",
+        "APPROVED": "Approuvés",
+        "REJECTED": "Refusés",
+        "ALL": "Tous"
+    },
+    "list": {
+        "title": "Avis et retours",
+        "description": "Ce que les visiteurs ont envoyé via la section Avis et retours de vos sites. Approuvez un avis pour l'afficher dans les sections Témoignages réglées pour montrer les avis.",
+        "search": "Rechercher un nom, un avis, une formation ou une ville",
+        "loadFailed": "Impossible de charger les avis.",
+        "retry": "Réessayer",
+        "emptyFiltered": "Aucun avis ne correspond à cette recherche",
+        "empty": {
+            "PENDING": "Aucun avis en attente d'approbation",
+            "APPROVED": "Aucun avis approuvé pour l'instant",
+            "REJECTED": "Aucun avis refusé",
+            "ALL": "Aucun avis pour l'instant"
+        },
+        "emptyHint": "Ajoutez la section Avis et retours à une page de votre site pour commencer à recueillir des avis.",
+        "noText": "Étoiles seulement, sans avis écrit",
+        "sentOn": "Envoyé le {{date}}",
+        "fromSite": "site : {{site}}",
+        "approve": "Approuver",
+        "reject": "Refuser",
+        "hide": "Masquer",
+        "moreActions": "Plus d'actions",
+        "edit": "Modifier",
+        "backToPending": "Remettre en attente",
+        "delete": "Supprimer",
+        "previous": "Précédent",
+        "next": "Suivant",
+        "pageOf": "Page {{page}} sur {{total}}",
+        "editTitle": "Modifier l'avis",
+        "fields": {
+            "rating": "Note",
+            "name": "Nom",
+            "text": "Avis",
+            "course": "Formation",
+            "city": "Ville",
+            "designation": "Profession / poste"
+        },
+        "starsA11y_one": "{{count}} étoile",
+        "starsA11y_other": "{{count}} étoiles",
+        "cancel": "Annuler",
+        "save": "Enregistrer",
+        "deleteTitle": "Supprimer cet avis ?",
+        "deleteBody": "L'avis de {{name}} sera supprimé définitivement. Préférez Refuser si vous pourriez le vouloir plus tard.",
+        "noInstitute": "Aucun établissement sélectionné",
+        "toast": {
+            "APPROVED": {
+                "title": "Approuvé",
+                "description": "Il s'affiche maintenant dans les sections Témoignages réglées pour montrer les avis."
+            },
+            "REJECTED": {
+                "title": "Refusé"
+            },
+            "PENDING": {
+                "title": "Remis en attente"
+            },
+            "errorTitle": "Erreur",
+            "updateFailed": "Impossible de mettre à jour l'avis",
+            "deleteFailed": "Impossible de supprimer l'avis",
+            "saved": "Avis enregistré",
+            "deleted": "Avis supprimé"
+        }
+    },
+    "editor": {
+        "manageHint": "Les avis envoyés par les visiteurs attendent votre approbation. Les avis approuvés s'affichent dans les sections Témoignages réglées pour montrer les avis.",
+        "openReviews": "Ouvrir les avis",
+        "sections": {
+            "template": "Modèle",
+            "look": "Apparence",
+            "behaviour": "Ouverture automatique",
+            "visibility": "Visibilité",
+            "fields": "Ce qui est demandé",
+            "text": "Texte"
+        },
+        "presets": {
+            "buttonAndPopup": {
+                "label": "Bouton + popup",
+                "description": "Bouton flottant, et le formulaire s'ouvre une fois après 5 secondes"
+            },
+            "floatingButton": {
+                "label": "Bouton flottant",
+                "description": "S'ouvre seulement au clic du visiteur"
+            },
+            "sideTab": {
+                "label": "Onglet latéral",
+                "description": "Un onglet sur le bord droit de l'écran"
+            },
+            "popupAfterDelay": {
+                "label": "Popup après 5 secondes",
+                "description": "S'ouvre tout seul, au plus une fois par semaine"
+            },
+            "popupFirstVisit": {
+                "label": "À la première visite",
+                "description": "S'ouvre dès le chargement du site, une seule fois"
+            },
+            "cornerCard": {
+                "label": "Carte en coin",
+                "description": "Glisse dans le coin, la page reste utilisable"
+            },
+            "inlineForm": {
+                "label": "Formulaire dans la page",
+                "description": "Placé dans la page comme toute section"
+            }
+        },
+        "fields": {
+            "display": "Façon de demander",
+            "buttonStyle": "Style du bouton",
+            "buttonLabel": "Texte du bouton",
+            "position": "Position",
+            "popupStyle": "Le formulaire s'ouvre en",
+            "backgroundColor": "Fond de la section",
+            "hideAfterSubmit": "Masquer le bouton une fois l'avis envoyé",
+            "courseOptions": "Choix de formation (un par ligne)",
+            "labelFor": "Libellé de {{field}}",
+            "heading": "Titre",
+            "subheading": "Sous-titre",
+            "nameLabel": "Libellé du nom",
+            "textPlaceholder": "Texte indicatif de l'avis",
+            "submitLabel": "Bouton d'envoi",
+            "successHeading": "Titre de remerciement",
+            "successMessage": "Message de remerciement"
+        },
+        "display": {
+            "floatingPopup": "Bouton + popup",
+            "floating": "Bouton",
+            "popup": "Popup",
+            "inline": "Dans la page"
+        },
+        "buttonStyle": {
+            "pill": "Pilule",
+            "icon": "Icône ronde",
+            "tab": "Onglet latéral"
+        },
+        "position": {
+            "bottom-right": "En bas à droite",
+            "bottom-left": "En bas à gauche",
+            "middle-right": "Bord droit",
+            "middle-left": "Bord gauche"
+        },
+        "popupStyle": {
+            "modal": "Fenêtre centrée",
+            "corner": "Carte en coin"
+        },
+        "hints": {
+            "tabNeedsSide": "Un onglet latéral s'affiche sur le bord gauche ou droit ; dans un coin du bas, il s'affiche en pilule.",
+            "frequency": "Il ne s'ouvre plus tout seul une fois que le visiteur a envoyé un avis.",
+            "alwaysAsked": "La note en étoiles et le nom sont toujours demandés.",
+            "courseOptionsPlaceholder": "SSC CGL\nRailway NTPC",
+            "courseOptions": "Laissez vide pour que les visiteurs saisissent leur formation.",
+            "emptyUsesDefault": "Laissez un champ vide pour utiliser le texte prévu dans la langue du visiteur."
+        },
+        "fieldNames": {
+            "reviewText": "Avis écrit",
+            "course": "Formation",
+            "city": "Ville",
+            "designation": "Profession / poste"
+        },
+        "fieldMode": {
+            "off": "Désactivé",
+            "optional": "Facultatif",
+            "required": "Obligatoire"
+        },
+        "defaults": {
+            "buttonLabel": "Donnez votre avis",
+            "heading": "Comment s'est passée votre expérience ?",
+            "subheading": "Votre avis aide d'autres élèves à choisir.",
+            "nameLabel": "Votre nom",
+            "textLabel": "Votre avis",
+            "textPlaceholder": "Qu'avez-vous aimé ? Qu'est-ce qui pourrait être mieux ?",
+            "cityLabel": "Ville",
+            "courseLabel": "Formation",
+            "designationLabel": "Profession / poste",
+            "submitLabel": "Envoyer l'avis",
+            "successHeading": "Merci !",
+            "successMessage": "Votre avis a été envoyé. Il apparaîtra sur le site une fois approuvé."
+        },
+        "formFields": {
+            "title": "Champs du formulaire",
+            "hint": "Le formulaire du visiteur, dans cet ordre.",
+            "add": "Ajouter un champ",
+            "builtinGroup": "Champs standard",
+            "customGroup": "Votre propre question",
+            "kinds": {
+                "rating": "Note en étoiles",
+                "reviewerName": "Nom",
+                "reviewText": "Avis écrit",
+                "courseName": "Formation",
+                "city": "Ville",
+                "designation": "Profession / poste",
+                "text": "Réponse courte",
+                "textarea": "Réponse longue",
+                "select": "Liste déroulante",
+                "number": "Nombre",
+                "email": "E-mail",
+                "phone": "Téléphone"
+            },
+            "label": "Libellé",
+            "placeholder": "Texte indicatif",
+            "options": "Choix (un par ligne)",
+            "optionsHint": "Les visiteurs en choisissent un.",
+            "optionsCourseHint": "Laissez vide pour que les visiteurs saisissent leur formation.",
+            "required": "Obligatoire",
+            "lockedHint": "La note et le nom restent toujours sur le formulaire : un avis a besoin des deux pour devenir un témoignage.",
+            "width": "Largeur",
+            "widthFull": "Pleine",
+            "widthHalf": "Moitié",
+            "edit": "Modifier le champ",
+            "moveUp": "Monter",
+            "moveDown": "Descendre",
+            "delete": "Supprimer le champ",
+            "maxCustom": "Vous pouvez ajouter jusqu'à 10 questions.",
+            "defaults": {
+                "rating": "Votre note",
+                "custom": "Votre réponse"
+            }
+        }
+    }
+}

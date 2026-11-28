@@ -1,0 +1,17 @@
+{
+    "selectTerm": "{{term}} चुनें",
+    "expandAll": "सभी को विस्तृत करें",
+    "collapseAll": "सभी को संक्षिप्त करें",
+    "addSlide": "स्लाइड जोड़ें",
+    "noSlidesInChapter": "इस अध्याय में कोई स्लाइड नहीं है।",
+    "noSubjectsAvailable": "कोई विषय उपलब्ध नहीं है। नया विषय जोड़कर शुरू करें।",
+    "manageTeachers": "शिक्षक प्रबंधित करें",
+    "viewAndManageTeachers": "इस बैच को सौंपे गए शिक्षकों को देखें और प्रबंधित करें।",
+    "selectBatchLiveSessions": "इसके लाइव सेशन देखने के लिए एक बैच चुनें।",
+    "selectBatchReports": "इसकी रिपोर्ट देखने के लिए एक बैच चुनें।",
+    "contentStructureHeading": "सामग्री संरचना",
+    "navigateContentStructure": "अपने कोर्स की सामग्री संरचना ब्राउज़ करें",
+    "contentStructureAvailableElsewhere": "सामग्री संरचना दृश्य मुख्य कोर्स विवरण पृष्ठ पर उपलब्ध है।",
+    "missingInformation": "जानकारी गुम है",
+    "missingIdsBody": "{{course}} आईडी या {{level}} आईडी गुम है। कृपया आगे बढ़ने के लिए सुनिश्चित करें कि ये प्रदान किए गए हैं।"
+}

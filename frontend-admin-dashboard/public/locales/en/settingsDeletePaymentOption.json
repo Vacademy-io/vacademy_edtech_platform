@@ -1,0 +1,51 @@
+{
+    "dialog": {
+        "title": "Delete Payment Option - {{name}}"
+    },
+    "loading": {
+        "checking": "Checking linked invites...",
+        "loadingButton": "Loading...",
+        "loadButton": "Load Linked Invites"
+    },
+    "select": {
+        "alert_one": "This payment option is linked to {{count}} invite. Please assign a different payment option to each invite first.",
+        "alert_other": "This payment option is linked to {{count}} invites. Please assign a different payment option to each invite first.",
+        "progress": "Progress: {{completed}} of {{total}} completed",
+        "status": {
+            "updated": "Updated",
+            "failed": "Failed",
+            "updating": "Updating...",
+            "pending": "Pending"
+        },
+        "selectLabel": "Select New Payment Option",
+        "selectPlaceholder": "Select payment option",
+        "updateButton": "Update",
+        "updatedTo": "✓ Updated to: {{name}}",
+        "errorPrefix": "Error: {{error}}",
+        "continueButton": "All Updated - Continue to Delete"
+    },
+    "confirm": {
+        "noInvitesAlert": "This payment option has no linked invites and can be safely deleted.",
+        "warningAlert": "This action cannot be undone. Type \"delete\" below to confirm deletion.",
+        "inputLabel": "Type \"delete\" to confirm",
+        "inputPlaceholder": "Type 'delete' to confirm"
+    },
+    "actions": {
+        "cancel": "Cancel",
+        "deleteButton": "Delete Payment Option",
+        "deletingButton": "Deleting..."
+    },
+    "toasts": {
+        "loadInvitesFailed": "Failed to load linked invites",
+        "selectPaymentOption": "Please select a payment option",
+        "paymentOptionNotFound": "Selected payment option not found",
+        "inviteNotFound": "Invite with ID {{id}} not found in linked invites",
+        "updateSuccess": "Invite payment option updated successfully",
+        "updateFailed": "Failed to update invite",
+        "updateAllRequired": "Please update all linked invites before deleting",
+        "confirmTextRequired": "Please type \"delete\" to confirm",
+        "deleteSuccess": "Payment option deleted successfully",
+        "deleteFailed": "Failed to delete payment option"
+    },
+    "unknownPaymentOption": "Unknown"
+}

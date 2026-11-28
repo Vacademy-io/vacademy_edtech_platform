@@ -1,0 +1,14 @@
+{
+    "heading": "Séances à venir",
+    "loading": "Chargement…",
+    "learnerFallback": "Étudiant",
+    "todayBadge": "Aujourd'hui",
+    "joinButton": "Rejoindre",
+    "linkPendingTitle": "Le lien de la réunion est en cours de création. S'il n'apparaît pas, demandez à votre administrateur de vérifier la connexion Google.",
+    "linkPendingLabel": "Lien en attente",
+    "rescheduleAriaLabel": "Replanifier la séance avec {{name}}",
+    "rescheduleTitle": "Déplacer cette séance vers un autre créneau",
+    "cancelAriaLabel": "Annuler la séance avec {{name}}",
+    "cancelTitle": "Annuler cette séance",
+    "thisLearnerFallback": "cet étudiant"
+}

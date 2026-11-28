@@ -1,5 +1,7 @@
 package vacademy.io.community_service.feature.bbb;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
@@ -13,6 +15,7 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.regex.Pattern;
 
 /**
  * Manages the BBB server pool lifecycle via scheduled tasks.
@@ -37,6 +40,11 @@ public class BbbHealthCheckService {
     private static final String TEMPLATE_NAME = "vacademy_server_health_check_utility";
     private static final DateTimeFormatter IST_FORMATTER = DateTimeFormatter.ofPattern("dd MMM yyyy hh:mm a z");
 
+    /** "all" or a pool server slug such as bbb-pool-1 (see bigbluebutton-server/pool-config.json). */
+    private static final Pattern SERVER_SLUG = Pattern.compile("^[a-z0-9-]{1,40}$");
+    private static final List<String> POOL_ACTIONS = List.of("start", "stop", "status");
+    private static final ObjectMapper JSON = new ObjectMapper();
+
     @Value("${WHATSAPP_ACCESS_TOKEN_VIDYAYATAN:}")
     private String waAccessToken;
 
@@ -56,7 +64,7 @@ public class BbbHealthCheckService {
     @Value("${GH_ACTION_TOKEN:}")
     private String githubToken;
 
-    @Value("${bbb.github.repo:Vacademy-io/vacademy_platform}")
+    @Value("${bbb.github.repo:Vacademy-io/vacademy_edtech_platform}")
     private String githubRepo;
 
     /** admin_core_service base URL for pool queries */
@@ -72,11 +80,11 @@ public class BbbHealthCheckService {
     // -----------------------------------------------------------------------
 
     /**
-     * Scheduled start — Mon-Sat at 3:00 pm IST.
+     * Scheduled start — Mon-Sat at 2:30 pm IST.
      * Reads servers_to_start from admin_core_service, then dispatches the
      * GitHub Actions workflow with server_count parameter.
      */
-    @Scheduled(cron = "0 0 15 * * MON-SAT", zone = "Asia/Kolkata")
+    @Scheduled(cron = "0 30 14 * * MON-SAT", zone = "Asia/Kolkata")
     public void scheduledStart() {
         log.info("[BBB Pool] Scheduled START triggered");
 
@@ -87,20 +95,20 @@ public class BbbHealthCheckService {
     }
 
     /**
-     * Scheduled health check — Mon-Sat at 3:20 pm IST.
+     * Scheduled health check — Mon-Sat at 2:45 pm IST.
      * Checks all running servers from the pool and sends the WhatsApp health message.
      */
-    @Scheduled(cron = "0 20 15 * * MON-SAT", zone = "Asia/Kolkata")
+    @Scheduled(cron = "0 45 14 * * MON-SAT", zone = "Asia/Kolkata")
     public void scheduledHealthCheck() {
         log.info("[BBB Pool HealthCheck] Scheduled check triggered");
         runPoolHealthCheck(true);
     }
 
     /**
-     * Scheduled stop — Mon-Sat at 11:55 PM IST.
-     * Stops ALL running servers (snapshot + delete).
+     * Scheduled stop — 2:00 AM IST, Mon-SUN (runs on the calendar day after each
+     * class day)
      */
-    @Scheduled(cron = "0 55 23 * * MON-SAT", zone = "Asia/Kolkata")
+    @Scheduled(cron = "0 0 2 * * MON-SUN", zone = "Asia/Kolkata")
     public void scheduledStop() {
         log.info("[BBB Pool] Scheduled STOP triggered");
         triggerPoolAction("stop", "all", 0);
@@ -309,14 +317,19 @@ public class BbbHealthCheckService {
         result.put("serverSlug", serverSlug);
         result.put("serverCount", serverCount);
 
-        if (githubToken == null || githubToken.isBlank()) {
-            log.error("[BBB Pool] GH_ACTION_TOKEN not configured");
-            result.put("error", "GH_ACTION_TOKEN not configured");
+        if (!POOL_ACTIONS.contains(action)) {
+            result.put("error", "Invalid action. Use: start, stop, status");
             return result;
         }
 
-        if (!List.of("start", "stop", "status").contains(action)) {
-            result.put("error", "Invalid action. Use: start, stop, status");
+        if (serverSlug == null || !SERVER_SLUG.matcher(serverSlug).matches()) {
+            result.put("error", "Invalid serverSlug. Use \"all\" or a pool server slug (a-z, 0-9, -)");
+            return result;
+        }
+
+        if (githubToken == null || githubToken.isBlank()) {
+            log.error("[BBB Pool] GH_ACTION_TOKEN not configured");
+            result.put("error", "GH_ACTION_TOKEN not configured");
             return result;
         }
 
@@ -332,11 +345,20 @@ public class BbbHealthCheckService {
             headers.setContentType(MediaType.APPLICATION_JSON);
 
             // Include server_slug and server_count in dispatch inputs
-            String body = String.format(
-                    "{\"ref\":\"main\",\"inputs\":{\"action\":\"%s\",\"server_slug\":\"%s\",\"server_count\":\"%d\"}}",
-                    action, serverSlug, serverCount);
+            String body = dispatchBody(action, serverSlug, serverCount);
 
-            restTemplate.exchange(url, HttpMethod.POST, new HttpEntity<>(body, headers), String.class);
+            ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.POST,
+                    new HttpEntity<>(body, headers), String.class);
+
+            // A renamed repo answers a dispatch POST with 3xx, which RestTemplate does not
+            // treat as an error. Without this check the call is logged as "triggered" while
+            // GitHub never creates a run, so a start or stop fails silently.
+            if (!response.getStatusCode().is2xxSuccessful()) {
+                String msg = "Dispatch not accepted: HTTP " + response.getStatusCode();
+                result.put("error", msg);
+                log.error("[BBB Pool] {} (url={}, action={})", msg, url, action);
+                return result;
+            }
 
             result.put("status", "triggered");
             result.put("message",
@@ -349,6 +371,18 @@ public class BbbHealthCheckService {
         }
 
         return result;
+    }
+
+    /** The workflow_dispatch request body; inputs are strings, as GitHub expects. */
+    static String dispatchBody(String action, String serverSlug, int serverCount) throws JsonProcessingException {
+        Map<String, Object> inputs = new LinkedHashMap<>();
+        inputs.put("action", action);
+        inputs.put("server_slug", serverSlug);
+        inputs.put("server_count", String.valueOf(serverCount));
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("ref", "main");
+        body.put("inputs", inputs);
+        return JSON.writeValueAsString(body);
     }
 
     /**

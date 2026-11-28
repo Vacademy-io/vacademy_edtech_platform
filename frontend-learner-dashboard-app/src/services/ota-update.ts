@@ -60,6 +60,29 @@ export interface OtaCheckResponse {
 }
 
 /**
+ * Numeric dotted-version compare. Anything that is not a dotted number at all
+ * (the plugin's "builtin" sentinel, an empty string) counts as older, so the
+ * caller's floor wins.
+ */
+function isVersionOlderThan(a: string, b: string): boolean {
+  const parse = (v: string): number[] | null => {
+    const parts = String(v ?? "").trim().split(".");
+    if (!parts.length || parts.some((p) => !/^\d+$/.test(p))) return null;
+    return parts.map(Number);
+  };
+  const left = parse(a);
+  const right = parse(b);
+  if (!right) return false; // no usable floor — leave the reported value alone
+  if (!left) return true; // unparseable ("builtin") — treat as older
+  for (let i = 0; i < Math.max(left.length, right.length); i++) {
+    const l = left[i] ?? 0;
+    const r = right[i] ?? 0;
+    if (l !== r) return l < r;
+  }
+  return false;
+}
+
+/**
  * Check our backend for a new OTA bundle version.
  * Only runs on Android/iOS — returns no-update on web/electron.
  */
@@ -93,10 +116,29 @@ export async function checkForOtaUpdate(): Promise<OtaCheckResponse> {
   // numbering space than OTA bundles (2.2.x); using it made every published
   // bundle look newer and surfaced a false "update available" banner that, if
   // tapped, would downgrade the embedded JS.
-  const currentBundleVersion =
+  // The "builtin" literal is not the only value the plugin reports for a fresh
+  // install: it also hands back the NATIVE app version (iOS MARKETING_VERSION,
+  // e.g. 1.0.1) for a device that has never applied an OTA. That number lives in
+  // a different numbering space than OTA bundles (2.x), so it reads as ancient
+  // and the backend answers with the newest UNTARGETED bundle — one cut before
+  // this brand existed, whose flavor.config has no entry for its app id. The app
+  // then resolves its domain from window.location.hostname ("localhost" in a
+  // WebView), that resolve 404s, and the login screen falls back to the stored
+  // institute id with no logo, no name and no theme.
+  //
+  // So never report a version BELOW the embedded bundle: whatever the plugin
+  // says, __APP_VERSION__ is the floor. An OTA bundle older than the JS compiled
+  // into this binary is never something we want to download.
+  const reportedVersion =
     current.bundle.version === "builtin"
       ? __APP_VERSION__
       : current.bundle.version;
+  const currentBundleVersion = isVersionOlderThan(
+    reportedVersion,
+    __APP_VERSION__,
+  )
+    ? __APP_VERSION__
+    : reportedVersion;
 
   const params = new URLSearchParams({
     platform: platform.toUpperCase(),

@@ -1,0 +1,14 @@
+{
+    "jupyterNotebook": "دفتر Jupyter",
+    "jupyterDescription": "دفاتر برمجة تفاعلية مع فيديو",
+    "scratchProject": "مشروع Scratch",
+    "scratchDescription": "كتل برمجة مرئية مع فيديو",
+    "codeEditor": "محرر الكود",
+    "codeDescription": "بيئة كود تفاعلية مع فيديو",
+    "videoSlideNotFound": "شريحة الفيديو غير موجودة",
+    "convertSuccess": "تم تحويل الفيديو إلى شاشة مقسّمة {{type}} بنجاح!",
+    "convertError": "فشل التحويل إلى شاشة مقسّمة {{type}}",
+    "convertToSplitScreen": "تحويل إلى شاشة مقسّمة",
+    "dialogSubtitle": "أضف بيئة تفاعلية مع فيديو",
+    "creatingSlide": "جارٍ إنشاء شريحة الشاشة المقسّمة..."
+}

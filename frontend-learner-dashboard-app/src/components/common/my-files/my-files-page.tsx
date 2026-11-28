@@ -1,6 +1,7 @@
 import { useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { getMyFiles } from "@/services/system-files-api";
 import {
   Table,
@@ -19,6 +20,7 @@ import { Eye, DownloadSimple, PencilSimple, FileText, Link, File, X } from "@pho
 import { MyButton } from "@/components/design-system/button";
 
 export default function MyFilesPage() {
+  const { t } = useTranslation("layoutCommonB");
   const navigate = useNavigate();
   const [selectedNote, setSelectedNote] = useState<{
     title: string;
@@ -114,11 +116,11 @@ export default function MyFilesPage() {
   if (error) {
     return (
       <div className="flex items-center justify-center min-h-reg-400">
-        <div className="text-center">
-          <h2 className="text-xl font-semibold text-neutral-700 mb-2">
-            Error Loading Files
+        <div className="text-center space-y-2">
+          <h2 className="text-xl font-semibold text-neutral-700">
+            {t("myFilesPage.errorLoading.title")}
           </h2>
-          <p className="text-neutral-500">Please try again later.</p>
+          <p className="text-neutral-500">{t("myFilesPage.errorLoading.message")}</p>
         </div>
       </div>
     );
@@ -129,11 +131,11 @@ export default function MyFilesPage() {
   if (files.length === 0 || !files) {
     return (
       <div className="flex items-center justify-center min-h-reg-400">
-        <div className="text-center">
-          <h2 className="text-xl font-semibold text-neutral-700 mb-2">
-            No Reports Found
+        <div className="text-center space-y-2">
+          <h2 className="text-xl font-semibold text-neutral-700">
+            {t("myFilesPage.empty.title")}
           </h2>
-          <p className="text-neutral-500">You don't have any reports yet.</p>
+          <p className="text-neutral-500">{t("myFilesPage.empty.message")}</p>
         </div>
       </div>
     );
@@ -153,7 +155,7 @@ export default function MyFilesPage() {
                 <X size={24} />
               </button>
               <h1 className="text-xl md:text-2xl font-bold text-gray-900">
-                My Files
+                {t("myFilesPage.title")}
               </h1>
             </div>
             <div className="hidden md:flex gap-3">
@@ -164,7 +166,7 @@ export default function MyFilesPage() {
                 layoutVariant="default"
                 onClick={handleClose}
               >
-                Back to Dashboard
+                {t("myFilesPage.backToDashboard")}
               </MyButton>
             </div>
           </div>
@@ -178,22 +180,22 @@ export default function MyFilesPage() {
             <TableHeader>
               <TableRow className="bg-primary-100 dark:bg-primary-900/20 hover:bg-primary-100 dark:hover:bg-primary-900/20">
                 <TableHead className="font-semibold text-primary-900 dark:text-primary-100">
-                  Name
+                  {t("myFilesPage.table.name")}
                 </TableHead>
                 <TableHead className="font-semibold text-primary-900 dark:text-primary-100">
-                  Type
+                  {t("myFilesPage.table.type")}
                 </TableHead>
                 <TableHead className="font-semibold text-primary-900 dark:text-primary-100">
-                  Media Type
+                  {t("myFilesPage.table.mediaType")}
                 </TableHead>
                 <TableHead className="font-semibold text-primary-900 dark:text-primary-100">
-                  Added By
+                  {t("myFilesPage.table.addedBy")}
                 </TableHead>
                 <TableHead className="font-semibold text-primary-900 dark:text-primary-100">
-                  Date Added
+                  {t("myFilesPage.table.dateAdded")}
                 </TableHead>
                 <TableHead className="text-end font-semibold text-primary-900 dark:text-primary-100">
-                  Actions
+                  {t("myFilesPage.table.actions")}
                 </TableHead>
               </TableRow>
             </TableHeader>
@@ -211,12 +213,12 @@ export default function MyFilesPage() {
                   </TableCell>
                   <TableCell>
                     <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 text-xs font-medium">
-                      {file.file_type === "Html" ? "Note" : file.file_type}
+                      {file.file_type === "Html" ? t("myFilesPage.fileType.note") : file.file_type}
                     </span>
                   </TableCell>
                   <TableCell>
                     <span className="capitalize text-gray-600 dark:text-gray-400">
-                      {file.media_type === "note" ? "Text" : file.media_type}
+                      {file.media_type === "note" ? t("myFilesPage.fileType.text") : file.media_type}
                     </span>
                   </TableCell>
                   <TableCell className="text-gray-600 dark:text-gray-400">
@@ -233,12 +235,12 @@ export default function MyFilesPage() {
                           size="sm"
                           onClick={() => handleViewClick(file)}
                           title={
-                            file.file_type === "Url" ? "Open URL" : "View Note"
+                            file.file_type === "Url" ? t("myFilesPage.actions.openUrl") : t("myFilesPage.actions.viewNote")
                           }
                           className="gap-1.5"
                         >
                           <Eye className="h-3.5 w-3.5" />
-                          <span className="hidden xl:inline">View</span>
+                          <span className="hidden xl:inline">{t("myFilesPage.actions.view")}</span>
                         </Button>
                       )}
                       {canShowDownloadButton(file) && (
@@ -246,11 +248,11 @@ export default function MyFilesPage() {
                           variant="outline"
                           size="sm"
                           onClick={() => handleDownloadClick(file)}
-                          title="Download File"
+                          title={t("myFilesPage.actions.downloadFile")}
                           className="gap-1.5"
                         >
                           <DownloadSimple className="h-3.5 w-3.5" />
-                          <span className="hidden xl:inline">Download</span>
+                          <span className="hidden xl:inline">{t("myFilesPage.actions.download")}</span>
                         </Button>
                       )}
                       {hasEditAccess(file) && (
@@ -258,11 +260,11 @@ export default function MyFilesPage() {
                           variant="outline"
                           size="sm"
                           onClick={() => handleEditClick(file)}
-                          title="Edit File"
+                          title={t("myFilesPage.actions.editFile")}
                           className="gap-1.5"
                         >
                           <PencilSimple className="h-3.5 w-3.5" />
-                          <span className="hidden xl:inline">Edit</span>
+                          <span className="hidden xl:inline">{t("myFilesPage.actions.edit")}</span>
                         </Button>
                       )}
                     </div>
@@ -281,38 +283,38 @@ export default function MyFilesPage() {
             key={file.id}
             className="border border-gray-200 dark:border-neutral-800 hover:shadow-md transition-all duration-200 hover:border-primary-300 dark:hover:border-primary-700"
           >
-            <CardContent className="p-4">
+            <CardContent className="p-card">
               {/* Header with icon and name */}
               <div className="flex items-start gap-3 mb-3">
                 <div className="mt-1">{getFileIcon(file.file_type)}</div>
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-gray-900 dark:text-white break-words mb-1">
+                <div className="flex-1 min-w-0 space-y-1">
+                  <h3 className="font-semibold text-gray-900 dark:text-white break-words">
                     {file.name}
                   </h3>
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 text-xs font-medium">
-                      {file.file_type === "Html" ? "Note" : file.file_type}
+                      {file.file_type === "Html" ? t("myFilesPage.fileType.note") : file.file_type}
                     </span>
                     <span className="text-xs text-gray-500 dark:text-gray-400 capitalize">
-                      {file.media_type === "note" ? "Text" : file.media_type}
+                      {file.media_type === "note" ? t("myFilesPage.fileType.text") : file.media_type}
                     </span>
                   </div>
                 </div>
               </div>
 
               {/* File Details */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4 text-sm">
-                <div>
-                  <span className="text-gray-500 dark:text-gray-400 block mb-1">
-                    Added By
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-stack mb-4 text-sm">
+                <div className="space-y-1">
+                  <span className="text-gray-500 dark:text-gray-400 block">
+                    {t("myFilesPage.table.addedBy")}
                   </span>
                   <p className="font-medium text-gray-900 dark:text-white">
                     {file.created_by}
                   </p>
                 </div>
-                <div>
-                  <span className="text-gray-500 dark:text-gray-400 block mb-1">
-                    Date Added
+                <div className="space-y-1">
+                  <span className="text-gray-500 dark:text-gray-400 block">
+                    {t("myFilesPage.table.dateAdded")}
                   </span>
                   <p className="font-medium text-gray-900 dark:text-white">
                     {formatDate(file.created_at_iso)}
@@ -327,11 +329,11 @@ export default function MyFilesPage() {
                     variant="outline"
                     size="sm"
                     onClick={() => handleViewClick(file)}
-                    title={file.file_type === "Url" ? "Open URL" : "View Note"}
+                    title={file.file_type === "Url" ? t("myFilesPage.actions.openUrl") : t("myFilesPage.actions.viewNote")}
                     className="flex-1 min-w-reg-100 gap-2"
                   >
                     <Eye className="h-4 w-4" />
-                    View
+                    {t("myFilesPage.actions.view")}
                   </Button>
                 )}
                 {canShowDownloadButton(file) && (
@@ -339,11 +341,11 @@ export default function MyFilesPage() {
                     variant="outline"
                     size="sm"
                     onClick={() => handleDownloadClick(file)}
-                    title="Download File"
+                    title={t("myFilesPage.actions.downloadFile")}
                     className="flex-1 min-w-reg-100 gap-2"
                   >
                     <DownloadSimple className="h-4 w-4" />
-                    Download
+                    {t("myFilesPage.actions.download")}
                   </Button>
                 )}
                 {hasEditAccess(file) && (
@@ -351,11 +353,11 @@ export default function MyFilesPage() {
                     variant="outline"
                     size="sm"
                     onClick={() => handleEditClick(file)}
-                    title="Edit File"
+                    title={t("myFilesPage.actions.editFile")}
                     className="flex-1 min-w-reg-100 gap-2"
                   >
                     <PencilSimple className="h-4 w-4" />
-                    Edit
+                    {t("myFilesPage.actions.edit")}
                   </Button>
                 )}
               </div>

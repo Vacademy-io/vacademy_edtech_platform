@@ -27,7 +27,7 @@ import { getCurrentInstituteId } from '@/lib/auth/instituteUtils';
 import { useInstituteDetailsStore } from '@/stores/students/students-list/useInstituteDetailsStore';
 import {
     AGENT_ASSIST_CREDIT_COST,
-    draftAgentPrompt,
+    runAssistJob,
 } from '@/routes/settings/-services/ai-agent-assist';
 import { blankAgent, type AiAgent } from '../-services/ai-agents';
 import type { AgentUseCase } from '../-constants/use-cases';
@@ -83,14 +83,25 @@ export function UseCaseWizardDialog({
     });
 
     const generate = useMutation({
-        mutationFn: async (uc: AgentUseCase) =>
-            draftAgentPrompt(instituteId, uc.brief(answers), toLanguageField(answers.language)),
+        mutationFn: async (uc: AgentUseCase) => {
+            const base = templateAgent(uc);
+            return runAssistJob('draft', {
+                instituteId,
+                brief: uc.brief(answers),
+                agentName: base.name,
+                language: base.language,
+                openingLine: base.openingLine,
+                extractionQuestions: base.extractionQuestions,
+                dispositions: base.dispositions,
+            });
+        },
         onSuccess: (res, uc) => {
             const base = templateAgent(uc);
             onDrafted({
                 ...base,
                 systemPrompt: res.prompt?.trim() || base.systemPrompt,
-                openingLine: res.derived?.opening_line?.trim() || base.openingLine,
+                openingLine:
+                    (res.opening_line ?? res.derived?.opening_line)?.trim() || base.openingLine,
                 extractionQuestions: res.derived?.extraction_questions?.length
                     ? res.derived.extraction_questions
                     : base.extractionQuestions,

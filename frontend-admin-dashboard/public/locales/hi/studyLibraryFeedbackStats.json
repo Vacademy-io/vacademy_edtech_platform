@@ -1,0 +1,10 @@
+{
+    "learnerFeedbackStats": "शिक्षार्थी फीडबैक आँकड़े",
+    "totalResponsesCollected_one": "कुल {{count}} प्रतिक्रिया एकत्रित",
+    "totalResponsesCollected_other": "कुल {{count}} प्रतिक्रियाएं एकत्रित",
+    "ratingsCount_one": "{{count}} रेटिंग",
+    "ratingsCount_other": "{{count}} रेटिंग्स",
+    "lowRatingsCount_one": "{{count}} कम (< 3)",
+    "lowRatingsCount_other": "{{count}} कम (< 3)",
+    "noWrittenResponsesYet": "अभी तक कोई लिखित प्रतिक्रिया नहीं।"
+}

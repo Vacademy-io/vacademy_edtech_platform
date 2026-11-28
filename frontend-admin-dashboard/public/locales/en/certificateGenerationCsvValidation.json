@@ -1,0 +1,18 @@
+{
+    "errors": {
+        "columnLabel": "Column {{position}}",
+        "invalidHeader": "Column {{position}} must be '{{expected}}', found '{{found}}'",
+        "missingValue": "missing",
+        "duplicateHeader": "Duplicate header '{{header}}' found. All headers after the 3rd column must be unique.",
+        "missingStudent": "Selected student '{{name}}' (ID: {{id}}) is missing from CSV",
+        "extraStudent": "Student '{{name}}' (ID: {{id}}) was not selected for certificate generation"
+    },
+    "warnings": {
+        "dataTypeMismatch": "Value '{{value}}' in column '{{column}}' appears to be {{actualType}} but column is mostly {{expectedType}}",
+        "emptyCell": "Required field '{{field}}' is empty"
+    },
+    "format": {
+        "row": " (Row {{row}})",
+        "inColumn": " in {{column}}"
+    }
+}

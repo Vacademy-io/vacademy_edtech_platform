@@ -1,0 +1,8 @@
+{
+  "title": "{{term}} par e-mail",
+  "emailInput": {
+    "label": "Saisir l'e-mail de l'invité",
+    "placeholder": "you@email.com"
+  },
+  "addButton": "Ajouter"
+}

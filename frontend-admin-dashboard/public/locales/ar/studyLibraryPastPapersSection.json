@@ -1,0 +1,50 @@
+{
+    "kind": {
+        "assessment": "تقييم",
+        "notes": "ملاحظات"
+    },
+    "status": {
+        "generating": "جارٍ الإنشاء",
+        "ready": "جاهز",
+        "published": "منشور",
+        "failed": "فشل"
+    },
+    "bucket": {
+        "today": "اليوم",
+        "yesterday": "أمس",
+        "thisWeek": "وقت سابق من هذا الأسبوع",
+        "older": "أقدم"
+    },
+    "rowTime": {
+        "today": "اليوم، {{time}}",
+        "yesterday": "أمس، {{time}}"
+    },
+    "error": {
+        "couldNotLoad": "تعذّر تحميل سجل الذكاء الاصطناعي.",
+        "retry": "إعادة المحاولة"
+    },
+    "empty": {
+        "heading": "لا يوجد سجل ذكاء اصطناعي بعد",
+        "description": "أنشئ تقييمًا أو ملاحظات أدناه — سيظهر كل تشغيل هنا حتى تتمكن من إعادة التصدير أو إعادة النشر دون استهلاك عملية إنشاء جديدة."
+    },
+    "header": {
+        "title": "سجل الذكاء الاصطناعي",
+        "subtitle": "تم إنشاؤه من هذا التسجيل",
+        "refresh": "تحديث"
+    },
+    "row": {
+        "lectureNotesChars_zero": "ملاحظات المحاضرة · {{count}} حرف",
+        "lectureNotesChars_one": "ملاحظات المحاضرة · حرف واحد",
+        "lectureNotesChars_two": "ملاحظات المحاضرة · حرفان",
+        "lectureNotesChars_few": "ملاحظات المحاضرة · {{count}} أحرف",
+        "lectureNotesChars_many": "ملاحظات المحاضرة · {{count}} حرفًا",
+        "lectureNotesChars_other": "ملاحظات المحاضرة · {{count}} حرف",
+        "questionsCount_zero": "{{count}} سؤال",
+        "questionsCount_one": "سؤال واحد",
+        "questionsCount_two": "سؤالان",
+        "questionsCount_few": "{{count}} أسئلة",
+        "questionsCount_many": "{{count}} سؤالًا",
+        "questionsCount_other": "{{count}} سؤال",
+        "quotedTitle": "«{{title}}»"
+    }
+}

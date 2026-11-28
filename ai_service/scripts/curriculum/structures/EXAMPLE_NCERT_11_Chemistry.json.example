@@ -1,0 +1,14 @@
+{
+  "board": "NCERT", "class": "11", "subject": "Chemistry", "book": "Chemistry Part-I, Chemistry Part II",
+  "chapters": [
+    {"no": 1, "title": "Some Basic Concepts of Chemistry",
+     "topics": ["Importance of Chemistry", "Nature of Matter", "Properties of Matter and their Measurement",
+                "Uncertainty in Measurement", "Laws of Chemical Combinations", "Dalton's Atomic Theory",
+                "Atomic and Molecular Masses", "Mole Concept and Molar Masses", "Percentage Composition",
+                "Stoichiometry and Stoichiometric Calculations"]},
+    {"no": 2, "title": "Structure of Atom",
+     "topics": ["Discovery of Sub-atomic Particles", "Atomic Models", "Developments Leading to the Bohr's Model of Atom",
+                "Bohr's Model for Hydrogen Atom", "Towards Quantum Mechanical Model of the Atom",
+                "Quantum Mechanical Model of Atom"]}
+  ]
+}

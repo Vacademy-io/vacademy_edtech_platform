@@ -1,12 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
 import { Preferences } from "@capacitor/preferences";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 import confetti from "canvas-confetti";
 import LocalStorageUtils from "@/utils/localstorage";
 import {
   generateCertificateWithCache,
   getCachedCertificateStatus,
   getCertificateConfig,
+  getCertificateEligibility,
+  type CertificateCriteriaMode,
+  type CertificateEligibility,
 } from "@/services/certificates";
 
 type SearchParamsLike = {
@@ -117,6 +121,7 @@ export function useCertificateGeneration({
   courseDetailsData: unknown;
   searchParams: SearchParamsLike;
 }) {
+  const { t } = useTranslation("courseDetailsB");
   const [certificateUrl, setCertificateUrl] = useState<string | null>(null);
   const [showConfetti, setShowConfetti] = useState<boolean>(false);
   const [certificateDialogOpen, setCertificateDialogOpen] =
@@ -126,6 +131,22 @@ export function useCertificateGeneration({
   // Whether certificates are switched on for this batch, resolved server-side.
   // Starts false so no certificate UI flashes before the answer arrives.
   const [certificatesEnabled, setCertificatesEnabled] = useState<boolean>(false);
+  // How the course's certificate is earned. Anything but PROGRESS involves test
+  // marks, which the server grades - the eligibility below is its answer.
+  const [certificateCriteriaMode, setCertificateCriteriaMode] =
+    useState<CertificateCriteriaMode>("PROGRESS");
+  const [certificateEligibility, setCertificateEligibility] =
+    useState<CertificateEligibility | null>(null);
+  // The learner already holds this batch's certificate (e.g. issued by staff, or
+  // earned before the course's rule changed): always show it.
+  const [certificateIssued, setCertificateIssued] = useState<boolean>(false);
+
+  // Another batch has its own tests and results: never show the previous batch's
+  // requirements while the new answer is on its way.
+  useEffect(() => {
+    setCertificateEligibility(null);
+    setCertificateIssued(false);
+  }, [packageSessionIdForCurrentLevel]);
 
   // Progress is recorded per batch, not per course, so the number shown has to
   // belong to the package_session whose content this page is rendering. A
@@ -198,8 +219,11 @@ export function useCertificateGeneration({
         packageSessionIdForCurrentLevel,
       );
       setCertificatesEnabled(certificateConfig.enabled);
+      setCertificateCriteriaMode(certificateConfig.criteriaMode);
+      setCertificateIssued(certificateConfig.certificateIssued);
 
       if (!certificateConfig.enabled) {
+        setCertificateEligibility(null);
         return;
       }
 
@@ -229,12 +253,30 @@ export function useCertificateGeneration({
           setCertificateUrl(cached.url);
         }
 
-        if (percentageCompleted == null) return;
+        // Progress-only courses keep the original client-side check. A course
+        // whose rule involves test marks asks the server, which grades the
+        // learner's best attempts; a failed fetch means "not yet" (fail closed).
+        let certificateDue: boolean;
+        if (certificateConfig.certificateIssued) {
+          // Already issued: fetch it. The backend hands back the existing file
+          // without re-checking the rule, so nothing new is minted here.
+          setCertificateEligibility(null);
+          certificateDue = true;
+        } else if (certificateConfig.criteriaMode === "PROGRESS") {
+          setCertificateEligibility(null);
+          if (percentageCompleted == null) return;
+          certificateDue =
+            typeof percentageCompleted === "number" &&
+            percentageCompleted >= threshold;
+        } else {
+          const eligibility = await getCertificateEligibility(
+            packageSessionIdForCurrentLevel,
+          );
+          setCertificateEligibility(eligibility);
+          certificateDue = !!eligibility?.eligible;
+        }
 
-        if (
-          typeof percentageCompleted === "number" &&
-          percentageCompleted >= threshold
-        ) {
+        if (certificateDue) {
           const celebrationKey = `CERTIFICATE_CELEBRATED_${userId}_${packageSessionIdForCurrentLevel}`;
           const alreadyCelebrated =
             !!LocalStorageUtils.get<boolean>(celebrationKey);
@@ -265,8 +307,8 @@ export function useCertificateGeneration({
             setShowConfetti(true);
             setTimeout(() => setShowConfetti(false), 3000);
             setTimeout(() => setCertificateDialogOpen(true), 3200);
-            toast.success("Certificate generated successfully!", {
-              description: "You can now view your certificate.",
+            toast.success(t("certificateGeneration.toast.successTitle"), {
+              description: t("certificateGeneration.toast.successDescription"),
             });
             // Mark celebration as shown to avoid repeating confetti on future visits
             LocalStorageUtils.set(celebrationKey, true);
@@ -282,7 +324,7 @@ export function useCertificateGeneration({
           return;
         }
 
-        toast.error("Failed to generate certificate. Please try again later.");
+        toast.error(t("certificateGeneration.toast.error"));
       }
     };
 
@@ -305,5 +347,8 @@ export function useCertificateGeneration({
     completionPercentage,
     certificateThreshold,
     certificatesEnabled,
+    certificateCriteriaMode,
+    certificateEligibility,
+    certificateIssued,
   };
 }

@@ -53,6 +53,14 @@ public class PublicCertificateVerificationController {
      * styles and images stay, because they are the entire design — a certificate
      * document is inline CSS plus artwork, and blocking those would render a
      * blank page.
+     *
+     * <p>Framing is allowed from anywhere. The learner portal that shows this
+     * document in an iframe is the institute's own domain — never this API's
+     * origin, and there is no fixed list of them — so {@code 'self'} made every
+     * browser refuse the frame. There is nothing on the page to click (no script,
+     * no form, no link target), so being framed cannot be turned into a
+     * clickjack. The matching X-Frame-Options exemption is in
+     * ApplicationSecurityConfig.
      */
     private static final String DOCUMENT_CSP = String.join("; ",
             "default-src 'none'",
@@ -61,7 +69,7 @@ public class PublicCertificateVerificationController {
             "font-src 'self' data: https:",
             "form-action 'none'",
             "base-uri 'none'",
-            "frame-ancestors 'self'");
+            "frame-ancestors *");
 
     /**
      * @param certificateId the human-readable number from the certificate

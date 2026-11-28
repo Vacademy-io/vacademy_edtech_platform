@@ -1,0 +1,18 @@
+{
+    "title": "Google Meet एकीकरण",
+    "description": "एक Google Workspace खाता कनेक्ट करें ताकि एडमिन लाइव-क्लास विज़ार्ड से सीधे Google Meet सत्र बना सकें। शिक्षार्थी Meet लिंक खोलकर जुड़ते हैं (Google Meet का कोई इन-ऐप एम्बेड नहीं है)।",
+    "connectButton": "Google Workspace कनेक्ट करें",
+    "retry": "पुनः प्रयास करें",
+    "errors": {
+        "loadAccounts": "Google खाते लोड करने में विफल।",
+        "connectionFailed": "Google कनेक्शन विफल ({{errorCode}})।",
+        "connectionFailedWithReason": "Google कनेक्शन विफल ({{errorCode}}): {{reason}}।",
+        "connectionStartFailed": "Google कनेक्शन शुरू नहीं हो सका। कृपया पुनः प्रयास करें।"
+    },
+    "toasts": {
+        "connected": "Google Workspace सफलतापूर्वक कनेक्ट हो गया।"
+    },
+    "recordingNotice": {
+        "text": "इसके लिए <strong>Google Workspace</strong> खाता चाहिए — कनेक्ट करना, मीटिंग बनाना, और शिक्षार्थी/होस्ट का जुड़ना <strong>किसी भी Workspace प्लान</strong> पर काम करता है (एक मुफ़्त निजी @gmail.com खाता Meet API का उपयोग नहीं कर सकता)। <strong>ऑटो-रिकॉर्डिंग</strong> ही एकमात्र पेड-टियर सुविधा है: इसके लिए Business Standard+, Enterprise, या Education Plus, साथ ही Workspace में साइन-इन किया हुआ एक शिक्षक चाहिए। यदि आप इसे ऐसे प्लान पर सक्षम करते हैं जो रिकॉर्ड नहीं कर सकता, तो हम फिर भी मीटिंग बनाते हैं (बिना रिकॉर्डिंग के) और टॉगल को वापस बंद कर देते हैं। रिकॉर्डिंग कनेक्टेड खाते के Google Drive में जाती हैं (एडमिन-फेसिंग)।"
+    }
+}

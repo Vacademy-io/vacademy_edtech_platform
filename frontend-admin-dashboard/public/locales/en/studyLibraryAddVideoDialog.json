@@ -1,0 +1,32 @@
+{
+    "validation": {
+        "urlRequired": "URL is required",
+        "urlInvalid": "Please enter a valid URL",
+        "youtubeUrlInvalid": "Please enter a valid YouTube URL"
+    },
+    "defaults": {
+        "videoName": "YouTube Video"
+    },
+    "fields": {
+        "urlPlaceholder": "https://www.youtube.com/watch?v=..."
+    },
+    "preview": {
+        "thumbnailAlt": "Video thumbnail"
+    },
+    "toasts": {
+        "invalidYoutubeUrl": "Invalid YouTube URL",
+        "durationReadFailed": "Could not read video duration from YouTube. Please try again.",
+        "youtubeLoading": "YouTube is still loading. Please wait a moment and try again.",
+        "updateSuccess": "Video link updated successfully!",
+        "addSuccess": "Video added successfully!",
+        "updateFailed": "Failed to update link",
+        "addFailed": "Failed to add video",
+        "reorderFailed": "Slide created but reordering failed"
+    },
+    "actions": {
+        "updatingLink": "Updating Link...",
+        "addingVideo": "Adding Video...",
+        "updateLink": "Update YouTube Link",
+        "addVideo": "Add YouTube Video"
+    }
+}

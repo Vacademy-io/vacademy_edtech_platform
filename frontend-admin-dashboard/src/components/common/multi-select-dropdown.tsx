@@ -18,6 +18,8 @@ interface MultiSelectDropdownProps {
     className?: string;
     emptyLabel?: string;
     searchPlaceholder?: string;
+    /** Also match the search text against each option's subtitle (e.g. a staff email). */
+    searchSubtitle?: boolean;
 }
 
 export const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
@@ -29,6 +31,7 @@ export const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
     className = '',
     emptyLabel = 'No results',
     searchPlaceholder = 'Search…',
+    searchSubtitle = false,
 }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [search, setSearch] = useState('');
@@ -40,6 +43,10 @@ export const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
         top: 0,
         left: 0,
     });
+    // Inside a modal dialog the panel has to live in the dialog's DOM: a modal
+    // Radix dialog switches off pointer events and traps focus everywhere else,
+    // so a panel on document.body can be seen but not clicked, typed into or scrolled.
+    const [dialogContainer, setDialogContainer] = useState<HTMLElement | null>(null);
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -65,16 +72,34 @@ export const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
         const updatePosition = () => {
             const rect = triggerRef.current?.getBoundingClientRect();
             if (!rect) return;
-            setPanelPosition({ top: rect.bottom + 4, left: rect.left });
+            if (!dialogContainer) {
+                setPanelPosition({ top: rect.bottom + 4, left: rect.left });
+                return;
+            }
+            // Positioned absolutely against the dialog box. The dialog clips its
+            // overflow, so open upwards when there is no room below.
+            const box = dialogContainer.getBoundingClientRect();
+            const panelHeight = panelRef.current?.offsetHeight ?? 0;
+            const opensUp =
+                rect.bottom + 4 + panelHeight > box.bottom && rect.top - box.top > panelHeight + 4;
+            const top = opensUp ? rect.top - 4 - panelHeight : rect.bottom + 4;
+            setPanelPosition({
+                top: top - box.top - dialogContainer.clientTop,
+                left: rect.left - box.left - dialogContainer.clientLeft,
+            });
         };
         updatePosition();
+        // Once more after paint, when the panel height is known.
+        const frame = requestAnimationFrame(updatePosition);
         window.addEventListener('scroll', updatePosition, true);
         window.addEventListener('resize', updatePosition);
         return () => {
+            cancelAnimationFrame(frame);
             window.removeEventListener('scroll', updatePosition, true);
             window.removeEventListener('resize', updatePosition);
         };
-    }, [isOpen]);
+        // A pick adds a chip and shifts the trigger, so follow it.
+    }, [isOpen, dialogContainer, selected?.length]);
 
     useEffect(() => {
         if (!isOpen) {
@@ -105,8 +130,12 @@ export const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
         );
         const needle = search.trim().toLowerCase();
         if (!needle) return unselected;
-        return unselected.filter((option) => option.name.toLowerCase().includes(needle));
-    }, [options, selected, search]);
+        return unselected.filter(
+            (option) =>
+                option.name.toLowerCase().includes(needle) ||
+                (searchSubtitle && (option.subtitle ?? '').toLowerCase().includes(needle))
+        );
+    }, [options, selected, search, searchSubtitle]);
 
     const getInitials = (name: string) => {
         const cleaned = name.trim();
@@ -156,7 +185,15 @@ export const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
                     className={`flex items-center gap-1 rounded bg-white text-left transition-all focus:border-none active:border-none ${
                         disabled ? 'cursor-not-allowed bg-neutral-100' : ''
                     }`}
-                    onClick={() => !disabled && setIsOpen((open) => !open)}
+                    onClick={() => {
+                        if (disabled) return;
+                        setDialogContainer(
+                            triggerRef.current?.closest<HTMLElement>(
+                                '[role="dialog"], [role="alertdialog"]'
+                            ) ?? null
+                        );
+                        setIsOpen((open) => !open);
+                    }}
                     disabled={disabled}
                 >
                     <p className="text-sm font-medium text-primary-500">{placeholder}</p>
@@ -167,7 +204,7 @@ export const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
                         <div
                             ref={panelRef}
                             style={{
-                                position: 'fixed',
+                                position: dialogContainer ? 'absolute' : 'fixed',
                                 top: panelPosition.top,
                                 left: panelPosition.left,
                                 zIndex: 9999,
@@ -216,7 +253,7 @@ export const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
                                 )}
                             </div>
                         </div>,
-                        document.body
+                        dialogContainer ?? document.body
                     )}
             </div>
         </div>

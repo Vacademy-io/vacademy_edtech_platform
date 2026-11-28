@@ -10,8 +10,15 @@ import vacademy.io.admin_core_service.features.course.dto.CopyCourseContentRespo
 import vacademy.io.admin_core_service.features.course.dto.CourseBatchDTO;
 import vacademy.io.admin_core_service.features.course.dto.bulk.BulkAddCourseRequestDTO;
 import vacademy.io.admin_core_service.features.course.dto.bulk.BulkAddCourseResponseDTO;
+import vacademy.io.admin_core_service.features.course.dto.duplicate.DuplicateCourseRequest;
+import vacademy.io.admin_core_service.features.course.dto.duplicate.DuplicateCourseResponse;
+import vacademy.io.admin_core_service.core.security.InstituteAccessValidator;
+import vacademy.io.admin_core_service.features.course.dto.restructure.CourseRestructureRequestDTO;
+import vacademy.io.admin_core_service.features.course.dto.restructure.CourseRestructureResponseDTO;
 import vacademy.io.admin_core_service.features.course.service.BulkCourseService;
+import vacademy.io.admin_core_service.features.course.service.CourseRestructureService;
 import vacademy.io.admin_core_service.features.course.service.CourseContentCopyService;
+import vacademy.io.admin_core_service.features.course.service.CourseDuplicateService;
 import vacademy.io.admin_core_service.features.course.service.CourseService;
 import vacademy.io.admin_core_service.features.admin_activity_logs.annotation.Auditable;
 import vacademy.io.common.auth.model.CustomUserDetails;
@@ -26,6 +33,9 @@ public class CourseController {
     private final CourseService courseService;
     private final BulkCourseService bulkCourseService;
     private final CourseContentCopyService courseContentCopyService;
+    private final CourseRestructureService courseRestructureService;
+    private final CourseDuplicateService courseDuplicateService;
+    private final InstituteAccessValidator instituteAccessValidator;
 
     @PostMapping("/add-course/{instituteId}")
     @Auditable(
@@ -127,6 +137,29 @@ public class CourseController {
     }
 
     /**
+     * One-click "Duplicate course": a new course with the source's details, the same batches
+     * (levels + sessions) and a separate copy of every batch's content. Learners, enrolments,
+     * payment options, invite links and issued certificates are never copied. Body optional:
+     * {"new_course_name": "..."}; blank = "<source name> (Copy)". Institute staff only, and the
+     * course must belong to the institute. See CourseDuplicateService.
+     */
+    @PostMapping("/duplicate/{instituteId}/{courseId}")
+    @Auditable(
+            entityType = "COURSE",
+            action = "CREATE",
+            entityIdExpr = "#result?.body?.courseId",
+            descriptionExpr = "'duplicated course ' + #courseId + ' as ' + #result?.body?.courseName")
+    public ResponseEntity<DuplicateCourseResponse> duplicateCourse(
+            @PathVariable("instituteId") String instituteId,
+            @PathVariable("courseId") String courseId,
+            @RequestBody(required = false) DuplicateCourseRequest request,
+            @RequestAttribute("user") CustomUserDetails userDetails) {
+        instituteAccessValidator.requireInstituteStaff(userDetails, instituteId);
+        return ResponseEntity.ok(courseDuplicateService.duplicate(instituteId, courseId,
+                request == null ? null : request.getNewCourseName(), userDetails));
+    }
+
+    /**
      * Content-copy lineage for a batch. Powers the (i) tooltip in the course
      * structure view:
      *  - upstream: "this batch's content came from X (separate / linked copy)"
@@ -136,5 +169,28 @@ public class CourseController {
     public ResponseEntity<CopyContentLineageResponse> getCopyLineage(
             @PathVariable("packageSessionId") String packageSessionId) {
         return ResponseEntity.ok(courseContentCopyService.getLineage(packageSessionId));
+    }
+
+    /**
+     * Change a course's depth (2-5) and/or regroup its content into a new tree of existing
+     * slides, atomically and for every batch. dry_run validates and reports the outcome
+     * (created / renamed / removed containers, drip-rule changes, learners affected) and
+     * writes nothing. Institute staff only. See CourseRestructureService.
+     */
+    @PostMapping("/restructure/{instituteId}/{courseId}")
+    @Auditable(
+            entityType = "COURSE",
+            action = "UPDATE",
+            entityIdExpr = "#courseId",
+            conditionExpr = "#result?.body != null and !#result.body.dryRun",
+            descriptionExpr = "'restructured course to depth ' + #request?.targetDepth")
+    public ResponseEntity<CourseRestructureResponseDTO> restructureCourse(
+            @PathVariable("instituteId") String instituteId,
+            @PathVariable("courseId") String courseId,
+            @RequestBody CourseRestructureRequestDTO request,
+            @RequestAttribute("user") CustomUserDetails userDetails) {
+        instituteAccessValidator.requireInstituteStaff(userDetails, instituteId);
+        return ResponseEntity.ok(courseRestructureService.restructure(instituteId, courseId, request,
+                userDetails.getUserId()));
     }
 }

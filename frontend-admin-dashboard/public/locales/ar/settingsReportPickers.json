@@ -1,0 +1,39 @@
+{
+    "scopePicker": {
+        "noun": {
+            "batch": "الدفعات",
+            "subject": "المواد",
+            "faculty": "أعضاء هيئة التدريس"
+        },
+        "whichNoun": "أي {{noun}}؟",
+        "clearCount": "مسح {{count}}",
+        "emptyWarning": {
+            "prefix": "عدم اختيار أي شيء يعني",
+            "every": "الكل",
+            "suffix": "من هذه العناصر، وهو ما قد يتجاوز الحد المسموح به لكل تشغيل. اختر {{noun}} التي تريدها."
+        },
+        "searchPlaceholder": "ابحث عن {{noun}}…",
+        "loading": "جارٍ التحميل…",
+        "errorLoad": "تعذّر تحميل {{noun}}. تحقق من اتصالك وحاول مرة أخرى.",
+        "emptyNoMatch": "لا يوجد {{noun}} يطابق “{{query}}”.",
+        "emptyNoneAtInstitute": "لا يوجد {{noun}} في هذه المؤسسة.",
+        "truncatedNotice": "عرض {{shown}} من {{total}} — ابحث لتضييق النتائج."
+    },
+    "recipientPicker": {
+        "pickPeopleLabel": "أو اختر أشخاصًا محددين",
+        "clearCount": "مسح {{count}}",
+        "searchPlaceholder": "ابحث بالاسم أو البريد الإلكتروني…",
+        "noEmailWarning_zero": "لا يوجد أشخاص محددون ({{count}}) بلا بريد إلكتروني مسجل.",
+        "noEmailWarning_one": "{{count}} شخص محدد ليس لديه بريد إلكتروني مسجل ولن يستلم أي شيء.",
+        "noEmailWarning_two": "{{count}} شخصان محددان ليس لديهما بريد إلكتروني مسجل ولن يستلما أي شيء.",
+        "noEmailWarning_few": "{{count}} أشخاص محددون ليس لديهم بريد إلكتروني مسجل ولن يستلموا أي شيء.",
+        "noEmailWarning_many": "{{count}} شخصًا محددًا ليس لديهم بريد إلكتروني مسجل ولن يستلموا أي شيء.",
+        "noEmailWarning_other": "{{count}} من الأشخاص المحددين ليس لديهم بريد إلكتروني مسجل ولن يستلموا أي شيء.",
+        "loading": "جارٍ التحميل…",
+        "errorLoad": "تعذّر تحميل الأشخاص.",
+        "emptyNoMatch": "لا يوجد أحد يطابق “{{query}}”.",
+        "emptyNoneFound": "لم يتم العثور على مستلمين مؤهلين.",
+        "unnamed": "(بدون اسم)",
+        "noEmail": "لا يوجد بريد إلكتروني"
+    }
+}

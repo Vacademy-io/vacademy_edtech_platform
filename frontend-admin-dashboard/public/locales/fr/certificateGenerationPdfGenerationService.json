@@ -1,0 +1,14 @@
+{
+    "errors": {
+        "canvasContextFailed": "Échec de l'obtention du contexte 2D du canevas",
+        "imageLoadFailed": "Échec du chargement de l'image",
+        "certificateGenerationFailed": "Échec de la génération du certificat pour {{name}} : {{message}}",
+        "previewGenerationFailed": "Échec de la génération de l'aperçu : {{message}}",
+        "unknownError": "Erreur inconnue"
+    },
+    "defaults": {
+        "instituteName": "Université de Technologie",
+        "sampleValue": "Exemple {{field}}",
+        "sampleText": "Texte d'exemple"
+    }
+}

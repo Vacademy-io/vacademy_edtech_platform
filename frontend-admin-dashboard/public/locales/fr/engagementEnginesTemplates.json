@@ -1,0 +1,193 @@
+{
+    "actions": {
+        "cancel": "Annuler",
+        "generateWithAi": "Générer avec l'IA",
+        "retry": "Réessayer",
+        "preview": "Aperçu",
+        "edit": "Modifier",
+        "editNewVersion": "Modifier (nouvelle version)",
+        "approve": "Approuver",
+        "regenerate": "Régénérer",
+        "moreLikeThis": "Plus comme celui-ci",
+        "archive": "Archiver"
+    },
+    "toast": {
+        "generated": "De nouveaux modèles sont prêts à être relus.",
+        "regenerated": "Brouillon régénéré.",
+        "generateFailed": "Impossible de générer les modèles.",
+        "saved": "Modèle enregistré.",
+        "saveFailed": "Impossible d'enregistrer le modèle.",
+        "approved": "Modèle approuvé. Le moteur peut l'utiliser.",
+        "approveFailed": "Impossible d'approuver le modèle.",
+        "archived": "Modèle archivé.",
+        "archiveFailed": "Impossible d'archiver le modèle."
+    },
+    "generate": {
+        "headingWhatsapp": "Générer des modèles WhatsApp",
+        "headingEmail": "Générer des modèles d'e-mail",
+        "headingRegenerate": "Régénérer ce brouillon",
+        "headingMoreLikeThis": "Plus comme celui-ci",
+        "intro": "L'IA écrit à partir du brief de ce moteur. Elle n'utilise que les faits et liens du brief ; vous relisez chaque modèle avant que le moteur puisse l'utiliser.",
+        "purposeLabel": "À quoi sert-il ?",
+        "purposeAny": "Tout ce qui correspond au brief",
+        "customPlaceholder": "ex. invitation au cours d'essai du dimanche",
+        "purposes": {
+            "firstTouch": "Premier message",
+            "followUp": "Relance sans réponse",
+            "missedClass": "Cours manqué",
+            "reEngage": "Relancer après une semaine calme",
+            "reminder": "Rappel",
+            "eventInvite": "Invitation à un événement ou webinaire",
+            "custom": "Autre chose…"
+        },
+        "countLabel": "Combien",
+        "languageLabel": "Langue",
+        "languages": {
+            "en": "Anglais",
+            "hi": "Hindi",
+            "hinglish": "Hinglish"
+        },
+        "feedbackLabel": "Quelque chose à prendre en compte ? (facultatif)",
+        "feedbackPlaceholder": "ex. plus court, plus chaleureux, mentionner le groupe du week-end",
+        "generating": "Rédaction…",
+        "submit": "Générer"
+    },
+    "sources": {
+        "label": "D'où vient {{variable}}",
+        "pick": "La valeur vient de…",
+        "missing": "source non définie",
+        "kinds": {
+            "profile_firstName": "Prénom",
+            "profile_name": "Nom complet",
+            "form": "Réponse au formulaire",
+            "research": "Note de recherche du prospect",
+            "brief_link": "Lien du brief",
+            "static": "Texte fixe",
+            "ai": "Écrit par l'IA pour chacun"
+        },
+        "placeholders": {
+            "form": "champ du formulaire, ex. course",
+            "research": "champ de recherche, ex. fitSignal",
+            "brief_link": "numéro du lien, ex. 1",
+            "static": "le texte fixe"
+        }
+    },
+    "email": {
+        "heading": "Modèles d'e-mail",
+        "approvedCount_one": "{{count}} approuvé",
+        "approvedCount_other": "{{count}} approuvés",
+        "subheading": "E-mails que le moteur peut envoyer, rédigés par l'IA à partir du brief. Approuvez un modèle avant que le moteur l'utilise ; modifier un modèle approuvé crée une nouvelle version.",
+        "modes": {
+            "FREE_WRITE": "Mode e-mail : le moteur rédige chaque e-mail. Les modèles approuvés sont conservés si vous changez de mode.",
+            "TEMPLATE_ONLY": "Mode e-mail : le moteur n'envoie que des modèles approuvés, remplis avec les infos de chacun.",
+            "TEMPLATE_PLUS_AI_LINE": "Mode e-mail : modèles approuvés, plus une courte phrase personnelle écrite par l'IA."
+        },
+        "emptyState": "Aucun modèle d'e-mail. Générez-en à partir du brief de ce moteur.",
+        "showOld": "Afficher les archivés et anciennes versions",
+        "status": {
+            "AI_PROPOSED": "Brouillon IA",
+            "USER_REVIEW": "En relecture",
+            "APPROVED": "Approuvé",
+            "SUPERSEDED": "Ancienne version",
+            "ARCHIVED": "Archivé"
+        },
+        "version": "v{{value}}"
+    },
+    "errors": {
+        "loadFailed": "Impossible de charger les modèles d'e-mail.",
+        "previewFailed": "Impossible d'afficher l'aperçu."
+    },
+    "preview": {
+        "heading": "Aperçu de l'e-mail",
+        "sampleNote": "Rempli avec les valeurs d'exemple. C'est exactement ce qu'un envoi produit.",
+        "missing": "Encore vide : {{list}}. Un vrai envoi attend que chaque variable ait une valeur."
+    },
+    "edit": {
+        "heading": "Modifier le modèle d'e-mail",
+        "headingNewVersion": "Modifier un modèle approuvé (nouvelle version)",
+        "newVersionNote": "Vos changements deviennent une nouvelle version à relire. La version approuvée continue d'être envoyée jusqu'à l'approbation de celle-ci.",
+        "title": "Titre (pour vous)",
+        "subject": "Objet",
+        "preheader": "Ligne d'aperçu (affichée après l'objet)",
+        "body": "Corps (HTML ; écrivez les variables comme {{example}})",
+        "variables": "Variables, une valeur d'exemple et la source de chaque valeur",
+        "namePlaceholder": "nom, ex. first_name",
+        "samplePlaceholder": "exemple, ex. Asha",
+        "removeVariable": "Supprimer la variable",
+        "addVariable": "+ Ajouter une variable",
+        "livePreview": "Aperçu en direct",
+        "saving": "Enregistrement…",
+        "save": "Enregistrer",
+        "purpose": "À quoi il sert (facultatif)",
+        "errors": {
+            "subjectEmpty": "L'objet est vide.",
+            "bodyEmpty": "Le corps est vide.",
+            "badName": "Les noms de variables n'utilisent que minuscules, chiffres et _.",
+            "duplicateName": "Un nom de variable est utilisé deux fois.",
+            "unknownPlaceholder": "{{name}} est utilisé mais n'est pas listé comme variable.",
+            "noSource": "Indiquez d'où vient « {{name}} »."
+        }
+    },
+    "whatsapp": {
+        "disabledByMeta": "Meta a désactivé ou suspendu ce modèle ; le moteur ne l'envoie plus. Générez une alternative.",
+        "header": "En-tête : {{type}}",
+        "headerTypes": {
+            "NONE": "Aucun",
+            "TEXT": "Texte",
+            "IMAGE": "Image",
+            "VIDEO": "Vidéo",
+            "DOCUMENT": "Document"
+        },
+        "openFile": "ouvrir le fichier",
+        "buttonTypes": {
+            "QUICK_REPLY": "Réponse rapide",
+            "URL": "Lien",
+            "PHONE_NUMBER": "Appel"
+        },
+        "replacesNote": "Nouvelle version d'un modèle approuvé ; elle le remplace une fois approuvée par Meta.",
+        "queuedNote": "En attente : la limite horaire de Meta pour les nouveaux modèles est atteinte. Il sera envoyé automatiquement.",
+        "newVersionNote": "Ce modèle est approuvé. Votre modification devient une nouvelle version pour Meta ; l'actuel continue d'être envoyé jusqu'à son approbation.",
+        "promoWarning": "Ce texte est promotionnel. Meta le traite comme MARKETING ; en UTILITY il peut être recatégorisé ou refusé.",
+        "headerLabel": "En-tête",
+        "headerText": "Texte d'en-tête (60 caractères max.)",
+        "headerFile": {
+            "IMAGE": "Lien de l'image (https, .jpg ou .png)",
+            "VIDEO": "Lien de la vidéo (https, .mp4)",
+            "DOCUMENT": "Lien du document (https, .pdf)"
+        },
+        "buttonsLabel": "Boutons (les liens doivent figurer dans le brief)",
+        "buttonText": "Texte du bouton",
+        "buttonUrl": "lien https:// du brief",
+        "removeButton": "Supprimer le bouton",
+        "addButton": "+ Ajouter un bouton"
+    },
+    "wizard": {
+        "modeTitle": "Comment les e-mails sont rédigés",
+        "modes": {
+            "FREE_WRITE": "L'IA rédige chaque e-mail",
+            "TEMPLATE_ONLY": "Modèles approuvés uniquement",
+            "TEMPLATE_PLUS_AI_LINE": "Modèles + une phrase IA"
+        },
+        "coldTitle": "Prospection à froid",
+        "coldHint": "Activez si ces personnes ne vous ont jamais contacté (par ex. prospects trouvés par le Lead Agent). Chaque e-mail doit alors expliquer comment ne plus en recevoir.",
+        "senderTitle": "E-mail d'expédition",
+        "senderPlaceholder": "Choisir un expéditeur",
+        "senderHint": "Les e-mails de ce moteur partent de cette adresse. Ajoutez ou vérifiez des expéditeurs dans Paramètres → Notification.",
+        "senderNotVerified": "non vérifié",
+        "senderLoading": "Chargement de vos expéditeurs…",
+        "senderLoadFailed": "Impossible de charger vos expéditeurs. Rouvrez cette étape pour réessayer.",
+        "senderEmpty": "Votre institut n'a encore aucun expéditeur. Ajoutez-en un dans Paramètres → Notification."
+    },
+    "brief": {
+        "weak": "Ce brief est maigre : l'IA écrira des messages génériques. Répondez à ce que vous pouvez ; vos réponses sont ajoutées au brief.",
+        "addToBrief": "Ajouter les réponses au brief",
+        "adding": "Ajout…"
+    },
+    "confirm": {
+        "withdrawTitle": "Retirer ce modèle ?",
+        "withdrawText": "Le moteur cesse de l'utiliser. Vous pouvez demander de nouvelles options à l'IA à tout moment.",
+        "archiveTitle": "Archiver ce modèle d’e-mail ?",
+        "archiveText": "Le moteur cesse de l'utiliser. Vous pouvez en générer de nouveaux à tout moment.",
+        "keep": "Le garder"
+    }
+}

@@ -23,8 +23,10 @@ import {
 import { useStudyLibraryStore } from '@/stores/study-library/use-study-library-store';
 import { MyDropdown } from '@/components/common/students/enroll-manually/dropdownForPackageItems';
 import { useInstituteDetailsStore } from '@/stores/students/students-list/useInstituteDetailsStore';
+import { useTranslation } from 'react-i18next';
 
 export const ModuleMaterial = () => {
+    const { t } = useTranslation('studyLibraryModuleMaterial');
     const router = useRouter();
     const { modulesWithChaptersData } = useModulesWithChaptersStore();
     const { getSessionsByCourseLevelSubject } = useStudyLibraryStore();
@@ -91,9 +93,9 @@ export const ModuleMaterial = () => {
     // });
 
     // Ensure courseId, subjectId, and levelId exist before proceeding
-    if (!courseId) return <>Course Not found</>;
-    if (!subjectId) return <>Subject Not found</>;
-    if (!levelId) return <>Level Not found</>;
+    if (!courseId) return <>{t('courseNotFound')}</>;
+    if (!subjectId) return <>{t('subjectNotFound')}</>;
+    if (!levelId) return <>{t('levelNotFound')}</>;
 
     const subject = getSubjectName(subjectId);
     const levelName = getLevelName(levelId);
@@ -147,11 +149,9 @@ export const ModuleMaterial = () => {
         <div className="flex size-full flex-col gap-8 text-neutral-600">
             <div className="flex items-center justify-between gap-8">
                 <div className="flex w-full flex-col gap-2">
-                    <div className="text-h3 font-semibold">Manage Your Modules</div>
+                    <div className="text-h3 font-semibold">{t('heading')}</div>
                     <div className="text-subtitle">
-                        Explore and manage modules for {levelName} {subject}. Click on a module to
-                        view and organize chapters, eBooks, and video lectures, or add new resources
-                        to expand your study materials.
+                        {t('subtitle', { level: levelName, subject })}
                     </div>
                 </div>
                 <AddModulesButton onAddModule={handleAddModule} />
@@ -160,7 +160,9 @@ export const ModuleMaterial = () => {
                 <MyDropdown
                     currentValue={currentSession ?? undefined}
                     dropdownList={sessionList}
-                    placeholder={`Select ${getTerminology(ContentTerms.Session, SystemTerms.Session)}`}
+                    placeholder={t('selectSession', {
+                        term: getTerminology(ContentTerms.Session, SystemTerms.Session),
+                    })}
                     handleChange={handleSessionChange}
                 />
             </div>

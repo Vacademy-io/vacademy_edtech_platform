@@ -1,0 +1,63 @@
+{
+    "unknown": "Inconnu",
+    "unknownCourse": "Cours inconnu",
+    "untitled": "Sans titre",
+    "dropdown": {
+        "allNoRestriction": "Tous (aucune restriction)",
+        "loading": "Chargement...",
+        "noOptions": "Aucune option disponible"
+    },
+    "multiSelect": {
+        "selectedCount_one": "{{count}} sélectionné(e)",
+        "selectedCount_many": "{{count}} sélectionné(e)s",
+        "selectedCount_other": "{{count}} sélectionné(e)s",
+        "searchPlaceholder": "Rechercher...",
+        "noMatches": "Aucun résultat pour « {{search}} ».",
+        "someHiddenBySearch": "certains éléments sélectionnés sont masqués par la recherche"
+    },
+    "batch": {
+        "selectPlaceholder": "-- Sélectionner un groupe --",
+        "emptyRequired": "Sélectionnez au moins un groupe.",
+        "emptyOptional": "Aucune sélection — s'applique à tous les groupes actifs de votre établissement."
+    },
+    "audience": {
+        "emptyRequired": "Sélectionnez au moins une campagne.",
+        "emptyOptional": "Aucune sélection — s'applique à toutes les campagnes."
+    },
+    "template": {
+        "emailPlaceholder": "-- Sélectionner un modèle d'e-mail --",
+        "whatsappPlaceholder": "-- Sélectionner un modèle WhatsApp --",
+        "livesessionPlaceholder": "-- Sélectionner une session en direct --",
+        "invitePlaceholder": "-- Sélectionner une invitation --",
+        "coursePlaceholder": "-- Sélectionner un cours --",
+        "creating": "Création...",
+        "useSample": "Utiliser l'exemple : « {{name}} »",
+        "useSampleHint": "Modèle prédéfini avec les bonnes variables — ajouté à votre bibliothèque de modèles",
+        "noWhatsappTemplates": "Aucun modèle WhatsApp approuvé trouvé. Ils sont synchronisés depuis Meta — ouvrez Communication → Modèles WhatsApp et lancez la synchronisation, ou faites d'abord approuver le modèle dans Meta.",
+        "whatsappVarsNeedMapping": "Ce modèle utilise {{vars}}. Les variables nommées d'après un champ du prospect sont renseignées automatiquement ; les variables numérotées doivent être mappées dans le générateur après la création — WhatsApp rejette le message si l'une d'elles reste vide."
+    },
+    "jsonPayload": {
+        "invalidObject": "Le contenu doit être un objet JSON (pas un tableau ni une valeur primitive).",
+        "valid": "✓ JSON valide",
+        "errorPrefix": "⚠ {{error}}"
+    },
+    "picker": {
+        "heading": "Comment souhaitez-vous construire ce workflow ?",
+        "subheading": "Choisissez un modèle prêt à l'emploi ci-dessous, ou construisez votre workflow à partir de zéro avec l'éditeur visuel.",
+        "templatesForTrigger": "Modèles pour ce déclencheur",
+        "useThisTemplate": "Utiliser ce modèle",
+        "noTemplates": "Aucun modèle prédéfini disponible pour ce déclencheur pour le moment.",
+        "noTemplatesHint": "Utilisez l'éditeur avancé pour construire votre workflow à partir de zéro.",
+        "or": "ou",
+        "buildFromScratch": "Construire à partir de zéro",
+        "buildFromScratchHint": "Utilisez l'éditeur visuel par glisser-déposer pour créer un workflow personnalisé avec un contrôle total.",
+        "back": "Retour"
+    },
+    "wizard": {
+        "backToTemplates": "Retour aux modèles",
+        "configureHeading": "Configurez votre workflow",
+        "whatWillBeCreated": "Ce qui sera créé",
+        "back": "Retour",
+        "generate": "Générer le workflow"
+    }
+}

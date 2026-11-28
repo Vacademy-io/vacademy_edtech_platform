@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { CalendarCheck } from '@phosphor-icons/react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 import { MyButton } from '@/components/design-system/button';
 import { MyDialog } from '@/components/design-system/dialog';
 import { SearchableSelect } from '@/components/design-system/searchable-select';
@@ -39,6 +40,7 @@ export function ScheduleSessionDialog({
     mentorSlug?: string | null;
     student?: { user_id: string; name?: string | null } | null;
 }) {
+    const { t } = useTranslation('mentorshipScheduleSessionDialog');
     const [mentorId, setMentorId] = useState<string>(mentor?.id ?? '');
     const [picked, setPicked] = useState<StudentRow[]>([]);
     const [slot, setSlot] = useState<string | null>(null);
@@ -60,15 +62,15 @@ export function ScheduleSessionDialog({
     const slug = asMentor ? mentorSlug ?? null : chosenMentor?.booking_page_slug ?? null;
     const studentUserId = student?.user_id ?? picked[0]?.user_id ?? null;
     const studentLabel =
-        student?.name ?? picked[0]?.full_name ?? picked[0]?.username ?? 'the learner';
+        student?.name ?? picked[0]?.full_name ?? picked[0]?.username ?? t('learnerFallback');
 
     const mentorOptions = useMemo(
         () =>
             mentors.map((m) => ({
-                label: m.display_name || m.name || 'Mentor',
+                label: m.display_name || m.name || t('mentorFallback'),
                 value: m.id,
             })),
-        [mentors]
+        [mentors, t]
     );
 
     const submit = async () => {
@@ -87,7 +89,7 @@ export function ScheduleSessionDialog({
                     start_time: slot,
                 },
             });
-            toast.success(`Session booked with ${studentLabel}`);
+            toast.success(t('sessionBookedToast', { name: studentLabel }));
             onOpenChange(false);
         } catch (error) {
             // "This slot is no longer available" is the common one and is worth reading.
@@ -95,7 +97,7 @@ export function ScheduleSessionDialog({
                 feature: 'mentorship',
                 tags: { 'mentorship.action': 'schedule-session' },
                 extra: { mentorId: chosenMentor?.id, studentUserId },
-                fallbackMessage: "Couldn't schedule that session.",
+                fallbackMessage: t('scheduleFailedFallback'),
             });
         }
     };
@@ -104,7 +106,7 @@ export function ScheduleSessionDialog({
 
     return (
         <MyDialog
-            heading="Schedule a 1:1"
+            heading={t('dialogHeading')}
             open={open}
             onOpenChange={onOpenChange}
             dialogWidth="max-w-lg"
@@ -116,7 +118,7 @@ export function ScheduleSessionDialog({
                         scale="medium"
                         onClick={() => onOpenChange(false)}
                     >
-                        Cancel
+                        {t('cancelButton')}
                     </MyButton>
                     <MyButton
                         type="button"
@@ -126,20 +128,19 @@ export function ScheduleSessionDialog({
                         disable={!ready || schedule.isPending}
                     >
                         <CalendarCheck size={16} />
-                        {schedule.isPending ? 'Booking…' : 'Book session'}
+                        {schedule.isPending ? t('bookingButton') : t('bookButton')}
                     </MyButton>
                 </div>
             }
         >
             <div className="flex flex-col gap-5">
-                <p className="text-caption text-neutral-500">
-                    The learner gets the confirmation, the meeting link and the reminders — exactly
-                    as if they had booked it themselves. Nothing is asked of them.
-                </p>
+                <p className="text-caption text-neutral-500">{t('introParagraph')}</p>
 
                 {!asMentor && !mentor && (
                     <div className="flex flex-col gap-1">
-                        <span className="text-caption font-medium text-neutral-600">Mentor</span>
+                        <span className="text-caption font-medium text-neutral-600">
+                            {t('mentorLabel')}
+                        </span>
                         <SearchableSelect
                             options={mentorOptions}
                             value={mentorId}
@@ -148,9 +149,9 @@ export function ScheduleSessionDialog({
                                 // Availability belongs to a mentor; keep no stale slot across a switch.
                                 setSlot(null);
                             }}
-                            placeholder="Choose a mentor"
-                            searchPlaceholder="Search mentors…"
-                            emptyText="No mentors match"
+                            placeholder={t('mentorPlaceholder')}
+                            searchPlaceholder={t('mentorSearchPlaceholder')}
+                            emptyText={t('mentorEmptyText')}
                             // Inside a dialog: a portalled list can't be scrolled, because
                             // react-remove-scroll blocks wheel/touch on portalled nodes.
                             portal={false}
@@ -160,7 +161,9 @@ export function ScheduleSessionDialog({
 
                 {student ? (
                     <div className="flex flex-col gap-0.5">
-                        <span className="text-caption font-medium text-neutral-600">Learner</span>
+                        <span className="text-caption font-medium text-neutral-600">
+                            {t('learnerLabel')}
+                        </span>
                         <span className="text-body text-neutral-700">
                             {student.name || student.user_id}
                         </span>
@@ -171,17 +174,20 @@ export function ScheduleSessionDialog({
                             instituteId={instituteId}
                             // One session, one learner: selecting a second replaces the first
                             // rather than silently booking only one of them.
+                            singleSelect
                             selected={picked}
-                            onChange={(rows) => setPicked(rows.slice(-1))}
+                            onChange={setPicked}
                         />
                     )
                 )}
 
                 <div className="flex flex-col gap-2">
-                    <span className="text-caption font-medium text-neutral-600">Pick a time</span>
+                    <span className="text-caption font-medium text-neutral-600">
+                        {t('pickTimeLabel')}
+                    </span>
                     {!asMentor && !chosenMentor ? (
                         <p className="rounded-lg border border-dashed border-neutral-200 p-4 text-center text-caption text-neutral-400">
-                            Choose a mentor to see when they&apos;re free.
+                            {t('chooseMentorFirst')}
                         </p>
                     ) : (
                         <MentorSlotPicker

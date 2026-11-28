@@ -29,6 +29,35 @@ declare global {
   }
 }
 
+/**
+ * Where a tapped daily-task push should land, or null when the push is not one.
+ *
+ * The engagement jobs send `{type: 'ENGAGEMENT', slotId, actionUrl}` for a task
+ * and `{type: 'ENGAGEMENT_REVEAL', slotId, actionUrl}` when an answer is out.
+ * `actionUrl` wins when it is a same-app path; a missing or foreign one falls
+ * back to the same URLs the server builds (older servers send no actionUrl).
+ * Only paths under /engagement are accepted, so a push can never send the app
+ * to an arbitrary page or origin.
+ */
+export function engagementPushTarget(data: unknown): string | null {
+  if (!data || typeof data !== 'object') return null;
+  const d = data as Record<string, unknown>;
+  const type = typeof d.type === 'string' ? d.type.toUpperCase() : '';
+  if (type !== 'ENGAGEMENT' && type !== 'ENGAGEMENT_REVEAL') return null;
+  const actionUrl = typeof d.actionUrl === 'string' ? d.actionUrl.trim() : '';
+  // Reject dot segments and backslashes, raw or percent-encoded: the URL parser
+  // resolves "/engagement/%2e%2e/x" to "/x".
+  if (
+    /^\/engagement(?:[/?#]|$)/.test(actionUrl) &&
+    !/\.\.|\\|%2e|%5c|\s/i.test(actionUrl)
+  ) {
+    return actionUrl;
+  }
+  if (type === 'ENGAGEMENT_REVEAL') return '/engagement?tab=answers';
+  const slotId = typeof d.slotId === 'string' ? d.slotId.trim() : '';
+  return slotId ? `/engagement?slot=${encodeURIComponent(slotId)}` : '/engagement';
+}
+
 export interface PushNotificationToken {
   token: string;
   platform: 'android' | 'ios' | 'web' | 'electron';
@@ -81,33 +110,35 @@ class PushNotificationService {
         console.warn('Failed to create Android notification channel', e);
       }
 
-      // Register for push notifications
-      await PushNotifications.register();
-
-      // Listen for registration success
-      PushNotifications.addListener('registration', async (token: Token) => {
+      // Listeners are attached BEFORE register() (at the end of this block): the `registration`
+      // event can fire as soon as register() resolves, and a late listener misses the token.
+      await PushNotifications.addListener('registration', async (token: Token) => {
         console.log('Push registration success, token: ' + token.value);
 
-        // Default to native token
+        // Android: token.value is already the FCM token.
         let finalToken: string | null = token.value;
 
-        // On iOS, prefer FCM registration token if Firebase Messaging plugin is available
-        try {
-          if (Capacitor.getPlatform() === 'ios') {
-            type FirebaseMessagingPlugin = { getToken: () => Promise<{ token?: string }> };
-            type CapacitorPlugins = { FirebaseMessaging?: FirebaseMessagingPlugin };
-            const plugins: CapacitorPlugins | undefined = (window as unknown as { Capacitor?: { Plugins?: CapacitorPlugins } }).Capacitor?.Plugins;
-            const fm: FirebaseMessagingPlugin | undefined = plugins?.FirebaseMessaging;
-            if (fm) {
+        // iOS: token.value is the raw APNs token, which FCM (and so our server) can't send to — get
+        // the FCM token from the Firebase Messaging plugin instead. The plugin learns the APNs token
+        // from the same AppDelegate notification that fired this event, so getToken() can briefly
+        // fail with "no APNS token"; retry for a few seconds. Never register the raw APNs token.
+        if (Capacitor.getPlatform() === 'ios') {
+          finalToken = null;
+          type FirebaseMessagingPlugin = { getToken: () => Promise<{ token?: string }> };
+          type CapacitorPlugins = { FirebaseMessaging?: FirebaseMessagingPlugin };
+          const plugins: CapacitorPlugins | undefined = (window as unknown as { Capacitor?: { Plugins?: CapacitorPlugins } }).Capacitor?.Plugins;
+          const fm: FirebaseMessagingPlugin | undefined = plugins?.FirebaseMessaging;
+          for (let attempt = 0; fm && !finalToken && attempt < 5; attempt++) {
+            try {
               const { token: fcmToken } = await fm.getToken();
-              if (fcmToken) {
-                console.log('Obtained iOS FCM token:', fcmToken);
-                finalToken = fcmToken;
-              }
+              finalToken = fcmToken || null;
+            } catch {
+              await new Promise((resolve) => setTimeout(resolve, 1000));
             }
           }
-        } catch {
-          console.warn('[Push] iOS FCM plugin not available or failed to get token. Falling back to native token.');
+          if (!finalToken) {
+            console.warn('[Push] iOS: could not obtain an FCM token; this device will not receive pushes.');
+          }
         }
 
         if (finalToken) {
@@ -118,24 +149,27 @@ class PushNotificationService {
       });
 
       // Listen for registration errors
-      PushNotifications.addListener('registrationError', (error: unknown) => {
+      await PushNotifications.addListener('registrationError', (error: unknown) => {
         console.error('Error on registration: ' + JSON.stringify(error));
       });
 
       // Listen for incoming notifications
-      PushNotifications.addListener('pushNotificationReceived', (notification: PushNotificationSchema) => {
+      await PushNotifications.addListener('pushNotificationReceived', (notification: PushNotificationSchema) => {
         console.log('Push notification received: ', notification);
         this.notifyListeners(notification);
       });
 
       // Listen for notification actions
-      PushNotifications.addListener('pushNotificationActionPerformed', (notification: ActionPerformed) => {
+      await PushNotifications.addListener('pushNotificationActionPerformed', (notification: ActionPerformed) => {
         console.log('Push notification action performed', notification);
         this.handleNotificationAction(notification);
-        
+
         // Mark notification as read when action is performed
         this.markNotificationAsRead(notification.notification.id);
       });
+
+      // Register only now that every listener above is attached.
+      await PushNotifications.register();
     } else {
       console.warn('Push notification permissions not granted');
     }
@@ -145,7 +179,7 @@ class PushNotificationService {
     if ('serviceWorker' in navigator && 'PushManager' in window) {
       try {
         // Register Firebase messaging service worker
-        const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+        await navigator.serviceWorker.register('/firebase-messaging-sw.js');
 
         const permission = await Notification.requestPermission();
         if (permission === 'granted') {
@@ -198,10 +232,12 @@ class PushNotificationService {
     if (window.electronAPI) {
       try {
         // Check permissions (always granted on desktop)
-        const permission = await window.electronAPI.checkNotificationPermission();
+        await window.electronAPI.checkNotificationPermission();
         
         // Setup notification click handler
         window.electronAPI.onNotificationClicked((data: Record<string, unknown>) => {
+          const engagementTarget = engagementPushTarget(data);
+          if (engagementTarget) window.location.href = engagementTarget;
           this.notifyListeners({
             title: 'Notification clicked',
             body: '',
@@ -393,8 +429,10 @@ class PushNotificationService {
       } else if (platform === 'web') {
         // Web browsers don't support badge counts in the same way
         // Could update document title or show in UI
-        const baseTitle = document.title && !document.title.toLowerCase().includes('vacademy')
-          ? document.title
+        // Strip a previous "(N) " prefix so repeated updates don't nest: "(3) (2) (1) Title".
+        const currentTitle = (document.title || '').replace(/^\(\d+\)\s*/, '');
+        const baseTitle = currentTitle && !currentTitle.toLowerCase().includes('vacademy')
+          ? currentTitle
           : getTerminology(RoleTerms.Learner, SystemTerms.Learner);
         document.title = count > 0 ? `(${count}) ${baseTitle}` : baseTitle;
       }
@@ -456,7 +494,16 @@ class PushNotificationService {
   private navigateToNotificationContent(notification: PushNotificationSchema): void {
     try {
       const data = notification.data;
-      
+
+      // Daily-task pushes open /engagement on every platform (web and the
+      // Capacitor webview alike), before the generic actionUrl branch below,
+      // which only logs on native.
+      const engagementTarget = engagementPushTarget(data);
+      if (engagementTarget) {
+        window.location.href = engagementTarget;
+        return;
+      }
+
       if (data?.actionUrl) {
         // For web, navigate to the URL
         if (Capacitor.getPlatform() === 'web') {

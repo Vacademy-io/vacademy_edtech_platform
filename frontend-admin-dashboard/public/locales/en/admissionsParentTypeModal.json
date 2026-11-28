@@ -1,0 +1,8 @@
+{
+    "title": "Select Parent Type",
+    "description": "Specify if the contact details belong to the father or mother",
+    "father": "Father",
+    "fatherDescription": "Map details to father's info",
+    "mother": "Mother",
+    "motherDescription": "Map details to mother's info"
+}

@@ -3,9 +3,14 @@ import { LayoutContainer } from '@/components/common/layout-container/layout-con
 import { QuestionPapersComponent } from './-components/QuestionPapersComponent';
 
 export const Route = createLazyFileRoute('/assessment/question-papers/')({
-    component: () => (
-        <LayoutContainer>
-            <QuestionPapersComponent />
-        </LayoutContainer>
-    ),
+    component: RouteComponent,
 });
+
+function RouteComponent() {
+    const { folderId } = Route.useSearch();
+    return (
+        <LayoutContainer>
+            <QuestionPapersComponent folderKey={folderId || 'all'} />
+        </LayoutContainer>
+    );
+}

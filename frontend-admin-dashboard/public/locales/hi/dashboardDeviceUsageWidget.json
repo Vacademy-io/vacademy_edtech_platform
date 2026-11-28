@@ -1,0 +1,26 @@
+{
+    "header": {
+        "title": "डिवाइस उपयोग",
+        "subtitle": "उपयोगकर्ताओं में प्लेटफ़ॉर्म का वितरण"
+    },
+    "error": {
+        "message": "डिवाइस डेटा लोड करने में विफल"
+    },
+    "empty": {
+        "message": "कोई डिवाइस डेटा उपलब्ध नहीं है"
+    },
+    "device": {
+        "desktop": "डेस्कटॉप",
+        "mobile": "मोबाइल",
+        "tablet": "टैबलेट"
+    },
+    "tooltip": {
+        "usage": "उपयोग: {{value}}",
+        "users": "उपयोगकर्ता: {{value}}",
+        "percentOfTotal": "कुल का {{percentage}}%"
+    },
+    "stats": {
+        "users_one": "{{count}} उपयोगकर्ता",
+        "users_other": "{{count}} उपयोगकर्ता"
+    }
+}

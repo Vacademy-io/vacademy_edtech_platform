@@ -1,0 +1,12 @@
+{
+    "popover": {
+        "title": "إعدادات الأسئلة",
+        "questionTypeLabel": "نوع السؤال"
+    },
+    "comprehensionText": "نص الفهم",
+    "questionLabel": "السؤال",
+    "answerLabel": "الإجابة:",
+    "removeOptionTitle": "إزالة الخيار",
+    "addOptionButton": "إضافة خيار",
+    "explanationLabel": "التوضيح:"
+}

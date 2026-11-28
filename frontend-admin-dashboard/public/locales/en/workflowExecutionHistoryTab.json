@@ -1,0 +1,25 @@
+{
+    "to": "to",
+    "loading": "Loading...",
+    "statusFilters": {
+        "all": "ALL",
+        "completed": "COMPLETED",
+        "failed": "FAILED",
+        "processing": "PROCESSING",
+        "pending": "PENDING"
+    },
+    "table": {
+        "started": "Started",
+        "completed": "Completed",
+        "status": "Status",
+        "duration": "Duration",
+        "error": "Error"
+    },
+    "empty": {
+        "title": "No executions found",
+        "hint": "For event-driven workflows, executions appear when the trigger event fires (e.g., form submission, enrollment). For scheduled workflows, wait for the next scheduled run. Try adjusting the date range or status filter above."
+    },
+    "pagination": {
+        "summary": "Page {{current}} of {{total}} ({{count}} total)"
+    }
+}

@@ -2,11 +2,13 @@ import { CaretUp } from '@phosphor-icons/react';
 import { CaretDown } from '@phosphor-icons/react';
 import { Doubt } from '../../-types/get-doubts-type';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { AddReply } from './AddReply';
 import { Reply } from './reply';
 import { getUserId, isUserAdmin, isUserTeacher } from '@/utils/userDetails';
 
 export const ShowReplies = ({ parent, refetch }: { parent: Doubt; refetch: () => void }) => {
+    const { t } = useTranslation('studyLibraryShowReplies');
     const [showReplies, setShowReplies] = useState<boolean>(false);
     const userId = getUserId();
     const isAdmin = isUserAdmin();
@@ -31,7 +33,9 @@ export const ShowReplies = ({ parent, refetch }: { parent: Doubt; refetch: () =>
                     onClick={() => setShowReplies(!showReplies)}
                 >
                     <span>
-                        {showReplies ? 'Hide Replies' : 'Show Replies'} ({parent.replies.length})
+                        {showReplies
+                            ? t('hideReplies', { count: parent.replies.length })
+                            : t('showReplies', { count: parent.replies.length })}
                     </span>
                     {showReplies ? <CaretUp size={14} /> : <CaretDown size={14} />}
                 </div>

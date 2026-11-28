@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Info, Trophy, DownloadSimple } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 import { downloadReportPdf } from "@/services/student-reports-api";
@@ -9,6 +10,8 @@ import type {
   V2Achievement,
   V2Recommendation,
 } from "@/services/student-reports-api";
+import { getTerminology, getTerminologyPlural } from "@/components/common/layout-container/sidebar/utils";
+import { ContentTerms, SystemTerms } from "@/types/naming-settings";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -107,6 +110,7 @@ function V2KpiTile({ metric }: { metric: V2HeadlineMetric }) {
 // ── V2 Attendance Card ────────────────────────────────────────────────────────
 
 function V2AttendanceCard({ att }: { att: NonNullable<V2ReportData["attendance"]> }) {
+  const { t } = useTranslation("layoutCommonB");
   const pct = att.overall_percentage;
   const circumference = 339.3;
   const ringStrokeClass =
@@ -114,7 +118,7 @@ function V2AttendanceCard({ att }: { att: NonNullable<V2ReportData["attendance"]
 
   return (
     <div className="rounded-xl border border-neutral-200 bg-white p-5 shadow-sm mb-4">
-      <V2SectionHeading>Attendance</V2SectionHeading>
+      <V2SectionHeading>{t("comprehensiveReportCard.attendance.title")}</V2SectionHeading>
 
       <div className="flex gap-6 items-center flex-wrap mb-5">
         <div className="relative w-32 h-32 shrink-0">
@@ -130,29 +134,29 @@ function V2AttendanceCard({ att }: { att: NonNullable<V2ReportData["attendance"]
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
             <span className="text-2xl font-bold text-neutral-800">{pct}%</span>
-            <span className="text-xs text-neutral-500">{att.present} / {att.total_sessions} present</span>
+            <span className="text-xs text-neutral-500">{t("comprehensiveReportCard.attendance.presentOfTotal", { present: att.present, total: att.total_sessions })}</span>
           </div>
         </div>
 
         <div className="grid grid-cols-3 gap-3 flex-1 min-w-48 text-center">
           <div>
             <span className="block text-xl font-bold text-success-600">{att.present}</span>
-            <span className="text-xs text-neutral-500">Present</span>
+            <span className="text-xs text-neutral-500">{t("comprehensiveReportCard.attendance.present")}</span>
           </div>
           <div>
             <span className="block text-xl font-bold text-danger-600">{att.absent}</span>
-            <span className="text-xs text-neutral-500">Absent</span>
+            <span className="text-xs text-neutral-500">{t("comprehensiveReportCard.attendance.absent")}</span>
           </div>
           <div>
             <span className="block text-xl font-bold text-warning-600">{att.late}</span>
-            <span className="text-xs text-neutral-500">Late</span>
+            <span className="text-xs text-neutral-500">{t("comprehensiveReportCard.attendance.late")}</span>
           </div>
         </div>
       </div>
 
       {att.weekly && att.weekly.length > 0 && (
         <>
-          <p className="text-xs text-neutral-500 mb-2">Weekly trend</p>
+          <p className="text-xs text-neutral-500 mb-2">{t("comprehensiveReportCard.attendance.weeklyTrend")}</p>
           <div className="space-y-2">
             {att.weekly.map((w) => (
               <div key={w.week} className="grid items-center gap-3" style={{ gridTemplateColumns: "120px 1fr 48px" }} /* design-lint-ignore: fixed grid column widths, no Tailwind equivalent */>
@@ -179,19 +183,21 @@ function V2AttendanceCard({ att }: { att: NonNullable<V2ReportData["attendance"]
 // ── V2 Academic Performance Card ──────────────────────────────────────────────
 
 function V2AcademicsCard({ acs }: { acs: NonNullable<V2ReportData["academics"]> }) {
+  const { t } = useTranslation("layoutCommonB");
+  const subject = getTerminology(ContentTerms.Subjects, SystemTerms.Subjects);
   const assessments = acs.assessments ?? [];
   // Never surface a placeholder subject ("Unknown"/"Other"/…). Backend omits these; filter
   // defensively for historical reports too.
   const subjectPerf = (acs.subject_performance ?? []).filter((sp) => isRealSubject(sp.subject));
   return (
     <div className="rounded-xl border border-neutral-200 bg-white p-5 shadow-sm mb-4">
-      <V2SectionHeading>Academic Performance</V2SectionHeading>
+      <V2SectionHeading>{t("comprehensiveReportCard.academics.title")}</V2SectionHeading>
 
       <p className="text-sm text-neutral-500 mb-4 -mt-2">
-        Average <span className="font-semibold text-neutral-800">{acs.average_percentage}%</span>{" "}
-        vs class average {acs.class_average_percentage}%
-        {acs.best_subject && <> &middot; Best: <span className="text-success-600 font-medium">{acs.best_subject}</span></>}
-        {acs.weakest_subject && <> &middot; Needs work: <span className="text-danger-600 font-medium">{acs.weakest_subject}</span></>}
+        {t("comprehensiveReportCard.academics.average")} <span className="font-semibold text-neutral-800">{acs.average_percentage}%</span>{" "}
+        {t("comprehensiveReportCard.academics.vsClassAverage", { percent: acs.class_average_percentage })}
+        {acs.best_subject && <> &middot; {t("comprehensiveReportCard.academics.best")} <span className="text-success-600 font-medium">{acs.best_subject}</span></>}
+        {acs.weakest_subject && <> &middot; {t("comprehensiveReportCard.academics.needsWork")} <span className="text-danger-600 font-medium">{acs.weakest_subject}</span></>}
       </p>
 
       {assessments.length > 0 && (
@@ -199,11 +205,11 @@ function V2AcademicsCard({ acs }: { acs: NonNullable<V2ReportData["academics"]> 
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b text-neutral-500">
-                <th className="pb-2 text-start text-xs font-semibold uppercase tracking-wide">Assessment</th>
-                <th className="pb-2 text-start text-xs font-semibold uppercase tracking-wide">Subject</th>
-                <th className="pb-2 text-end text-xs font-semibold uppercase tracking-wide">Score</th>
-                <th className="pb-2 text-end text-xs font-semibold uppercase tracking-wide">Rank</th>
-                <th className="pb-2 text-start text-xs font-semibold uppercase tracking-wide">Status</th>
+                <th className="pb-2 text-start text-xs font-semibold uppercase tracking-wide">{t("comprehensiveReportCard.academics.table.assessment")}</th>
+                <th className="pb-2 text-start text-xs font-semibold uppercase tracking-wide">{subject}</th>
+                <th className="pb-2 text-end text-xs font-semibold uppercase tracking-wide">{t("comprehensiveReportCard.academics.table.score")}</th>
+                <th className="pb-2 text-end text-xs font-semibold uppercase tracking-wide">{t("comprehensiveReportCard.academics.table.rank")}</th>
+                <th className="pb-2 text-start text-xs font-semibold uppercase tracking-wide">{t("comprehensiveReportCard.academics.table.status")}</th>
               </tr>
             </thead>
             <tbody>
@@ -229,7 +235,7 @@ function V2AcademicsCard({ acs }: { acs: NonNullable<V2ReportData["academics"]> 
                           ? "bg-success-50 text-success-700"
                           : "bg-neutral-100 text-neutral-600",
                     )}>
-                      {a.status === "NEEDS_WORK" ? "Needs work" : a.grade}
+                      {a.status === "NEEDS_WORK" ? t("comprehensiveReportCard.academics.table.needsWorkBadge") : a.grade}
                     </span>
                   </td>
                 </tr>
@@ -241,7 +247,7 @@ function V2AcademicsCard({ acs }: { acs: NonNullable<V2ReportData["academics"]> 
 
       {subjectPerf.length > 0 && (
         <>
-          <p className="text-xs text-neutral-500 mb-3">Subject performance vs class</p>
+          <p className="text-xs text-neutral-500 mb-3">{t("comprehensiveReportCard.academics.subjectPerformanceVsClass", { subject })}</p>
           <div className="space-y-2.5">
             {subjectPerf.map((sp) => (
               <div key={sp.subject} className="grid items-center gap-3" style={{ gridTemplateColumns: "100px 1fr 100px" }} /* design-lint-ignore: fixed grid column widths, no Tailwind equivalent */>
@@ -267,15 +273,17 @@ function V2AcademicsCard({ acs }: { acs: NonNullable<V2ReportData["academics"]> 
 // ── V2 Marks by Subject ────────────────────────────────────────────────────────
 
 function V2SubjectMarksCard({ sm }: { sm: NonNullable<V2ReportData["subject_marks"]> }) {
+  const { t } = useTranslation("layoutCommonB");
+  const subject = getTerminology(ContentTerms.Subjects, SystemTerms.Subjects);
   // Never surface a placeholder subject donut ("Other"/"Unknown"/…).
   const subjects = (sm.subjects ?? []).filter((s) => isRealSubject(s.subject));
   if (subjects.length === 0) return null;
 
   return (
     <div className="rounded-xl border border-neutral-200 bg-white p-5 shadow-sm mb-4">
-      <V2SectionHeading>Marks by Subject</V2SectionHeading>
+      <V2SectionHeading>{t("comprehensiveReportCard.subjectMarks.title", { subject })}</V2SectionHeading>
       <p className="text-sm text-neutral-500 mb-4 -mt-2">
-        Aggregated across assessments, assignments, quizzes and practice questions.
+        {t("comprehensiveReportCard.subjectMarks.caption")}
       </p>
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
         {subjects.map((subj) => {
@@ -326,11 +334,12 @@ function V2StrengthsCard({
   strengths: V2Strength[];
   areasToImprove: V2Strength[];
 }) {
+  const { t } = useTranslation("layoutCommonB");
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
       {strengths.length > 0 && (
         <div className="rounded-xl border border-neutral-200 bg-white p-5 shadow-sm">
-          <V2SectionHeading>Strengths</V2SectionHeading>
+          <V2SectionHeading>{t("comprehensiveReportCard.strengths.strengthsTitle")}</V2SectionHeading>
           <div className="space-y-3">
             {strengths.map((s) => (
               <div key={s.topic} className="flex items-center gap-3">
@@ -349,7 +358,7 @@ function V2StrengthsCard({
       )}
       {areasToImprove.length > 0 && (
         <div className="rounded-xl border border-neutral-200 bg-white p-5 shadow-sm">
-          <V2SectionHeading>Areas to Improve</V2SectionHeading>
+          <V2SectionHeading>{t("comprehensiveReportCard.strengths.areasToImproveTitle")}</V2SectionHeading>
           <div className="space-y-3">
             {areasToImprove.map((s) => (
               <div key={s.topic} className="flex items-center gap-3">
@@ -381,43 +390,44 @@ function V2StrengthsCard({
 // ── V2 Study Habits Card ──────────────────────────────────────────────────────
 
 function V2StudyHabitsCard({ sh }: { sh: NonNullable<V2ReportData["study_habits"]> }) {
+  const { t } = useTranslation("layoutCommonB");
   const dailyStudyMinutes = sh.daily_study_minutes ?? [];
   const maxMinutes = dailyStudyMinutes.length > 0 ? Math.max(...dailyStudyMinutes.map((d) => d.minutes), 1) : 1;
 
   return (
     <div className="rounded-xl border border-neutral-200 bg-white p-5 shadow-sm mb-4">
-      <V2SectionHeading>Study Habits &amp; Daily Engagement</V2SectionHeading>
+      <V2SectionHeading>{t("comprehensiveReportCard.studyHabits.title")}</V2SectionHeading>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
         <div className="rounded-xl border border-neutral-200 p-3">
-          <p className="text-xs text-neutral-500">Active days</p>
+          <p className="text-xs text-neutral-500">{t("comprehensiveReportCard.studyHabits.activeDays")}</p>
           <p className="text-2xl font-bold text-neutral-800 mt-1">
             {sh.active_days}
             <span className="text-sm text-neutral-500">/{sh.total_days}</span>
           </p>
         </div>
         <div className="rounded-xl border border-neutral-200 p-3">
-          <p className="text-xs text-neutral-500">Longest streak</p>
+          <p className="text-xs text-neutral-500">{t("comprehensiveReportCard.studyHabits.longestStreak")}</p>
           <p className="text-2xl font-bold text-neutral-800 mt-1">
             {sh.longest_streak_days}
-            <span className="text-sm text-neutral-500"> days</span>
+            <span className="text-sm text-neutral-500"> {t("comprehensiveReportCard.studyHabits.days")}</span>
           </p>
         </div>
         <div className="rounded-xl border border-neutral-200 p-3">
-          <p className="text-xs text-neutral-500">Focus score</p>
+          <p className="text-xs text-neutral-500">{t("comprehensiveReportCard.studyHabits.focusScore")}</p>
           <p className="text-2xl font-bold text-neutral-800 mt-1">
             {sh.focus_score != null ? `${sh.focus_score}%` : '—'}
           </p>
         </div>
         <div className="rounded-xl border border-neutral-200 p-3">
-          <p className="text-xs text-neutral-500">Most active</p>
+          <p className="text-xs text-neutral-500">{t("comprehensiveReportCard.studyHabits.mostActive")}</p>
           <p className="text-xl font-bold text-neutral-800 mt-1">{sh.most_active_time}</p>
         </div>
       </div>
 
       {dailyStudyMinutes.length > 0 && (
         <>
-          <p className="text-xs text-neutral-500 mb-2">Daily study time (minutes) · {dailyStudyMinutes.length} days</p>
+          <p className="text-xs text-neutral-500 mb-2">{t("comprehensiveReportCard.studyHabits.dailyStudyTime", { count: dailyStudyMinutes.length })}</p>
           <div className="flex items-end gap-px border-b border-neutral-200" style={{ height: 120 }} /* design-lint-ignore: pixel chart height, no Tailwind arbitrary-value in token scale */>
             {/* design-lint-ignore: dynamic bar chart height container */}
             {dailyStudyMinutes.map((d, i) => {
@@ -434,18 +444,18 @@ function V2StudyHabitsCard({ sh }: { sh: NonNullable<V2ReportData["study_habits"
             })}
           </div>
           <div className="flex justify-between text-xs text-neutral-400 mt-1">
-            <span>Day 1</span>
-            <span>Day {Math.ceil(dailyStudyMinutes.length / 2)}</span>
-            <span>Day {dailyStudyMinutes.length}</span>
+            <span>{t("comprehensiveReportCard.studyHabits.dayN", { day: 1 })}</span>
+            <span>{t("comprehensiveReportCard.studyHabits.dayN", { day: Math.ceil(dailyStudyMinutes.length / 2) })}</span>
+            <span>{t("comprehensiveReportCard.studyHabits.dayN", { day: dailyStudyMinutes.length })}</span>
           </div>
         </>
       )}
 
       <p className="text-sm text-neutral-500 mt-4">
-        Content explored:{" "}
-        <span className="font-semibold text-neutral-800">{sh.content_engagement?.videos_watched}</span> videos &middot;{" "}
-        <span className="font-semibold text-neutral-800">{sh.content_engagement?.documents_read}</span> documents &middot;{" "}
-        <span className="font-semibold text-neutral-800">{sh.content_engagement?.quizzes_attempted}</span> quizzes
+        {t("comprehensiveReportCard.studyHabits.contentExplored")}{" "}
+        <span className="font-semibold text-neutral-800">{sh.content_engagement?.videos_watched}</span> {t("comprehensiveReportCard.studyHabits.videos")} &middot;{" "}
+        <span className="font-semibold text-neutral-800">{sh.content_engagement?.documents_read}</span> {t("comprehensiveReportCard.studyHabits.documents")} &middot;{" "}
+        <span className="font-semibold text-neutral-800">{sh.content_engagement?.quizzes_attempted}</span> {t("comprehensiveReportCard.studyHabits.quizzes")}
       </p>
     </div>
   );
@@ -454,10 +464,12 @@ function V2StudyHabitsCard({ sh }: { sh: NonNullable<V2ReportData["study_habits"
 // ── V2 Course Progress Card ───────────────────────────────────────────────────
 
 function V2CourseProgressCard({ cp }: { cp: NonNullable<V2ReportData["course_progress"]> }) {
+  const { t } = useTranslation("layoutCommonB");
+  const course = getTerminology(ContentTerms.Course, SystemTerms.Course);
   const subjects = cp.subjects ?? [];
   return (
     <div className="rounded-xl border border-neutral-200 bg-white p-5 shadow-sm mb-4">
-      <V2SectionHeading>Course Progress — {cp.overall_completion_percentage}% complete</V2SectionHeading>
+      <V2SectionHeading>{t("comprehensiveReportCard.courseProgress.title", { course, percent: cp.overall_completion_percentage })}</V2SectionHeading>
 
       <div className="space-y-2.5">
         {subjects.map((s) => (
@@ -488,17 +500,19 @@ function V2LiveClassesAndAssignments({
   lc: NonNullable<V2ReportData["live_classes"]>;
   asgn: NonNullable<V2ReportData["assignments"]>;
 }) {
+  const { t } = useTranslation("layoutCommonB");
+  const liveClasses = getTerminologyPlural(ContentTerms.LiveSession, SystemTerms.LiveSession);
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
       <div className="rounded-xl border border-neutral-200 bg-white p-5 shadow-sm">
-        <V2SectionHeading>Live Classes</V2SectionHeading>
+        <V2SectionHeading>{liveClasses}</V2SectionHeading>
         <div className="divide-y divide-dashed divide-neutral-200">
           {[
-            { label: "Total classes", value: lc.total ?? 0, cls: undefined },
-            { label: "Attended", value: lc.attended ?? 0, cls: "text-success-600" },
-            { label: "Missed", value: lc.missed ?? 0, cls: "text-danger-600" },
-            { label: "Not marked", value: lc.unmarked ?? 0, cls: "text-neutral-500" },
-            { label: "Attendance", value: lc.attendance_percentage != null ? `${lc.attendance_percentage}%` : "—", cls: undefined },
+            { label: t("comprehensiveReportCard.liveClasses.total"), value: lc.total ?? 0, cls: undefined },
+            { label: t("comprehensiveReportCard.liveClasses.attended"), value: lc.attended ?? 0, cls: "text-success-600" },
+            { label: t("comprehensiveReportCard.liveClasses.missed"), value: lc.missed ?? 0, cls: "text-danger-600" },
+            { label: t("comprehensiveReportCard.liveClasses.notMarked"), value: lc.unmarked ?? 0, cls: "text-neutral-500" },
+            { label: t("comprehensiveReportCard.liveClasses.attendance"), value: lc.attendance_percentage != null ? `${lc.attendance_percentage}%` : "—", cls: undefined },
           ].map(({ label, value, cls }) => (
             <div key={label} className="flex justify-between items-center py-1.5">
               <span className="text-sm text-neutral-600">{label}</span>
@@ -509,15 +523,15 @@ function V2LiveClassesAndAssignments({
       </div>
 
       <div className="rounded-xl border border-neutral-200 bg-white p-5 shadow-sm">
-        <V2SectionHeading>Assignments</V2SectionHeading>
+        <V2SectionHeading>{t("comprehensiveReportCard.assignments.title")}</V2SectionHeading>
         <div className="divide-y divide-dashed divide-neutral-200">
           {[
-            { label: "Assigned", value: asgn.assigned ?? "—", cls: undefined },
-            { label: "Submitted", value: asgn.submitted ?? 0, cls: "text-success-600" },
-            { label: "On time", value: asgn.on_time ?? "—", cls: undefined },
-            { label: "Late", value: asgn.late ?? 0, cls: "text-warning-600" },
-            { label: "Pending", value: asgn.pending ?? "—", cls: "text-danger-600" },
-            { label: "Avg. score", value: asgn.avg_score_percentage != null ? `${asgn.avg_score_percentage}%` : "—", cls: undefined },
+            { label: t("comprehensiveReportCard.assignments.assigned"), value: asgn.assigned ?? "—", cls: undefined },
+            { label: t("comprehensiveReportCard.assignments.submitted"), value: asgn.submitted ?? 0, cls: "text-success-600" },
+            { label: t("comprehensiveReportCard.assignments.onTime"), value: asgn.on_time ?? "—", cls: undefined },
+            { label: t("comprehensiveReportCard.assignments.late"), value: asgn.late ?? 0, cls: "text-warning-600" },
+            { label: t("comprehensiveReportCard.assignments.pending"), value: asgn.pending ?? "—", cls: "text-danger-600" },
+            { label: t("comprehensiveReportCard.assignments.avgScore"), value: asgn.avg_score_percentage != null ? `${asgn.avg_score_percentage}%` : "—", cls: undefined },
           ].map(({ label, value, cls }) => (
             <div key={label} className="flex justify-between items-center py-1.5">
               <span className="text-sm text-neutral-600">{label}</span>
@@ -533,9 +547,10 @@ function V2LiveClassesAndAssignments({
 // ── V2 Achievements Card ──────────────────────────────────────────────────────
 
 function V2AchievementsCard({ achievements }: { achievements: V2Achievement[] }) {
+  const { t } = useTranslation("layoutCommonB");
   return (
     <div className="rounded-xl border border-neutral-200 bg-white p-5 shadow-sm mb-4">
-      <V2SectionHeading>Achievements</V2SectionHeading>
+      <V2SectionHeading>{t("comprehensiveReportCard.achievements.title")}</V2SectionHeading>
       <div className="flex flex-wrap gap-3">
         {achievements.map((a, i) => (
           <span
@@ -559,9 +574,10 @@ function V2AchievementsCard({ achievements }: { achievements: V2Achievement[] })
 // ── V2 AI Insights ────────────────────────────────────────────────────────────
 
 function V2WhatWeNoticed({ insights }: { insights: string[] }) {
+  const { t } = useTranslation("layoutCommonB");
   return (
     <div className="rounded-xl border border-neutral-200 bg-white p-5 shadow-sm mb-4">
-      <V2SectionHeading>What we noticed</V2SectionHeading>
+      <V2SectionHeading>{t("comprehensiveReportCard.aiInsights.whatWeNoticed")}</V2SectionHeading>
       <ul className="space-y-2 ps-1">
         {insights.map((item, i) => (
           <li key={i} className="flex items-start gap-2 text-sm text-neutral-700">
@@ -575,9 +591,10 @@ function V2WhatWeNoticed({ insights }: { insights: string[] }) {
 }
 
 function V2RecommendedNextSteps({ recommendations }: { recommendations: V2Recommendation[] }) {
+  const { t } = useTranslation("layoutCommonB");
   return (
     <div className="rounded-xl border border-neutral-200 bg-white p-5 shadow-sm mb-4">
-      <V2SectionHeading>Recommended next steps</V2SectionHeading>
+      <V2SectionHeading>{t("comprehensiveReportCard.aiInsights.recommendedNextSteps")}</V2SectionHeading>
       <div className="space-y-0.5">
         {recommendations.map((rec, i) => {
           const prClass =
@@ -616,6 +633,8 @@ export interface ComprehensiveReportCardProps {
  * Render only when `report_version === 'v2'` and `comprehensive_report` is present.
  */
 export function ComprehensiveReportCard({ data, processId }: ComprehensiveReportCardProps) {
+  const { t } = useTranslation("layoutCommonB");
+  const liveClasses = getTerminologyPlural(ContentTerms.LiveSession, SystemTerms.LiveSession);
   const { meta, student, institute, period, overview } = data;
   const [downloading, setDownloading] = useState(false);
   const headlineMetrics = overview.headline_metrics ?? [];
@@ -658,8 +677,8 @@ export function ComprehensiveReportCard({ data, processId }: ComprehensiveReport
               </div>
               <div>
                 <p className="text-sm opacity-90">{institute.name}</p>
-                <h1 className="text-xl font-bold mt-0.5">Student Progress Report</h1>
-                <p className="text-xs opacity-80 mt-0.5">{period.label} &middot; Generated {formatDate(meta.generated_at)}</p>
+                <h1 className="text-xl font-bold mt-0.5">{t("comprehensiveReportCard.header.title")}</h1>
+                <p className="text-xs opacity-80 mt-0.5">{t("comprehensiveReportCard.header.periodGenerated", { period: period.label, date: formatDate(meta.generated_at) })}</p>
               </div>
             </div>
 
@@ -668,7 +687,7 @@ export function ComprehensiveReportCard({ data, processId }: ComprehensiveReport
                 className="inline-flex items-center px-4 py-1.5 rounded-full text-sm font-semibold border border-white/30"
                 style={{ background: "rgba(255,255,255,0.16)" }} /* design-lint-ignore: header badge overlay */
               >
-                ● {overview.overall_status} &middot; Grade {overview.overall_grade}
+                {t("comprehensiveReportCard.header.statusGrade", { status: overview.overall_status, grade: overview.overall_grade })}
               </div>
               {processId && (
                 <button
@@ -679,7 +698,7 @@ export function ComprehensiveReportCard({ data, processId }: ComprehensiveReport
                   style={{ background: "rgba(255,255,255,0.16)" }} /* design-lint-ignore: header button overlay */
                 >
                   <DownloadSimple size={16} />
-                  {downloading ? "Preparing…" : "Download PDF"}
+                  {downloading ? t("comprehensiveReportCard.header.preparing") : t("comprehensiveReportCard.header.downloadPdf")}
                 </button>
               )}
             </div>
@@ -687,19 +706,19 @@ export function ComprehensiveReportCard({ data, processId }: ComprehensiveReport
 
           <div className="flex flex-wrap justify-between gap-3 mt-5 pt-4 border-t border-white/20 text-sm">
             <div>
-              <span className="opacity-75 text-xs">Student</span>
+              <span className="opacity-75 text-xs">{t("comprehensiveReportCard.header.student")}</span>
               <p className="font-bold text-base">{student.name}</p>
             </div>
             <div>
-              <span className="opacity-75 text-xs">Class / Batch</span>
+              <span className="opacity-75 text-xs">{t("comprehensiveReportCard.header.classBatch")}</span>
               <p className="font-bold">{student.class}</p>
             </div>
             <div>
-              <span className="opacity-75 text-xs">Enrollment No.</span>
+              <span className="opacity-75 text-xs">{t("comprehensiveReportCard.header.enrollmentNo")}</span>
               <p className="font-bold">{student.enrollment_no}</p>
             </div>
             <div>
-              <span className="opacity-75 text-xs">Roll No.</span>
+              <span className="opacity-75 text-xs">{t("comprehensiveReportCard.header.rollNo")}</span>
               <p className="font-bold">{student.roll_no}</p>
             </div>
           </div>
@@ -716,10 +735,10 @@ export function ComprehensiveReportCard({ data, processId }: ComprehensiveReport
 
         {/* ── 3. PARENT SUMMARY ── */}
         {data.parent_summary && (
-          <div className="rounded-xl border border-primary-200 border-s-4 border-s-primary-500 bg-primary-50 p-5 mb-5">
-            <p className="font-semibold text-neutral-800 mb-2 flex items-center gap-2">
+          <div className="rounded-xl border border-primary-200 border-s-4 border-s-primary-500 bg-primary-50 p-5 mb-5 space-y-2">
+            <p className="font-semibold text-neutral-800 flex items-center gap-2">
               <Info size={16} className="text-primary-500 shrink-0" />
-              Summary for Parents
+              {t("comprehensiveReportCard.parentSummary.title")}
             </p>
             <p className="text-sm text-neutral-700 leading-relaxed">{data.parent_summary}</p>
           </div>
@@ -764,14 +783,14 @@ export function ComprehensiveReportCard({ data, processId }: ComprehensiveReport
         )}
         {data.live_classes?.available && !data.assignments?.available && (
           <div className="rounded-xl border border-neutral-200 bg-white p-5 shadow-sm mb-4">
-            <V2SectionHeading>Live Classes</V2SectionHeading>
+            <V2SectionHeading>{liveClasses}</V2SectionHeading>
             <div className="divide-y divide-dashed divide-neutral-200">
               {[
-                { label: "Total classes", value: data.live_classes.total ?? 0, cls: undefined },
-                { label: "Attended", value: data.live_classes.attended ?? 0, cls: "text-success-600" },
-                { label: "Missed", value: data.live_classes.missed ?? 0, cls: "text-danger-600" },
-                { label: "Not marked", value: data.live_classes.unmarked ?? 0, cls: "text-neutral-500" },
-                { label: "Attendance", value: data.live_classes.attendance_percentage != null ? `${data.live_classes.attendance_percentage}%` : "—", cls: undefined },
+                { label: t("comprehensiveReportCard.liveClasses.total"), value: data.live_classes.total ?? 0, cls: undefined },
+                { label: t("comprehensiveReportCard.liveClasses.attended"), value: data.live_classes.attended ?? 0, cls: "text-success-600" },
+                { label: t("comprehensiveReportCard.liveClasses.missed"), value: data.live_classes.missed ?? 0, cls: "text-danger-600" },
+                { label: t("comprehensiveReportCard.liveClasses.notMarked"), value: data.live_classes.unmarked ?? 0, cls: "text-neutral-500" },
+                { label: t("comprehensiveReportCard.liveClasses.attendance"), value: data.live_classes.attendance_percentage != null ? `${data.live_classes.attendance_percentage}%` : "—", cls: undefined },
               ].map(({ label, value, cls }) => (
                 <div key={label} className="flex justify-between items-center py-1.5">
                   <span className="text-sm text-neutral-600">{label}</span>
@@ -783,15 +802,15 @@ export function ComprehensiveReportCard({ data, processId }: ComprehensiveReport
         )}
         {!data.live_classes?.available && data.assignments?.available && (
           <div className="rounded-xl border border-neutral-200 bg-white p-5 shadow-sm mb-4">
-            <V2SectionHeading>Assignments</V2SectionHeading>
+            <V2SectionHeading>{t("comprehensiveReportCard.assignments.title")}</V2SectionHeading>
             <div className="divide-y divide-dashed divide-neutral-200">
               {[
-                { label: "Assigned", value: data.assignments.assigned ?? "—", cls: undefined },
-                { label: "Submitted", value: data.assignments.submitted ?? 0, cls: "text-success-600" },
-                { label: "On time", value: data.assignments.on_time ?? "—", cls: undefined },
-                { label: "Late", value: data.assignments.late ?? 0, cls: "text-warning-600" },
-                { label: "Pending", value: data.assignments.pending ?? "—", cls: "text-danger-600" },
-                { label: "Avg. score", value: data.assignments.avg_score_percentage != null ? `${data.assignments.avg_score_percentage}%` : "—", cls: undefined },
+                { label: t("comprehensiveReportCard.assignments.assigned"), value: data.assignments.assigned ?? "—", cls: undefined },
+                { label: t("comprehensiveReportCard.assignments.submitted"), value: data.assignments.submitted ?? 0, cls: "text-success-600" },
+                { label: t("comprehensiveReportCard.assignments.onTime"), value: data.assignments.on_time ?? "—", cls: undefined },
+                { label: t("comprehensiveReportCard.assignments.late"), value: data.assignments.late ?? 0, cls: "text-warning-600" },
+                { label: t("comprehensiveReportCard.assignments.pending"), value: data.assignments.pending ?? "—", cls: "text-danger-600" },
+                { label: t("comprehensiveReportCard.assignments.avgScore"), value: data.assignments.avg_score_percentage != null ? `${data.assignments.avg_score_percentage}%` : "—", cls: undefined },
               ].map(({ label, value, cls }) => (
                 <div key={label} className="flex justify-between items-center py-1.5">
                   <span className="text-sm text-neutral-600">{label}</span>
@@ -819,7 +838,11 @@ export function ComprehensiveReportCard({ data, processId }: ComprehensiveReport
 
         {/* ── 13. FOOTER ── */}
         <div className="text-center text-xs text-neutral-400 py-4">
-          Generated by {institute.name} on {formatDate(meta.generated_at)} &middot; This report covers {period.label}.
+          {t("comprehensiveReportCard.footer", {
+            institute: institute.name,
+            date: formatDate(meta.generated_at),
+            period: period.label,
+          })}
         </div>
       </div>
     </div>

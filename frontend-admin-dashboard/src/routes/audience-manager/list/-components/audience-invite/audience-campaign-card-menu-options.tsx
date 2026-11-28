@@ -11,8 +11,11 @@ import {
     Lightning as Zap,
     FlowArrow as WorkflowIcon,
     CalendarCheck,
+    QrCode,
+    LinkSimple,
 } from '@phosphor-icons/react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import {
     AlertDialog,
@@ -39,6 +42,7 @@ import { useInstituteDetailsStore } from '@/stores/students/students-list/useIns
 import { useNavigate } from '@tanstack/react-router';
 import { ApiIntegrationDialog } from '../api-integration-dialog/ApiIntegrationDialog';
 import { EmbedCodeDialog } from '../embed-code-dialog/EmbedCodeDialog';
+import { ShareQrDialog } from '../share-qr-dialog/ShareQrDialog';
 import { LeadBulkImportDialog } from '../campaign-users/LeadBulkImportDialog';
 import { SendMessageDialog } from '../campaign-users/SendMessageDialog';
 import { LinkedWorkflowsDialog } from './linked-workflows-dialog';
@@ -46,29 +50,45 @@ import { ConfigureAudienceWorkflowDialog } from './configure-audience-workflow-d
 import { BookingSettingsDialog } from '../booking-settings/BookingSettingsDialog';
 import { getActiveWorkflowsQuery } from '@/services/workflow-service';
 import { parseCustomFieldsFromJson } from '../../-utils/lead-bulk-import-utils';
+import createCampaignLink from '../../-utils/createCampaignLink';
+import { useShortLink } from '@/hooks/use-short-link';
+import { useAudienceShortLinksEnabled } from '@/hooks/use-audience-short-links-enabled';
+import { SHORT_LINK_SOURCE } from '@/services/short-link';
+import { copyTextToClipboard } from '@/lib/clipboard';
+import { UtmLinkMenuItem } from '@/components/common/utm/utm-link-menu-item';
+import { UtmBuilderDialog } from '@/components/common/utm/utm-builder-dialog';
 import { getTerminology } from '@/components/common/layout-container/sidebar/utils';
 import { OtherTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
 
 interface AudienceCampaignCardMenuOptionsProps {
     campaign: CampaignItem;
     onEdit?: (campaign: CampaignItem) => void;
+    /** After a successful delete, e.g. to leave the deleted list's own page. */
+    onDeleted?: () => void;
 }
 
 export const AudienceCampaignCardMenuOptions = ({
     campaign,
     onEdit,
+    onDeleted,
 }: AudienceCampaignCardMenuOptionsProps) => {
+    const { t } = useTranslation('audienceManagerAudienceCampaignCardMenuOptions');
     const isOptOut = campaign.campaign_type?.toUpperCase().includes('OPT_OUT');
     const queryClient = useQueryClient();
     const navigate = useNavigate();
     const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
     const [openApiDialog, setOpenApiDialog] = useState(false);
     const [openEmbedDialog, setOpenEmbedDialog] = useState(false);
+    const [openQrDialog, setOpenQrDialog] = useState(false);
     const [openBulkImportDialog, setOpenBulkImportDialog] = useState(false);
     const [openSendMessageDialog, setOpenSendMessageDialog] = useState(false);
     const [openLinkedWorkflowsDialog, setOpenLinkedWorkflowsDialog] = useState(false);
     const [openConfigureWorkflowDialog, setOpenConfigureWorkflowDialog] = useState(false);
     const [openBookingSettingsDialog, setOpenBookingSettingsDialog] = useState(false);
+    const [copyShortLinkRequested, setCopyShortLinkRequested] = useState(false);
+    const [openUtmDialog, setOpenUtmDialog] = useState(false);
+    const { enabled: shortLinksEnabled, isResolved: shortLinksResolved } =
+        useAudienceShortLinksEnabled();
     const { instituteDetails } = useInstituteDetailsStore();
     const bulkImportCustomFields = useMemo(
         () =>
@@ -111,12 +131,12 @@ export const AudienceCampaignCardMenuOptions = ({
                 }
             );
             queryClient.invalidateQueries({ queryKey: ['campaignsList'] });
-            toast.success('Campaign deleted successfully');
+            toast.success(t('toast.deleteSuccess'));
             setOpenDeleteDialog(false);
+            onDeleted?.();
         },
         onError: (error: unknown) => {
-            const message =
-                error instanceof Error ? error.message : 'Failed to delete the campaign';
+            const message = error instanceof Error ? error.message : t('toast.deleteError');
             toast.error(message);
         },
     });
@@ -129,13 +149,13 @@ export const AudienceCampaignCardMenuOptions = ({
         if (onEdit) {
             onEdit(campaign);
         } else {
-            toast.info('Edit campaign functionality coming soon');
+            toast.info(t('toast.editComingSoon'));
         }
     };
 
     const handleAddResponse = () => {
         if (!campaignId) {
-            toast.error('Campaign ID is missing');
+            toast.error(t('toast.campaignIdMissing'));
             return;
         }
         navigate({
@@ -165,17 +185,70 @@ export const AudienceCampaignCardMenuOptions = ({
     const linkedCount = useMemo(() => {
         if (!campaignId) return 0;
         return allWorkflows.filter((w) => {
-            const t = w.trigger;
-            if (!t || !t.trigger_event_name) return false;
+            const trigger = w.trigger;
+            if (!trigger || !trigger.trigger_event_name) return false;
             // Keep in sync with AUDIENCE_TRIGGER_EVENTS in linked-workflows-dialog.tsx
-            if (t.trigger_event_name !== 'AUDIENCE_LEAD_SUBMISSION') return false;
-            return t.event_id === campaignId || t.event_id === null;
+            if (trigger.trigger_event_name !== 'AUDIENCE_LEAD_SUBMISSION') return false;
+            return trigger.event_id === campaignId || trigger.event_id === null;
         }).length;
     }, [allWorkflows, campaignId]);
 
+    // "Copy short link": get-or-create the campaign's u.<domain>/s/<code> URL and
+    // put it on the clipboard. The request is gated on the click (shortening
+    // inserts a row server-side) and its result is cached on the campaign id, so
+    // a second copy is instant and hands out the *same* code — a link an admin
+    // has already shared must never quietly change.
+    const campaignFormUrl = useMemo(
+        () =>
+            campaignId
+                ? createCampaignLink(campaignId, instituteDetails?.learner_portal_base_url)
+                : '',
+        [campaignId, instituteDetails?.learner_portal_base_url]
+    );
+
+    const {
+        shortUrl,
+        // Selecting a menu item closes the dropdown, so there is no surface left
+        // on which to render a busy state — the toast is the feedback.
+        isLoading: isShorteningLink,
+        isError: shortLinkFailed,
+    } = useShortLink({
+        source: SHORT_LINK_SOURCE.AUDIENCE_CAMPAIGN,
+        sourceId: campaignId,
+        destinationUrl: campaignFormUrl,
+        instituteId: instituteId ?? undefined,
+        // See use-audience-short-links-enabled: the write must wait until the
+        // institute's preference is actually known, not just optimistically ON.
+        enabled: copyShortLinkRequested && shortLinksEnabled && shortLinksResolved,
+    });
+
+    useEffect(() => {
+        if (!copyShortLinkRequested || isShorteningLink) return;
+
+        if (shortUrl) {
+            setCopyShortLinkRequested(false);
+            // The clipboard write happens after a network round-trip, which is
+            // outside Safari's user-gesture window — copyTextToClipboard falls
+            // back to execCommand there rather than failing.
+            copyTextToClipboard(shortUrl).then((copied) => {
+                if (copied) {
+                    toast.success(t('toast.shortLinkCopied'));
+                } else {
+                    toast.error(t('toast.shortLinkCopyFailed'));
+                }
+            });
+            return;
+        }
+
+        if (shortLinkFailed) {
+            setCopyShortLinkRequested(false);
+            toast.error(t('toast.shortLinkFailed'));
+        }
+    }, [copyShortLinkRequested, isShorteningLink, shortUrl, shortLinkFailed, t]);
+
     const handleConfigureWorkflow = () => {
         if (!campaignId) {
-            toast.error('Campaign ID is missing');
+            toast.error(t('toast.campaignIdMissing'));
             return;
         }
         // Inline quick-create dialog — handles the two common cases
@@ -191,40 +264,40 @@ export const AudienceCampaignCardMenuOptions = ({
                 <DropdownMenuTrigger asChild>
                     <Button variant="ghost" size="icon" className="size-8 p-0">
                         <MoreVertical className="size-4" />
-                        <span className="sr-only">Open menu</span>
+                        <span className="sr-only">{t('menu.openMenu')}</span>
                     </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                     <DropdownMenuItem onClick={handleEdit}>
                         <Edit2 className="mr-2 size-4" />
-                        Edit
+                        {t('menu.edit')}
                     </DropdownMenuItem>
                     {!isOptOut && (
                         <DropdownMenuItem onClick={handleAddResponse}>
                             <UserPlus className="mr-2 size-4" />
-                            Add Response
+                            {t('menu.addResponse')}
                         </DropdownMenuItem>
                     )}
                     {!isOptOut && (
                         <DropdownMenuItem onClick={() => setOpenBulkImportDialog(true)}>
                             <Upload className="mr-2 size-4" />
-                            Bulk Import CSV
+                            {t('menu.bulkImportCsv')}
                         </DropdownMenuItem>
                     )}
                     <DropdownMenuItem onClick={() => setOpenSendMessageDialog(true)}>
                         <MessageSquare className="mr-2 size-4" />
-                        Send Message
+                        {t('menu.sendMessage')}
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={handleConfigureWorkflow}>
                         <Zap className="mr-2 size-4" />
-                        Configure Workflow
+                        {t('menu.configureWorkflow')}
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => setOpenLinkedWorkflowsDialog(true)}>
                         <WorkflowIcon className="mr-2 size-4" />
-                        View Linked Workflows
+                        {t('menu.viewLinkedWorkflows')}
                         {linkedCount > 0 && (
-                            <span className="ml-auto rounded-full bg-primary-100 text-primary-700 px-2 py-0.5 text-caption font-semibold">
+                            <span className="ml-auto rounded-full bg-primary-100 px-2 py-0.5 text-caption font-semibold text-primary-700">
                                 {linkedCount}
                             </span>
                         )}
@@ -232,23 +305,54 @@ export const AudienceCampaignCardMenuOptions = ({
                     <DropdownMenuItem
                         onClick={() => {
                             if (!campaignId) {
-                                toast.error('Campaign ID is missing');
+                                toast.error(t('toast.campaignIdMissing'));
                                 return;
                             }
                             setOpenBookingSettingsDialog(true);
                         }}
                     >
                         <CalendarCheck className="mr-2 size-4" />
-                        Booking Settings
+                        {t('menu.bookingSettings')}
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                        onClick={() => {
+                            if (!campaignId) {
+                                toast.error(t('toast.campaignIdMissing'));
+                                return;
+                            }
+                            setOpenQrDialog(true);
+                        }}
+                    >
+                        <QrCode className="mr-2 size-4" />
+                        {t('menu.shareQrCode')}
+                    </DropdownMenuItem>
+                    {shortLinksEnabled && (
+                        <DropdownMenuItem
+                            onClick={() => {
+                                if (!campaignFormUrl) {
+                                    toast.error(t('toast.campaignIdMissing'));
+                                    return;
+                                }
+                                setCopyShortLinkRequested(true);
+                            }}
+                        >
+                            <LinkSimple className="mr-2 size-4" />
+                            {t('menu.copyShortLink')}
+                        </DropdownMenuItem>
+                    )}
+                    <UtmLinkMenuItem
+                        hidden={!campaignFormUrl}
+                        onSelect={() => setOpenUtmDialog(true)}
+                        className="cursor-pointer"
+                    />
                     <DropdownMenuItem onClick={() => setOpenApiDialog(true)}>
                         <Code className="mr-2 size-4" />
-                        API Integration
+                        {t('menu.apiIntegration')}
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => setOpenEmbedDialog(true)}>
                         <Code2 className="mr-2 size-4" />
-                        Get Embed Code
+                        {t('menu.getEmbedCode')}
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem
@@ -256,7 +360,7 @@ export const AudienceCampaignCardMenuOptions = ({
                         onClick={() => setOpenDeleteDialog(true)}
                     >
                         <Trash2 className="mr-2 size-4" />
-                        Delete
+                        {t('menu.delete')}
                     </DropdownMenuItem>
                 </DropdownMenuContent>
             </DropdownMenu>
@@ -264,15 +368,23 @@ export const AudienceCampaignCardMenuOptions = ({
             <AlertDialog open={openDeleteDialog} onOpenChange={setOpenDeleteDialog}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>{`Delete ${getTerminology(OtherTerms.AudienceList, SystemTerms.AudienceList)}`}</AlertDialogTitle>
+                        <AlertDialogTitle>
+                            {t('deleteDialog.title', {
+                                term: getTerminology(
+                                    OtherTerms.AudienceList,
+                                    SystemTerms.AudienceList
+                                ),
+                            })}
+                        </AlertDialogTitle>
                         <AlertDialogDescription>
-                            Are you sure you want to delete the campaign &quot;
-                            {campaign.campaign_name}&quot;? This action cannot be undone.
+                            {t('deleteDialog.description', {
+                                campaignName: campaign.campaign_name,
+                            })}
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogCancel disabled={deleteCampaignMutation.isPending}>
-                            Cancel
+                            {t('deleteDialog.cancel')}
                         </AlertDialogCancel>
                         <AlertDialogAction
                             onClick={(e) => {
@@ -282,7 +394,9 @@ export const AudienceCampaignCardMenuOptions = ({
                             disabled={deleteCampaignMutation.isPending}
                             className="bg-red-600 hover:bg-red-700"
                         >
-                            {deleteCampaignMutation.isPending ? 'Deleting...' : 'Delete'}
+                            {deleteCampaignMutation.isPending
+                                ? t('deleteDialog.deleting')
+                                : t('deleteDialog.confirm')}
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
@@ -300,12 +414,18 @@ export const AudienceCampaignCardMenuOptions = ({
                 campaign={campaign}
             />
 
+            <ShareQrDialog
+                isOpen={openQrDialog}
+                onClose={() => setOpenQrDialog(false)}
+                campaign={campaign}
+            />
+
             {campaignId && (
                 <LeadBulkImportDialog
                     open={openBulkImportDialog}
                     onOpenChange={setOpenBulkImportDialog}
                     campaignId={campaignId}
-                    campaignName={campaign.campaign_name || 'Campaign'}
+                    campaignName={campaign.campaign_name || t('defaults.campaignName')}
                     instituteId={instituteId || ''}
                     customFields={bulkImportCustomFields}
                 />
@@ -316,7 +436,7 @@ export const AudienceCampaignCardMenuOptions = ({
                     open={openSendMessageDialog}
                     onOpenChange={setOpenSendMessageDialog}
                     campaignId={campaignId}
-                    campaignName={campaign.campaign_name || 'Campaign'}
+                    campaignName={campaign.campaign_name || t('defaults.campaignName')}
                     instituteId={instituteId || ''}
                     customFields={bulkImportCustomFields}
                     leadCount={0}
@@ -328,7 +448,7 @@ export const AudienceCampaignCardMenuOptions = ({
                     open={openLinkedWorkflowsDialog}
                     onOpenChange={setOpenLinkedWorkflowsDialog}
                     audienceId={campaignId}
-                    audienceName={campaign.campaign_name || 'this campaign'}
+                    audienceName={campaign.campaign_name || t('defaults.thisCampaign')}
                     instituteId={instituteId}
                 />
             )}
@@ -338,18 +458,27 @@ export const AudienceCampaignCardMenuOptions = ({
                     open={openBookingSettingsDialog}
                     onOpenChange={setOpenBookingSettingsDialog}
                     audienceId={campaignId}
-                    audienceName={campaign.campaign_name || 'this campaign'}
+                    audienceName={campaign.campaign_name || t('defaults.thisCampaign')}
                     instituteId={instituteId}
                 />
             )}
+
+            <UtmBuilderDialog
+                open={openUtmDialog}
+                onOpenChange={setOpenUtmDialog}
+                baseUrl={campaignFormUrl}
+                sourceType="AUDIENCE"
+                entityName={campaign.campaign_name}
+            />
 
             {campaignId && instituteId && (
                 <ConfigureAudienceWorkflowDialog
                     open={openConfigureWorkflowDialog}
                     onOpenChange={setOpenConfigureWorkflowDialog}
                     audienceId={campaignId}
-                    audienceName={campaign.campaign_name || 'this campaign'}
+                    audienceName={campaign.campaign_name || t('defaults.thisCampaign')}
                     instituteId={instituteId}
+                    customFields={bulkImportCustomFields}
                 />
             )}
         </>

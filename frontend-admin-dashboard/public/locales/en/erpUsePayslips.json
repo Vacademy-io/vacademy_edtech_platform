@@ -1,0 +1,5 @@
+{
+    "blockedCancelled": "This run was cancelled, so there is nothing to issue payslips for. Create a fresh run for this month instead.",
+    "blockedNotProcessed": "Payslips are rendered from computed entries, so the run has to be processed first. Process it from the action bar above, then come back.",
+    "generatedFallback": "Payslips generated."
+}

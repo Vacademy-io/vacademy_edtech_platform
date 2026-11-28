@@ -1,0 +1,13 @@
+{
+    "heading": "إضافة عميل محتمل جديد",
+    "description": "اختر نوع الحملة و{{audienceTerm}} التي ينتمي إليها هذا العميل المحتمل. سيُفتح نموذجها بعد ذلك.",
+    "selectPlaceholder": "اختر {{term}}",
+    "pickTypeFirst": "اختر {{term}} أولاً",
+    "searchPlaceholder": "بحث…",
+    "noResults": "لا توجد نتائج.",
+    "loading": "جارٍ التحميل…",
+    "noCampaignType": "بدون نوع حملة",
+    "emptyState": "لا توجد {{audienceTerm}} نشطة لإضافة عميل محتمل إليها.",
+    "cancel": "إلغاء",
+    "continue": "متابعة"
+}

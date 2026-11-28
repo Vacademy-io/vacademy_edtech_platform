@@ -1,0 +1,12 @@
+{
+    "addToCourse": "कोर्स में जोड़ें",
+    "titleLabel": "शीर्षक",
+    "savingEllipsis": "सेव हो रहा है…",
+    "saveToLibraryAndAdd": "लाइब्रेरी में सेव करें और जोड़ें",
+    "add": "जोड़ें",
+    "sessionFallback": "सत्र",
+    "defaultTitle": "{{label}} – रिकॉर्डिंग ({{formatted}})",
+    "defaultTitleNoDate": "{{label}} – रिकॉर्डिंग",
+    "saveRecordingFirst": "पहले रिकॉर्डिंग को लाइब्रेरी में सेव करें, फिर दोबारा प्रयास करें।",
+    "couldNotAdd": "इस रिकॉर्डिंग को कोर्स में नहीं जोड़ा जा सका।"
+}

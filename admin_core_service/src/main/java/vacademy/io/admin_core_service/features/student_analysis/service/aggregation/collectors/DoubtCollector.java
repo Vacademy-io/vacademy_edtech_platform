@@ -44,6 +44,9 @@ public class DoubtCollector {
                     null,
                     instituteId,
                     List.of(), false,
+                    // No assignee / workflow-status narrowing for the learner report.
+                    List.of(""), false, false,
+                    List.of(""), false,
                     start, end,
                     PageRequest.of(0, DOUBT_FETCH_CAP));
 

@@ -1,0 +1,12 @@
+{
+    "selectionLabel": "اختيار {{session}}",
+    "selectExisting": "اختر {{session}} موجودة",
+    "createNew": "إنشاء {{session}} جديدة",
+    "selectPlaceholder": "اختر {{session}}",
+    "startDate": "تاريخ البدء: {{date}}",
+    "validation": {
+        "selectSession": "يرجى اختيار جلسة"
+    },
+    "searchPlaceholder": "ابحث عن {{session}}…",
+    "emptyForCourse": "لا يوجد {{session}} لهذه الدورة بعد — أضف الأول أدناه."
+}

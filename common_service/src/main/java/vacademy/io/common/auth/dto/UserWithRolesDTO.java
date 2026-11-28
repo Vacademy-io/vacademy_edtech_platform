@@ -31,8 +31,16 @@ public class UserWithRolesDTO {
     private boolean isRootUser;
     private String password;
     private String profilePicFileId;
+    private String authorSubtitle;
+    private String authorDescription;
     private Set<UserRoleDTO> roles;
     private String status;
+    /**
+     * Last successful sign-in (users.last_login_time); null = has never signed in. Set only by
+     * the authenticated Teams listing (see UserService#toUserWithRolesDtoWithPassword), never by
+     * the constructor that also feeds unauthenticated endpoints.
+     */
+    private Date lastLoginTime;
 
     public UserWithRolesDTO() {
         // Default constructor
@@ -51,8 +59,9 @@ public class UserWithRolesDTO {
         this.gender = user.getGender();
         this.isRootUser = user.isRootUser();
         this.profilePicFileId = user.getProfilePicFileId();
+        this.authorSubtitle = user.getAuthorSubtitle();
+        this.authorDescription = user.getAuthorDescription();
         this.roles = user.getRoles().stream()
                 .map(UserRoleDTO::new).collect(Collectors.toSet());
     }
 }
-

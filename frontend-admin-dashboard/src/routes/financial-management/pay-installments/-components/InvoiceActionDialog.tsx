@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
     Dialog,
     DialogContent,
@@ -30,6 +31,7 @@ export function InvoiceActionDialog({
     onDownload,
     onSendEmail,
 }: InvoiceActionDialogProps) {
+    const { t } = useTranslation('financialManagementInvoiceActionDialog');
     const [email, setEmail] = useState(studentEmail || '');
     const [showEmailInput, setShowEmailInput] = useState(false);
 
@@ -53,10 +55,10 @@ export function InvoiceActionDialog({
             <DialogContent className="max-w-sm rounded-xl p-0 overflow-hidden">
                 <DialogHeader className="px-6 pt-6 pb-4 border-b border-gray-100">
                     <DialogTitle className="text-lg font-bold text-gray-800">
-                        Generate Invoice
+                        {t('title')}
                     </DialogTitle>
                     <DialogDescription className="mt-1 text-sm text-gray-500">
-                        Invoice for <strong>{studentName}</strong>
+                        {t('invoiceFor')} <strong>{studentName}</strong>
                     </DialogDescription>
                 </DialogHeader>
 
@@ -72,7 +74,7 @@ export function InvoiceActionDialog({
                         ) : (
                             <DownloadSimple size={20} weight="bold" className="text-blue-600" />
                         )}
-                        {isGenerating ? 'Generating...' : 'Download Invoice'}
+                        {isGenerating ? t('generating') : t('downloadInvoice')}
                     </button>
 
                     {/* Send via Email */}
@@ -83,12 +85,12 @@ export function InvoiceActionDialog({
                             className="w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-gray-700 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                         >
                             <EnvelopeSimple size={20} weight="bold" className="text-emerald-600" />
-                            Send Invoice via Email
+                            {t('sendInvoiceViaEmail')}
                         </button>
                     ) : (
                         <div className="space-y-2 p-3 bg-gray-50 rounded-lg border border-gray-200">
                             <label className="text-xs font-medium text-gray-500">
-                                Recipient Email
+                                {t('recipientEmail')}
                             </label>
                             <Input
                                 type="email"
@@ -106,12 +108,12 @@ export function InvoiceActionDialog({
                                 {isSendingEmail ? (
                                     <>
                                         <SpinnerGap size={16} className="animate-spin" />
-                                        Sending...
+                                        {t('sending')}
                                     </>
                                 ) : (
                                     <>
                                         <EnvelopeSimple size={16} weight="bold" />
-                                        Send Email
+                                        {t('sendEmail')}
                                     </>
                                 )}
                             </button>

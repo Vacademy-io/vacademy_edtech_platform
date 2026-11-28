@@ -1,0 +1,22 @@
+{
+    "start": "प्रारंभ",
+    "issueCount_one": "{{count}} समस्या",
+    "issueCount_other": "{{count}} समस्याएं",
+    "issues": {
+        "selectTriggerEvent": "एक ट्रिगर इवेंट चुनें",
+        "selectQuery": "एक क्वेरी चुनें",
+        "selectRecipientsSource": "प्राप्तकर्ताओं के लिए डेटा स्रोत चुनें",
+        "selectWhatsappTemplate": "एक WhatsApp टेम्पलेट चुनें",
+        "setRecipientsExpression": "प्राप्तकर्ता एक्सप्रेशन सेट करें",
+        "enterUrl": "एक URL दर्ज करें",
+        "setSourceExpression": "स्रोत एक्सप्रेशन सेट करें",
+        "setFilterCondition": "फ़िल्टर शर्त सेट करें",
+        "setConditionExpression": "शर्त एक्सप्रेशन सेट करें",
+        "setDelayValue": "देरी मान सेट करें",
+        "selectTable": "एक टेबल चुनें",
+        "enterNotificationTitle": "सूचना शीर्षक दर्ज करें",
+        "enterNotificationBody": "सूचना का मुख्य भाग दर्ज करें",
+        "setDelayDuration": "देरी अवधि सेट करें",
+        "selectLeadStatus": "एक लीड स्थिति चुनें"
+    }
+}

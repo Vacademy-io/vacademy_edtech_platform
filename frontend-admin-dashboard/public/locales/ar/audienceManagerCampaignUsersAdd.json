@@ -1,0 +1,52 @@
+{
+    "schema": {
+        "campaignIdRequired": "معرّف الحملة مطلوب"
+    },
+    "navHeading": "إضافة رد",
+    "helmet": {
+        "title": "إضافة رد - {{name}}",
+        "description": "أضف ردًا نيابةً عن أحد المستجيبين."
+    },
+    "backButton": "العودة إلى مستخدمي {{audienceTerm}}",
+    "header": {
+        "description": "املأ التفاصيل أدناه لإرسال رد نيابةً عن أحد المستجيبين.",
+        "cardDescription": "أدخل بيانات الشخص لإضافته كعميل محتمل في {{audienceTerm}} هذه."
+    },
+    "emptyState": {
+        "title": "لا توجد حقول نموذج مُهيّأة لهذه {{audienceTerm}}.",
+        "hint": "يرجى إضافة حقول مخصصة أولاً لبدء جمع الردود."
+    },
+    "form": {
+        "sectionTitle": "تفاصيل المستجيب",
+        "requiredFields": "الحقول المطلوبة",
+        "cancel": "إلغاء",
+        "submitting": "جارٍ الإرسال...",
+        "submit": "إرسال الرد",
+        "requiredHint": "جميع الحقول المميزة بـ <star>*</star> مطلوبة",
+        "loadingFields": "جارٍ تحميل النموذج…"
+    },
+    "validation": {
+        "missingFields": "يرجى ملء الحقول المطلوبة: {{fields}}"
+    },
+    "toast": {
+        "success": "تم إرسال الرد بنجاح!",
+        "genericError": "فشل إرسال الرد. يرجى المحاولة مرة أخرى."
+    },
+    "audienceFallbackName": "هذه {{audienceTerm}}",
+    "footer": {
+        "responsesAppearUnder": "تظهر الردود ضمن <bold>{{audienceName}}</bold> في قائمة {{audienceTerm}} الخاصة بك."
+    },
+    "assign": {
+        "label": "إسناد إلى مستشار",
+        "placeholder": "اختر مستشارًا (اختياري)",
+        "loading": "جارٍ تحميل المستشارين…",
+        "search": "ابحث عن مستشار…",
+        "empty": "لم يتم العثور على مستشار.",
+        "hint": "إذا تُرك فارغًا، يتبع العميل المحتمل التوجيه المعتاد.",
+        "optional": "(اختياري)"
+    },
+    "duplicateBlock": {
+        "title": "هذا العميل موجود بالفعل",
+        "ok": "حسنًا"
+    }
+}

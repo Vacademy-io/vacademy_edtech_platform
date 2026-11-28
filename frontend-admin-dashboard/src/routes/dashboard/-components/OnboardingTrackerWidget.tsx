@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { MyButton } from '@/components/design-system/button';
@@ -20,18 +22,30 @@ import {
     type MilestoneStatus,
 } from '@/services/institute-widgets';
 
-const STATUS_META: Record<MilestoneStatus, { label: string; chip: string; Icon: typeof Circle }> = {
-    DONE: { label: 'Done', chip: 'bg-success-50 text-success-600', Icon: CheckCircle },
-    IN_PROGRESS: { label: 'In progress', chip: 'bg-primary-50 text-primary-600', Icon: CircleNotch },
-    BLOCKED: { label: 'Blocked', chip: 'bg-danger-50 text-danger-600', Icon: Warning },
-    NOT_STARTED: { label: 'Not started', chip: 'bg-neutral-100 text-neutral-500', Icon: Circle },
-};
+const buildStatusMeta = (
+    t: TFunction
+): Record<MilestoneStatus, { label: string; chip: string; Icon: typeof Circle }> => ({
+    DONE: { label: t('status.done'), chip: 'bg-success-50 text-success-600', Icon: CheckCircle },
+    IN_PROGRESS: {
+        label: t('status.inProgress'),
+        chip: 'bg-primary-50 text-primary-600',
+        Icon: CircleNotch,
+    },
+    BLOCKED: { label: t('status.blocked'), chip: 'bg-danger-50 text-danger-600', Icon: Warning },
+    NOT_STARTED: {
+        label: t('status.notStarted'),
+        chip: 'bg-neutral-100 text-neutral-500',
+        Icon: Circle,
+    },
+});
 
 export default function OnboardingTrackerWidget({ widget }: { widget: DashboardWidget }) {
+    const { t } = useTranslation('dashboardOnboardingTrackerWidget');
     const queryClient = useQueryClient();
     const milestones: Milestone[] = widget.payload?.milestones ?? [];
     const progress = milestoneProgress(milestones);
     const [comment, setComment] = useState('');
+    const statusMeta = buildStatusMeta(t);
 
     const invalidate = () => queryClient.invalidateQueries({ queryKey: ['institute-widgets'] });
 
@@ -45,7 +59,7 @@ export default function OnboardingTrackerWidget({ widget }: { widget: DashboardW
                     <CardTitle className="text-subtitle font-semibold">{widget.title}</CardTitle>
                 </div>
                 <CardDescription className="text-caption text-neutral-500">
-                    Your implementation status · {progress}% complete
+                    {t('header.progress', { count: progress })}
                 </CardDescription>
                 <div className="mt-2">
                     <Progress value={progress} />
@@ -55,11 +69,11 @@ export default function OnboardingTrackerWidget({ widget }: { widget: DashboardW
             <div className="flex flex-col gap-2 px-4 pb-3">
                 {milestones.length === 0 ? (
                     <p className="py-4 text-center text-caption text-neutral-400">
-                        No milestones yet.
+                        {t('empty.message')}
                     </p>
                 ) : (
                     milestones.map((m) => {
-                        const meta = STATUS_META[m.status] ?? STATUS_META.NOT_STARTED;
+                        const meta = statusMeta[m.status] ?? statusMeta.NOT_STARTED;
                         const Icon = meta.Icon;
                         return (
                             <div
@@ -84,7 +98,7 @@ export default function OnboardingTrackerWidget({ widget }: { widget: DashboardW
                                         {m.estimatedDate && (
                                             <span className="flex items-center gap-1">
                                                 <CalendarBlank size={12} weight="duotone" />
-                                                ETA {m.estimatedDate}
+                                                {t('milestone.eta', { date: m.estimatedDate })}
                                             </span>
                                         )}
                                         {m.note && <span>{m.note}</span>}
@@ -98,7 +112,7 @@ export default function OnboardingTrackerWidget({ widget }: { widget: DashboardW
                                                 invalidate();
                                             }}
                                         >
-                                            Confirm
+                                            {t('milestone.confirmButton')}
                                         </MyButton>
                                     )}
                                 </div>
@@ -118,7 +132,7 @@ export default function OnboardingTrackerWidget({ widget }: { widget: DashboardW
                     <textarea
                         className="min-h-9 w-full resize-none rounded-md border border-neutral-200 p-2 text-caption focus:outline-none focus:ring-2 focus:ring-primary-200"
                         rows={1}
-                        placeholder="Add a comment for the team…"
+                        placeholder={t('comment.placeholder')}
                         value={comment}
                         onChange={(e) => setComment(e.target.value)}
                     />
@@ -133,7 +147,7 @@ export default function OnboardingTrackerWidget({ widget }: { widget: DashboardW
                             invalidate();
                         }}
                     >
-                        Send
+                        {t('comment.sendButton')}
                     </MyButton>
                 </div>
             </div>

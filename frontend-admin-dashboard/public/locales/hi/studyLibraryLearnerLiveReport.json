@@ -1,0 +1,70 @@
+{
+    "table": {
+        "date": "तारीख",
+        "class": "क्लास",
+        "status": "स्थिति",
+        "present": "उपस्थित",
+        "absent": "अनुपस्थित",
+        "duration": "अवधि",
+        "talkTime": "बोलने का समय",
+        "chats": "चैट",
+        "polls": "पोल",
+        "raiseHand": "हाथ उठाना"
+    },
+    "export": {
+        "generatedOn": "जनरेट किया गया {{date}}",
+        "exportSuccess": "शिक्षार्थी रिपोर्ट एक्सपोर्ट की गई",
+        "exportFailed": "PDF एक्सपोर्ट करने में विफल",
+        "csvExportSuccess": "CSV निर्यात हो गया",
+        "csvExportFailed": "CSV निर्यात विफल"
+    },
+    "errors": {
+        "loadFailed": "रिपोर्ट लोड करने में कुछ गड़बड़ हुई। कृपया फिर से प्रयास करें।",
+        "batchLoadFailed": "{{name}} की रिपोर्ट लोड नहीं हो सकी।"
+    },
+    "emptyState": {
+        "title": "कोई लाइव क्लास नहीं मिली",
+        "description": "इस शिक्षार्थी की चयनित अवधि में कोई लाइव क्लास शेड्यूल नहीं थी।"
+    },
+    "actions": {
+        "attendanceTracker": "अटेंडेंस ट्रैकर",
+        "exporting": "एक्सपोर्ट हो रहा है…",
+        "exportPdf": "PDF एक्सपोर्ट करें",
+        "exportCsv": "CSV निर्यात करें"
+    },
+    "metrics": {
+        "attendance": "उपस्थिति",
+        "batchPercentage": "बैच {{value}}%",
+        "classesAttended": "उपस्थित क्लासें",
+        "avgDurationPerClass": "औसत अवधि / क्लास",
+        "batchDuration": "बैच {{value}}",
+        "engagement": "एंगेजमेंट",
+        "batchEngagement": "बैच {{value}} · 100 में से",
+        "engagementInfo": "एंगेजमेंट स्कोर (0–100) कक्षा के दौरान भागीदारी पर आधारित है — बोलने का समय, चैट, पोल और हाथ उठाना, प्रति क्लास मापा जाता है। 100 = इस बैच का सबसे सक्रिय शिक्षार्थी। यह केवल प्रोवाइडर-सिंक्ड (Zoom/BBB) क्लासों के लिए उपलब्ध है।"
+    },
+    "sections": {
+        "classHistoryTitle": "क्लास इतिहास",
+        "classHistorySubtitle": "अवधि की प्रत्येक क्लास के लिए उपस्थिति और भागीदारी"
+    },
+    "batchCount": "{{term}} · {{count}} चयनित",
+    "csv": {
+        "fileStem": "learner-live-class-report",
+        "summaryTitle": "सारांश",
+        "learner": "शिक्षार्थी",
+        "email": "ईमेल",
+        "startDate": "आरंभ तिथि",
+        "endDate": "समाप्ति तिथि",
+        "attendancePct": "उपस्थिति (%)",
+        "batchAttendancePct": "{{batch}} उपस्थिति (%)",
+        "attended": "उपस्थित कक्षाएँ",
+        "totalClasses": "कुल कक्षाएँ",
+        "avgDurationMin": "औसत अवधि (मिनट)",
+        "batchAvgDurationMin": "{{batch}} औसत अवधि (मिनट)",
+        "engagementScore": "सहभागिता स्कोर (0-100)",
+        "batchEngagementScore": "{{batch}} सहभागिता स्कोर (0-100)",
+        "classesTitle": "कक्षा इतिहास",
+        "durationMin": "अवधि (मिनट)",
+        "talkTimeMin": "बोलने का समय (मिनट)",
+        "emojis": "इमोजी"
+    }
+}

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Tag, WarningCircle } from '@phosphor-icons/react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 import { Switch } from '@/components/ui/switch';
 import { getInstituteId } from '@/constants/helper';
 import { cn } from '@/lib/utils';
@@ -35,6 +36,7 @@ import { CouponList } from './CouponList';
  * the switch on.
  */
 const CouponSettings = () => {
+    const { t } = useTranslation('settingsCouponSettings');
     const instituteId = getInstituteId();
     const [dialogOpen, setDialogOpen] = useState(false);
     const [editingId, setEditingId] = useState<string | null>(null);
@@ -46,7 +48,7 @@ const CouponSettings = () => {
     if (!instituteId) {
         return (
             <div className="p-6 text-body text-neutral-500">
-                Select an institute to manage coupons.
+                {t('emptyState.selectInstitute')}
             </div>
         );
     }
@@ -65,14 +67,14 @@ const CouponSettings = () => {
         updateEnabled.mutate(next, {
             onSuccess: () =>
                 toast.success(
-                    next ? 'Coupons enabled for learners' : 'Coupons hidden from learners'
+                    next ? t('toasts.enabled') : t('toasts.disabled')
                 ),
             onError: (e) => {
                 const message =
                     (e as { response?: { data?: { message?: string } } })?.response?.data
                         ?.message ??
                     (e as Error).message ??
-                    'Could not update coupon setting';
+                    t('toasts.updateError');
                 toast.error(message);
             },
         });
@@ -84,7 +86,7 @@ const CouponSettings = () => {
     const learnerSingular = getTerminology(RoleTerms.Learner, SystemTerms.Learner);
     const learnerPlural = getTerminologyPlural(RoleTerms.Learner, SystemTerms.Learner);
     const batchPlural = getTerminologyPlural(ContentTerms.Batch, SystemTerms.Batch);
-    const enableToggleLabel = `Enable coupon redemption for ${learnerPlural.toLowerCase()}`;
+    const enableToggleLabel = t('toggle.label', { learner: learnerPlural.toLowerCase() });
 
     return (
         <div className="space-y-6 px-2 py-1">
@@ -93,11 +95,14 @@ const CouponSettings = () => {
                     <Tag size={20} weight="fill" />
                 </div>
                 <div>
-                    <h2 className="text-h3 font-semibold text-neutral-800">Coupon Settings</h2>
+                    <h2 className="text-h3 font-semibold text-neutral-800">
+                        {t('header.title')}
+                    </h2>
                     <p className="mt-1 text-body text-neutral-500">
-                        Create discount coupons your {learnerPlural.toLowerCase()} can apply at
-                        checkout. Scope them to the whole institute or to specific{' '}
-                        {batchPlural.toLowerCase()} and invite links.
+                        {t('header.subtitle', {
+                            learner: learnerPlural.toLowerCase(),
+                            batch: batchPlural.toLowerCase(),
+                        })}
                     </p>
                 </div>
             </header>
@@ -119,9 +124,7 @@ const CouponSettings = () => {
                         {enableToggleLabel}
                     </label>
                     <p className="mt-1 text-caption text-neutral-500">
-                        When off, coupon fields are hidden on all {learnerSingular.toLowerCase()}{' '}
-                        checkout flows. Existing coupons remain stored and resume working as soon as
-                        you turn this back on.
+                        {t('toggle.hint', { learner: learnerSingular.toLowerCase() })}
                     </p>
                 </div>
                 <div className="pt-1">
@@ -140,11 +143,7 @@ const CouponSettings = () => {
             {!isEnabled && !enabledLoading && (
                 <div className="flex items-start gap-2 rounded-md border border-warning-400 bg-warning-100 px-3 py-2 text-caption text-warning-600">
                     <WarningCircle size={16} weight="fill" className="mt-0.5 shrink-0" />
-                    <span>
-                        Coupons are currently disabled. {learnerPlural} won&apos;t see the coupon
-                        field at checkout until you enable the toggle above. You can still create
-                        and edit coupons in advance.
-                    </span>
+                    <span>{t('banner.disabled', { learnerPlural })}</span>
                 </div>
             )}
 

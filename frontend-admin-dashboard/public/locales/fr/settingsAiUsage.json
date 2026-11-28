@@ -1,0 +1,54 @@
+{
+    "heading": "Utilisation des crédits IA par utilisateur",
+    "description": "Crédits consommés par membre sur la période sélectionnée (nets des remboursements). Sélectionnez un membre pour voir son activité détaillée — y compris les invites envoyées et les réponses de l'IA.",
+    "roleTabs": {
+        "all": "Tous"
+    },
+    "search": {
+        "placeholder": "Rechercher par nom ou e-mail…"
+    },
+    "common": {
+        "name": "Nom",
+        "email": "E-mail",
+        "role": "Rôle",
+        "creditsUsed": "Crédits utilisés",
+        "requests": "Requêtes"
+    },
+    "table": {
+        "activity": "Activité",
+        "viewLogs": "Voir les journaux"
+    },
+    "export": {
+        "button": "Exporter vers Excel",
+        "loading": "Exportation…",
+        "sheets": {
+            "summary": "Résumé",
+            "activityLog": "Journal d'activité",
+            "chatSessions": "Sessions de discussion",
+            "chatMessages": "Messages de discussion"
+        },
+        "headers": {
+            "when": "Quand",
+            "tool": "Outil",
+            "model": "Modèle",
+            "credits": "Crédits",
+            "detail": "Détail",
+            "started": "Commencé",
+            "lastActive": "Dernière activité",
+            "context": "Contexte",
+            "mode": "Mode",
+            "status": "Statut",
+            "messages": "Messages",
+            "firstMessage": "Premier message",
+            "session": "Session",
+            "sender": "Expéditeur",
+            "message": "Message"
+        }
+    },
+    "sender": {
+        "learner": "Apprenant",
+        "ai": "IA",
+        "toolCall": "Appel d'outil",
+        "toolResult": "Résultat de l'outil"
+    }
+}

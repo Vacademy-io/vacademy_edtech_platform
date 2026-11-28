@@ -1,0 +1,55 @@
+{
+    "title": "أفواج الإكمال والخريجين",
+    "subtitle": "المستخدمون الذين أكملوا برنامج التحدي",
+    "emptyState": {
+        "message": "لا توجد بيانات إكمال متاحة",
+        "hint": "اختر قوالب الإكمال لعرض بيانات الفوج"
+    },
+    "createCampaign": "إنشاء حملة",
+    "export": "تصدير",
+    "summary": {
+        "totalCompleted": "إجمالي المكتمل",
+        "templatesTracked": "القوالب المتتبَّعة",
+        "currentPage": "الصفحة الحالية",
+        "dateRange": "النطاق الزمني"
+    },
+    "timeline": {
+        "title": "الجدول الزمني للإكمال",
+        "completionsCount_zero": "لا توجد إكمالات",
+        "completionsCount_one": "إكمال واحد",
+        "completionsCount_two": "إكمالان",
+        "completionsCount_few": "{{count}} إكمالات",
+        "completionsCount_many": "{{count}} إكمالًا",
+        "completionsCount_other": "{{count}} إكمال"
+    },
+    "completionTemplates": "قوالب الإكمال",
+    "table": {
+        "user": "المستخدم",
+        "contact": "التواصل",
+        "center": "المركز",
+        "completed": "مكتمل",
+        "actions": "الإجراءات"
+    },
+    "anonymous": "مجهول",
+    "parentLabel": "ولي الأمر: {{name}}",
+    "unknown": "غير معروف",
+    "notAvailable": "غير متاح",
+    "send": "إرسال",
+    "pagination": {
+        "showing_zero": "لا يوجد مستخدمون معروضون من أصل {{count}}",
+        "showing_one": "عرض {{shown}} من أصل مستخدم واحد",
+        "showing_two": "عرض {{shown}} من أصل مستخدمين",
+        "showing_few": "عرض {{shown}} من أصل {{count}} مستخدمين",
+        "showing_many": "عرض {{shown}} من أصل {{count}} مستخدمًا",
+        "showing_other": "عرض {{shown}} من أصل {{count}} مستخدم",
+        "previous": "السابق",
+        "next": "التالي"
+    },
+    "csv": {
+        "name": "الاسم",
+        "email": "البريد الإلكتروني",
+        "phone": "الهاتف",
+        "completionDate": "تاريخ الإكمال",
+        "center": "المركز"
+    }
+}

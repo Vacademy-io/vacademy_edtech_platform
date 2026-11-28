@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Clock } from "@phosphor-icons/react";
 import { Preferences } from "@capacitor/preferences";
 
@@ -26,6 +27,7 @@ function fmt(ms: number): string {
  *  - shows amber under 5 min, red under 1 min
  */
 export function SessionTimer({ slideId, totalMinutes, onExpire }: Props) {
+  const { t } = useTranslation("libraryCommonA");
   const [now, setNow] = useState(() => Date.now());
   const [startedAt, setStartedAt] = useState<number | null>(null);
   // Snapshot the duration at session start. If the admin edits the question's
@@ -120,7 +122,7 @@ export function SessionTimer({ slideId, totalMinutes, onExpire }: Props) {
   return (
     <div
       className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-xs font-mono font-semibold ${colorClass}`}
-      title="Session timer — auto-submits on expiry"
+      title={t("codingQuestion.sessionTimer.tooltip")}
     >
       <Clock className="size-3" />
       {fmt(remaining)}

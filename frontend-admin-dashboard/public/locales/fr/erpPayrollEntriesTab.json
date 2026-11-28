@@ -1,0 +1,38 @@
+{
+    "status": {
+        "calculated": "Calculé",
+        "held": "En attente",
+        "paid": "Payé"
+    },
+    "table": {
+        "showBreakdown": "Afficher le détail",
+        "hideBreakdown": "Masquer le détail",
+        "columns": {
+            "employee": "Employé",
+            "working": "Jours travaillés",
+            "present": "Présent",
+            "absent": "Absent",
+            "leave": "Congé",
+            "gross": "Brut",
+            "deductions": "Déductions",
+            "netPay": "Salaire net",
+            "status": "Statut"
+        }
+    },
+    "actions": {
+        "release": "Libérer",
+        "releasing": "Libération…",
+        "hold": "Mettre en attente"
+    },
+    "errors": {
+        "loadFailed": "Impossible de charger les entrées de paie pour ce cycle."
+    },
+    "empty": {
+        "title": "Pas encore d'entrées",
+        "description": "Les entrées apparaissent une fois le cycle traité. Si le cycle est déjà traité et que c'est encore vide, chaque employé a échoué — consultez l'onglet Erreurs."
+    },
+    "description": {
+        "base": "Développez une ligne pour voir le bulletin de paie : revenus, déductions et cotisations patronales avec les sous-totaux.",
+        "holdHint": " Mettre un employé en attente retire son salaire net du total du cycle jusqu'à sa libération."
+    }
+}

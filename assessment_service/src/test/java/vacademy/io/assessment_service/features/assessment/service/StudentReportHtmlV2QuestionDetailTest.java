@@ -10,6 +10,7 @@ import vacademy.io.assessment_service.features.assessment.dto.admin_get_dto.resp
 import vacademy.io.assessment_service.features.learner_assessment.dto.context.SectionSnapshot;
 import vacademy.io.assessment_service.features.question_core.entity.Option;
 import vacademy.io.assessment_service.features.question_core.repository.OptionRepository;
+import vacademy.io.assessment_service.features.rich_text.dto.AssessmentRichTextDataDTO;
 import vacademy.io.assessment_service.features.rich_text.entity.AssessmentRichTextData;
 
 import java.io.ByteArrayOutputStream;
@@ -93,6 +94,44 @@ class StudentReportHtmlV2QuestionDetailTest {
         assertThat(new String(out.toByteArray(), 0, 5)).isEqualTo("%PDF-");
     }
 
+    /** Students saw the requirement but not the case it rests on, in the app and in this PDF. */
+    @Test
+    void rendersTheScenarioOfACbeQuestionAboveItsRequirement() {
+        String html = builder.build(inputWith(cbeReview()));
+
+        assertThat(html).contains("Scenario:").contains("Alpha Co prepares its accounts to 31 March.");
+        // Table rows stay readable as "cell | cell" lines.
+        assertThat(html).contains("Revenue | 1,200");
+        assertThat(html.indexOf("Scenario:")).isLessThan(html.indexOf("Prepare the statement of profit or loss."));
+    }
+
+    @Test
+    void leavesThePassageOfOtherQuestionTypesOutAsBefore() {
+        StudentReportAnswerReviewDto comprehension = StudentReportAnswerReviewDto.builder()
+                .questionId("q-5")
+                .questionOrder(5)
+                .questionType("MCQS")
+                .questionName("What is the main idea?")
+                .parentRichText(new AssessmentRichTextDataDTO("p-5", "HTML", "<p>A long reading passage.</p>"))
+                .answerStatus("PENDING")
+                .mark(0.0)
+                .build();
+
+        String html = builder.build(inputWith(comprehension));
+
+        assertThat(html).doesNotContain("Scenario:").doesNotContain("A long reading passage.");
+    }
+
+    @Test
+    void producesAPdfWithACbeScenario() {
+        String html = builder.build(inputWith(cbeReview()));
+
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        HtmlConverter.convertToPdf(html, out, new ConverterProperties());
+
+        assertThat(new String(out.toByteArray(), 0, 5)).isEqualTo("%PDF-");
+    }
+
     /** Manual assessments keep the evaluated-sheet note and gain the detail only when rows exist. */
     @Test
     void manualReportStillRendersDetailWhenPerQuestionRowsExist() {
@@ -112,12 +151,32 @@ class StudentReportHtmlV2QuestionDetailTest {
 
     // ------------------------------------------------------------- fixtures
 
+    @Test
+    void reportOptionsLeaveOutTheHiddenPartsOfEveryQuestion() {
+        String html = builder.build(inputWith(true, false, true, mcqReview()));
+
+        assertThat(html).contains("QUESTION-WISE DETAIL").contains("Your Answer:").contains("Mitochondrion");
+        assertThat(html).doesNotContain("Correct Answer:").doesNotContain("Ribosome")
+                .doesNotContain("Explanation:").doesNotContain("Ribosomes synthesise protein");
+
+        String noOwnAnswer = builder.build(inputWith(false, true, false, mcqReview()));
+        assertThat(noOwnAnswer).doesNotContain("Your Answer:").contains("Correct Answer:");
+    }
+
     private StudentReportHtmlV2Builder.Input inputWith(StudentReportAnswerReviewDto... reviews) {
+        return inputWith(false, false, false, reviews);
+    }
+
+    private StudentReportHtmlV2Builder.Input inputWith(boolean hideCorrect, boolean hideYours, boolean hideExplanation,
+                                                       StudentReportAnswerReviewDto... reviews) {
         return StudentReportHtmlV2Builder.Input.builder()
                 .assessmentName("Unit Test 3")
                 .evaluationType("AUTO")
                 .reportDetail(reportDetail(reviews))
                 .sections(List.of(new SectionSnapshot("sec-1", "Biology", 20.0, null, 1)))
+                .hideCorrectAnswer(hideCorrect)
+                .hideYourAnswer(hideYours)
+                .hideExplanation(hideExplanation)
                 .build();
     }
 
@@ -165,6 +224,20 @@ class StudentReportHtmlV2QuestionDetailTest {
                 .questionOrder(3)
                 .questionType("ONE_WORD")
                 .questionName("Name the process plants use to make food.")
+                .answerStatus("PENDING")
+                .mark(0.0)
+                .build();
+    }
+
+    private StudentReportAnswerReviewDto cbeReview() {
+        return StudentReportAnswerReviewDto.builder()
+                .questionId("q-4")
+                .questionOrder(4)
+                .questionType("CBE_RESPONSE")
+                .questionName("<p>Prepare the statement of profit or loss.</p>")
+                .parentRichText(new AssessmentRichTextDataDTO("p-4", "HTML",
+                        "<p>Alpha Co prepares its accounts to 31 March.</p>"
+                                + "<table><tr><td><p>Revenue</p></td><td><p>1,200</p></td></tr></table>"))
                 .answerStatus("PENDING")
                 .mark(0.0)
                 .build();

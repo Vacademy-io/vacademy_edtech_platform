@@ -1,0 +1,9 @@
+{
+    "menu": {
+        "shareCredentials": "Partager les identifiants",
+        "sendWhatsappMessage": "Envoyer un message WhatsApp",
+        "sendEmail": "Envoyer un e-mail",
+        "acceptRequest": "Accepter la demande",
+        "declineRequest": "Refuser la demande"
+    }
+}

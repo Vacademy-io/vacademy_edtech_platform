@@ -1,0 +1,46 @@
+{
+    "loading": "جارٍ تحميل سجل التواصل...",
+    "emptyState": "لم يتم إرسال أي رسائل إلى هذا الجمهور بعد.",
+    "heading": "سجل التواصل",
+    "noValuePlaceholder": "—",
+    "failedCount_zero": "لم تفشل أي رسالة ({{count}})",
+    "failedCount_one": "فشلت رسالة واحدة ({{count}})",
+    "failedCount_two": "فشلت رسالتان ({{count}})",
+    "failedCount_few": "فشلت {{count}} رسائل",
+    "failedCount_many": "فشلت {{count}} رسالة",
+    "failedCount_other": "فشلت {{count}} رسالة",
+    "pageOf": "الصفحة {{current}} من {{total}}",
+    "table": {
+        "channel": "القناة",
+        "templateSubject": "القالب / الموضوع",
+        "recipients": "المستلمون",
+        "result": "النتيجة",
+        "status": "الحالة",
+        "sentAt": "أُرسل في"
+    },
+    "channels": {
+        "whatsapp": "واتساب",
+        "email": "البريد الإلكتروني",
+        "push": "إشعار",
+        "systemAlert": "تنبيه النظام"
+    },
+    "statuses": {
+        "completed": "مكتمل",
+        "processing": "قيد المعالجة",
+        "partial": "جزئي",
+        "failed": "فشل",
+        "pending": "قيد الانتظار"
+    },
+    "subtitle": "Messages sent to this list",
+    "sendMessage": "Send message",
+    "summary": {
+        "sent": "Messages sent",
+        "sentDetail": "to this list so far",
+        "recipients": "Recipients",
+        "accepted": "Accepted",
+        "acceptedDetail": "{{accepted}} of {{total}} accepted",
+        "failed": "Failed",
+        "latest_one": "across the latest {{count}} send",
+        "latest_other": "across the latest {{count}} sends"
+    }
+}

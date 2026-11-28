@@ -1,0 +1,23 @@
+{
+    "header": {
+        "title_one": "Planche de contact · {{count}} plan",
+        "title_many": "Planche de contact · {{count}} de plans",
+        "title_other": "Planche de contact · {{count}} plans"
+    },
+    "empty": "Aucun plan à examiner — approuvez pour continuer.",
+    "shot": {
+        "label": "Plan {{number}}",
+        "type": "· {{type}}",
+        "keepIt": "Conserver",
+        "redo": "Refaire",
+        "notePlaceholder": "Que faut-il changer ? ex. utiliser une vraie capture d'écran du produit, un titre plus grand…"
+    },
+    "footer": {
+        "regenNote_one": "{{count}} plan sera régénéré avec vos notes.",
+        "regenNote_many": "{{count}} de plans seront régénérés avec vos notes.",
+        "regenNote_other": "{{count}} plans seront régénérés avec vos notes.",
+        "allGood": "Tout vous semble bon ?",
+        "submitRedo": "Refaire {{count}} et terminer",
+        "submitApprove": "Approuver et terminer"
+    }
+}

@@ -1,0 +1,32 @@
+{
+    "heading": "سير العمل",
+    "statusHeading": "سير العمل {{status}}",
+    "foundCount_zero": "تم العثور على {{count}} سير عمل",
+    "foundCount_one": "تم العثور على سير عمل واحد",
+    "foundCount_two": "تم العثور على سيري عمل",
+    "foundCount_few": "تم العثور على {{count}} سير عمل",
+    "foundCount_many": "تم العثور على {{count}} سير عمل",
+    "foundCount_other": "تم العثور على {{count}} سير عمل",
+    "createWorkflow": "إنشاء سير عمل",
+    "searchPlaceholder": "ابحث عن سير العمل...",
+    "status": "الحالة:",
+    "all": "الكل",
+    "filterByType": "التصفية حسب النوع:",
+    "loadFailed": {
+        "title": "فشل تحميل سير العمل",
+        "hint": "يرجى محاولة تحديث الصفحة أو التواصل مع الدعم إذا استمرت المشكلة."
+    },
+    "retry": "إعادة المحاولة",
+    "empty": {
+        "filteredTitle": "لم يتم العثور على سير عمل",
+        "noneTitle": "لا يوجد سير عمل بعد",
+        "filteredHint": "حاول تعديل معايير البحث أو التصفية",
+        "noneHint": "أنشئ أول سير عمل لأتمتة عمليات معهدك"
+    },
+    "createFirstWorkflow": "إنشاء أول سير عمل لك",
+    "statusLabels": {
+        "active": "نشط",
+        "draft": "مسودة",
+        "inactive": "غير نشط"
+    }
+}

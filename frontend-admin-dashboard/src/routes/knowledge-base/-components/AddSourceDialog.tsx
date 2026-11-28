@@ -1,5 +1,7 @@
 import { useCallback, useRef, useState } from 'react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import {
     CheckCircle,
     Coins,
@@ -39,12 +41,20 @@ const formatCount = (n: number) => new Intl.NumberFormat('en-IN').format(n);
  * at charge time from the pages actually parsed, so this is honest as a preview
  * and never authoritative.
  */
-function CostPreview({ estimate, loading }: { estimate: IngestEstimate | null; loading: boolean }) {
+function CostPreview({
+    estimate,
+    loading,
+    t,
+}: {
+    estimate: IngestEstimate | null;
+    loading: boolean;
+    t: TFunction;
+}) {
     if (loading) {
         return (
             <Card className="flex items-center gap-2 border-neutral-200 bg-neutral-50 p-3">
                 <Coins className="size-4 text-neutral-400" />
-                <p className="text-caption text-neutral-500">Working out the cost…</p>
+                <p className="text-caption text-neutral-500">{t('costPreview.loading')}</p>
             </Card>
         );
     }
@@ -65,33 +75,43 @@ function CostPreview({ estimate, loading }: { estimate: IngestEstimate | null; l
                 />
                 <p className="text-caption font-semibold text-neutral-700">
                     {estimate.num_pages != null
-                        ? `${formatCount(estimate.num_pages)} pages ≈ ${formatCount(
-                              estimate.estimated_credits
-                          )} credits`
-                        : `About ${formatCount(estimate.estimated_credits)} credits`}
+                        ? `${t('costPreview.pagesCount', {
+                              count: estimate.num_pages,
+                              formatted: formatCount(estimate.num_pages),
+                          })} ${t('costPreview.creditsApprox', {
+                              count: estimate.estimated_credits,
+                              formatted: formatCount(estimate.estimated_credits),
+                          })}`
+                        : t('costPreview.creditsAbout', {
+                              count: estimate.estimated_credits,
+                              formatted: formatCount(estimate.estimated_credits),
+                          })}
                 </p>
             </div>
             {estimate.current_balance != null && (
                 <p className="pl-6 text-caption text-neutral-500">
-                    You have {formatCount(estimate.current_balance)} credits
+                    {t('costPreview.balance', {
+                        count: estimate.current_balance,
+                        formatted: formatCount(estimate.current_balance),
+                    })}
                     {affordable && estimate.balance_after != null
-                        ? ` — ${formatCount(estimate.balance_after)} left after this.`
-                        : '.'}
+                        ? t('costPreview.balanceAfter', {
+                              count: estimate.balance_after,
+                              formatted: formatCount(estimate.balance_after),
+                          })
+                        : t('costPreview.balanceEnd')}
                 </p>
             )}
             {!affordable && (
-                <p className="pl-6 text-caption text-danger-600">
-                    Not enough credits. Top up from AI Credits before adding this.
-                </p>
+                <p className="pl-6 text-caption text-danger-600">{t('costPreview.notEnough')}</p>
             )}
-            <p className="pl-6 text-caption text-neutral-400">
-                Charged once, on the pages actually read. Re-indexing later is free.
-            </p>
+            <p className="pl-6 text-caption text-neutral-400">{t('costPreview.chargedNote')}</p>
         </Card>
     );
 }
 
 export const AddSourceDialog = ({ kbId, open, onOpenChange }: AddSourceDialogProps) => {
+    const { t } = useTranslation('knowledgeBaseAddSourceDialog');
     const [tab, setTab] = useState<SourceKind>('PDF');
 
     // PDF
@@ -151,7 +171,7 @@ export const AddSourceDialog = ({ kbId, open, onOpenChange }: AddSourceDialogPro
 
     const handleFilePicked = async (picked: File) => {
         if (picked.type !== 'application/pdf') {
-            toast.error('Only PDF files can be added right now');
+            toast.error(t('errors.onlyPdf'));
             return;
         }
         setFile(picked);
@@ -160,8 +180,12 @@ export const AddSourceDialog = ({ kbId, open, onOpenChange }: AddSourceDialogPro
         setPageCount(pages);
         if (pages && pages > MAX_PAGES_PER_SOURCE) {
             toast.error(
-                `That document has ${formatCount(pages)} pages. The limit per upload is ` +
-                    `${formatCount(MAX_PAGES_PER_SOURCE)} — please split it.`
+                t('errors.tooManyPages', { count: pages, formatted: formatCount(pages) }) +
+                    ' ' +
+                    t('errors.pageLimit', {
+                        count: MAX_PAGES_PER_SOURCE,
+                        formatted: formatCount(MAX_PAGES_PER_SOURCE),
+                    })
             );
             return;
         }
@@ -171,7 +195,7 @@ export const AddSourceDialog = ({ kbId, open, onOpenChange }: AddSourceDialogPro
 
         const userId = getUserId();
         if (!userId) {
-            toast.error('Could not identify your account. Please sign in again.');
+            toast.error(t('errors.identifyAccountFailed'));
             return;
         }
         try {
@@ -184,7 +208,7 @@ export const AddSourceDialog = ({ kbId, open, onOpenChange }: AddSourceDialogPro
             });
             if (uploaded) setFileId(uploaded);
         } catch {
-            toast.error('Upload failed. Please try again.');
+            toast.error(t('errors.uploadFailed'));
         }
     };
 
@@ -193,27 +217,28 @@ export const AddSourceDialog = ({ kbId, open, onOpenChange }: AddSourceDialogPro
             if (tab === 'PDF') {
                 if (!fileId) {
                     toast.error(
-                        isUploading ? 'Still uploading — one moment' : 'Choose a PDF first'
+                        isUploading ? t('errors.stillUploading') : t('errors.choosePdfFirst')
                     );
                     return;
                 }
                 const result = await addSource.mutateAsync({
                     source_kind: 'PDF',
                     file_id: fileId,
-                    title: (title.trim() || file?.name || 'Untitled document').replace(
-                        /\.pdf$/i,
-                        ''
-                    ),
+                    title: (
+                        title.trim() ||
+                        file?.name ||
+                        t('pdf.untitledDocument')
+                    ).replace(/\.pdf$/i, ''),
                     expected_pages: pageCount ?? undefined,
                 });
                 if (result.deduplicated) {
-                    toast.success(result.message ?? 'Already added — nothing was charged.');
+                    toast.success(result.message ?? t('toasts.alreadyAdded'));
                 } else {
-                    toast.success('Added. Reading it now — this can take a few minutes.');
+                    toast.success(t('toasts.addedProcessing'));
                 }
             } else if (tab === 'URL' || tab === 'YOUTUBE') {
                 if (!url.trim()) {
-                    toast.error('Paste a link first');
+                    toast.error(t('errors.pasteLinkFirst'));
                     return;
                 }
                 await addSource.mutateAsync({
@@ -221,10 +246,10 @@ export const AddSourceDialog = ({ kbId, open, onOpenChange }: AddSourceDialogPro
                     source_url: url.trim(),
                     title: title.trim() || undefined,
                 });
-                toast.success('Added. Reading it now.');
+                toast.success(t('toasts.addedProcessingShort'));
             } else {
                 if (!text.trim()) {
-                    toast.error('Type or paste something first');
+                    toast.error(t('errors.typeSomethingFirst'));
                     return;
                 }
                 await addSource.mutateAsync({
@@ -232,7 +257,7 @@ export const AddSourceDialog = ({ kbId, open, onOpenChange }: AddSourceDialogPro
                     raw_text: text.trim(),
                     title: title.trim() || undefined,
                 });
-                toast.success('Added.');
+                toast.success(t('toasts.added'));
             }
             reset();
             onOpenChange(false);
@@ -245,11 +270,11 @@ export const AddSourceDialog = ({ kbId, open, onOpenChange }: AddSourceDialogPro
                 const message =
                     typeof detail === 'object' && detail !== null && 'message' in detail
                         ? String((detail as { message: unknown }).message)
-                        : 'Not enough credits.';
+                        : t('errors.notEnoughCredits');
                 toast.error(message);
                 return;
             }
-            toast.error(typeof detail === 'string' ? detail : 'Could not add this source');
+            toast.error(typeof detail === 'string' ? detail : t('errors.addFailed'));
         }
     };
 
@@ -257,14 +282,14 @@ export const AddSourceDialog = ({ kbId, open, onOpenChange }: AddSourceDialogPro
 
     return (
         <MyDialog
-            heading="Add to this knowledge base"
+            heading={t('heading')}
             open={open}
             onOpenChange={close}
             dialogWidth="max-w-xl"
             footer={
                 <div className="flex w-full items-center justify-between gap-2">
                     <p className="text-caption text-neutral-400">
-                        {tab === 'TEXT' ? 'Typed notes are free to add.' : ''}
+                        {tab === 'TEXT' ? t('typedNotesFree') : ''}
                     </p>
                     <div className="flex gap-2">
                         <MyButton
@@ -273,7 +298,7 @@ export const AddSourceDialog = ({ kbId, open, onOpenChange }: AddSourceDialogPro
                             onClick={() => close(false)}
                             disable={busy}
                         >
-                            Cancel
+                            {t('cancelButton')}
                         </MyButton>
                         <MyButton
                             buttonType="primary"
@@ -281,7 +306,11 @@ export const AddSourceDialog = ({ kbId, open, onOpenChange }: AddSourceDialogPro
                             onClick={submit}
                             disable={busy || (tab === 'PDF' && !fileId)}
                         >
-                            {addSource.isPending ? 'Adding…' : isUploading ? 'Uploading…' : 'Add'}
+                            {addSource.isPending
+                                ? t('addingButton')
+                                : isUploading
+                                  ? t('uploadingButton')
+                                  : t('addButton')}
                         </MyButton>
                     </div>
                 </div>
@@ -298,19 +327,19 @@ export const AddSourceDialog = ({ kbId, open, onOpenChange }: AddSourceDialogPro
                     <TabsList className="grid w-full grid-cols-4">
                         <TabsTrigger value="PDF" className="flex items-center gap-1.5">
                             <FilePdf className="size-4" />
-                            Document
+                            {t('tabs.document')}
                         </TabsTrigger>
                         <TabsTrigger value="URL" className="flex items-center gap-1.5">
                             <Globe className="size-4" />
-                            Web page
+                            {t('tabs.webPage')}
                         </TabsTrigger>
                         <TabsTrigger value="YOUTUBE" className="flex items-center gap-1.5">
                             <YoutubeLogo className="size-4" />
-                            YouTube
+                            {t('tabs.youtube')}
                         </TabsTrigger>
                         <TabsTrigger value="TEXT" className="flex items-center gap-1.5">
                             <Note className="size-4" />
-                            Note
+                            {t('tabs.note')}
                         </TabsTrigger>
                     </TabsList>
 
@@ -322,10 +351,10 @@ export const AddSourceDialog = ({ kbId, open, onOpenChange }: AddSourceDialogPro
                         >
                             <UploadSimple className="size-6 text-neutral-400" />
                             <span className="text-body text-neutral-600">
-                                {file ? file.name : 'Choose a PDF'}
+                                {file ? file.name : t('pdf.choosePdf')}
                             </span>
                             <span className="text-caption text-neutral-400">
-                                Textbooks, notes, past papers. Scanned books work too.
+                                {t('pdf.dropHint')}
                             </span>
                         </button>
                         <input
@@ -344,118 +373,116 @@ export const AddSourceDialog = ({ kbId, open, onOpenChange }: AddSourceDialogPro
                                 {fileId ? (
                                     <>
                                         <CheckCircle className="size-4 text-success-600" />
-                                        Uploaded
+                                        {t('pdf.uploaded')}
                                     </>
                                 ) : (
                                     <>
                                         <UploadSimple className="size-4 animate-pulse" />
-                                        Uploading…
+                                        {t('pdf.uploading')}
                                     </>
                                 )}
-                                {pageCount != null && <span>· {formatCount(pageCount)} pages</span>}
-                                {pageCount == null && (
-                                    <span>· page count will be read on the server</span>
+                                {pageCount != null && (
+                                    <span>
+                                        ·{' '}
+                                        {t('pdf.pagesRead', {
+                                            count: pageCount,
+                                            formatted: formatCount(pageCount),
+                                        })}
+                                    </span>
                                 )}
+                                {pageCount == null && <span>· {t('pdf.pageCountOnServer')}</span>}
                             </div>
                         )}
 
                         <MyInput
-                            label="Title"
+                            label={t('pdf.titleLabel')}
                             inputType="text"
                             input={title}
                             onChangeFunction={(e) => setTitle(e.target.value)}
                             inputPlaceholder={
-                                file?.name?.replace(/\.pdf$/i, '') || 'e.g. NCERT Class 9 Science'
+                                file?.name?.replace(/\.pdf$/i, '') || t('pdf.titlePlaceholder')
                             }
                             className="w-full"
                         />
 
-                        <CostPreview estimate={estimate} loading={estimating} />
+                        <CostPreview estimate={estimate} loading={estimating} t={t} />
 
                         <Card className="flex items-start gap-2 border-neutral-200 bg-neutral-50 p-3">
                             <WarningCircle className="mt-0.5 size-4 shrink-0 text-neutral-400" />
-                            <p className="text-caption text-neutral-500">
-                                Pages that already have selectable text are read for free. Only
-                                scanned pages need paid OCR, and any page that comes out unreliable
-                                is flagged for you rather than used silently.
-                            </p>
+                            <p className="text-caption text-neutral-500">{t('pdf.ocrNote')}</p>
                         </Card>
                     </TabsContent>
 
                     <TabsContent value="URL" className="mt-4 flex flex-col gap-3">
                         <MyInput
-                            label="Web page link"
+                            label={t('url.linkLabel')}
                             required
                             inputType="text"
                             input={url}
                             onChangeFunction={(e) => setUrl(e.target.value)}
-                            inputPlaceholder="https://…"
+                            inputPlaceholder={t('url.linkPlaceholder')}
                             className="w-full"
                         />
                         <MyInput
-                            label="Title"
+                            label={t('pdf.titleLabel')}
                             inputType="text"
                             input={title}
                             onChangeFunction={(e) => setTitle(e.target.value)}
-                            inputPlaceholder="Optional"
+                            inputPlaceholder={t('url.titlePlaceholder')}
                             className="w-full"
                         />
                         <p className="flex items-start gap-1.5 text-caption text-neutral-500">
                             <LinkIcon className="mt-0.5 size-4 shrink-0 text-neutral-400" />
-                            Good for syllabus pages and notices. Long pages are shortened, so upload
-                            a book as a PDF instead.
+                            {t('url.hint')}
                         </p>
-                        <CostPreview estimate={estimate} loading={estimating} />
+                        <CostPreview estimate={estimate} loading={estimating} t={t} />
                         <MyButton
                             buttonType="text"
                             scale="medium"
                             onClick={() => void fetchEstimate('URL')}
                             disable={estimating}
                         >
-                            Show cost
+                            {t('url.showCostButton')}
                         </MyButton>
                     </TabsContent>
 
                     <TabsContent value="YOUTUBE" className="mt-4 flex flex-col gap-3">
                         <MyInput
-                            label="YouTube link"
+                            label={t('youtube.linkLabel')}
                             required
                             inputType="text"
                             input={url}
                             onChangeFunction={(e) => setUrl(e.target.value)}
-                            inputPlaceholder="https://www.youtube.com/watch?v=…"
+                            inputPlaceholder={t('youtube.linkPlaceholder')}
                             className="w-full"
                         />
                         <MyInput
-                            label="Title"
+                            label={t('pdf.titleLabel')}
                             inputType="text"
                             input={title}
                             onChangeFunction={(e) => setTitle(e.target.value)}
-                            inputPlaceholder="Optional"
+                            inputPlaceholder={t('url.titlePlaceholder')}
                             className="w-full"
                         />
-                        <p className="text-caption text-neutral-500">
-                            Uses the video&apos;s captions, so it only works for videos that have
-                            them.
-                        </p>
-                        <CostPreview estimate={estimate} loading={estimating} />
+                        <p className="text-caption text-neutral-500">{t('youtube.hint')}</p>
+                        <CostPreview estimate={estimate} loading={estimating} t={t} />
                         <MyButton
                             buttonType="text"
                             scale="medium"
                             onClick={() => void fetchEstimate('YOUTUBE')}
                             disable={estimating}
                         >
-                            Show cost
+                            {t('youtube.showCostButton')}
                         </MyButton>
                     </TabsContent>
 
                     <TabsContent value="TEXT" className="mt-4 flex flex-col gap-3">
                         <MyInput
-                            label="Title"
+                            label={t('pdf.titleLabel')}
                             inputType="text"
                             input={title}
                             onChangeFunction={(e) => setTitle(e.target.value)}
-                            inputPlaceholder="e.g. Fee refund policy"
+                            inputPlaceholder={t('text.titlePlaceholder')}
                             className="w-full"
                         />
                         <div className="flex flex-col gap-1">
@@ -463,14 +490,15 @@ export const AddSourceDialog = ({ kbId, open, onOpenChange }: AddSourceDialogPro
                                 htmlFor="kb-note-text"
                                 className="text-subtitle font-regular text-neutral-600"
                             >
-                                Content <span className="text-subtitle text-danger-600">*</span>
+                                {t('text.contentLabel')}{' '}
+                                <span className="text-subtitle text-danger-600">*</span>
                             </label>
                             <textarea
                                 id="kb-note-text"
                                 value={text}
                                 onChange={(e) => setText(e.target.value)}
                                 rows={8}
-                                placeholder="Type or paste anything the AI should know — policies, timings, exam rules, FAQs…"
+                                placeholder={t('text.contentPlaceholder')}
                                 className="w-full rounded-md border border-neutral-300 px-3 py-2 text-body focus:border-primary-300 focus:outline-none focus:ring-1 focus:ring-primary-100"
                             />
                         </div>

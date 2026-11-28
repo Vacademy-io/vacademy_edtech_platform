@@ -60,6 +60,25 @@ export const calculateTimeDifference = (
   return difference > 0 ? true : false;
 };
 
+/**
+ * Assessments created without an explicit end are stored as 9999-12-31, and the
+ * registration window is backfilled from that bound — so the countdown rendered
+ * "REGISTRATION CLOSES IN 2912177 DAYS". Past this horizon the deadline carries
+ * no information, so the countdown is dropped and the page just says
+ * registration is open.
+ */
+const UNBOUNDED_DEADLINE_DAYS = 366;
+
+export const isEffectivelyUnbounded = (
+  serverTime: number,
+  endDate: string | null | undefined
+): boolean => {
+  if (!endDate) return true;
+  const endTime = parseBackendDate(endDate);
+  if (isNaN(endTime)) return true;
+  return endTime - serverTime > UNBOUNDED_DEADLINE_DAYS * 24 * 60 * 60 * 1000;
+};
+
 export const calculateTimeLeft = (serverTime: number, startDate: string) => {
   if (!startDate) return { days: 0, hours: 0, minutes: 0, seconds: 0 };
   const startTime = parseBackendDate(startDate);
@@ -114,10 +133,16 @@ export const getDynamicSchema = (
 };
 
 export const getOpenRegistrationUserDetailsByEmail = (
-  users: UserDetailsOpenTest[],
+  users: unknown,
   email: string | undefined
 ): UserDetailsOpenTest | null => {
-  return users.find((user) => user.email === email) || null;
+  // The learner-details call can answer with an error envelope instead of a
+  // list (expired token, wrong institute); `.find` on that would throw.
+  if (!Array.isArray(users)) return null;
+  return (
+    (users as UserDetailsOpenTest[]).find((user) => user.email === email) ||
+    null
+  );
 };
 
 export function transformIntoCustomFieldRequestListData(
@@ -132,6 +157,82 @@ export function transformIntoCustomFieldRequestListData(
       answer: data2[field.field_key]?.value || "",
     })),
   };
+}
+
+/**
+ * Keys an admin's form may use for the learner's own name, best match first.
+ * Field keys come from the field label ("Student Name" → `student_name`), so
+ * the built-in `full_name` is only one of the names in use.
+ */
+const LEARNER_NAME_KEYS = [
+  "full_name",
+  "name",
+  "student_name",
+  "student_full_name",
+  "learner_name",
+  "candidate_name",
+  "participant_name",
+];
+
+/** Keys for the learner's own phone, best match first. */
+const LEARNER_PHONE_KEYS = [
+  "phone_number",
+  "mobile_number",
+  "phone",
+  "mobile",
+  "mobile_no",
+  "phone_no",
+  "contact_number",
+  "whatsapp_number",
+  "whatapp_number",
+  "whatsapp",
+];
+
+/** A phone-like key that belongs to someone other than the learner. */
+const NOT_THE_LEARNER = /parent|father|mother|guardian|emergency|alternate|school|college|office/;
+const PHONE_LIKE = /phone|mobile|whats?app/;
+
+const filledValue = (data: DynamicSchemaData, key: string): string => {
+  const field = data[key];
+  return field && typeof field.value === "string" ? field.value.trim() : "";
+};
+
+/**
+ * Only digits and the usual separators, 7–15 digits. Keeps free text (or a
+ * phone-ish key holding something else) out of the registration's phone.
+ */
+const looksLikePhone = (value: string): boolean => {
+  if (!/^\+?[\d\s().-]+$/.test(value)) return false;
+  const digits = value.replace(/\D/g, "").length;
+  return digits >= 7 && digits <= 15;
+};
+
+/** The learner's name from the registration answers, or "" when the form has none. */
+export function learnerNameFrom(data: DynamicSchemaData): string {
+  for (const key of LEARNER_NAME_KEYS) {
+    const value = filledValue(data, key);
+    if (value) return value;
+  }
+  return "";
+}
+
+/**
+ * The learner's phone from the registration answers, or "" when the form has
+ * none. Known keys win; after that any phone/mobile/WhatsApp field that is not
+ * a parent's or a school's number. A value that is not a phone number is skipped.
+ */
+export function learnerPhoneFrom(data: DynamicSchemaData): string {
+  for (const key of LEARNER_PHONE_KEYS) {
+    const value = filledValue(data, key);
+    if (value && looksLikePhone(value)) return value;
+  }
+  for (const key of Object.keys(data)) {
+    const lower = key.toLowerCase();
+    if (!PHONE_LIKE.test(lower) || NOT_THE_LEARNER.test(lower)) continue;
+    const value = filledValue(data, key);
+    if (value && looksLikePhone(value)) return value;
+  }
+  return "";
 }
 
 export function mergeDataToGetUserId(
@@ -157,5 +258,56 @@ export function mergeDataToGetUserId(
     }
   });
 
+  // The copy above only matches identical keys, so a "Student Name" form never
+  // sent a name. The phone is deliberately NOT filled here: an institute that
+  // signs learners in by phone looks the account up by phone when one is sent,
+  // and this page verifies by email — so it is added to the registration only
+  // (see AssessmentRegistrationForm), never to this account lookup.
+  if (!result.full_name?.trim()) result.full_name = learnerNameFrom(data2);
+
   return result;
 }
+
+/**
+ * A PUBLIC assessment may carry no registration window at all — the backend
+ * treats each missing bound as "no limit on that side", so the page must too.
+ *
+ * These three used to do a bare `Date.parse(null)`, which is NaN, and every
+ * comparison against NaN is false — so case1/case2/case3 were ALL false and the
+ * registration form simply never rendered. The page came up blank, with no
+ * error: verified against the live bundle by serving it a payload with
+ * can_register:true and both dates null.
+ */
+type WindowBound = string | null | undefined;
+
+const boundOrNaN = (date: WindowBound): number =>
+  date ? Date.parse(date) : NaN;
+
+/** Before registration opens. An absent open date never gates. */
+export const case1 = (serverTime: number, startDate: WindowBound) => {
+  const registrationStartDate = boundOrNaN(startDate);
+  if (isNaN(registrationStartDate)) return false;
+  return serverTime < registrationStartDate;
+};
+
+/** Inside the registration window. An absent bound means that side is open. */
+export const case2 = (
+  serverTime: number,
+  startDate: WindowBound,
+  endDate: WindowBound,
+) => {
+  const registrationStartDate = boundOrNaN(startDate);
+  const registrationEndDate = boundOrNaN(endDate);
+  const hasOpened =
+    isNaN(registrationStartDate) || registrationStartDate <= serverTime;
+  const notYetClosed =
+    isNaN(registrationEndDate) || serverTime <= registrationEndDate;
+  return hasOpened && notYetClosed;
+};
+
+/** After registration closed. An absent close date never closes. */
+export const case3 = (serverTime: number, endDate: WindowBound) => {
+  const registrationEndDate = boundOrNaN(endDate);
+  if (isNaN(registrationEndDate)) return false;
+  return serverTime > registrationEndDate;
+};

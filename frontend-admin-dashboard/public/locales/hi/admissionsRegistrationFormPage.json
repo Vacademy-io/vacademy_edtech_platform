@@ -1,0 +1,71 @@
+{
+    "pageTitle": "नया आवेदन",
+    "sectionHasErrors": "त्रुटियाँ मौजूद हैं",
+    "stepProgress": "चरण {{current}} / {{total}}",
+    "sections": {
+        "student": {
+            "label": "छात्र विवरण",
+            "shortLabel": "छात्र"
+        },
+        "academic": {
+            "label": "शैक्षणिक जानकारी",
+            "shortLabel": "शैक्षणिक"
+        },
+        "parent": {
+            "label": "अभिभावक विवरण",
+            "shortLabel": "अभिभावक"
+        },
+        "address": {
+            "label": "पता",
+            "shortLabel": "पता"
+        },
+        "payment": {
+            "label": "भुगतान",
+            "shortLabel": "भुगतान"
+        }
+    },
+    "buttons": {
+        "downloadPdf": "PDF डाउनलोड करें",
+        "generatingPdf": "बनाया जा रहा है...",
+        "print": "प्रिंट करें",
+        "previous": "पिछला",
+        "next": "अगला",
+        "submitApplication": "आवेदन सबमिट करें",
+        "backToList": "सूची पर वापस जाएँ"
+    },
+    "toasts": {
+        "pdfTemplateNotReady": "PDF टेम्पलेट तैयार नहीं है। कृपया पुनः प्रयास करें।",
+        "generatingPdf": "PDF बनाई जा रही है...",
+        "pdfDownloaded": "PDF डाउनलोड हो गई!",
+        "pdfGenerationFailed": "PDF बनाने में विफल। कृपया पुनः प्रयास करें।",
+        "popupBlocked": "पॉप-अप अवरुद्ध है। प्रिंट करने के लिए कृपया पॉप-अप की अनुमति दें।",
+        "submitFailed": "आवेदन सबमिट करने में विफल। कृपया पुनः प्रयास करें।"
+    },
+    "validation": {
+        "studentNameRequired": "छात्र का नाम आवश्यक है",
+        "dobRequired": "जन्म तिथि आवश्यक है",
+        "genderRequired": "लिंग आवश्यक है",
+        "nationalityRequired": "राष्ट्रीयता आवश्यक है",
+        "categoryRequired": "श्रेणी आवश्यक है",
+        "classRequired": "कृपया शैक्षणिक जानकारी अनुभाग से कक्षा/ग्रेड चुनें",
+        "boardRequired": "बोर्ड वरीयता आवश्यक है",
+        "parentRequired": "कम से कम एक अभिभावक (पिता या माता) का नाम और मोबाइल नंबर आवश्यक है",
+        "fatherEmailInvalid": "पिता का ईमेल पता अमान्य है",
+        "motherEmailInvalid": "माता का ईमेल पता अमान्य है",
+        "addressFieldsRequired": "कृपया सभी आवश्यक पता फ़ील्ड भरें (सड़क, क्षेत्र, शहर, राज्य)",
+        "countryRequired": "देश आवश्यक है",
+        "pincodeInvalid": "कृपया मान्य 6 अंकों का पिनकोड दर्ज करें",
+        "sessionMissing": "सत्र आईडी गुम है। कृपया पंजीकरण सूची से एक सत्र चुनें"
+    },
+    "confirmSubmit": "क्या आप वाकई यह आवेदन सबमिट करना चाहते हैं? आगे बढ़ने से पहले कृपया सभी विवरणों की समीक्षा करें।",
+    "print": {
+        "documentTitle": "आवेदन पत्र - {{name}}"
+    },
+    "payment": {
+        "defaultFeeName": "आवेदन / पंजीकरण शुल्क"
+    },
+    "header": {
+        "backToList": "आवेदनों पर वापस जाएँ",
+        "stepBadge": "चरण {{current}} / {{total}}"
+    }
+}

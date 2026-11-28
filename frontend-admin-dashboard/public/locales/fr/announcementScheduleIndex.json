@@ -1,0 +1,95 @@
+{
+    "navHeading": "Planifier l'annonce",
+    "pageHeading": "Annonces planifiées",
+    "nav": {
+        "prev": "Précédent",
+        "today": "Aujourd'hui",
+        "next": "Suivant"
+    },
+    "tabs": {
+        "day": "Jour",
+        "threeDay": "3 jours",
+        "week": "Semaine",
+        "month": "Mois"
+    },
+    "modeFilter": {
+        "placeholder": "Filtre de mode",
+        "all": "Tous les modes"
+    },
+    "scheduleNew": "Planifier une nouvelle annonce",
+    "scheduleHere": "Planifier ici",
+    "weekdays": {
+        "sun": "Dim",
+        "mon": "Lun",
+        "tue": "Mar",
+        "wed": "Mer",
+        "thu": "Jeu",
+        "fri": "Ven",
+        "sat": "Sam"
+    },
+    "loading": "Chargement…",
+    "emptyState": {
+        "title": "Aucune annonce planifiée sur cette période",
+        "description": "Choisissez une autre période, ou planifiez une nouvelle campagne."
+    },
+    "showingRange": "Affichage de {{range}}",
+    "moreCount_one": "+{{count}} de plus",
+    "moreCount_many": "+{{count}} de plus",
+    "moreCount_other": "+{{count}} de plus",
+    "actions": {
+        "edit": "Modifier",
+        "delete": "Supprimer",
+        "approve": "Approuver",
+        "reject": "Rejeter"
+    },
+    "toast": {
+        "deleted": "Annonce planifiée supprimée",
+        "deleteFailedTitle": "Échec de la suppression",
+        "deleteFailedFallback": "Réessayez",
+        "approved": "Approuvée",
+        "approveFailed": "Échec de l'approbation",
+        "rejected": "Rejetée",
+        "rejectFailed": "Échec du rejet"
+    },
+    "rejectDialog": {
+        "title": "Rejeter l'annonce",
+        "reasonPlaceholder": "Motif",
+        "cancel": "Annuler",
+        "reject": "Rejeter"
+    },
+    "deleteDialog": {
+        "title": "Supprimer l'annonce planifiée ?",
+        "bodyPrefix": "Cette action annulera et supprimera définitivement",
+        "bodySuffix": ". Elle ne sera pas envoyée et ne pourra pas être restaurée.",
+        "defaultTitle": "cette annonce",
+        "cancel": "Annuler",
+        "deleting": "Suppression…",
+        "delete": "Supprimer"
+    },
+    "schedule": {
+        "immediate": "Immédiat",
+        "recurring": "Récurrent",
+        "recurringWithCron": "Récurrent · {{cron}}",
+        "cronWithLabel": "CRON {{cron}}"
+    },
+    "subheading": "A calendar of every planned announcement and email campaign. Pick a day to schedule something new.",
+    "viewLabel": "Calendar view",
+    "legend": {
+        "recurring": "Recurring"
+    },
+    "countInView_one": "{{count}} announcement",
+    "countInView_other": "{{count}} announcements",
+    "nothingScheduled": "Nothing scheduled",
+    "lists": {
+        "upNext": {
+            "title": "Coming up in this view",
+            "empty": "Nothing is planned in this range."
+        },
+        "pending": {
+            "title": "Waiting for approval",
+            "empty": "Nothing in this range is waiting for approval.",
+            "openQueue": "Open queue",
+            "notSentYet": "not sent until approved"
+        }
+    }
+}

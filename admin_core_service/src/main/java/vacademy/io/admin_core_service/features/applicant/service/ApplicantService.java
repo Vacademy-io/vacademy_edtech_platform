@@ -76,6 +76,9 @@ import java.util.*;
 
 @Service
 public class ApplicantService {
+    @Autowired
+    private vacademy.io.admin_core_service.features.user_subscription.service.PaymentDateDefaults paymentDateDefaults;
+
 
         @Autowired
         private ApplicantRepository applicantRepository;
@@ -1395,6 +1398,15 @@ public class ApplicantService {
          * 3. Updates ApplicantStage response_json with order_id.
          */
         @Transactional
+        /** The institute an applicant applied to (from the applicant's application stage). */
+        public String getInstituteIdForApplicant(String applicantId) {
+                Applicant applicant = applicantRepository.findById(java.util.UUID.fromString(applicantId))
+                                .orElseThrow(() -> new VacademyException("Applicant not found"));
+                return applicationStageRepository.findById(UUID.fromString(applicant.getApplicationStageId()))
+                                .map(vacademy.io.admin_core_service.features.applicant.entity.ApplicationStage::getInstituteId)
+                                .orElseThrow(() -> new VacademyException("Application Stage not found"));
+        }
+
         public vacademy.io.common.payment.dto.PaymentResponseDTO preparePayment(
                         String applicantId,
                         String paymentOptionId,
@@ -1594,7 +1606,7 @@ public class ApplicantService {
                         paymentLog.setStatus("SUCCESS"); // Immediate success for manual
                         paymentLog.setPaymentStatus("PAID");
                         paymentLog.setCurrency(requestDTO.getCurrency() != null ? requestDTO.getCurrency() : "INR");
-                        paymentLog.setDate(new java.util.Date());
+                        paymentLog.setDate(paymentDateDefaults.today(instituteId));
 
                         // Store transaction reference and admin details in payment_specific_data
                         java.util.Map<String, Object> paymentData = new java.util.HashMap<>();
@@ -1619,6 +1631,7 @@ public class ApplicantService {
                         paymentLogRepository.save(paymentLog);
                         logger.info("Created PaymentLog for manual payment: {}, user_plan: {}", paymentLog.getId(),
                                         userPlan.getId());
+                        paymentLogService.recordOfflinePaymentLiveActivity(paymentLog.getId(), instituteId);
 
                         // ---- INJECT APPLICATION FEE INVOICE GENERATION FOR MANUAL PAYMENTS ----
                         java.util.Map<String, Object> receiptDetails = null;
@@ -1997,6 +2010,32 @@ public class ApplicantService {
                                 .orElse("learner.vacademy.io");
         }
 
+        /**
+         * The amount the application payment stage asks for, from the payment option's ACTIVE
+         * plans: one price when they all agree, every price (" / "-joined) when the parent picks
+         * a plan on the payment page, or "0" (the previous value) when no plan can be read.
+         */
+        private String resolveApplicationPaymentAmount(String paymentOptionId) {
+                try {
+                        PaymentOption option = paymentOptionRepository.findById(paymentOptionId).orElse(null);
+                        if (option == null || option.getPaymentPlans() == null) {
+                                return "0";
+                        }
+                        List<String> prices = option.getPaymentPlans().stream()
+                                        .filter(p -> "ACTIVE".equals(p.getStatus()))
+                                        .map(PaymentPlan::getActualPrice)
+                                        .distinct()
+                                        .sorted()
+                                        .map(price -> String.format(Locale.ENGLISH, "%,.2f", price))
+                                        .toList();
+                        return prices.isEmpty() ? "0" : String.join(" / ", prices);
+                } catch (Exception e) {
+                        logger.warn("Could not read the payment amount for option {}: {}", paymentOptionId,
+                                        e.getMessage());
+                        return "0";
+                }
+        }
+
         private void sendApplicationPaymentEmail(String applicantId, ApplicationStage paymentStage) {
                 try {
                         Applicant applicant = applicantRepository.findById(UUID.fromString(applicantId))
@@ -2058,7 +2097,7 @@ public class ApplicantService {
                                         childName,
                                         applicant.getTrackingId(),
                                         paymentStage.getSourceId(),
-                                        "0");
+                                        resolveApplicationPaymentAmount(paymentOptionId));
 
                 } catch (Exception e) {
                         logger.error("Error sending payment email", e);
@@ -2176,6 +2215,43 @@ public class ApplicantService {
                                 .toList();
         }
 
+    /**
+     * The shared learner portal (default.learner.portal.url). Institutes without a portal of their
+     * own have their learners sign in there, so their links fall back to it rather than vanish.
+     */
+    @org.springframework.beans.factory.annotation.Value("${default.learner.portal.url:}")
+    private String defaultLearnerPortalUrl;
+
+    private String defaultPortalOrNull() {
+        if (defaultLearnerPortalUrl == null || defaultLearnerPortalUrl.isBlank()) {
+            return null;
+        }
+        String base = defaultLearnerPortalUrl.trim();
+        while (base.endsWith("/")) {
+            base = base.substring(0, base.length() - 1);
+        }
+        return base;
+    }
+
+        /**
+         * The institute's own learner-portal origin ({@code https://host}, no trailing slash), else
+         * the shared learner portal its learners sign in to; null only when neither is configured.
+         */
+        private String resolveInstitutePortalUrl(Institute institute) {
+                if (institute == null || !org.springframework.util.StringUtils
+                                .hasText(institute.getLearnerPortalBaseUrl())) {
+                        return defaultPortalOrNull();
+                }
+                String base = institute.getLearnerPortalBaseUrl().trim();
+                if (!base.startsWith("http://") && !base.startsWith("https://")) {
+                        base = "https://" + base;
+                }
+                while (base.endsWith("/")) {
+                        base = base.substring(0, base.length() - 1);
+                }
+                return base;
+        }
+
         /**
          * Send application confirmation email with credentials
          * Tries to fetch template from notification_event_config, falls back to default
@@ -2205,9 +2281,27 @@ public class ApplicantService {
                         String username = parentUser != null ? parentUser.getUsername() : "";
                         String password = parentUser != null ? parentUser.getPassword() : ""; // Use getPassword, not
                                                                                               // getPasswordHash
+                        // create-or-get answers with a password only for a new account; for an
+                        // existing one the stored login is read here. The mail goes to the
+                        // account's own address (parentUser.getEmail() is the stored one).
+                        if (parentUser != null && !org.springframework.util.StringUtils.hasText(password)
+                                        && org.springframework.util.StringUtils.hasText(parentUser.getId())) {
+                                try {
+                                        UserDTO withPassword = authService
+                                                        .getUsersFromAuthServiceWithPasswordByUserId(parentUser.getId());
+                                        password = withPassword != null && withPassword.getPassword() != null
+                                                        ? withPassword.getPassword()
+                                                        : "";
+                                } catch (Exception e) {
+                                        logger.warn("Could not read the stored login for applicant mail: {}",
+                                                        e.getMessage());
+                                        password = "";
+                                }
+                        }
 
-                        // Build portal URL (hardcoded for now)
-                        String portalUrl = "https://learner-portal.vacademy.io";
+                        // The institute's own learner portal; null when it has none, and the
+                        // default mails then leave the portal link out.
+                        String portalUrl = resolveInstitutePortalUrl(institute);
 
                         // Format submission time
                         java.time.ZonedDateTime now = java.time.ZonedDateTime.now();
@@ -2372,9 +2466,14 @@ public class ApplicantService {
                                 + "</span></p>" +
                                 "<p><span class='detail-label'>Password:</span> <span class='detail-value'>" + password
                                 + "</span></p>" +
-                                "<p><span class='detail-label'>Portal URL:</span> <a href='" + portalUrl + "'>"
-                                + portalUrl + "</a></p>" +
-                                "<a href='" + portalUrl + "' class='button'>Access Portal Now</a>" +
+                                (portalUrl != null
+                                                ? "<p><span class='detail-label'>Portal URL:</span> <a href='"
+                                                                + portalUrl + "'>"
+                                                                + portalUrl + "</a></p>" +
+                                                                "<a href='" + portalUrl
+                                                                + "' class='button'>Access Portal Now</a>"
+                                                : "")
+                                +
                                 "</div>" +
                                 "<div class='detail-section'>" +
                                 "<h3>Next Steps</h3>" +
@@ -2451,12 +2550,19 @@ public class ApplicantService {
                                 "<div class='cred-row'>Username: <span class='cred-val'>" + username + "</span></div>" +
                                 "<div class='cred-row'>Password: <span class='cred-val'>" + password + "</span></div>" +
                                 "</div>" +
-                                "<div style='text-align: center; margin: 40px 0;'>" +
-                                "<a href='" + loginUrl + "' class='button'>Login to Parent Portal</a>" +
-                                "</div>" +
-                                "<p>If you have any questions before classes begin, please visit our <a href='"
-                                + websiteUrl
-                                + "' style='color: #ED8F03;'>website</a> or reach out to our administration team.</p>" +
+                                (loginUrl != null
+                                                ? "<div style='text-align: center; margin: 40px 0;'>" +
+                                                                "<a href='" + loginUrl
+                                                                + "' class='button'>Login to Parent Portal</a>" +
+                                                                "</div>"
+                                                : "")
+                                +
+                                (websiteUrl != null
+                                                ? "<p>If you have any questions before classes begin, please visit our <a href='"
+                                                                + websiteUrl
+                                                                + "' style='color: #ED8F03;'>website</a> or reach out to our administration team.</p>"
+                                                : "<p>If you have any questions before classes begin, please reach out to our administration team.</p>")
+                                +
                                 "</div>" +
                                 "<div class='footer'>" +
                                 "<p>You are receiving this email because you have successfully enrolled at "

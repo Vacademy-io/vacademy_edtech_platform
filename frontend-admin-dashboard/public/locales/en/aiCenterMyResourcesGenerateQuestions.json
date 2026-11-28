@@ -1,0 +1,14 @@
+{
+    "trigger": {
+        "label": "Generate Questions"
+    },
+    "dialog": {
+        "title": "Generate Questions",
+        "promptLabel": "Prompt",
+        "promptPlaceholder": "Enter Your Prompt Here",
+        "generateButton": "Generate"
+    },
+    "tasksList": {
+        "heading": "Vsmart Upload"
+    }
+}

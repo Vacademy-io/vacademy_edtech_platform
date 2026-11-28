@@ -7,6 +7,8 @@ import { MyButton } from '@/components/design-system/button';
 import { CircleNotch, Sparkle } from '@phosphor-icons/react';
 import { isAxiosError } from 'axios';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
+import { plansToastAction } from '@/components/common/ai-credits/PlanEntryPoints';
 import { useInstituteBrand } from '@/components/assist-dock/useInstituteBrand';
 import {
     AI_IMAGE_CREDIT_COST,
@@ -47,6 +49,7 @@ export const AiAssistButton = (props: AiAssistButtonProps) => {
     const [isGenerating, setIsGenerating] = useState(false);
     const [useBranding, setUseBranding] = useState(true);
     const brand = useInstituteBrand();
+    const { t: tPlans } = useTranslation('aiPlans');
 
     const creditCost = props.mode === 'text' ? AI_TEXT_CREDIT_COST : AI_IMAGE_CREDIT_COST;
     const brandingAvailable = props.mode === 'image' && !!(brand.themeColor || brand.logoUrl);
@@ -93,6 +96,8 @@ export const AiAssistButton = (props: AiAssistButtonProps) => {
                         : insufficient
                           ? `This needs ${creditCost} AI credit${creditCost > 1 ? 's' : ''}. Please top up and try again.`
                           : 'Something went wrong. Please try again.',
+                // Admins with the AI plan storefront on also get "See AI plans".
+                action: insufficient ? plansToastAction(tPlans('entry.seePlans')) : undefined,
             });
         } finally {
             setIsGenerating(false);

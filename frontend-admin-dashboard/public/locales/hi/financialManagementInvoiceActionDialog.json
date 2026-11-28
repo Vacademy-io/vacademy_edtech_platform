@@ -1,0 +1,10 @@
+{
+    "title": "चालान बनाएं",
+    "invoiceFor": "चालान इसके लिए",
+    "generating": "बनाया जा रहा है...",
+    "downloadInvoice": "चालान डाउनलोड करें",
+    "sendInvoiceViaEmail": "ईमेल से चालान भेजें",
+    "recipientEmail": "प्राप्तकर्ता ईमेल",
+    "sending": "भेजा जा रहा है...",
+    "sendEmail": "ईमेल भेजें"
+}

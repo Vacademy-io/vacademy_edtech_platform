@@ -60,4 +60,11 @@ public class AddCourseDTO {
      * workflows; persisted verbatim when provided.
      */
     private String courseSetting;
+
+    /**
+     * Optional: course page content (FAQs, course mode, ...) as a JSON object string,
+     * JSON name {@code course_page_json}; stored in package_page_content (V579).
+     * On update: null/absent = leave as is, "" = clear, otherwise replace.
+     */
+    private String coursePageJson;
 }

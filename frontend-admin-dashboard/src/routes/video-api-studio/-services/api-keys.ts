@@ -1,5 +1,5 @@
 import { AI_SERVICE_BASE_URL } from '@/constants/urls';
-import axios from 'axios';
+import authenticatedAxiosInstance from '@/lib/auth/axiosInstance';
 
 export interface ApiKey {
     id: string;
@@ -27,10 +27,13 @@ export interface RevokeKeyResponse {
     message: string;
 }
 
-const apiKeysClient = axios.create({
-    baseURL: AI_SERVICE_BASE_URL,
-});
-
+// Key management goes through the authenticated client so ai_service receives the
+// admin's JWT and clientId (it is about to require them on /institute/api-keys/*).
+//
+// The full key is still kept in localStorage below: the console and Input Videos
+// page call /external/video/v1/* with it as X-Institute-Key, and the API only
+// returns it once, at generate time. It can go once those console calls
+// authenticate with the JWT instead.
 const STORED_KEY_PREFIX = 'vacademy_video_api_key_';
 
 export function storeFullApiKey(keyId: string, fullKey: string): void {
@@ -61,15 +64,20 @@ export const generateApiKey = async (
     instituteId: string,
     name: string
 ): Promise<GenerateKeyResponse> => {
-    const response = await apiKeysClient.post<GenerateKeyResponse>('/institute/api-keys/generate', {
-        institute_id: instituteId,
-        name,
-    });
+    const response = await authenticatedAxiosInstance.post<GenerateKeyResponse>(
+        `${AI_SERVICE_BASE_URL}/institute/api-keys/generate`,
+        {
+            institute_id: instituteId,
+            name,
+        }
+    );
     return response.data;
 };
 
 export const listApiKeys = async (instituteId: string): Promise<ApiKey[]> => {
-    const response = await apiKeysClient.get<ApiKey[]>(`/institute/api-keys/${instituteId}`);
+    const response = await authenticatedAxiosInstance.get<ApiKey[]>(
+        `${AI_SERVICE_BASE_URL}/institute/api-keys/${instituteId}`
+    );
     return response.data;
 };
 
@@ -77,8 +85,8 @@ export const revokeApiKey = async (
     instituteId: string,
     keyId: string
 ): Promise<RevokeKeyResponse> => {
-    const response = await apiKeysClient.delete<RevokeKeyResponse>(
-        `/institute/api-keys/${instituteId}/${keyId}`
+    const response = await authenticatedAxiosInstance.delete<RevokeKeyResponse>(
+        `${AI_SERVICE_BASE_URL}/institute/api-keys/${instituteId}/${keyId}`
     );
     return response.data;
 };

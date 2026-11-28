@@ -1,0 +1,53 @@
+{
+    "navHeading": "इंस्ट्रक्टर कोपायलट",
+    "pageTitle": "इंस्ट्रक्टर कोपायलट",
+    "pageDescription": "इंस्ट्रक्टर कोपायलट के साथ अपने लेक्चर प्रबंधित करें, सेशन रिकॉर्ड करें, और प्रदर्शन का विश्लेषण करें।",
+    "toast": {
+        "generationStarted": "कंटेंट जेनरेशन सफलतापूर्वक शुरू हो गया!",
+        "generationStartFailed": "कंटेंट जेनरेशन शुरू करने में विफल।",
+        "logDeleted": "लॉग सफलतापूर्वक हटाया गया",
+        "logDeleteFailed": "लॉग हटाने में विफल",
+        "regenerationStarted": "कंटेंट पुनःजेनरेशन शुरू हो गया!",
+        "regenerationFailed": "कंटेंट पुनःजेनरेट करने में विफल",
+        "uploadingAudio": "ऑडियो फ़ाइल अपलोड हो रही है...",
+        "processingTranscription": "ट्रांसक्रिप्शन प्रोसेस हो रहा है...",
+        "transcriptionCompleted": "ट्रांसक्रिप्शन पूरा हुआ!",
+        "audioProcessFailed": "ऑडियो फ़ाइल प्रोसेस करने में विफल"
+    },
+    "status": {
+        "uploadingAudio": "ऑडियो फ़ाइल अपलोड हो रही है...",
+        "creatingTranscriptionJob": "ट्रांसक्रिप्शन जॉब बनाई जा रही है...",
+        "transcribingAudio": "ऑडियो ट्रांसक्राइब हो रहा है...",
+        "transcriptionStatus": "ट्रांसक्रिप्शन स्थिति: {{status}}"
+    },
+    "confirmDeleteLog": "क्या आप वाकई इस लॉग को हटाना चाहते हैं?",
+    "back": "वापस",
+    "untitledSession": "शीर्षक रहित सेशन",
+    "generatedOn": "{{date}} पर जेनरेट किया गया",
+    "regenerating": "पुनःजेनरेट हो रहा है...",
+    "waitCountdown": "प्रतीक्षा करें {{minutes}}:{{seconds}}",
+    "regenerateContent": "कंटेंट पुनःजेनरेट करें",
+    "backToSelection": "चयन पर वापस जाएं",
+    "recordAudio": "ऑडियो रिकॉर्ड करें",
+    "uploadAudio": "ऑडियो अपलोड करें",
+    "recordLectureDescription": "अपने लाइव लेक्चर को सीधे रिकॉर्ड करें।",
+    "uploadLectureDescription": "पहले से रिकॉर्ड किया गया लेक्चर ऑडियो फ़ाइल अपलोड करें।",
+    "generatingContent": "कंटेंट जेनरेट हो रहा है...",
+    "cancel": "रद्द करें",
+    "backToMenu": "मेनू पर वापस जाएं",
+    "previousLectureLogs": "पिछले लेक्चर लॉग",
+    "logStatus": {
+        "ready": "तैयार",
+        "processing": "प्रोसेसिंग"
+    },
+    "contentGenerationInProgress": "कंटेंट जेनरेशन जारी है...",
+    "viewDetails": "विवरण देखें",
+    "noSessionsYet": "अभी तक कोई सेशन नहीं है",
+    "startSessionToSeeLogs": "यहां अपने लॉग देखने के लिए एक नया सेशन शुरू करें।",
+    "tabs": {
+        "lecture": "लेक्चर",
+        "assessment": "मूल्यांकन"
+    },
+    "assessmentTools": "मूल्यांकन उपकरण",
+    "comingSoon": "जल्द आ रहा है।"
+}

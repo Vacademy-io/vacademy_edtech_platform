@@ -1,6 +1,8 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
+import i18next from 'i18next';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Check, X, Calendar } from 'lucide-react';
+import { Check, X, Calendar } from '@phosphor-icons/react';
 import { MyButton } from '@/components/design-system/button';
 import { getCurrencySymbol } from './utils/utils';
 
@@ -52,9 +54,11 @@ const getPlanTitle = (plan: SubscriptionPlan) => {
         return plan.title;
     }
     if (plan.customInterval) {
-        return `${formatCustomInterval(plan.customInterval.value, plan.customInterval.unit)} Plan`;
+        return i18next.t('settingsSubscriptionPlanPreview:plan.customIntervalTitle', {
+            interval: formatCustomInterval(plan.customInterval.value, plan.customInterval.unit),
+        });
     }
-    return 'Custom Plan';
+    return i18next.t('settingsSubscriptionPlanPreview:plan.defaultTitle');
 };
 
 const getIncludedFeatures = (features: string[], planFeatures?: string[]) => {
@@ -125,6 +129,8 @@ export const SubscriptionPlanPreview: React.FC<SubscriptionPlanPreviewProps> = (
     onSelectPlan,
     discountCoupons = [],
 }) => {
+    const { t } = useTranslation('settingsSubscriptionPlanPreview');
+
     if (!subscriptionPlans) {
         console.error('subscriptionPlans prop is required');
         return (
@@ -132,13 +138,13 @@ export const SubscriptionPlanPreview: React.FC<SubscriptionPlanPreviewProps> = (
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                         <Calendar className="size-5" />
-                        Subscription Intervals Preview
+                        {t('cardTitle')}
                     </CardTitle>
                 </CardHeader>
                 <CardContent>
                     <div className="py-8 text-center text-gray-500">
                         <Calendar className="mx-auto mb-4 size-12 text-gray-300" />
-                        <p>Error: Subscription plans data is missing</p>
+                        <p>{t('errors.missingPlans')}</p>
                     </div>
                 </CardContent>
             </Card>
@@ -152,13 +158,13 @@ export const SubscriptionPlanPreview: React.FC<SubscriptionPlanPreviewProps> = (
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                         <Calendar className="size-5" />
-                        Subscription Intervals Preview
+                        {t('cardTitle')}
                     </CardTitle>
                 </CardHeader>
                 <CardContent>
                     <div className="py-8 text-center text-gray-500">
                         <Calendar className="mx-auto mb-4 size-12 text-gray-300" />
-                        <p>Error: Currency is not selected</p>
+                        <p>{t('errors.missingCurrency')}</p>
                     </div>
                 </CardContent>
             </Card>
@@ -184,21 +190,19 @@ export const SubscriptionPlanPreview: React.FC<SubscriptionPlanPreviewProps> = (
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                         <Calendar className="size-5" />
-                        Subscription Intervals Preview
+                        {t('cardTitle')}
                     </CardTitle>
                 </CardHeader>
                 <CardContent>
                     <div className="py-8 text-center text-gray-500">
                         <Calendar className="mx-auto mb-4 size-12 text-gray-300" />
-                        <p>No subscription intervals enabled yet</p>
-                        <p className="text-sm">
-                            Enable intervals and set prices in the settings to see the preview cards
-                        </p>
+                        <p>{t('emptyState.title')}</p>
+                        <p className="text-sm">{t('emptyState.description')}</p>
                         <div className="mt-4 text-xs text-gray-400">
-                            <p>To show a plan:</p>
+                            <p>{t('emptyState.howToTitle')}</p>
                             <ol className="mt-2 list-inside list-decimal">
-                                <li>Enable the plan using the switch</li>
-                                <li>Set a valid price greater than 0</li>
+                                <li>{t('emptyState.step1')}</li>
+                                <li>{t('emptyState.step2')}</li>
                             </ol>
                         </div>
                     </div>
@@ -212,11 +216,9 @@ export const SubscriptionPlanPreview: React.FC<SubscriptionPlanPreviewProps> = (
             <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                     <Calendar className="size-5" />
-                    Subscription Intervals Preview
+                    {t('cardTitle')}
                 </CardTitle>
-                <p className="text-sm text-gray-600">
-                    Live preview of your subscription intervals with feature comparison
-                </p>
+                <p className="text-sm text-gray-600">{t('subtitle')}</p>
             </CardHeader>
             <CardContent className="">
                 <div className="flex gap-4">
@@ -264,8 +266,15 @@ export const SubscriptionPlanPreview: React.FC<SubscriptionPlanPreviewProps> = (
                                                                 <div className="text-xs font-medium text-green-600">
                                                                     {appliedDiscount.type ===
                                                                     'percentage'
-                                                                        ? `${appliedDiscount.value}% off`
-                                                                        : `${getCurrencySymbol(currency)}${appliedDiscount.value} off`}
+                                                                        ? t('plan.percentOff', {
+                                                                              value: appliedDiscount.value,
+                                                                          })
+                                                                        : t('plan.amountOff', {
+                                                                              symbol: getCurrencySymbol(
+                                                                                  currency
+                                                                              ),
+                                                                              value: appliedDiscount.value,
+                                                                          })}
                                                                 </div>
                                                             </div>
                                                         ) : (
@@ -313,7 +322,7 @@ export const SubscriptionPlanPreview: React.FC<SubscriptionPlanPreviewProps> = (
                                             onClick={() => onSelectPlan?.(plan.type)}
                                             buttonType="secondary"
                                         >
-                                            Select Plan
+                                            {t('plan.selectPlan')}
                                         </MyButton>
                                     </div>
                                 </CardContent>

@@ -1,0 +1,78 @@
+{
+    "emptyState": {
+        "title": "No application stages yet",
+        "description": "Create stages to define your admissions workflow",
+        "addFirstStage": "Add First Stage"
+    },
+    "stageCard": {
+        "first": "First",
+        "last": "Last",
+        "paymentOptionIdLabel": "Payment Option ID:"
+    },
+    "toast": {
+        "qrUploadSuccess": "QR code uploaded successfully",
+        "qrUploadError": "Failed to upload QR code",
+        "stageAddedSuccess": "Application stage added successfully",
+        "stageAddError": "Failed to add stage",
+        "stageNameRequired": "Please enter a stage name",
+        "sequenceInvalid": "Please enter a valid sequence number",
+        "paymentOptionRequired": "Please select a payment option"
+    },
+    "dialog": {
+        "heading": "Add Application Stage",
+        "cancel": "Cancel",
+        "addStage": "Add Stage",
+        "adding": "Adding…",
+        "stageName": {
+            "label": "Stage Name",
+            "placeholder": "e.g. Application Form, Payment"
+        },
+        "stageType": {
+            "label": "Stage Type",
+            "placeholder": "Select type",
+            "form": "Form",
+            "payment": "Payment"
+        },
+        "sequence": {
+            "label": "Sequence",
+            "placeholder": "1"
+        },
+        "workflowType": {
+            "label": "Workflow Type",
+            "placeholder": "Select workflow type"
+        },
+        "lastStage": "Last Stage",
+        "paymentSection": {
+            "heading": "Payment Configuration",
+            "paymentOption": {
+                "label": "Payment Option",
+                "loading": "Loading payment options…",
+                "empty": "No payment options found. Please create one in Payment Settings first.",
+                "placeholder": "Select payment option"
+            },
+            "displayText": {
+                "label": "Display Text",
+                "placeholder": "Message shown to applicants before payment",
+                "defaultValue": "Please pay the application fee to proceed."
+            },
+            "qrCode": {
+                "label": "Payment QR Code",
+                "previewAlt": "QR Preview",
+                "uploadCta": "Click to upload QR code",
+                "uploadHint": "PNG, JPG, SVG — max 5 MB",
+                "fileId": "File ID: {{fileId}}"
+            },
+            "upi": {
+                "vpaLabel": "UPI ID (VPA)",
+                "vpaPlaceholder": "e.g. school@oksbi",
+                "payeeLabel": "Payee Name",
+                "payeePlaceholder": "e.g. Vacademy School"
+            }
+        }
+    },
+    "main": {
+        "title": "Application Settings",
+        "description": "Configure the stages applicants go through during the admissions process",
+        "addStage": "Add Stage"
+    }
+}

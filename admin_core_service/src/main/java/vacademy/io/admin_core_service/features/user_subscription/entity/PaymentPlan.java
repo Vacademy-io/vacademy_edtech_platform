@@ -50,6 +50,14 @@ public class PaymentPlan {
     @Column(name = "member_count")
     private Integer memberCount;
 
+    /**
+     * Members already on another plan may switch TO this one. Only honoured when the
+     * parent PaymentOption is also flagged — the option-level flag is the master switch,
+     * this one picks which intervals inside it participate.
+     */
+    @Column(name = "plan_change_allowed")
+    private Boolean planChangeAllowed = false;
+
     @ManyToOne
     @JoinColumn(name = "payment_option_id") // This is the foreign key column
     @JsonIgnore
@@ -66,13 +74,14 @@ public class PaymentPlan {
         this.name = paymentPlanDTO.getName();
         this.status = paymentPlanDTO.getStatus();
         this.validityInDays = paymentPlanDTO.getValidityInDays();
-        this.actualPrice = paymentPlanDTO.getActualPrice();
-        this.elevatedPrice = paymentPlanDTO.getElevatedPrice();
+        this.actualPrice = paymentPlanDTO.getActualPrice() != null ? paymentPlanDTO.getActualPrice() : 0d;
+        this.elevatedPrice = paymentPlanDTO.getElevatedPrice() != null ? paymentPlanDTO.getElevatedPrice() : 0d;
         this.currency = paymentPlanDTO.getCurrency();
         this.description = paymentPlanDTO.getDescription();
         this.tag = paymentPlanDTO.getTag();
         this.featureJson = paymentPlanDTO.getFeatureJson();
         this.memberCount = paymentPlanDTO.getMemberCount();
+        this.planChangeAllowed = Boolean.TRUE.equals(paymentPlanDTO.getPlanChangeAllowed());
         this.paymentOption = paymentOption;
     }
 
@@ -93,6 +102,7 @@ public class PaymentPlan {
                 .tag(this.tag)
                 .featureJson(this.featureJson)
                 .memberCount(this.memberCount)
+                .planChangeAllowed(Boolean.TRUE.equals(this.planChangeAllowed))
                 .build();
     }
 }

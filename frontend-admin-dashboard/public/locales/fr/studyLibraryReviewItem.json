@@ -1,0 +1,31 @@
+{
+    "timeAgo": {
+        "secondsAgo_one": "il y a {{count}} s",
+        "secondsAgo_many": "il y a {{count}} s",
+        "secondsAgo_other": "il y a {{count}} s",
+        "minutesAgo_one": "il y a {{count}} min",
+        "minutesAgo_many": "il y a {{count}} min",
+        "minutesAgo_other": "il y a {{count}} min",
+        "hoursAgo_one": "il y a {{count}} h",
+        "hoursAgo_many": "il y a {{count}} h",
+        "hoursAgo_other": "il y a {{count}} h",
+        "daysAgo_one": "il y a {{count}} j",
+        "daysAgo_many": "il y a {{count}} j",
+        "daysAgo_other": "il y a {{count}} j"
+    },
+    "toasts": {
+        "updateFailed": "Échec de la mise à jour de la note",
+        "unexpectedError": "Une erreur inattendue s'est produite"
+    },
+    "actions": {
+        "approve": "Approuver",
+        "decline": "Refuser",
+        "delete": "Supprimer"
+    },
+    "deleteDialog": {
+        "title": "Voulez-vous vraiment supprimer ce commentaire ?",
+        "description": "Cette action est irréversible. Le commentaire sera définitivement supprimé du cours.",
+        "cancel": "Annuler",
+        "confirm": "Confirmer"
+    }
+}

@@ -1,0 +1,22 @@
+{
+    "cardTitle": "Subscription Intervals Preview",
+    "subtitle": "Live preview of your subscription intervals with feature comparison",
+    "errors": {
+        "missingPlans": "Error: Subscription plans data is missing",
+        "missingCurrency": "Error: Currency is not selected"
+    },
+    "emptyState": {
+        "title": "No subscription intervals enabled yet",
+        "description": "Enable intervals and set prices in the settings to see the preview cards",
+        "howToTitle": "To show a plan:",
+        "step1": "Enable the plan using the switch",
+        "step2": "Set a valid price greater than 0"
+    },
+    "plan": {
+        "customIntervalTitle": "{{interval}} Plan",
+        "defaultTitle": "Custom Plan",
+        "percentOff": "{{value}}% off",
+        "amountOff": "{{symbol}}{{value}} off",
+        "selectPlan": "Select Plan"
+    }
+}

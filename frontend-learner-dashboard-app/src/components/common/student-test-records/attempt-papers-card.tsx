@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 import { FileText, Eye, WarningCircle } from "@phosphor-icons/react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MyButton } from "@/components/design-system/button";
@@ -25,6 +26,7 @@ interface AttemptPapersCardProps {
  * on an otherwise objective assessment, and type-gating hid those from learners.
  */
 export const AttemptPapersCard = ({ papers }: AttemptPapersCardProps) => {
+  const { t } = useTranslation("testRecords");
   const available = papers.filter((paper) => !!paper.fileId);
   const [openingKey, setOpeningKey] = useState<string | null>(null);
   // Per-paper so one dead file id doesn't make the others look broken too.
@@ -46,19 +48,17 @@ export const AttemptPapersCard = ({ papers }: AttemptPapersCardProps) => {
       // rather than being assumed to be a PDF.
       const detail = await getFileDetail(paper.fileId);
       if (!detail?.url) {
-        throw new Error("This file is no longer available.");
+        throw new Error(t("attemptPapersCard.errors.fileUnavailable"));
       }
       const opened = window.open(detail.url, "_blank", "noopener,noreferrer");
       if (!opened) {
-        throw new Error(
-          "Your browser blocked the pop-up. Allow pop-ups for this site and try again."
-        );
+        throw new Error(t("attemptPapersCard.errors.popupBlocked"));
       }
     } catch (error) {
       const message =
         error instanceof Error && error.message
           ? error.message
-          : "Could not open this file. Please try again.";
+          : t("attemptPapersCard.errors.openFailed");
       setFailedKeys((prev) => ({ ...prev, [paper.key]: message }));
       toast.error(message);
     } finally {
@@ -71,16 +71,16 @@ export const AttemptPapersCard = ({ papers }: AttemptPapersCardProps) => {
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-base font-semibold text-slate-800">
           <FileText className="size-5 text-primary-500" />
-          Your papers
+          {t("attemptPapersCard.title")}
         </CardTitle>
       </CardHeader>
-      <CardContent className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      <CardContent className="grid grid-cols-1 gap-stack sm:grid-cols-2 lg:grid-cols-3">
         {available.map((paper) => {
           const failure = failedKeys[paper.key];
           return (
             <div
               key={paper.key}
-              className="flex flex-col justify-between gap-3 rounded-lg border border-slate-200 p-3"
+              className="flex flex-col justify-between gap-stack rounded-lg border border-slate-200 p-3"
             >
               <div>
                 <p className="text-sm font-medium text-slate-800">{paper.label}</p>
@@ -102,10 +102,10 @@ export const AttemptPapersCard = ({ papers }: AttemptPapersCardProps) => {
               >
                 <Eye className="size-4" />
                 {openingKey === paper.key
-                  ? "Opening..."
+                  ? t("attemptPapersCard.opening")
                   : failure
-                    ? "Try again"
-                    : "View"}
+                    ? t("common.tryAgain")
+                    : t("common.view")}
               </MyButton>
             </div>
           );

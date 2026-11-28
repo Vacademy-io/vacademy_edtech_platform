@@ -12,6 +12,8 @@ import vacademy.io.admin_core_service.features.chapter.repository.ChapterReposit
 import vacademy.io.admin_core_service.features.chapter.repository.ChapterToSlidesRepository;
 import vacademy.io.admin_core_service.features.course.dto.CopyContentLineageResponse;
 import vacademy.io.admin_core_service.features.course.dto.CopyCourseContentResponse;
+import vacademy.io.admin_core_service.features.course_knowledge.service.ContentIndexMarker;
+import vacademy.io.admin_core_service.features.course_knowledge.service.ContentIndexQueueWriter;
 import vacademy.io.admin_core_service.features.module.entity.ModuleChapterMapping;
 import vacademy.io.admin_core_service.features.module.entity.SubjectModuleMapping;
 import vacademy.io.admin_core_service.features.module.repository.ModuleChapterMappingRepository;
@@ -70,6 +72,7 @@ public class CourseContentCopyService {
     private final SlideService slideService;
     private final DripConditionRemapper dripConditionRemapper;
     private final AssessmentSlideBatchRegistrationService assessmentSlideBatchRegistrationService;
+    private final ContentIndexMarker contentIndexMarker;
 
     /**
      * Mode dispatcher.
@@ -521,6 +524,10 @@ public class CourseContentCopyService {
      *
      * Idempotent: if a mapping already exists (e.g. because the user runs the
      * copy a second time), it is skipped rather than duplicated.
+     *
+     * Deliberately not marked for course knowledge re-indexing: sharing rows
+     * changes only who can reach a lesson, never its content, and access is
+     * resolved at query time.
      */
     private void referenceInto(PackageSession sourcePs,
                                PackageSession tgtPs,
@@ -636,6 +643,9 @@ public class CourseContentCopyService {
         slideRepository.saveAll(persistedSlides);
         chapterToSlidesRepository.saveAll(newLinks);
         response.incrementSlides(newLinks.size());
+        contentIndexMarker.markAll(newLinks.stream()
+                .map(l -> new ContentIndexQueueWriter.Mark(l.getSlide().getId(), newChapter.getId()))
+                .toList(), "COURSE_CONTENT_COPIED");
     }
 
     // ---- entity cloning helpers (private; keep all field copies in one place) ----

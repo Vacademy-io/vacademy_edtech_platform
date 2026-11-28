@@ -1,0 +1,14 @@
+{
+    "heading": "मूल्यांकन प्रतिभागी",
+    "participantsCountInternal_one": "{{count}} प्रतिभागी (आंतरिक)",
+    "participantsCountInternal_other": "{{count}} प्रतिभागी (आंतरिक)",
+    "joinLink": "जॉइन लिंक",
+    "qrCode": "क्यूआर कोड",
+    "notifyParticipantsViaEmail": "ईमेल द्वारा प्रतिभागियों को सूचित करें:",
+    "whenAssessmentCreated": "जब मूल्यांकन बनाया जाए:",
+    "beforeAssessmentGoesLive": "मूल्यांकन लाइव होने से पहले:",
+    "minutesValue_one": "{{count}} मिनट",
+    "minutesValue_other": "{{count}} मिनट",
+    "whenAssessmentGoesLive": "जब मूल्यांकन लाइव हो:",
+    "whenAssessmentReportsGenerated": "जब मूल्यांकन रिपोर्ट तैयार हो जाए:"
+}

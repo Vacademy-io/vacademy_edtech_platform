@@ -1,0 +1,33 @@
+{
+    "facets": {
+        "subject": "Matière",
+        "level": "Classe / Examen",
+        "board": "Conseil",
+        "language": "Langue"
+    },
+    "describeSize": {
+        "sources_one": "{{formatted}} source",
+        "sources_many": "{{formatted}} sources",
+        "sources_other": "{{formatted}} sources",
+        "pages_one": "{{formatted}} page",
+        "pages_many": "{{formatted}} pages",
+        "pages_other": "{{formatted}} pages"
+    },
+    "card": {
+        "unlocked": "Déverrouillée",
+        "credits_one": "{{count}} crédit",
+        "credits_many": "{{count}} crédits",
+        "credits_other": "{{count}} crédits"
+    },
+    "intro": "Des bases de connaissances prêtes à l'emploi de Vacademy. Déverrouillez-en une et utilisez-la pour créer des sujets d'examen et des évaluations immédiatement — pas de téléchargement, pas d'attente pour le traitement d'un livre.",
+    "manageLibrary": "Gérer la bibliothèque",
+    "searchPlaceholder": "Rechercher des bibliothèques",
+    "clearFilters": "Effacer les filtres",
+    "empty": {
+        "noneMatch": "Aucune bibliothèque ne correspond à ces filtres",
+        "noneYet": "Aucune bibliothèque publiée pour le moment",
+        "widenSearch": "Essayez d'élargir votre recherche.",
+        "willAppear": "Les bibliothèques publiées par Vacademy apparaîtront ici au fur et à mesure de leur sortie."
+    },
+    "footerNote": "Déverrouiller une bibliothèque est un paiement unique et dure pour toujours, y compris le contenu que nous y ajoutons plus tard."
+}

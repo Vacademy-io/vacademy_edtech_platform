@@ -1,0 +1,74 @@
+{
+    "sheet": {
+        "title": "Audit développeur",
+        "internalBadge": "interne",
+        "pipelineBadge": "pipeline {{version}}",
+        "targetBadge": "cible : {{stage}}",
+        "copyAuditButton": "Copier l'audit complet en JSON",
+        "copySuccess": "Audit JSON copié dans le presse-papiers",
+        "copyError": "Échec de la copie"
+    },
+    "section": {
+        "configuration": "Configuration",
+        "routingDecisions": "Décisions de routage",
+        "modelsAndCosts": "Modèles et coûts",
+        "pipelinePath": "Parcours du pipeline",
+        "perShotLedger": "Registre par plan ({{count}})",
+        "artifactsAndCurl": "Artefacts et curl",
+        "rawJson": "JSON brut"
+    },
+    "routing": {
+        "noSnapshot": "Aucun instantané de routage d'intention enregistré (vidéo ancienne).",
+        "none": "aucun"
+    },
+    "models": {
+        "aiVideoHeading": "Vidéo IA (Veo)"
+    },
+    "pipelinePath": {
+        "shotIndex": "plan {{index}}",
+        "shotCount_one": "({{count}} plan)",
+        "shotCount_many": "({{count}} plans)",
+        "shotCount_other": "({{count}} plans)"
+    },
+    "synthesizedPath": {
+        "noLiveLog": "Aucun journal d'événements en direct pour cette exécution (chargée depuis l'historique). Parcours reconstitué à partir de l'état enregistré.",
+        "reviewModeStopped": "Exécution en mode révision — arrêtée à {{stage}}.",
+        "filmingStage_one": "Tournage ({{count}} plan)",
+        "filmingStage_many": "Tournage ({{count}} plans)",
+        "filmingStage_other": "Tournage ({{count}} plans)"
+    },
+    "shotLedger": {
+        "empty": "Pas encore de données par plan.",
+        "header": {
+            "type": "type",
+            "intent": "intention",
+            "background": "arrière-plan",
+            "audio": "audio",
+            "duration": "durée",
+            "words": "mots",
+            "veoCredits": "crédits Veo",
+            "veoRequest": "requête Veo"
+        },
+        "audioPolicy": {
+            "intrinsic": "intrinsèque",
+            "narrate": "narration"
+        }
+    },
+    "artifacts": {
+        "shotMetaCount_one": "timeline.meta.shots[] contient {{count}} entrée par plan",
+        "shotMetaCount_many": "timeline.meta.shots[] contient {{count}} entrées par plan",
+        "shotMetaCount_other": "timeline.meta.shots[] contient {{count}} entrées par plan"
+    },
+    "kvGrid": {
+        "empty": "(aucun)"
+    },
+    "urlRow": {
+        "notPresent": "absent",
+        "copyLabel": "copier",
+        "openInNewTab": "Ouvrir dans un nouvel onglet"
+    },
+    "copy": {
+        "copyTitle": "Copier : {{value}}",
+        "copyButtonTitle": "Copier"
+    }
+}

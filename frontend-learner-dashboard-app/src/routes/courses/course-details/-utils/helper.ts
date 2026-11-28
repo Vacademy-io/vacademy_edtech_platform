@@ -1,8 +1,10 @@
+import type { TFunction } from "i18next";
 import { getPublicUrlWithoutLogin } from "@/services/upload_file";
 import { CourseDetailsFormValues } from "../-components/course-details-schema";
 import { BatchForSessionType } from "@/types/institute-details/institute-details-interface";
 import { getTerminology } from "@/components/common/layout-container/sidebar/utils";
-import { ContentTerms, SystemTerms } from "@/types/naming-settings";
+import { ContentTerms, RoleTerms, SystemTerms } from "@/types/naming-settings";
+import { authorRole } from "@/lib/course-author-role";
 
 // Utility functions for YouTube URL handling
 export function isYouTubeUrl(url: string): boolean {
@@ -56,6 +58,10 @@ interface CourseWithSessionsType {
       email: string;
       full_name?: string;
       name?: string;
+      profile_pic_file_id?: string | null;
+      author_subtitle?: string;
+      author_description?: string;
+      role_label?: string | null;
     }>;
   };
   sessions: Array<{
@@ -129,8 +135,12 @@ function extractDirectUrl(value: string | null | undefined): string | null {
   return null;
 }
 
+// `t` is optional so existing callers that don't pass a translator keep
+// getting the English fallback unchanged; pass a `coursesRouteB` TFunction
+// to localize the "Unknown Instructor" fallback.
 export const transformApiDataToCourseData = async (
-  apiData: CourseWithSessionsType
+  apiData: CourseWithSessionsType,
+  t?: TFunction
 ) => {
   if (!apiData) return null;
 
@@ -208,15 +218,23 @@ export const transformApiDataToCourseData = async (
       courseMediaId: courseMediaPreview,
       courseHtmlDescription: apiData.course.course_html_description,
       instructors:
-        apiData.course.instructors?.map((instructor) => ({
+        (await Promise.all((apiData.course.instructors || []).map(async (instructor) => ({
           id: instructor.id,
           email: instructor.email,
+          profilePicUrl: await tryGetPublicUrl(instructor.profile_pic_file_id),
+          authorSubtitle: instructor.author_subtitle,
+          authorDescription: instructor.author_description,
+          roleLabel: authorRole(instructor),
           name:
             instructor.full_name ||
             instructor.name ||
             instructor.username ||
-            "Unknown Instructor",
-        })) || [],
+            (t
+              ? t("courseDetailsPage.unknownInstructor", {
+                  instructor: getTerminology(RoleTerms.Teacher, SystemTerms.Teacher),
+                })
+              : "Unknown Instructor"),
+        })))),
       sessions: apiData.sessions.map((session) => ({
         levelDetails: session.level_with_details.map((level) => {
           // For course structure 4, add a default subject if no subjects exist

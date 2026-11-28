@@ -1,0 +1,12 @@
+{
+    "title": "Détails de l'exécution",
+    "started": "Démarré",
+    "completed": "Terminé",
+    "duration": "Durée",
+    "idempotencyKey": "Clé d'idempotence",
+    "viewOnDiagram": "Voir sur le diagramme",
+    "nodeExecutionLogs": "Journaux d'exécution des nœuds",
+    "nodeExecutionLogsCount": "Journaux d'exécution des nœuds ({{count}})",
+    "loadingLogs": "Chargement des journaux...",
+    "noNodeLogsFound": "Aucun journal de nœud trouvé"
+}

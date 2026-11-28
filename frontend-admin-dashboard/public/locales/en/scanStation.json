@@ -1,0 +1,535 @@
+{
+    "title": "Scan station",
+    "subtitle": "Turn a scanned pile into one copy per student, then check them with AI.",
+    "back": "Back to submissions",
+    "backToList": "Back to assessments",
+    "loading": "Loading…",
+    "retry": "Try again",
+    "loadFailed": "Could not open the scan station. Try again.",
+    "readOnly": "The copies are made. Press Change something to edit them.",
+    "off": {
+        "title": "Scan station is not switched on for this institute",
+        "body": "Until it is, upload one PDF per student from Check with AI → Upload copies."
+    },
+    "steps": {
+        "title": "How it works",
+        "one": {
+            "title": "Scan the pile",
+            "body": "Put the answer sheets in your scanner and scan them into a folder, as JPEG or PDF."
+        },
+        "two": {
+            "title": "Turn the pile over",
+            "body": "Turn the whole pile over, so the page that was on top is now at the bottom facing down, and scan it again into a second folder."
+        },
+        "three": {
+            "title": "Add both scans here",
+            "body": "Add the two folders as one load. Scan the next pile as the next load."
+        },
+        "modes": "Both passes in one folder, or a scanner that does both sides, work too: choose how you scanned when you add a load."
+    },
+    "sessions": {
+        "title": "Scan sessions for this test",
+        "empty": "No scan sessions yet.",
+        "new": "Start a new scan session",
+        "creating": "Starting…",
+        "createFailed": "Could not start a scan session.",
+        "resume": "Resume",
+        "open": "Open",
+        "summary": "{{loads}} loads · {{copies}} copies",
+        "notFound": "This scan session could not be opened.",
+        "backToList": "Back to the sessions"
+    },
+    "status": {
+        "OPEN": "Open",
+        "BUILDING": "Making copies",
+        "BUILT": "Copies made",
+        "STARTING": "Starting checks",
+        "STARTED": "Checking started",
+        "FAILED": "Making copies failed"
+    },
+    "addLoad": {
+        "first": "Add the first load",
+        "next": "Add the next load",
+        "hint": "You can add the next load while earlier ones are being read.",
+        "full": "This session has the most loads it can take ({{max}}).",
+        "title": "Add load {{load}}"
+    },
+    "guided": {
+        "title": "Scan with the scanner",
+        "useFolders": "Use folders instead",
+        "useScanner": "Use the scanner instead",
+        "device": {
+            "feeder": "feeder",
+            "oneSide": "scans one side",
+            "bothSides": "scans both sides",
+            "printsTwoSided": "prints two-sided",
+            "printsOneSided": "prints one side"
+        },
+        "detect": {
+            "checking": "Looking for Vacademy Scan Helper…",
+            "install": {
+                "title": "Install Vacademy Scan Helper",
+                "body": "A small app for this Mac that lets this page run your scanner: you click Start and the pages come straight in, in order. Mac only for now.",
+                "download": "Download for Mac",
+                "hint": "Already installed? Open it from Applications. This page finds it within a few seconds."
+            },
+            "lost": "Lost contact with Vacademy Scan Helper. Check that it is still running.",
+            "noScanner": "Turn the scanner on or connect it.",
+            "otherApp": "Close Image Capture (or the scanner's own app), then try again.",
+            "busy": "The scanner is busy with another scan. Wait for it to finish.",
+            "glassOnly": "This scanner has no feeder; use the folders method."
+        },
+        "side": {
+            "first": "first side",
+            "second": "second side",
+            "both": "both sides",
+            "written": "written side"
+        },
+        "loadSide": "Load {{load}} · {{side}}",
+        "stepA": "Put up to {{max}} sheets in the feeder, writing facing up, top edge first.",
+        "stepB1": "Pick up the whole pile and look at the page on top.",
+        "stepB2": "Turn the whole pile over, side to side, so that page ends up at the bottom, facing down. Keep the sheets in the same order.",
+        "stepB3": "Put the pile back in the feeder, the same edge going in first, and click Start scanning.",
+        "start": "Start scanning",
+        "cancel": "Cancel",
+        "cancelled": "Scan cancelled. Those pages were thrown away.",
+        "scanning_one": "Scanning… {{count}} page so far",
+        "scanning_other": "Scanning… {{count}} pages so far",
+        "sideDone_one": "{{count}} page scanned.",
+        "sideDone_other": "{{count}} pages scanned.",
+        "pageAlt": "Scanned page {{n}}",
+        "mismatch": "First side has {{a}} pages, second side has {{b}}. One sheet was pulled in twice or skipped. Put this pile back and scan this side again.",
+        "mismatchDuplex": "{{count}} pages came through, an odd number, so one sheet was pulled in twice or skipped. Put the whole pile back and scan this load again.",
+        "rescanSide": "Scan this side again",
+        "restartLoad": "Start this load again",
+        "downloading": "Getting the pages from the scanner… {{done}} of {{total}}",
+        "retry": "Try again",
+        "sent": "Load {{load}} sent. Put the next pile in, or Finish.",
+        "finish": "Finish",
+        "finished": "Scanning finished. The loads are being read.",
+        "scanAnother": "Scan another load",
+        "errors": {
+            "SCANNER_BUSY": "The scanner is busy. Close Image Capture or wait for the other scan, then try again.",
+            "SCANNER_NOT_FOUND": "The scanner went away. Turn it on or connect it, then try again.",
+            "NO_PAPER": "No paper in the feeder. Put the pile in, then try again.",
+            "UNSUPPORTED": "This scanner can't do that. Use the folders method.",
+            "PAPER_JAM": "Paper jam. Clear it, put the whole pile for this side back, then scan this side again.",
+            "DEVICE_GONE": "The scanner was disconnected. Reconnect it, put the pile for this side back, then try again.",
+            "UNREACHABLE": "Vacademy Scan Helper is not answering. Check that it is running, then try again.",
+            "ORIGIN_NOT_ALLOWED": "Vacademy Scan Helper did not allow this page. Click Allow in the helper's message on the Mac, then try again.",
+            "NOTHING_SCANNED": "No pages came through. Check the pile is in the feeder, then try again.",
+            "DOWNLOAD": "Could not get the scanned pages from Vacademy Scan Helper, so nothing was sent. Try again.",
+            "UNKNOWN": "The scan did not finish. Put the pile for this side back and try again."
+        },
+        "stepOneUp": "Put up to {{max}} sheets in the feeder, writing facing up, in order (first student on top).",
+        "stepOneDown": "Put up to {{max}} sheets in the feeder, writing facing DOWN: this scanner reads the side underneath.",
+        "lookingAtPages": "Looking at the pages…",
+        "wrongSide": {
+            "body_one": "This page came out empty: the scanner read the blank side. Turn the whole pile over and scan again.",
+            "body_other": "These {{count}} pages came out empty: the scanner read the blank side of every sheet. Turn the whole pile over and scan again.",
+            "again": "Scan again",
+            "useAnyway": "The pages are right, use them"
+        }
+    },
+    "loads": {
+        "title": "Loads"
+    },
+    "intake": {
+        "mode": {
+            "label": "How did you scan?",
+            "TWO_PASSES": {
+                "title": "Two passes",
+                "body": "Fronts and backs in two folders (recommended)."
+            },
+            "ONE_FOLDER": {
+                "title": "Both passes in one folder",
+                "body": "Scanned one after the other into the same folder."
+            },
+            "DUPLEX": {
+                "title": "My scanner does both sides",
+                "body": "Each sheet saved as front, back, front, back."
+            }
+        },
+        "first": "First pass",
+        "second": "Second pass",
+        "one": "Scanned folder",
+        "drop": "Drop a folder or files here",
+        "chooseFolder": "Choose folder",
+        "chooseFiles": "Choose files",
+        "clear": "Clear",
+        "pickFailed": "Could not read that folder. Try choosing the files instead.",
+        "files_one": "{{count}} file",
+        "files_other": "{{count}} files",
+        "summary_one": "{{count}} page, ordered by {{source}}",
+        "summary_other": "{{count}} pages, ordered by {{source}}",
+        "source": {
+            "IMAGE_CAPTURE_SUFFIX": "scan number",
+            "NUMERIC_SUFFIX": "the number in the file name",
+            "MODIFIED_TIME": "the time each file was saved",
+            "NAME": "file name"
+        },
+        "checking": "Checking the files…",
+        "ready": "{{a}} + {{b}} pages, nothing missing. Ready to upload.",
+        "splitAsk": "{{first}} + {{second}} pages, split after {{name}}. Does that look right?",
+        "splitConfirm": "Yes, split here",
+        "splitConfirmed": "Split confirmed",
+        "duplexUntested": "Two-sided scanners have not been tested yet. Check the copies carefully.",
+        "errors": {
+            "COUNT_MISMATCH": "First pass has {{a}} pages, second has {{b}}. A sheet was pulled in twice or skipped. Rescan this load.",
+            "INDEX_GAP": "{{pass}}: a page is missing after {{name}} (number {{index}}).",
+            "DUPLICATE_INDEX": "{{pass}}: {{names}} has the same number as another page.",
+            "MIXED_STEMS": "{{pass}}: the files come from two different scans. Keep one scan per folder.",
+            "UNSUPPORTED_FILE": "{{names}} can't be used. Save scans as JPEG, PNG or PDF (not HEIC or TIFF).",
+            "PDF_UNREADABLE": "{{names}} would not open as a PDF.",
+            "EMPTY_PASS": "Add both passes.",
+            "TOO_MANY_PAGES": "A pass can have at most {{max}} pages. Scan the pile in smaller loads.",
+            "DUPLICATE_FILE": "{{names}} is the same file as another one.",
+            "MIXED_KINDS": "A pass mixes PDFs and images. Scan each pass in one format.",
+            "NO_CLEAR_GAP": "Couldn't tell where the second pass starts. Choose Two passes and add each pass on its own.",
+            "ODD_COUNT": "The folder has {{count}} pages, an odd number, so it can't be two equal passes.",
+            "EMPTY": "Add the scanned folder."
+        },
+        "warnings": {
+            "MTIME_DISAGREES": "{{pass}}: the times the files were saved don't follow the page numbers. Check the order; this load will be marked for a look."
+        },
+        "submit": "Upload and read",
+        "submitReplace": "Upload and replace load {{load}}",
+        "uploading": "Uploading {{done}} of {{total}}…",
+        "sending": "Sending…",
+        "uploadFailed": "{{name}} did not upload, so nothing was sent. Try again.",
+        "addFailed": "Could not add the load.",
+        "added": "Load {{load}} added. Reading names and pairing sides…",
+        "replaced": "Load {{load}} replaced. Reading it again…",
+        "cancel": "Cancel",
+        "replaceTitle": "Rescan load {{load}}"
+    },
+    "load": {
+        "title": "Load {{load}}",
+        "status": {
+            "PENDING": "Waiting",
+            "ANALYSING": "Reading",
+            "DONE": "Done",
+            "FAILED": "Needs rescan"
+        },
+        "files": "{{first}} + {{second}} pages",
+        "reading": "Reading names and pairing sides…",
+        "failed": "This load could not be read. {{message}}",
+        "sheets_one": "{{count}} sheet",
+        "sheets_other": "{{count}} sheets",
+        "blankLeftOut_one": "{{count}} blank back left out",
+        "blankLeftOut_other": "{{count}} blank backs left out",
+        "checkThem": "Check them",
+        "layout": {
+            "frontsPass": "Pass {{pass}} was the front side",
+            "frontsTurned": "fronts were upside down (handled)",
+            "backsReversed": "backs came in reverse order (handled)",
+            "backsTurned": "backs were upside down (handled)"
+        },
+        "rescan": "Rescan this load",
+        "remove": "Remove",
+        "removeConfirm": "Remove load {{load}}? Its copies leave this session.",
+        "removed": "Load {{load}} removed."
+    },
+    "blanks": {
+        "title": "Blank backs left out of load {{load}}",
+        "help": "These backs look empty and won't be in the copies. Click a page to keep it.",
+        "allBlank": "These are all blank",
+        "confirmed": "Confirmed blank",
+        "none": "No pages are being left out.",
+        "keep": "Keep",
+        "keepPage": "Keep page {{ref}}"
+    },
+    "copies": {
+        "title_one": "{{count}} copy",
+        "title_other": "{{count}} copies",
+        "empty": "Copies appear here once a load has been read.",
+        "onlyReview": "Only copies that need a look",
+        "noneToReview": "No copy needs a look."
+    },
+    "copy": {
+        "title": "Copy {{n}}",
+        "loadSheets_one": "Load {{load}} · {{count}} sheet",
+        "loadSheets_other": "Load {{load}} · {{count}} sheets",
+        "pages_one": "{{count}} page",
+        "pages_other": "{{count}} pages",
+        "noName": "Name not readable — will be matched by hand",
+        "accept": "Looks right",
+        "accepted": "Checked",
+        "exclude": "Leave out",
+        "include": "Put back",
+        "excluded": "Left out: this copy won't be checked.",
+        "merge": "Join to previous copy",
+        "split": "Start a new copy here",
+        "startHere": "A copy starts here",
+        "clearSheet": "Undo change",
+        "dropPage": "Leave out",
+        "keepPage": "Keep",
+        "leftOutPage": "Left out as blank",
+        "sheet": "Load {{load}} · sheet {{n}}",
+        "side": {
+            "FRONT": "Front",
+            "BACK": "Back"
+        },
+        "firstSheetHelp": "The first sheet has no name box. If the pile was scanned the other way round, try the fronts in the other order. Otherwise mark where the copy starts, or leave it out.",
+        "tryDirection": {
+            "FORWARD": "Try the fronts in scan order",
+            "REVERSED": "Try the fronts in reverse order"
+        }
+    },
+    "actions": {
+        "accept": "Looks right",
+        "openBlanks": "Check the blank pages",
+        "openPair": "Check the pair"
+    },
+    "pair": {
+        "title": "Check the pair",
+        "help": "Is this back the other side of this front? Compare the handwriting, the paper edges and any ink showing through.",
+        "sheet": "Sheet {{n}} of load {{load}}",
+        "front": "Front",
+        "back": "Back",
+        "right": "This is the right back",
+        "rescan": "Rescan this load"
+    },
+    "direction": {
+        "title": "Which way are the fronts?",
+        "help": "We could not tell whether the fronts came out first to last or last to first. Pick the order in which the copy starts with the name box.",
+        "FORWARD": "Fronts in scan order",
+        "REVERSED": "Fronts in reverse order",
+        "choose": "This one is right",
+        "none": "No copy has more than one sheet yet, so the order does not change anything."
+    },
+    "verdict": {
+        "EMPTY": "Add the first load to begin.",
+        "ANALYSING": "Reading names and pairing sides…",
+        "BLOCKED_one": "{{count}} problem needs a rescan or a fix",
+        "BLOCKED_other": "{{count}} problems need a rescan or a fix",
+        "NEEDS_REVIEW_one": "Check {{count}} item",
+        "NEEDS_REVIEW_other": "Check {{count}} items",
+        "READY": "Ready: {{copies}} copies, {{pages}} pages"
+    },
+    "bar": {
+        "totals": "{{loads}} loads · {{sheets}} sheets · {{copies}} copies",
+        "next": "Next issue",
+        "build": "Make copies & start checking",
+        "building_one": "Making {{count}} copy…",
+        "building_other": "Making {{count}} copies…",
+        "built_one": "{{count}} copy made",
+        "built_other": "{{count}} copies made",
+        "start": "Start checking",
+        "change": "Change something",
+        "retry": "Try again",
+        "failed": "Making the copies failed. {{message}}",
+        "starting": "Starting the checks…",
+        "openChecks": "Open bulk checks",
+        "buildFailed": "Could not make the copies.",
+        "reopenFailed": "Could not reopen the session.",
+        "buildingProgress": "Making the copies… {{done}} of {{total}} made",
+        "aiBusy": "The AI service is busy. The copies will be made as soon as it is free; you can keep this page open or come back later."
+    },
+    "start": {
+        "title": "Start checking",
+        "intro_one": "{{count}} copy ({{pages}} pages) goes to the AI check. It is matched to a student by the name on it; if it can't be matched, it waits for you in Bulk checks.",
+        "intro_other": "{{count}} copies ({{pages}} pages) go to the AI check. Each is matched to a student by the name on it; any that can't be matched wait for you in Bulk checks.",
+        "cost_one": "{{count}} copy · {{pages}} pages · {{credits}} credits",
+        "cost_other": "{{count}} copies · {{pages}} pages · {{credits}} credits",
+        "counting": "Working out the cost…",
+        "balance_one": "Balance: {{count}}",
+        "balance_other": "Balance: {{count}}",
+        "insufficient": "There are not enough credits for all these copies. Add credits to the institute.",
+        "notifyEmail": "Email me when the checks are done",
+        "cancel": "Cancel",
+        "confirm_one": "Check {{count}} copy",
+        "confirm_other": "Check {{count}} copies",
+        "starting": "Starting…",
+        "started_one": "Checking started for {{count}} copy.",
+        "started_other": "Checking started for {{count}} copies.",
+        "failed": "Could not start the checks.",
+        "planChanged": "The copies changed after they were made, so checking did not start. Make the copies again, then start checking.",
+        "noRoute": "Checking has started. Open the test's Submissions tab to follow it."
+    },
+    "started": {
+        "title": "Checking has started",
+        "body": "The copies are in Bulk checks. Names that could not be matched wait there for you.",
+        "show": "Show bulk checks"
+    },
+    "thumb": {
+        "failed": "No preview"
+    },
+    "errors": {
+        "decision": "Could not save that change.",
+        "locked": "The session changed in the meantime. It has been refreshed; please try again.",
+        "copyChanged": "This copy changed while you were looking at it. It has been refreshed; check it again before you accept it.",
+        "flagChanged": "This changed while you were looking at it. It has been refreshed; check it again before you accept it.",
+        "blanksChanged": "The pages being left out as blank changed. They have been refreshed; check them again."
+    },
+    "flags": {
+        "COUNT_MISMATCH": {
+            "title": "Page counts differ",
+            "help": "The two passes have a different number of pages. Rescan this load."
+        },
+        "FILE_UNREADABLE": {
+            "title": "A file could not be read",
+            "help": "One of the scanned files would not open. Rescan this load."
+        },
+        "NO_NAME_BOX_FOUND": {
+            "title": "No name box found",
+            "help": "No page in this load has the printed name box. Check that the right sheets were scanned, then rescan."
+        },
+        "LOAD_TOO_LARGE": {
+            "title": "Load too large",
+            "help": "This load has too many pages. Scan the pile in smaller loads."
+        },
+        "PAIR_SHIFT_DETECTED": {
+            "title": "Pages are shifted",
+            "help": "From one sheet on, every back matches the next front: a sheet was pulled in twice or skipped. Rescan this load."
+        },
+        "BACK_HAS_LABEL": {
+            "title": "A sheet was turned over",
+            "help": "A back page has the printed name box, so a sheet went in the wrong way up. Rescan this load."
+        },
+        "LABEL_NO_VALUE": {
+            "title": "Name box is empty",
+            "help": "The name box was found but nothing could be read in it. The copy will be matched by hand."
+        },
+        "LABEL_UNUSUAL": {
+            "title": "Name box looks different",
+            "help": "This name box does not look like the others. Check that it starts a new copy."
+        },
+        "PAIR_NOT_ROW_MAX": {
+            "title": "Back may be wrong",
+            "help": "This back is not a clear match for its front. Look at the pair."
+        },
+        "ORDER_UNCERTAIN": {
+            "title": "Back order unclear",
+            "help": "We could not tell for sure which way the backs came out. Look at a pair."
+        },
+        "FRONT_BLANK": {
+            "title": "Front looks blank",
+            "help": "A front page looks empty. Check that it is the right page."
+        },
+        "DPI_LOW": {
+            "title": "Low scan quality",
+            "help": "The scan resolution is low; handwriting may not read well. Rescan at a higher resolution if you can."
+        },
+        "BLANK_RULE_SUSPECT": {
+            "title": "Blank backs kept",
+            "help": "Too many pages looked blank, so no back was left out of this load."
+        },
+        "DPI_ASSUMED": {
+            "title": "Scan resolution assumed",
+            "help": "The files did not say their resolution, so a standard one was assumed."
+        },
+        "UNSURE_KEPT": {
+            "title": "Faint pages kept",
+            "help": "Some backs might be blank but were kept to be safe."
+        },
+        "ANALYSIS_FAILED": {
+            "title": "Could not read this load",
+            "help": "Reading this load failed. Rescan it or remove it."
+        },
+        "FIRST_SHEET_NO_LABEL": {
+            "title": "First sheet has no name box",
+            "help": "The very first sheet should start a copy. If the pile was scanned the other way round, try the fronts in the other order; otherwise mark it as the start of a copy, leave it out, or rescan."
+        },
+        "TOO_MANY_COPIES": {
+            "title": "Too many copies",
+            "help": "This session has more copies than it can take. Remove a load and scan it in a new session."
+        },
+        "FRONT_ORDER_UNCERTAIN": {
+            "title": "Fronts order unclear",
+            "help": "Pick which way the fronts came out of the scanner."
+        },
+        "LOAD_STARTS_MID_COPY": {
+            "title": "Load starts mid-copy",
+            "help": "This load's first sheet has no name box, so it was joined to the last copy of the previous load. Check it."
+        },
+        "SAME_NAME": {
+            "title": "Same name twice",
+            "help": "Another copy has the same name. Check that two copies were not merged or split wrongly."
+        },
+        "COPY_UNUSUALLY_LONG": {
+            "title": "Copy is unusually long",
+            "help": "This copy has many more sheets than the others. A name box may have been missed."
+        },
+        "TOO_MANY_PAGES": {
+            "title": "Many pages",
+            "help": "This copy has more than 40 pages. Check that it is one student's copy."
+        },
+        "BLANKS_TO_CONFIRM": {
+            "title": "Check the blank pages",
+            "help": "Some backs will be left out as blank. Take a quick look before the copies are made."
+        },
+        "MTIME_DISAGREES": {
+            "title": "File times out of order",
+            "help": "The times the files were saved don't follow the page numbers. Check the scan order."
+        },
+        "NO_COPIES": {
+            "title": "No copies to make",
+            "help": "Every copy is left out. Include at least one copy to go on."
+        },
+        "UNKNOWN": {
+            "title": "Needs a look",
+            "help": "Check this item."
+        }
+    },
+    "handsFree": {
+        "title": "How this desk works",
+        "change": "Change how this desk works",
+        "sides": {
+            "label": "The answers are written on",
+            "ONE": "One side of each sheet",
+            "BOTH": "Both sides of each sheet",
+            "oneHint": "One scan per pile: put the pile in and press Start.",
+            "bothHint": "This scanner reads one side at a time, so each pile is scanned twice: once, then turned over."
+        },
+        "auto": {
+            "label": "Start checking by itself",
+            "hint": "When the copies are sorted and nothing needs a look, the AI check starts with this test's usual settings. Uses AI credits."
+        },
+        "print": {
+            "label": "Print each checked copy on {{printer}}",
+            "noPrinter": "Print each checked copy",
+            "noPrinterHint": "No printer found on this computer.",
+            "needsAuto": "Turn on “Start checking by itself” to print as copies are checked.",
+            "twoSided": "Prints on both sides of the paper, as soon as each copy is checked.",
+            "oneSided": "Prints as soon as each copy is checked."
+        },
+        "match": {
+            "label": "Match copies to students of this test",
+            "onHint": "Marks go to the student whose name is on the copy.",
+            "offHint": "Each copy is checked under the name written on it and is not added to any student's results. Good for demos."
+        }
+    },
+    "board": {
+        "title": "Checking the copies",
+        "doneTitle": "All copies checked",
+        "counts": "{{checked}} of {{total}} checked",
+        "printedCount_one": "{{count}} printed",
+        "printedCount_other": "{{count}} printed",
+        "nextPile": "Scan the next pile",
+        "noPrinter": "The printer is not reachable. Check that it is on and that Vacademy Scan Helper is running; printing starts again by itself.",
+        "needsYou_one": "1 copy needs you: the name on it did not match a student. Pick the student below.",
+        "needsYou_other": "{{count}} copies need you: the names on them did not match a student. Pick the students below.",
+        "loading": "Getting the copies…",
+        "copyN": "Copy {{n}}",
+        "stage": {
+            "reading": "Reading the name",
+            "waiting": "Waiting to be checked",
+            "checking": "Checking the answers",
+            "checkingQ": "Checking question {{done}} of {{total}}",
+            "checked": "Checked",
+            "needsYou": "Who wrote this? Pick the student below",
+            "failed": "Could not be checked",
+            "skipped": "Skipped"
+        },
+        "print": {
+            "waiting": "Waiting for the printer",
+            "sending": "Sending to the printer",
+            "queued": "In the printer's queue",
+            "printing": "Printing",
+            "done": "Printed",
+            "failed": "Did not print",
+            "retry": "Print again"
+        }
+    }
+}

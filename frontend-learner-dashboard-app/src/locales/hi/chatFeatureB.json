@@ -1,0 +1,393 @@
+{
+    "common": {
+        "startNewChat": "नई चैट शुरू करें",
+        "closeSession": "सत्र बंद करें",
+        "aiGear": "AI सेटिंग्स",
+        "closePanel": "पैनल बंद करें",
+        "mathSymbols": "गणितीय चिह्न",
+        "preview": "पूर्वावलोकन:",
+        "retry": "पुनः प्रयास करें",
+        "newChat": "नई चैट",
+        "dropImageHere": "छवि यहाँ छोड़ें",
+        "voiceChatLabel": "वॉइस कॉल",
+        "startVoiceConversation": "वॉइस कॉल शुरू करें",
+        "creditsExhausted": "आपके OpenRouter क्रेडिट समाप्त हो गए हैं। AI सहायक का उपयोग जारी रखने के लिए कृपया अपने क्रेडिट रिचार्ज करें।",
+        "attachmentAlt": "अटैचमेंट",
+        "attachedImageAlt": "संलग्न",
+        "copy": "कॉपी करें",
+        "popupView": "पॉपअप में खोलें",
+        "dockView": "साइड में डॉक करें",
+        "copied": "कॉपी हो गया"
+    },
+    "voiceModeLabels": {
+        "interview": "मॉक इंटरव्यू",
+        "doubt": "डाउट चर्चा",
+        "oralTest": "मौखिक परीक्षा",
+        "sessionFallback": "सत्र"
+    },
+    "floatingButton": {
+        "nudgeMessages": {
+            "doubts": "कोई डाउट है?",
+            "learnSomething": "कुछ नया सीखना है?",
+            "practice": "अभ्यास प्रश्न चाहिए?"
+        },
+        "tooltip": {
+            "draggable": "चैट के लिए टैप करें • ले जाने के लिए खींचें",
+            "tapOnly": "चैट के लिए टैप करें"
+        }
+    },
+    "panel": {
+        "offlineNotice": "आप ऑफ़लाइन हैं। दोबारा कनेक्ट होने पर संदेश भेज दिए जाएँगे।",
+        "initializing": "चैट शुरू की जा रही है...",
+        "generatingQuiz": "क्विज़ तैयार की जा रही है...",
+        "errorTitle": "कुछ गलत हो गया",
+        "sessionEnded": "यह चैट समाप्त हो गई है",
+        "queuedTooltip": "कतार में है - ऑनलाइन होते ही भेजा जाएगा",
+        "copyMessage": "संदेश कॉपी करें",
+        "attachImageTitle": "छवि संलग्न करें (गणित की तस्वीरें अपने आप पहचानी जाती हैं)",
+        "fullscreen": "फ़ुलस्क्रीन",
+        "exitFullscreen": "फ़ुलस्क्रीन से बाहर निकलें",
+        "inputPlaceholder": "संदेश लिखें... (गणित के लिए $ का उपयोग करें)"
+    },
+    "sidePanel": {
+        "initializing": "शुरू किया जा रहा है...",
+        "generating": "तैयार किया जा रहा है...",
+        "creditsExhaustedShort": "आपके OpenRouter क्रेडिट समाप्त हो गए हैं। जारी रखने के लिए कृपया अपने क्रेडिट रिचार्ज करें।",
+        "errorTitle": "कुछ गलत हो गया।",
+        "sessionEnded": "सत्र समाप्त हो गया। नई चैट शुरू करें।",
+        "attachImageTitle": "छवि संलग्न करें",
+        "inputPlaceholder": "एक सवाल पूछें... (गणित के लिए $)"
+    },
+    "messageList": {
+        "ariaLabel": "बातचीत",
+        "thinking": "सोच रहा हूँ...",
+        "emptyTitle": "नमस्ते, मैं {{assistantName}} हूँ",
+        "emptySubtitle": "मुझसे कुछ भी पूछें, या नीचे दिए किसी सुझाव से शुरू करें।",
+        "stopped": "रोका गया",
+        "rateUp": "अच्छा जवाब",
+        "rateDown": "खराब जवाब",
+        "followUpsLabel": "सुझाए गए अगले प्रश्न"
+    },
+    "composer": {
+        "send": "संदेश भेजें",
+        "removeImage": "चित्र हटाएँ",
+        "uploading": "चित्र अपलोड हो रहा है...",
+        "stop": "जवाब रोकें"
+    },
+    "cards": {
+        "opensInNewTab": "(नए टैब में खुलता है)",
+        "progressLabel": "{{title}}: {{percent}}% पूरा",
+        "steps": {
+            "title": "स्टेप बाय स्टेप",
+            "progress": "{{total}} में से {{shown}} स्टेप दिखाए गए",
+            "stepN": "स्टेप {{n}}",
+            "next": "अगला स्टेप दिखाएँ",
+            "showAll": "सभी दिखाएँ"
+        },
+        "flashcards": {
+            "title": "फ़्लैशकार्ड",
+            "front": "प्रश्न",
+            "back": "उत्तर",
+            "showFront": "प्रश्न देखने के लिए टैप करें",
+            "showBack": "उत्तर देखने के लिए टैप करें",
+            "counter": "{{n}} / {{total}}",
+            "tapToFlip": "पलटने के लिए टैप करें या Space दबाएँ",
+            "previous": "पिछला कार्ड",
+            "next": "अगला कार्ड",
+            "shuffle": "मिलाएँ"
+        }
+    },
+    "micButton": {
+        "transcribing": "ट्रांसक्राइब किया जा रहा है...",
+        "stopRecording": "रिकॉर्डिंग बंद करें",
+        "voiceToText": "आवाज़ से टेक्स्ट"
+    },
+    "quickActions": {
+        "explainThis": {
+            "label": "इसे समझाएँ",
+            "prompt": "इस {{slide}} पर जो है उसे सरल शब्दों में समझाएँ"
+        },
+        "quizMe": {
+            "label": "मुझे क्विज़ करें",
+            "prompt": "मुझे क्विज़ करें "
+        },
+        "quizMeOnThis": {
+            "prompt": "इस {{slide}} पर मेरा क्विज़ लीजिए"
+        },
+        "summarize": {
+            "label": "सारांश दें",
+            "prompt": "इस {{slide}} का संक्षिप्त सारांश दें"
+        },
+        "courseOverview": {
+            "label": "{{course}} अवलोकन",
+            "prompt": "मुझे इस {{course}} के बारे में जानकारी दें"
+        },
+        "learningPath": {
+            "label": "सीखने का मार्ग",
+            "prompt": "इस {{course}} के लिए अनुशंसित सीखने का मार्ग क्या है?"
+        },
+        "prerequisites": {
+            "label": "पूर्वापेक्षाएँ",
+            "prompt": "इस {{course}} के लिए पूर्वापेक्षाएँ क्या हैं?"
+        },
+        "hint": {
+            "label": "संकेत",
+            "prompt": "बिना उत्तर बताए इस प्रश्न के लिए एक संकेत दें"
+        },
+        "explainConcept": {
+            "label": "अवधारणा समझाएँ",
+            "prompt": "इस प्रश्न में परखी जा रही अवधारणा को समझाएँ"
+        },
+        "helpMeLearn": {
+            "label": "मुझे सीखने में मदद करें",
+            "prompt": "मुझे इसके बारे में सीखने में मदद करें "
+        },
+        "askDoubt": {
+            "label": "एक डाउट पूछें",
+            "prompt": "मेरा एक सवाल है "
+        },
+        "practice": {
+            "label": "अभ्यास"
+        },
+        "studyNext": {
+            "label": "आगे क्या पढ़ें",
+            "prompt": "मुझे आगे क्या पढ़ना चाहिए?"
+        },
+        "quizRecent": {
+            "label": "मेरा क्विज़ लें",
+            "prompt": "मैंने हाल में जो पढ़ा है, उस पर मेरा क्विज़ लीजिए"
+        },
+        "myProgress": {
+            "label": "मेरी प्रगति",
+            "prompt": "मेरे कोर्स में मेरी प्रगति कैसी है?"
+        }
+    },
+    "quiz": {
+        "questionLabel": "प्र{{number}}",
+        "answeredCount": "{{total}} में से {{answered}} का उत्तर दिया गया",
+        "previous": "पिछला",
+        "next": "अगला",
+        "submitQuiz": "क्विज़ सबमिट करें",
+        "submitted": "सबमिट किया गया"
+    },
+    "quizFeedback": {
+        "passed": "क्विज़ पास हो गई! 🎉",
+        "keepPracticing": "अभ्यास जारी रखें!",
+        "completedIn": "{{minutes}} मिनट {{seconds}} सेकंड में पूर्ण किया",
+        "recommendations": "सुझाव",
+        "hideDetails": "प्रश्न विवरण छुपाएँ",
+        "showDetails": "प्रश्न विवरण दिखाएँ",
+        "questionNumber": "प्रश्न {{number}}",
+        "yourAnswer": "आपका उत्तर: ",
+        "notAnswered": "उत्तर नहीं दिया गया",
+        "correctAnswer": "सही उत्तर: ",
+        "explanation": "स्पष्टीकरण: ",
+        "pointsEarned": "+{{points}} पॉइंट्स आपकी स्ट्रीक में"
+    },
+    "sessionScorecard": {
+        "summaryTitle": "{{mode}} सारांश",
+        "score": "स्कोर",
+        "strengths": "मज़बूत पक्ष",
+        "areasToImprove": "सुधार के क्षेत्र",
+        "feedback": "फ़ीडबैक",
+        "close": "बंद करें",
+        "startNewSession": "नया सत्र शुरू करें"
+    },
+    "toolIndicator": {
+        "checkingProgress": "आपकी सीखने की प्रगति जाँची जा रही है...",
+        "reviewingPerformance": "आपके प्रदर्शन डेटा की समीक्षा की जा रही है...",
+        "searchingResources": "संबंधित सामग्री खोजी जा रही है...",
+        "searchingCourseMaterials": "आपकी {{course}} सामग्री खोजी जा रही है...",
+        "workingOnIt": "इस पर काम किया जा रहा है...",
+        "preparingQuiz": "आपका क्विज़ तैयार हो रहा है...",
+        "checkingCourses": "आपके {{course}} देखे जा रहे हैं...",
+        "checkingLiveClasses": "आपकी लाइव क्लासेस देखी जा रही हैं...",
+        "checkingTests": "आपके टेस्ट देखे जा रहे हैं...",
+        "checkingResults": "आपके रिज़ल्ट लाए जा रहे हैं...",
+        "askingTeacher": "आपका सवाल आपके टीचर को भेजा जा रहा है...",
+        "makingFlashcards": "आपके फ़्लैशकार्ड बन रहे हैं...",
+        "writingSteps": "स्टेप बाय स्टेप लिखा जा रहा है...",
+        "checkingDailyTasks": "आज के टास्क देखे जा रहे हैं..."
+    },
+    "voiceAvatar": {
+        "ready": "तैयार",
+        "listening": "सुन रहा है...",
+        "thinking": "सोच रहा है...",
+        "speaking": "बोल रहा है..."
+    },
+    "voiceModePanel": {
+        "unmute": "माइक्रोफ़ोन अनम्यूट करें",
+        "mute": "माइक्रोफ़ोन म्यूट करें",
+        "end": "कॉल समाप्त करें",
+        "hintIdle": "बोलने के लिए तैयार हों तो माइक दबाएँ",
+        "hintListening": "मैं सुन रहा हूँ… बात पूरी हो जाए तो बस रुक जाएँ",
+        "hintProcessing": "सोच रहा हूँ…",
+        "hintSpeaking": "बीच में बोलने के लिए माइक दबाएँ",
+        "muted": "माइक बंद है — बात जारी रखने के लिए अनम्यूट करें",
+        "talk": "बोलें",
+        "connecting": "कनेक्ट हो रहा है…",
+        "reconnecting": "फिर से कनेक्ट हो रहा है…",
+        "noticeNoSpeech": "मैं सुन नहीं पाया — फिर से कोशिश करें",
+        "noticeError": "कुछ गड़बड़ हो गई। फिर से कोशिश करने के लिए माइक दबाएँ।",
+        "noticeMic": "आपका माइक्रोफ़ोन नहीं मिल रहा। अनुमति जाँचें और माइक दबाएँ।",
+        "topicPrefix": "विषय: {{topic}}",
+        "captionsLabel": "लाइव कैप्शन",
+        "captionYou": "आप",
+        "showTranscript": "पूरी बातचीत दिखाएँ",
+        "hideTranscript": "बातचीत छिपाएँ"
+    },
+    "voiceModeSelector": {
+        "title": "वॉइस कॉल",
+        "subtitle": "चुनें कि आप कैसे बात करना चाहते हैं",
+        "modeInterviewLabel": "मेरा इंटरव्यू लें",
+        "modeInterviewDescription": "अपने मौजूदा विषय पर मॉक इंटरव्यू का अभ्यास करें",
+        "modeDoubtLabel": "अपना डाउट चर्चा करें",
+        "modeDoubtDescription": "वॉइस के ज़रिए अपने डाउट पर बात करें",
+        "modeOralTestLabel": "मौखिक परीक्षा लें",
+        "modeOralTestDescription": "मौखिक प्रश्नोत्तर के ज़रिए अपना ज्ञान परखें",
+        "topicLabelInterview": "इंटरव्यू विषय",
+        "topicLabelOralTest": "परीक्षा विषय",
+        "topicLabelDoubt": "आपका डाउट किस बारे में है?",
+        "topicPlaceholderInterview": "जैसे, डेटा स्ट्रक्चर, React, मशीन लर्निंग",
+        "topicPlaceholderOralTest": "जैसे, प्रकाश संश्लेषण, न्यूटन के नियम, बीजगणित",
+        "topicPlaceholderDoubt": "जैसे, मुझे रिकर्ज़न को लेकर उलझन है",
+        "topicHelperOptional": "वैकल्पिक — या सीधे बोलना शुरू करें",
+        "topicHelperRecommended": "अनुशंसित — बेहतर प्रश्न बनाने में मदद करता है",
+        "languageLabel": "भाषा",
+        "languageEn": "अंग्रेज़ी",
+        "languageHi": "हिन्दी",
+        "languageBn": "बंगाली",
+        "languageTa": "तमिल",
+        "languageTe": "तेलुगु",
+        "languageKn": "कन्नड़",
+        "languageMl": "मलयालम",
+        "languageMr": "मराठी",
+        "languageGu": "गुजराती",
+        "languagePa": "पंजाबी",
+        "languageOr": "ओड़िया",
+        "cancel": "रद्द करें",
+        "start": "कॉल शुरू करें",
+        "topicHelperEditable": "आप जो पढ़ रहे हैं उसी से लिया गया — कुछ और चाहिए तो बदल लें"
+    },
+    "useChatbot": {
+        "initErrorNetwork": "नमस्ते! मैं {{assistantName}} हूँ, आपका AI सहायक। मुझे सर्वर से कनेक्ट होने में समस्या आ रही है। कृपया अपना नेटवर्क कनेक्शन जाँचें।",
+        "initErrorNotFound": "नमस्ते! मैं {{assistantName}} हूँ, आपका AI सहायक। AI सेवा एंडपॉइंट नहीं मिला। कृपया सेटिंग जाँचें।",
+        "initErrorAuth": "नमस्ते! मैं {{assistantName}} हूँ, आपका AI सहायक। प्रमाणीकरण विफल रहा। कृपया दोबारा लॉगिन करने का प्रयास करें।",
+        "initErrorGeneric": "नमस्ते! मैं {{assistantName}} हूँ, आपका AI सहायक। अभी कनेक्ट करने में समस्या आ रही है (त्रुटि: {{errorMessage}})। मैं आपकी कैसे मदद कर सकता हूँ?",
+        "initErrorFallback": "नमस्ते! मैं {{assistantName}} हूँ, आपका AI सहायक। अभी कनेक्ट करने में समस्या आ रही है। मैं आपकी कैसे मदद कर सकता हूँ?",
+        "processingFailed": "क्षमा करें, आपका अनुरोध संसाधित करते समय एक त्रुटि हुई। कृपया पुनः प्रयास करें।",
+        "quizSubmitFailed": "क्षमा करें, मैं आपकी क्विज़ सबमिट नहीं कर सका। कृपया पुनः प्रयास करें।",
+        "sendingTooFast": "आप बहुत जल्दी-जल्दी संदेश भेज रहे हैं — कृपया कुछ सेकंड रुककर फिर से कोशिश करें।"
+    },
+    "history": {
+        "open": "चैट इतिहास",
+        "title": "पिछली चैट",
+        "back": "चैट पर वापस जाएँ",
+        "loading": "आपकी चैट लोड हो रही हैं...",
+        "loadError": "आपकी पिछली चैट लोड नहीं हो सकीं।",
+        "openError": "यह चैट नहीं खुल सकी। हो सकता है यह अब उपलब्ध न हो।",
+        "empty": "अभी तक कोई पिछली चैट नहीं",
+        "emptyHint": "जिन चैट में आप प्रश्न पूछते हैं, वे यहाँ दिखेंगी।",
+        "listLabel": "पिछली चैट",
+        "current": "वर्तमान",
+        "untitled": "बिना शीर्षक की चैट",
+        "justNow": "अभी",
+        "minutesAgo": "{{n}} मिनट पहले",
+        "hoursAgo": "{{n}} घंटे पहले",
+        "yesterday": "कल",
+        "daysAgo": "{{n}} दिन पहले",
+        "questions_one": "{{count}} प्रश्न",
+        "questions_other": "{{count}} प्रश्न"
+    },
+    "starters": {
+        "label": "आपके लिए सुझाव",
+        "loading": "सुझाव लोड हो रहे हैं",
+        "trySaying": "ऐसे पूछकर देखें:"
+    },
+    "toolbelt": {
+        "label": "इस जवाब के बारे में पूछें",
+        "simpler": {
+            "label": "और आसान",
+            "request": "इसे और आसान तरीके से समझाइए"
+        },
+        "example": {
+            "label": "उदाहरण",
+            "request": "इसका एक उदाहरण दीजिए"
+        },
+        "examReady": {
+            "label": "परीक्षा के लिए",
+            "request": "परीक्षा के लिए जवाब दीजिए: लिखने लायक मुख्य बिंदु"
+        },
+        "hinglish": {
+            "label": "Hinglish",
+            "request": "इसे आसान हिंदी में समझाइए"
+        },
+        "steps": {
+            "label": "स्टेप बाय स्टेप",
+            "request": "इसे स्टेप बाय स्टेप समझाइए"
+        },
+        "flashcards": {
+            "label": "फ़्लैशकार्ड",
+            "request": "इससे फ़्लैशकार्ड बनाइए"
+        },
+        "hindiLabel": "हिंदी में",
+        "readAloud": "पढ़कर सुनाएँ",
+        "stopReading": "सुनाना बंद करें",
+        "save": "जवाब सेव करें",
+        "unsave": "सेव से हटाएँ",
+        "more": "समझाने के और तरीके",
+        "aboutEarlier": "{{request}} (आपके पिछले जवाब के बारे में: \"{{excerpt}}\")"
+    },
+    "saved": {
+        "tab": "सेव किए गए",
+        "untitled": "सेव किया गया जवाब",
+        "openChat": "चैट खोलें",
+        "unsave": "हटाएँ",
+        "unsaveError": "हटाया नहीं जा सका। कृपया फिर से कोशिश करें।",
+        "loading": "सेव किए गए जवाब लोड हो रहे हैं...",
+        "loadError": "आपके सेव किए गए जवाब लोड नहीं हो सके।",
+        "empty": "अभी कोई जवाब सेव नहीं किया गया",
+        "emptyHint": "किसी जवाब के नीचे बुकमार्क पर टैप करें, वह यहाँ दिखेगा।",
+        "listLabel": "सेव किए गए जवाब"
+    },
+    "peek": {
+        "dismiss": "बंद करें"
+    },
+    "moments": {
+        "selection": {
+            "toolbar": "इस टेक्स्ट के बारे में {{name}} से पूछें",
+            "explain": "समझाएँ",
+            "simplify": "आसान करें",
+            "quiz": "क्विज़ करें",
+            "prompt": {
+                "explain": "इसे समझाइए: “{{text}}”",
+                "explainInLesson": "मेरे पाठ \"{{lesson}}\" का यह हिस्सा समझाइए: “{{text}}”",
+                "simplify": "इसे आसान शब्दों में, रोज़मर्रा के उदाहरण के साथ समझाइए: “{{text}}”",
+                "simplifyInLesson": "मेरे पाठ \"{{lesson}}\" का यह हिस्सा आसान शब्दों में, रोज़मर्रा के उदाहरण के साथ समझाइए: “{{text}}”",
+                "quiz": "इस पर मेरा क्विज़ लीजिए: “{{text}}”",
+                "quizInLesson": "मेरे पाठ \"{{lesson}}\" के इस हिस्से पर मेरा क्विज़ लीजिए: “{{text}}”"
+            }
+        },
+        "whyWrong": {
+            "button": "मेरा जवाब गलत क्यों था?",
+            "prompt": {
+                "intro": "मैंने यह सवाल गलत किया।",
+                "introFrom": "मैंने \"{{source}}\" में यह सवाल गलत किया।",
+                "question": "सवाल: {{text}}",
+                "yours": "मेरा जवाब: {{text}}",
+                "correct": "सही जवाब: {{text}}",
+                "explanation": "दिखाया गया हल: {{text}}",
+                "ask": "कृपया समझाइए कि मेरी सोच में गलती कहाँ हुई, फिर अभ्यास के लिए ऐसा ही एक सवाल दीजिए।"
+            }
+        },
+        "video": {
+            "chip": "{{time}} पर अटके? {{name}} से पूछें",
+            "prompt": "वीडियो \"{{lesson}}\" में {{time}} वाला हिस्सा मुझे समझ नहीं आ रहा। क्या आप इसे समझने में मेरी मदद कर सकते हैं?",
+            "promptNoLesson": "इस वीडियो में {{time}} वाला हिस्सा मुझे समझ नहीं आ रहा। क्या आप इसे समझने में मेरी मदद कर सकते हैं?",
+            "dismiss": "बंद करें"
+        },
+        "buddy": {
+            "aria": "{{name}} से पूछें: {{label}}"
+        }
+    }
+}

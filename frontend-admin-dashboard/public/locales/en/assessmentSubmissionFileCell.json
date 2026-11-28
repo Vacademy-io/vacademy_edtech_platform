@@ -1,0 +1,10 @@
+{
+    "checking": "Checking...",
+    "submitted": "Submitted",
+    "notSubmitted": "Not Submitted",
+    "viewSubmission": "View submission",
+    "upload": "Upload",
+    "submissionHeading": "Submission",
+    "fileNamePrefix": "Submission",
+    "loadFailedError": "Failed to load the submission. Please try again."
+}

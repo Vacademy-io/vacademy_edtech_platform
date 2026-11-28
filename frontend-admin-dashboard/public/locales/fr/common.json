@@ -1,0 +1,128 @@
+{
+    "login": {
+        "heading": "Ravis de vous revoir !",
+        "subheading": "Connectez-vous et prenez les commandes — vos outils d'administration vous attendent !",
+        "emailPlaceholder": "vous@email.com",
+        "passwordPlaceholder": "Mot de passe",
+        "forgotPasswordLink": "Mot de passe oublié ?",
+        "loginButton": "Se connecter",
+        "forgotPasswordHeading": "Mot de passe oublié",
+        "forgotPasswordSubheading": "Saisissez votre adresse e-mail et nous enverrons votre mot de passe dans votre boîte de réception",
+        "forgotPasswordEmailPlaceholder": "vous@email.com",
+        "forgotPasswordButton": "Envoyer le lien de réinitialisation",
+        "forgotPasswordBottomText": "Vous vous souvenez de votre mot de passe ?",
+        "setPasswordHeading": "Définir un nouveau mot de passe",
+        "setPasswordSubheading": "Sécurisez votre compte avec un nouveau mot de passe",
+        "setPasswordNewPlaceholder": "Nouveau mot de passe",
+        "setPasswordConfirmPlaceholder": "Confirmer le nouveau mot de passe",
+        "setPasswordButton": "Réinitialiser le mot de passe",
+        "setPasswordBottomText": "Retour à la connexion ?"
+    },
+    "actions": {
+        "save": "Enregistrer",
+        "cancel": "Annuler",
+        "delete": "Supprimer"
+    },
+    "table": {
+        "noResults": "Aucun résultat trouvé"
+    },
+    "common": {
+        "loading": "Chargement..."
+    },
+    "settings": {
+        "language": {
+            "title": "Langue",
+            "description": "Choisissez les langues proposées par le portail de cet établissement et la façon dont le contenu est localisé.",
+            "defaultLabel": "Langue par défaut",
+            "defaultHelp": "La langue affichée aux utilisateurs avant qu'ils n'en choisissent une.",
+            "enabledLabel": "Langues activées",
+            "enabledHelp": "Langues vers lesquelles les utilisateurs peuvent basculer. La langue par défaut est toujours incluse.",
+            "enabledPlaceholder": "Sélectionner des langues",
+            "enabledRequired": "Activez au moins une langue",
+            "contentSourceLabel": "Langue source du contenu",
+            "contentSourceHelp": "La langue dans laquelle votre contenu est rédigé à l'origine.",
+            "timezoneLabel": "Fuseau horaire de l'établissement",
+            "timezoneHelp": "Utilisé pour l'affichage des dates et des heures dans tout le portail.",
+            "timezonePlaceholder": "Sélectionner un fuseau horaire",
+            "selectPlaceholder": "Sélectionner une langue",
+            "loading": "Chargement des paramètres de langue…",
+            "save": "Enregistrer les paramètres de langue",
+            "saving": "Enregistrement…",
+            "saved": "Paramètres de langue enregistrés",
+            "saveFailed": "Échec de l'enregistrement des paramètres de langue"
+        }
+    },
+    "translation": {
+        "translateAction": "Traduire",
+        "credits": "{{value}} crédits",
+        "noContent": "Aucun contenu",
+        "state": {
+            "DRAFT": "Brouillon",
+            "IN_REVIEW": "En cours de relecture",
+            "PUBLISHED": "Publié",
+            "STALE": "Obsolète"
+        },
+        "jobStatus": {
+            "PENDING": "En attente",
+            "IN_PROGRESS": "En cours",
+            "AWAITING_INPUT": "En attente de relecture",
+            "COMPLETED": "Terminé",
+            "FAILED": "Échec"
+        },
+        "jobStage": {
+            "PENDING": "En attente",
+            "EXTRACT": "Extraction du contenu",
+            "TRANSLATE": "Traduction en cours",
+            "REVIEW": "Relecture",
+            "WRITE_BACK": "Publication",
+            "COMPLETED": "Terminé"
+        },
+        "dialog": {
+            "heading": "Traduire le cours",
+            "targetLanguage": "Langue cible",
+            "mode": "Mode de publication",
+            "modeDraft": "Relire avant de publier",
+            "modeAutoPublish": "Publier immédiatement",
+            "modeDraftHint": "Les traductions sont enregistrées comme brouillons. Les apprenants ne les voient qu'après votre approbation.",
+            "modeAutoPublishHint": "Les traductions sont mises en ligne pour les apprenants dès qu'elles sont générées.",
+            "continue": "Continuer",
+            "confirm": "Lancer la traduction",
+            "topUp": "Recharger les crédits",
+            "estimatedCost": "Coût estimé",
+            "currentBalance": "Solde actuel",
+            "balanceAfter": "Solde après",
+            "itemsFound": "{{value}} élément(s) seront traduits.",
+            "insufficientCredits": "Votre solde de crédits ne couvre pas cette traduction. Rechargez-le pour continuer.",
+            "noLanguages": "Aucune autre langue n'est activée pour cet établissement. Activez-en une dans Paramètres > Langue.",
+            "started": "Traduction lancée",
+            "viewProgress": "Voir la progression",
+            "estimateFailed": "Impossible d'estimer le coût de la traduction. Veuillez réessayer.",
+            "startFailed": "Impossible de lancer la traduction. Veuillez réessayer."
+        },
+        "review": {
+            "heading": "Relecture des traductions",
+            "subheading": "Relecture des traductions en {{language}}",
+            "back": "Retour au cours",
+            "baseContent": "Original",
+            "translatedContent": "{{language}}",
+            "state": "Statut",
+            "actions": "Actions",
+            "approve": "Approuver",
+            "reject": "Rejeter",
+            "approved": "Traduction approuvée",
+            "rejected": "Traduction rejetée",
+            "updateFailed": "Impossible de mettre à jour la traduction. Veuillez réessayer.",
+            "approvePage": "Approuver cette page",
+            "bulkApproved": "{{value}} traduction(s) approuvée(s)",
+            "approveAndPublishJob": "Approuver et publier la tâche",
+            "jobApproved": "Tâche approuvée. Publication des traductions en cours.",
+            "jobApproveFailed": "Impossible d'approuver la tâche. Veuillez réessayer.",
+            "jobStatus": "Statut de la tâche",
+            "jobStage": "Étape",
+            "jobProgress": "Progression",
+            "filterAll": "Tous les statuts",
+            "empty": "Aucune traduction à relire pour le moment.",
+            "missingScope": "Sélectionnez un cours et une langue pour relire les traductions."
+        }
+    }
+}

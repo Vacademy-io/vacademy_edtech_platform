@@ -1,0 +1,30 @@
+{
+    "header": {
+        "title": "SCORM Module",
+        "untitled": "Untitled SCORM Module",
+        "scormVersion": "SCORM {{version}}",
+        "interactiveBadge": "Interactive"
+    },
+    "deleted": {
+        "badge": "DELETED",
+        "heading": "This SCORM module has been deleted",
+        "description": "The SCORM content is no longer available"
+    },
+    "loading": "Loading SCORM content...",
+    "errors": {
+        "dataNotFound": "SCORM slide data not found",
+        "launchPathNotConfigured": "SCORM launch path is not configured",
+        "loadFailed": "Failed to load SCORM content"
+    },
+    "infoBar": {
+        "versionLabel": "Version:",
+        "entryLabel": "Entry:",
+        "statusLabel": "Status:",
+        "openInNewTab": "Open in New Tab"
+    },
+    "iframeTitle": "SCORM Content",
+    "notReady": {
+        "heading": "SCORM Package Not Ready",
+        "description": "The SCORM launch URL is not available. Please re-upload the SCORM package."
+    }
+}

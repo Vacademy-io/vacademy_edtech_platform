@@ -1,0 +1,10 @@
+{
+    "searchPlaceholder": "ابحث عن {{label}}...",
+    "noResults": "لم يتم العثور على نتائج.",
+    "selectedCount_zero": "لم يتم تحديد شيء ({{count}})",
+    "selectedCount_one": "تم تحديد عنصر واحد ({{count}})",
+    "selectedCount_two": "تم تحديد عنصرين ({{count}})",
+    "selectedCount_few": "تم تحديد {{count}} عناصر",
+    "selectedCount_many": "تم تحديد {{count}} عنصرًا",
+    "selectedCount_other": "تم تحديد {{count}} عنصر"
+}

@@ -1,0 +1,26 @@
+{
+    "header": {
+        "title": "{{term}} प्रोफ़ाइल",
+        "unknownName": "अज्ञात",
+        "photoAlt": "प्रोफ़ाइल फ़ोटो"
+    },
+    "leadTier": {
+        "hot": "गर्म",
+        "warm": "मध्यम",
+        "cold": "ठंडा",
+        "titleSimple": "लीड स्तर {{tier}}",
+        "titleWithScore": "लीड स्तर {{tier}} · स्कोर {{score}}"
+    },
+    "nav": {
+        "prevLearner": "पिछला शिक्षार्थी (←)",
+        "nextLearner": "अगला शिक्षार्थी (→)",
+        "close": "बंद करें (Esc)"
+    },
+    "contextStrip": {
+        "enrollmentNo": "नामांकन संख्या",
+        "joined": "शामिल हुए",
+        "city": "शहर",
+        "email": "ईमेल",
+        "phone": "फ़ोन"
+    }
+}

@@ -1,0 +1,25 @@
+{
+    "header": {
+        "subtitle": "Registration Details",
+        "close": "Close"
+    },
+    "states": {
+        "loadError": "Failed to load registration details.",
+        "noParticipantSelected": "Select a participant to view their registration details."
+    },
+    "contact": {
+        "sectionTitle": "Contact Information",
+        "email": "Email",
+        "mobileNumber": "Mobile Number",
+        "registeredOn": "Registered On"
+    },
+    "formResponses": {
+        "sectionTitle": "Form Responses",
+        "fieldFallback": "Field",
+        "empty": "No additional form fields submitted."
+    },
+    "common": {
+        "notProvided": "Not provided",
+        "participantFallback": "Participant"
+    }
+}

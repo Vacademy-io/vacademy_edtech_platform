@@ -1,4 +1,4 @@
-# ZOE Edtech — Mac App Store submission
+# ZOE Online School — Mac App Store submission
 
 Ships as the **macOS platform of the existing app record** (app id `6794024192`,
 team `7XKD5M7288` / Saurabh Kumar). The Mac build therefore carries the SAME
@@ -11,17 +11,19 @@ separate listing instead of joining that record.
 > build reads that setting, so it does not affect the `.pkg` — but do not take
 > the pbxproj as evidence of which account ZOE belongs to.
 
-Version is pinned to **1.0** via `extraMetadata` to match the version record in
-App Store Connect; `CFBundleVersion` (`buildVersion`) must be bumped on every
-re-upload. `electron/package.json` (1.0.12) is untouched, so the Windows Store
-and DMG builds are unaffected.
+Version is pinned via `extraMetadata` (currently **1.0.1**) to match the version
+record open in App Store Connect; `CFBundleVersion` (`buildVersion`) must be
+bumped on every re-upload — now **6**, for the "ZOE Online School" rename.
+`electron/package.json` (1.0.12) is untouched, so the Windows Store and DMG
+builds are unaffected.
 
 Config: `electron-builder.zoe-mas.json` + `entitlements.zoe.mas.plist` +
 `embedded-zoe.provisionprofile`. Build: `./build-mas-zoe.sh`. Output:
-`dist-mas-zoe/ZOE-Edtech-MAS.pkg`.
+`dist-mas-zoe/ZOE-Online-School-MAS.pkg`.
 
 This is separate from the Windows Store AppX build
-(`electron-builder.zoe-store.json` / `build-windows-zoe.sh`), which is unchanged.
+(`electron-builder.zoe-store.json` / `build-windows-zoe.sh`), which carries the
+same rename in its own `productName` / `appx.displayName`.
 
 ## Apple-side state (already done)
 
@@ -32,12 +34,12 @@ On team `7XKD5M7288`:
 - Certificates — `Apple Distribution: Saurabh Kumar` (signs the `.app`) and
   `Mac Installer Distribution: Saurabh Kumar` (signs the `.pkg`). Both expire
   2027-08-18.
-- Provisioning profile — **ZOE Edtech macOS Store 2026** (`MAC_APP_STORE`,
+- Provisioning profile — **ZOE Edtech macOS Store 2026** (`MAC_APP_STORE`,  <!-- Apple-side name, do not rename -->
   Platform `OSX`), saved as `embedded-zoe.provisionprofile` (git-ignored,
   per-account). Verify with `security cms -D -i embedded-zoe.provisionprofile`;
   it must say `Platform: ['OSX']` and
   `com.apple.application-identifier = 7XKD5M7288.io.zoeedtech.app`.
-- App Store Connect — macOS platform added to the "ZOE Edtech" record, showing
+- App Store Connect — macOS platform added to the ZOE app record, showing
   *macOS App 1.0 — Prepare for Submission*.
 
 ## Traps this build works around
@@ -79,7 +81,7 @@ them, so do not "simplify" them away.
 cd electron
 ./build-mas-zoe.sh
 
-xcrun altool --upload-app -f dist-mas-zoe/ZOE-Edtech-MAS.pkg -t macos \
+xcrun altool --upload-app -f dist-mas-zoe/ZOE-Online-School-MAS.pkg -t macos \
   --apiKey PSXF55PAG3 --apiIssuer ce0d8810-9d44-4cd7-9817-f825bb51bf2e
 ```
 

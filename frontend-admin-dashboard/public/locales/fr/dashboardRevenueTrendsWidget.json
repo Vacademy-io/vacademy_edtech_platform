@@ -1,0 +1,33 @@
+{
+    "heading": "Montant encaissé",
+    "rangeGroup": "Période de collecte",
+    "ranges": {
+        "3d": "3 jours",
+        "7d": "7 jours",
+        "24d": "24 jours",
+        "all": "Tout"
+    },
+    "subtitle": "Paiements réglés · {{range}} derniers",
+    "totalCollected": "Total encaissé",
+    "payments_one": "{{formatted}} paiement",
+    "payments_many": "{{formatted}} paiements",
+    "payments_other": "{{formatted}} paiements",
+    "emptyState": "Aucune collecte sur cette période",
+    "tooltip": {
+        "collected": "Encaissé"
+    },
+    "months": {
+        "jan": "Janv",
+        "feb": "Févr",
+        "mar": "Mars",
+        "apr": "Avr",
+        "may": "Mai",
+        "jun": "Juin",
+        "jul": "Juil",
+        "aug": "Août",
+        "sep": "Sept",
+        "oct": "Oct",
+        "nov": "Nov",
+        "dec": "Déc"
+    }
+}

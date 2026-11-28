@@ -8,7 +8,7 @@ import { useCleanerPlayTheme } from "@/hooks/use-cleaner-play-theme";
 
 export const StatCardSkeleton = () => (
     <Card className="h-full">
-        <CardContent className="p-4 sm:p-5 flex flex-col justify-between h-full space-y-4">
+        <CardContent className="p-card sm:p-5 flex flex-col justify-between h-full space-y-4">
             <div className="flex items-center justify-between">
                 <Skeleton className="h-10 w-10 rounded-lg" />
                 <Skeleton className="h-5 w-5 rounded-full" />

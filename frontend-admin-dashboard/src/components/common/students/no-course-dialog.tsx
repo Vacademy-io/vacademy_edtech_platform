@@ -27,7 +27,7 @@ export const NoCourseDialog = ({
                         Create {getTerminology(ContentTerms.Course, SystemTerms.Course)} First
                     </div>
                     <p className="mt-2 p-2 text-sm text-gray-500">
-                        {`${content || 'You need to create a course and add a subject in it before'} ${type.toLocaleLowerCase()}.`}
+                        {`${content || `You need to create a ${getTerminology(ContentTerms.Course, SystemTerms.Course).toLocaleLowerCase()} and add a subject in it before`} ${type.toLocaleLowerCase()}.`}
                     </p>
                 </DialogHeader>
                 <div className="my-4 flex w-full justify-end gap-2 px-2">

@@ -5,6 +5,7 @@
  * User enters card details on Cashfree's secure page, then is redirected back.
  */
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { load as loadCashfree } from "@cashfreepayments/cashfree-js";
 
 interface CashfreeCheckoutFormProps {
@@ -39,11 +40,12 @@ export const CashfreeCheckoutForm = ({
   onPayError,
   isProcessing = false,
 }: CashfreeCheckoutFormProps) => {
+  const { t } = useTranslation("enrollmentA");
   const [cardError, setCardError] = useState<string | null>(null);
 
   const handleProceedToPayment = async () => {
     if (!paymentSessionId || !returnUrl || !orderId) {
-      setCardError("Payment not ready. Please wait.");
+      setCardError(t("cashfreeCheckout.notReady"));
       return;
     }
 
@@ -63,7 +65,7 @@ export const CashfreeCheckoutForm = ({
       const cashfree = await loadCashfree({ mode });
 
       if (!cashfree) {
-        setCardError("Payment gateway not available.");
+        setCardError(t("cashfreeCheckout.gatewayUnavailable"));
         onPayError?.();
         return;
       }
@@ -81,12 +83,12 @@ export const CashfreeCheckoutForm = ({
       });
 
       if (result?.error) {
-        setCardError(result.error.message || "Payment initialization failed.");
+        setCardError(result.error.message || t("cashfreeCheckout.initFailed"));
         onPayError?.();
       }
     } catch (err) {
       setCardError(
-        err instanceof Error ? err.message : "Payment could not be processed."
+        err instanceof Error ? err.message : t("cashfreeCheckout.processFailed")
       );
       onPayError?.();
     }
@@ -95,19 +97,18 @@ export const CashfreeCheckoutForm = ({
   return (
     <div className="w-full max-w-md mx-auto">
       <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
-        <div className="text-center mb-6">
-          <h2 className="text-2xl font-bold text-gray-800 mb-2">
-            💳 Cashfree Payment
+        <div className="text-center mb-6 space-y-2">
+          <h2 className="text-2xl font-bold text-gray-800">
+            💳 {t("cashfreeCheckout.title")}
           </h2>
           <p className="text-gray-600">
-            Click below to open Cashfree&apos;s secure payment page. You will
-            enter your card details there.
+            {t("cashfreeCheckout.description")}
           </p>
         </div>
 
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
           <div className="flex justify-between items-center">
-            <span className="text-gray-700 font-medium">Amount to Pay:</span>
+            <span className="text-gray-700 font-medium">{t("common.amountToPay")}</span>
             <span className="text-2xl font-bold text-blue-600">
               {currency?.toUpperCase() || "INR"} {amount.toFixed(2)}
             </span>
@@ -121,18 +122,18 @@ export const CashfreeCheckoutForm = ({
             disabled={isProcessing}
             className="w-full py-3 px-4 bg-primary text-white font-semibold rounded-lg hover:bg-primary/90 disabled:opacity-70 disabled:cursor-not-allowed"
           >
-            {isProcessing ? "Redirecting..." : "Proceed to Payment"}
+            {isProcessing ? t("cashfreeCheckout.redirecting") : t("cashfreeCheckout.proceed")}
           </button>
         ) : (
           <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg text-center text-gray-600">
-            {isProcessing ? "Preparing payment..." : "Loading payment form..."}
+            {isProcessing ? t("cashfreeCheckout.preparing") : t("cashfreeCheckout.loading")}
           </div>
         )}
 
         {cardError && (
           <div className="mt-5 p-4 bg-red-50 border border-red-200 rounded-lg">
             <strong className="text-red-800 flex items-center gap-2">
-              <span>❌</span> Error
+              <span>❌</span> {t("common.error")}
             </strong>
             <p className="text-red-700 text-sm mt-1">{cardError}</p>
           </div>
@@ -140,9 +141,9 @@ export const CashfreeCheckoutForm = ({
 
         <div className="mt-6 pt-6 border-t border-gray-200">
           <p className="text-xs text-gray-500 text-center">
-            🔒 Your payment is secured by Cashfree
+            🔒 {t("cashfreeCheckout.securedBy")}
             <br />
-            Cards, UPI, Net Banking, Wallets &amp; more
+            {t("cashfreeCheckout.methods")}
           </p>
         </div>
       </div>

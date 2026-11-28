@@ -171,7 +171,7 @@ export function MessageComposer({
                     type="button"
                     onClick={handleSubmit}
                     disabled={!canSend}
-                    className="size-10 shrink-0 bg-primary-500 p-0 hover:bg-primary-600"
+                    className="size-10 shrink-0 bg-primary-500 p-0 text-white hover:opacity-90"
                     aria-label="Send message"
                 >
                     <PaperPlaneRight size={18} weight="fill" />

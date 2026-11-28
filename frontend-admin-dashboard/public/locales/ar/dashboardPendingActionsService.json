@@ -1,0 +1,14 @@
+{
+    "overdueSummary": {
+        "title": "{{amount}} رسوم متأخرة",
+        "subtitle": "مستحقة وغير مدفوعة على مستوى المؤسسة"
+    },
+    "pendingApproval": {
+        "title": "الموافقة على التسوية لـ {{name}}",
+        "subtitle": "{{type}} · {{amount}}",
+        "defaultType": "تسوية"
+    },
+    "unreadAlert": {
+        "defaultTitle": "إشعار"
+    }
+}

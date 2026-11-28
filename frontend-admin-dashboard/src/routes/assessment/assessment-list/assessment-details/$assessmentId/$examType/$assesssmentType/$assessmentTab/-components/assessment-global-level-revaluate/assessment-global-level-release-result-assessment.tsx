@@ -1,96 +1,57 @@
-import { useMutation } from '@tanstack/react-query';
 import { useState } from 'react';
-import { SelectedReleaseResultFilterInterface } from '../AssessmentSubmissionsTab';
-import { getReleaseStudentResult } from '../../-services/assessment-details-services';
-import { toast } from 'sonner';
 import { Route } from '../..';
-import { getInstituteId } from '@/constants/helper';
-import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 import { MyButton } from '@/components/design-system/button';
-import { WarningCircle } from '@phosphor-icons/react';
-import { RoleTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
-import { getTerminology, getTerminologyPlural } from '@/components/common/layout-container/sidebar/utils';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { PaperPlaneTilt } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
+import { cn } from '@/lib/utils';
+import { ReleaseResultDialog } from '../submission-review/ReleaseResultDialog';
 
-export const AssessmentGlobalLevelReleaseResultAssessment = () => {
+/**
+ * Toolbar "Release result". Opens the W9 dialog, which says how many learners are ready,
+ * how many still have unmarked answers or are being checked by AI, and releases the ready
+ * ones (and the rest once marked) instead of publishing everyone's current marks.
+ */
+export const AssessmentGlobalLevelReleaseResultAssessment = ({
+    triggerClassName,
+    onReleased,
+}: {
+    /** Lets the Submissions action row size this button like its neighbours. */
+    triggerClassName?: string;
+    /** Refresh the list after a release. */
+    onReleased?: () => void;
+} = {}) => {
+    const { t } = useTranslation('assessmentGlobalLevelReleaseResult');
     const { assessmentId } = Route.useParams();
-    const instituteId = getInstituteId();
-    const [releaseResultDialog, setReleaseResultDialog] = useState(false);
-    const getRleaseResultMutation = useMutation({
-        mutationFn: ({
-            assessmentId,
-            instituteId,
-            methodType,
-            selectedReleaseFilter,
-        }: {
-            assessmentId: string;
-            instituteId: string | undefined;
-            methodType: string;
-            selectedReleaseFilter: SelectedReleaseResultFilterInterface;
-        }) => getReleaseStudentResult(assessmentId, instituteId, methodType, selectedReleaseFilter),
-        onSuccess: () => {
-            toast.success(
-                'Result for this assessment has been released for all students. Participants need to check their email!',
-                {
-                    className: 'success-toast',
-                    duration: 4000,
-                }
-            );
-            setReleaseResultDialog(false);
-        },
-        onError: (error: unknown) => {
-            throw error;
-        },
-    });
-
-    const handleReleaseResultForAllStudents = () => {
-        getRleaseResultMutation.mutate({
-            assessmentId,
-            instituteId,
-            methodType: 'ASSESSMENT_ALL',
-            selectedReleaseFilter: {
-                attempt_ids: [],
-            },
-        });
-    };
+    const [open, setOpen] = useState(false);
     return (
-        <Dialog open={releaseResultDialog} onOpenChange={setReleaseResultDialog}>
-            <DialogTrigger asChild>
-                <MyButton
-                    type="button"
-                    scale="small"
-                    buttonType="secondary"
-                    className="font-medium"
-                >
-                    Release Result
-                </MyButton>
-            </DialogTrigger>
-            <DialogContent className="flex flex-col p-0">
-                <h1 className="rounded-md bg-primary-50 p-4 text-primary-500">
-                    Release Result For All {getTerminologyPlural(RoleTerms.Learner, SystemTerms.Learner)}
-                </h1>
-                <div className="flex flex-col gap-2 p-4">
-                    <div className="flex items-center text-danger-600">
-                        <p>Attention</p>
-                        <WarningCircle size={18} />
-                    </div>
-                    <h1>
-                        Are you sure you want to release result for all{' '}
-                        {getTerminology(RoleTerms.Learner, SystemTerms.Learner).toLocaleLowerCase()}
-                        s?
-                    </h1>
-                    <div className="flex justify-end">
-                        <MyButton
-                            type="button"
-                            scale="large"
-                            buttonType="primary"
-                            className="mt-4 font-medium"
-                            onClick={handleReleaseResultForAllStudents}
-                        >
-                            Yes
-                        </MyButton>
-                    </div>
-                </div>
-            </DialogContent>
-        </Dialog>
+        <>
+            <Tooltip>
+                <TooltipTrigger asChild>
+                    {/* The one action on this row that publishes something to learners, so it
+                        is the only solid button — the rest stay outline. */}
+                    <MyButton
+                        type="button"
+                        scale="small"
+                        buttonType="primary"
+                        className={cn('gap-1.5 font-medium', triggerClassName)}
+                        onClick={() => setOpen(true)}
+                    >
+                        <PaperPlaneTilt size={16} weight="fill" />
+                        {t('trigger.releaseResult')}
+                    </MyButton>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">{t('trigger.tooltip')}</TooltipContent>
+            </Tooltip>
+            {open && (
+                <ReleaseResultDialog
+                    assessmentId={assessmentId}
+                    attemptIds="ALL"
+                    open={open}
+                    onOpenChange={setOpen}
+                    onReleased={onReleased}
+                />
+            )}
+        </>
     );
 };

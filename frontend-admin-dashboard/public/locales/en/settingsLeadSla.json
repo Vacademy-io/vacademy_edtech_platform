@@ -1,0 +1,105 @@
+{
+    "common": {
+        "onLabel": "On",
+        "offLabel": "Off",
+        "inPlainWordsLabel": "In plain words: ",
+        "hoursUnit_one": "{{count}} hour",
+        "hoursUnit_other": "{{count}} hours",
+        "hoursLabel": "hours",
+        "minutesUnit_one": "{{count}} minute",
+        "minutesUnit_other": "{{count}} minutes",
+        "minutesLabel": "minutes",
+        "minAbbrev": "min",
+        "remind": "Remind",
+        "remove": "Remove"
+    },
+    "loading": "Loading reminder settings…",
+    "tat": {
+        "title": "New Lead Response Time (TAT)",
+        "description": "Make sure new leads get contacted quickly. If the assigned counsellor doesn't reach out in time, they'll be reminded. Choose how they're notified (email, WhatsApp, in-app) under <1>Settings → Automations</1>.",
+        "summary": {
+            "withRemindersPart1": "a new lead should be contacted within ",
+            "withRemindersPart2": ". The counsellor is reminded ",
+            "withRemindersPart3": " before the deadline. If still untouched, the lead is flagged ",
+            "withRemindersPart4": ".",
+            "overdueLabel": "overdue",
+            "noRemindersPart1": "a new lead should be contacted within ",
+            "noRemindersPart2": ". If still untouched, the lead is flagged ",
+            "noRemindersPart3": ".",
+            "offhours": "Leads that arrive outside working hours are due at {{time}} on the next working day."
+        },
+        "responseWithin": {
+            "label": "Respond to a new lead within",
+            "hint": "After this much time without contact, the lead is overdue."
+        },
+        "earlyReminders": {
+            "title": "Early reminders (optional)",
+            "description": "Give the counsellor a heads-up before the deadline. Add more than one to remind them again as it gets closer.",
+            "beforeDeadlineLabel": "minutes before the deadline",
+            "addButton": "+ Add an early reminder"
+        },
+        "offhours": {
+            "label": "Leads that arrive outside working hours",
+            "hint": "Due at this time on the next working day."
+        }
+    },
+    "followup": {
+        "title": "Follow-up Reminders (SLA)",
+        "description": "Keep counsellors following up. Once they've contacted a lead, they'll be reminded to follow up again within the time you set. The clock restarts every time they log a new activity (call, note, meeting).",
+        "within": {
+            "label": "Follow up again within",
+            "hint": "Time allowed between contacts before the lead is flagged."
+        },
+        "earlyReminder": {
+            "label": "Early reminder",
+            "hint": "Nudge the counsellor this long before the follow-up is due."
+        },
+        "summaryPart1": "after a counsellor logs an activity on a lead, they have ",
+        "summaryPart2": " to follow up again, with a nudge ",
+        "summaryPart3": " before it's due. The timer restarts each time they act.",
+        "offhours": {
+            "label": "Activity logged outside working hours",
+            "hint": "Follow-up due at this time on the next working day."
+        },
+        "summaryOffhours": "If the last activity was outside working hours, the follow-up is due at {{time}} on the next working day."
+    },
+    "footer": {
+        "triggerWorkflow": "Trigger workflow",
+        "save": "Save reminder settings",
+        "saving": "Saving…",
+        "scopeLabel": "Lead settings"
+    },
+    "toasts": {
+        "saveSuccess": "Reminder settings saved",
+        "saveError": "Failed to save reminder settings"
+    },
+    "notifyRoles": {
+        "label": "Notify which roles",
+        "description": "These roles are sent to your workflow so it can notify them. Pick the message and channel under Settings → Automations.",
+        "removeAria": "Remove {{name}}",
+        "placeholderEmpty": "Select roles to notify…",
+        "placeholderMore": "Add another role…",
+        "noRolesFound": "No roles found for this institute.",
+        "allRolesAdded": "All roles added."
+    },
+    "workingHours": {
+        "title": "Working hours",
+        "description": "TAT and follow-up deadlines follow your working hours. A clock that starts inside working hours runs for the time you set; one that starts outside them is due at a fixed time on the next working day.",
+        "days": "Working days",
+        "hoursLabel": "Working hours",
+        "from": "From",
+        "to": "to",
+        "noDays": "Pick at least one working day.",
+        "endBeforeStart": "Working hours must end after they start.",
+        "timezoneNote": "Times are in {{tz}} (set under Settings → Language).",
+        "dayShort": {
+            "1": "Mon",
+            "2": "Tue",
+            "3": "Wed",
+            "4": "Thu",
+            "5": "Fri",
+            "6": "Sat",
+            "7": "Sun"
+        }
+    }
+}

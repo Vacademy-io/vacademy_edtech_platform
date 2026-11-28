@@ -1,0 +1,46 @@
+{
+  "title": "Freebie डाउनलोड",
+  "days": "{{count}} दिन",
+  "unnamed": "बिना नाम की लीड",
+  "more": "+{{count}} और",
+  "error": "Freebie डाउनलोड लोड नहीं हो सके।",
+  "retry": "फिर से कोशिश करें",
+  "columns": {
+    "lead": "लीड",
+    "freebies": "Freebies",
+    "took": "क्या लिया",
+    "last": "आख़िरी डाउनलोड"
+  },
+  "empty": {
+    "title": "अभी तक कोई freebie डाउनलोड नहीं हुआ",
+    "body": "आपकी वेबसाइट के Resource सेक्शन से कोई भी फ़ाइल खोली जाए, तो वह यहाँ लीड के नाम के साथ दिखेगी।"
+  },
+  "stats": {
+    "downloads": "डाउनलोड और व्यू",
+    "leads": "डाउनलोड करने वाली लीड",
+    "files": "डाउनलोड हुए freebies"
+  },
+  "top": {
+    "title": "सबसे ज़्यादा लिए गए freebies",
+    "hint": "किसने लिया, देखने के लिए क्लिक करें।",
+    "counts": "{{downloads}} · {{leads}} लीड"
+  },
+  "leads": {
+    "title": "किसने क्या डाउनलोड किया",
+    "filteredBy": "सिर्फ़: {{name}}",
+    "search": "नाम, फ़ोन या ईमेल खोजें",
+    "noneYet": "अब तक के डाउनलोड उन विज़िटर्स के हैं जिन्होंने अभी फ़ॉर्म नहीं भरा।",
+    "noMatch": "इस खोज से कोई लीड नहीं मिली।",
+    "capped": "सबसे सक्रिय 500 लीड दिखाई जा रही हैं।"
+  },
+  "summary": "{{leads}} लीड ने {{downloads}} डाउनलोड किए",
+  "kind": {
+    "youtube": "YouTube वीडियो",
+    "drive": "Google Drive",
+    "pdf": "PDF",
+    "link": "लिंक"
+  },
+  "leadCard": {
+    "title": "लिए गए freebies"
+  }
+}

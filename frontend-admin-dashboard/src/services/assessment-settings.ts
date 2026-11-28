@@ -7,7 +7,11 @@ import {
     AssessmentSettingsResponse,
     DEFAULT_ASSESSMENT_SETTINGS,
     DEFAULT_REPORT_BRANDING,
+    mergeEvalezySettings,
     mergeExamExperience,
+    normalizeCommentPlacement,
+    normalizeRemarksLanguage,
+    normalizeStudentMapping,
 } from '@/types/assessment-settings';
 
 const SETTINGS_KEY = 'ASSESSMENT_SETTING';
@@ -25,7 +29,9 @@ interface CachedSettings {
     instituteId: string;
 }
 
-const mergeWithDefaults = (settings: Partial<AssessmentSettingsData>): AssessmentSettingsData => {
+export const mergeWithDefaults = (
+    settings: Partial<AssessmentSettingsData>
+): AssessmentSettingsData => {
     return {
         offlineEntry: {
             ...DEFAULT_ASSESSMENT_SETTINGS.offlineEntry,
@@ -39,7 +45,37 @@ const mergeWithDefaults = (settings: Partial<AssessmentSettingsData>): Assessmen
             version: settings?.resultNotifications?.version ?? 1,
             roles: settings?.resultNotifications?.roles ?? {},
         },
+        learnerRequestNotifications: {
+            version: settings?.learnerRequestNotifications?.version ?? 1,
+            roles: settings?.learnerRequestNotifications?.roles ?? {},
+            channels: {
+                inApp: settings?.learnerRequestNotifications?.channels?.inApp !== false,
+                email: settings?.learnerRequestNotifications?.channels?.email !== false,
+            },
+        },
         examExperience: mergeExamExperience(settings?.examExperience),
+        aiCopyCheck: {
+            commentPlacement: normalizeCommentPlacement(settings?.aiCopyCheck?.commentPlacement),
+            // Instructions and the spelling check belong to each test (copy_check_config), not here.
+            ...(settings?.aiCopyCheck?.penStyle && {
+                penStyle: settings.aiCopyCheck.penStyle,
+            }),
+            // Kept only when it is a real choice; absent reads as ASK.
+            ...(normalizeStudentMapping(settings?.aiCopyCheck?.studentMapping) !== 'ASK' && {
+                studentMapping: normalizeStudentMapping(settings?.aiCopyCheck?.studentMapping),
+            }),
+            // Kept only when it is a real choice; absent reads as AUTO.
+            ...(normalizeRemarksLanguage(settings?.aiCopyCheck?.remarksLanguage) !== 'AUTO' && {
+                remarksLanguage: normalizeRemarksLanguage(settings?.aiCopyCheck?.remarksLanguage),
+            }),
+        },
+        assessmentFolders: {
+            enabled: settings?.assessmentFolders?.enabled === true,
+        },
+        questionPaperFolders: {
+            enabled: settings?.questionPaperFolders?.enabled === true,
+        },
+        evalezy: mergeEvalezySettings(settings?.evalezy),
     };
 };
 
@@ -119,6 +155,21 @@ export const getAssessmentSettings = async (
 
 export const getAssessmentSettingsFromCache = (): AssessmentSettingsData => {
     return getCachedSettings() || DEFAULT_ASSESSMENT_SETTINGS;
+};
+
+/**
+ * For a form that saves the whole document. Unlike getAssessmentSettings, a failed read throws
+ * instead of returning the defaults, which a later save would write over the institute's settings.
+ */
+export const loadAssessmentSettingsStrict = async (): Promise<AssessmentSettingsData> => {
+    const instituteId = getInstituteId();
+    if (!instituteId) throw new Error('Institute ID not found');
+    const response = await authenticatedAxiosInstance.get<AssessmentSettingsResponse>(
+        `${BASE_URL}/admin-core-service/institute/setting/v1/get`,
+        { params: { instituteId, settingKey: SETTINGS_KEY } }
+    );
+    const saved = response.data?.data;
+    return saved && Object.keys(saved).length > 0 ? mergeWithDefaults(saved) : DEFAULT_ASSESSMENT_SETTINGS;
 };
 
 export const saveAssessmentSettings = async (settings: AssessmentSettingsData): Promise<void> => {

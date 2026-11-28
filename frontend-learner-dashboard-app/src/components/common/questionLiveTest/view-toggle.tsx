@@ -1,4 +1,6 @@
 import { GridFour, List } from "@phosphor-icons/react";
+import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 import { cn } from "@/lib/utils";
 import type { QuestionPaletteView } from "@/types/assessment-experience";
 
@@ -7,17 +9,21 @@ interface ViewToggleProps {
   onViewChange: (view: QuestionPaletteView) => void;
 }
 
-const OPTIONS: Array<{
+const getOptions = (
+  t: TFunction,
+): Array<{
   value: QuestionPaletteView;
   label: string;
   Icon: typeof GridFour;
-}> = [
-  { value: "grid", label: "Grid view", Icon: GridFour },
-  { value: "list", label: "List view", Icon: List },
+}> => [
+  { value: "grid", label: t("viewToggle.grid"), Icon: GridFour },
+  { value: "list", label: t("viewToggle.list"), Icon: List },
 ];
 
 /** Segmented control for the question palette's grid / list modes. */
 export function ViewToggle({ view, onViewChange }: ViewToggleProps) {
+  const { t } = useTranslation("questionTest");
+  const OPTIONS = getOptions(t);
   return (
     <div className="flex flex-none gap-0.5 rounded-lg bg-neutral-200 p-0.5">
       {OPTIONS.map(({ value, label, Icon }) => {

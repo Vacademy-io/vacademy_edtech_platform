@@ -1,0 +1,138 @@
+---
+title: "Verify signatures"
+description: "Check that a delivery really came from Telleo and was not changed."
+---
+
+Your endpoint is public, so anyone could post to it. Every delivery from Telleo is signed with your webhook secret; check the signature before you trust the body.
+
+## The signature header
+
+```
+Telleo-Signature: t=1760348000,v1=5b0c3f…e91a
+```
+
+- `t`: when the delivery was signed, in Unix seconds.
+- `v1`: the hex HMAC-SHA256 of `t + "." + <raw request body>`, keyed with your webhook secret.
+
+To verify:
+
+1. Read the **raw** request body, exactly as received. Do not parse and re-serialise the JSON first: any change in spacing or key order changes the signature.
+2. Compute `HMAC-SHA256(secret, t + "." + raw_body)` as lowercase hex.
+3. Compare it with `v1` using a **constant-time** comparison.
+4. Reject the request if `t` is more than 5 minutes from your clock. This stops someone replaying an old delivery.
+
+## Examples
+
+<CodeGroup>
+
+```javascript Node.js (Express)
+import crypto from "node:crypto";
+import express from "express";
+
+const app = express();
+const SECRET = process.env.TELLEO_WEBHOOK_SECRET;
+
+// express.raw keeps the exact bytes Telleo signed.
+app.post("/telleo/webhook", express.raw({ type: "application/json" }), (req, res) => {
+  const header = req.get("Telleo-Signature") || "";
+  const parts = Object.fromEntries(header.split(",").map((p) => p.split("=")));
+  const t = Number(parts.t);
+  const expected = crypto
+    .createHmac("sha256", SECRET)
+    .update(`${parts.t}.${req.body}`)
+    .digest("hex");
+
+  const fresh = Math.abs(Date.now() / 1000 - t) < 300;
+  const valid =
+    parts.v1 &&
+    parts.v1.length === expected.length &&
+    crypto.timingSafeEqual(Buffer.from(parts.v1), Buffer.from(expected));
+  if (!fresh || !valid) return res.status(400).send("bad signature");
+
+  const event = JSON.parse(req.body);
+  res.sendStatus(200); // answer first
+  handleEvent(event);  // then do the work
+});
+```
+
+```python Python (Flask)
+import hashlib, hmac, os, time
+from flask import Flask, request, abort
+
+app = Flask(__name__)
+SECRET = os.environ["TELLEO_WEBHOOK_SECRET"].encode()
+
+@app.post("/telleo/webhook")
+def telleo_webhook():
+    raw = request.get_data()  # raw bytes, before any JSON parsing
+    parts = dict(p.split("=", 1) for p in request.headers.get("Telleo-Signature", "").split(",") if "=" in p)
+    t, sig = parts.get("t", ""), parts.get("v1", "")
+    expected = hmac.new(SECRET, t.encode() + b"." + raw, hashlib.sha256).hexdigest()
+    if not t.isdigit() or abs(time.time() - int(t)) > 300 or not hmac.compare_digest(sig, expected):
+        abort(400)
+    event = request.get_json()
+    queue_for_processing(event)  # keep the response fast
+    return "", 200
+```
+
+```php PHP
+<?php
+$secret = getenv('TELLEO_WEBHOOK_SECRET');
+$raw = file_get_contents('php://input');
+$parts = [];
+foreach (explode(',', $_SERVER['HTTP_TELLEO_SIGNATURE'] ?? '') as $p) {
+    [$k, $v] = array_pad(explode('=', $p, 2), 2, '');
+    $parts[$k] = $v;
+}
+$expected = hash_hmac('sha256', ($parts['t'] ?? '') . '.' . $raw, $secret);
+if (abs(time() - (int)($parts['t'] ?? 0)) > 300 || !hash_equals($expected, $parts['v1'] ?? '')) {
+    http_response_code(400);
+    exit;
+}
+$event = json_decode($raw, true);
+http_response_code(200);
+// process $event
+```
+
+```java Java
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.util.HexFormat;
+
+static boolean verify(String secret, String header, byte[] rawBody) throws Exception {
+    String t = null, v1 = null;
+    for (String p : header.split(",")) {
+        String[] kv = p.split("=", 2);
+        if (kv.length == 2 && kv[0].equals("t")) t = kv[1];
+        if (kv.length == 2 && kv[0].equals("v1")) v1 = kv[1];
+    }
+    if (t == null || v1 == null) return false;
+    if (Math.abs(System.currentTimeMillis() / 1000 - Long.parseLong(t)) > 300) return false;
+    Mac mac = Mac.getInstance("HmacSHA256");
+    mac.init(new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), "HmacSHA256"));
+    mac.update((t + ".").getBytes(StandardCharsets.UTF_8));
+    String expected = HexFormat.of().formatHex(mac.doFinal(rawBody));
+    return MessageDigest.isEqual(expected.getBytes(StandardCharsets.UTF_8), v1.getBytes(StandardCharsets.UTF_8));
+}
+```
+
+</CodeGroup>
+
+## Rotating the secret
+
+**New secret** in the dashboard, or `POST /v1/webhook/rotate-secret`, returns a new secret once and signs every later delivery with it. To rotate without failing deliveries:
+
+1. Make your endpoint accept a signature made with **either** the old or the new secret.
+2. Rotate, and store the new secret.
+3. After a few minutes, remove the old secret.
+
+## Other headers
+
+| Header | Value |
+|---|---|
+| `Telleo-Event-Id` | The event id; the same on every retry. |
+| `Telleo-Event-Type` | `call.completed`, `call.not_connected` or `webhook.test`. |
+| `User-Agent` | `Telleo-Webhooks/1.0` |
+| `Content-Type` | `application/json` |

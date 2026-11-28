@@ -1,0 +1,104 @@
+{
+    "startOnboarding": {
+        "button": "بدء التأهيل",
+        "dialogHeading": "بدء التأهيل",
+        "cancel": "إلغاء",
+        "start": "بدء",
+        "starting": "جارٍ البدء…",
+        "loadingFlows": "جارٍ تحميل المسارات…",
+        "noActiveFlows": "لا توجد مسارات تأهيل نشطة بعد — قم بتفعيل مسار من علامة التبويب \"التأهيل\" أولاً.",
+        "flowLabel": "مسار التأهيل",
+        "pickFlowPlaceholder": "اختر مسارًا…",
+        "started": "تم بدء التأهيل",
+        "startFailed": "تعذر بدء التأهيل لهذا الشخص."
+    },
+    "loadError": {
+        "title": "تعذر تحميل تقدّم التأهيل"
+    },
+    "empty": {
+        "title": "لم يُبدأ أي مسار تأهيل",
+        "hint": "لم يتم إدراج هذا الشخص في مسار تأهيل بعد."
+    },
+    "credentials": {
+        "copiedToClipboard": "تم نسخ {{label}} إلى الحافظة",
+        "copyFailed": "تعذر نسخ {{label}}",
+        "passwordVisibilityOff": "إظهار كلمة المرور معطّل لهذه المؤسسة — فعّله من الإعدادات ← عرض الأدوار لعرض بيانات دخول هذا الطالب هنا.",
+        "loading": "جارٍ تحميل بيانات الدخول…",
+        "usernameLabel": "اسم المستخدم:",
+        "passwordLabel": "كلمة المرور:",
+        "notAvailable": "غير متاح",
+        "notFound": "غير موجودة",
+        "usernameFieldName": "اسم المستخدم",
+        "passwordFieldName": "كلمة المرور"
+    },
+    "instance": {
+        "heading": "التأهيل — {{status}}",
+        "resolvedSubjectPrefix": "قام أحد الوالدين بتعبئة هذا نيابةً عن طالب. الطالب الفعلي هو",
+        "resolvedSubjectFallback": "تم إنشاؤه",
+        "resolvedSubjectSuffix": "— يبقى هذا التأهيل ظاهرًا هنا، عند العميل المحتمل/جهة الاتصال الأصلية.",
+        "stepStatusWithReason": "{{status}} — {{reason}}",
+        "viewForm": "عرض النموذج",
+        "complete": "إكمال",
+        "skip": "تخطٍ",
+        "noSteps": "لا توجد خطوات مسجّلة بعد.",
+        "stepCompleted": "تم وضع علامة على الخطوة كمكتملة",
+        "completeFailed": "تعذر إكمال هذه الخطوة.",
+        "progressSaved": "تم حفظ التقدّم",
+        "saveFailed": "تعذر حفظ هذه الخطوة.",
+        "stepSkipped": "تم تخطي الخطوة",
+        "skipFailed": "تعذر تخطي هذه الخطوة."
+    },
+    "status": {
+        "pending": "قيد الانتظار",
+        "inProgress": "قيد التنفيذ",
+        "completed": "مكتملة",
+        "skipped": "متخطاة"
+    },
+    "skipDialog": {
+        "heading": "تخطي هذه الخطوة؟",
+        "cancel": "إلغاء",
+        "skipStep": "تخطي الخطوة",
+        "skipping": "جارٍ التخطي…",
+        "description": "\"{{stepName}}\" اختيارية ويمكن تخطيها. أضف سببًا (اختياري).",
+        "reasonPlaceholder": "السبب (اختياري)",
+        "defaultReason": "تم تخطيه من قبل المسؤول"
+    },
+    "completeStepDialog": {
+        "heading": "إكمال — {{stepName}}",
+        "cancel": "إلغاء",
+        "save": "حفظ",
+        "saving": "جارٍ الحفظ…",
+        "completeStep": "إكمال الخطوة",
+        "completing": "جارٍ الإكمال…",
+        "parentToggleLabel": "تم تعبئة هذا النموذج من قبل أحد الوالدين، نيابةً عن طالب",
+        "existingDetailsHint": "سيتم إنشاء الطالب باستخدام بيانات هذا الشخص الحالية:",
+        "noNameOnFile": "لا يوجد اسم مسجّل",
+        "noContactOnFile": "لا يوجد بريد إلكتروني أو رقم جوال مسجّل",
+        "studentDetailsHint": "أدخل بيانات الطالب نفسه — فهو من سيُسجَّل ويُمنح الوصول، وليس الوالد.",
+        "studentFullNameLabel": "الاسم الكامل للطالب",
+        "studentFullNamePlaceholder": "مثال: أحمد الشريف",
+        "studentEmailLabel": "البريد الإلكتروني للطالب",
+        "studentEmailPlaceholder": "student@example.com",
+        "studentMobileLabel": "رقم جوال الطالب",
+        "studentMobilePlaceholder": "اختياري إذا تم توفير البريد الإلكتروني",
+        "enrollLabel": "التسجيل في (دورة / دفعة)",
+        "optionalIfEnrolled": "(اختياري إذا كان مسجَّلاً بالفعل)",
+        "skipCourseHint": "تسمح هذه الخطوة بالإكمال دون اختيار دورة إذا كان الطالب مسجَّلاً بالفعل في دورة نشطة.",
+        "pickCoursePlaceholder": "اختر دورة…",
+        "searchCoursePlaceholder": "ابحث عن دورة / دفعة…",
+        "searchPlaceholder": "بحث…",
+        "noFieldsHint": "لا توجد حقول مرفقة بهذه الخطوة — لا يتطلب إكمالها أي إدخال.",
+        "formFieldsLabel": "حقول النموذج",
+        "defaultFieldLabel": "حقل"
+    },
+    "submittedFormDialog": {
+        "heading": "النموذج — {{stepName}}",
+        "close": "إغلاق",
+        "noFields": "لا توجد حقول مرفقة بهذه الخطوة.",
+        "untitledField": "حقل بدون عنوان",
+        "notAnswered": "لم تتم الإجابة"
+    },
+    "noAccess": {
+        "hint": "دورك لا يملك صلاحية الوصول إلى الإعداد التمهيدي لهذه المؤسسة."
+    }
+}

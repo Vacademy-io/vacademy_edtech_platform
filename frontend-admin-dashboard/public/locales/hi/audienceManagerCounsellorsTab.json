@@ -1,0 +1,55 @@
+{
+    "title": "काउंसलर प्रदर्शन",
+    "summary": {
+        "counsellorCount_one": "{{count}} काउंसलर",
+        "counsellorCount_other": "{{count}} काउंसलर",
+        "avgResponse": "औसत प्रतिक्रिया",
+        "avgConversion": "औसत रूपांतरण"
+    },
+    "csv": {
+        "headers": {
+            "counsellor": "काउंसलर",
+            "assigned": "सौंपे गए",
+            "responded": "प्रतिक्रिया दी गई",
+            "conversions": "रूपांतरण",
+            "convRate": "रूपांतरण दर %",
+            "avgResponse": "औसत प्रतिक्रिया (मिनट)",
+            "tatMet": "TAT पूरा %",
+            "open": "खुले",
+            "overdue": "बकाया"
+        }
+    },
+    "table": {
+        "loading": "काउंसलर लोड हो रहे हैं…",
+        "empty": "इस अवधि में कोई काउंसलर गतिविधि नहीं है।",
+        "topPerformer": "शीर्ष प्रदर्शक",
+        "rowHint": "इस काउंसलर की कन्वर्ट हुई लीड्स नीचे देखने के लिए क्लिक करें",
+        "headers": {
+            "counsellor": "काउंसलर",
+            "assigned": "सौंपे गए",
+            "responded": "प्रतिक्रिया दी गई",
+            "conversions": "रूपांतरण",
+            "convRate": "रूपांतरण दर",
+            "avgResponse": "औसत प्रतिक्रिया",
+            "tatMet": "TAT पूरा",
+            "open": "खुले",
+            "overdue": "बकाया"
+        }
+    },
+    "leads": {
+        "title": "कन्वर्ट हुई लीड्स — {{name}}",
+        "count_one": "{{count}} छात्र",
+        "count_other": "{{count}} छात्र",
+        "loading": "कन्वर्ट हुई लीड्स लोड हो रही हैं…",
+        "empty": "इस अवधि में {{name}} की कोई कन्वर्ट हुई लीड नहीं है।",
+        "close": "बंद करें",
+        "headers": {
+            "lead": "लीड",
+            "contact": "संपर्क",
+            "courses": "कोर्स",
+            "enrolledOn": "नामांकन तिथि",
+            "source": "कैंपेन / स्रोत",
+            "campaign": "कैंपेन"
+        }
+    }
+}

@@ -104,7 +104,8 @@ class ChatMessageRepository:
     def get_conversation_history(
         self,
         session_id: str,
-        limit: int = 10
+        limit: int = 10,
+        message_types: Optional[List[str]] = None,
     ) -> List[ChatMessage]:
         """
         Get recent conversation history (user + assistant messages only).
@@ -117,7 +118,7 @@ class ChatMessageRepository:
             select(ChatMessage)
             .where(and_(
                 ChatMessage.session_id == session_id,
-                ChatMessage.message_type.in_(["user", "assistant"])
+                ChatMessage.message_type.in_(message_types or ["user", "assistant"])
             ))
             .order_by(ChatMessage.id.desc())
             .limit(limit)

@@ -425,8 +425,10 @@ public class ReportRunService {
             log.warn("[reporting] branding lookup failed for institute {} — sending unbranded",
                     instituteId, e);
         }
+        // Blank stays blank: the renderer drops the name rather than printing a
+        // platform name over an institute's report.
         return new ReportRenderer.Branding(
-                name == null || name.isBlank() ? "Vacademy" : name, logoUrl, themeCode);
+                name == null || name.isBlank() ? "" : name, logoUrl, themeCode);
     }
 
     /**
@@ -452,10 +454,10 @@ public class ReportRunService {
     private String instituteNameOf(String instituteId) {
         try {
             return instituteRepository.findById(instituteId)
-                    .map(i -> i.getInstituteName() == null ? "Vacademy" : i.getInstituteName())
-                    .orElse("Vacademy");
+                    .map(i -> i.getInstituteName() == null ? "" : i.getInstituteName())
+                    .orElse("");
         } catch (Exception e) {
-            return "Vacademy";
+            return "";
         }
     }
 
@@ -491,7 +493,9 @@ public class ReportRunService {
         // Same identity in the subject as in the header — they were computed from
         // different sources before, so a manual send arrived titled "Vacademy" over
         // a document that said the institute's name.
-        String subject = branding.instituteName() + " — " + run.getScopeLabel();
+        String subject = branding.instituteName() == null || branding.instituteName().isBlank()
+                ? run.getScopeLabel()
+                : branding.instituteName() + " — " + run.getScopeLabel();
         ReportRenderer.Period period = new ReportRenderer.Period(
                 ReportWindowResolver.cadenceOf(frequency), window.describeRange());
         int sent = 0;

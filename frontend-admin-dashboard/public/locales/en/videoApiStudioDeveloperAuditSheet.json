@@ -1,0 +1,71 @@
+{
+    "sheet": {
+        "title": "Developer audit",
+        "internalBadge": "internal",
+        "pipelineBadge": "pipeline {{version}}",
+        "targetBadge": "target: {{stage}}",
+        "copyAuditButton": "Copy full audit as JSON",
+        "copySuccess": "Audit JSON copied to clipboard",
+        "copyError": "Copy failed"
+    },
+    "section": {
+        "configuration": "Configuration",
+        "routingDecisions": "Routing decisions",
+        "modelsAndCosts": "Models & costs",
+        "pipelinePath": "Pipeline path",
+        "perShotLedger": "Per-shot ledger ({{count}})",
+        "artifactsAndCurl": "Artifacts & curl",
+        "rawJson": "Raw JSON"
+    },
+    "routing": {
+        "noSnapshot": "No intent-routing snapshot persisted (older video).",
+        "none": "none"
+    },
+    "models": {
+        "aiVideoHeading": "AI video (Veo)"
+    },
+    "pipelinePath": {
+        "shotIndex": "shot {{index}}",
+        "shotCount_one": "({{count}} shot)",
+        "shotCount_other": "({{count}} shots)"
+    },
+    "synthesizedPath": {
+        "noLiveLog": "No live event log for this run (loaded from history). Path synthesized from persisted state.",
+        "reviewModeStopped": "Review-mode run — stopped at {{stage}}.",
+        "filmingStage_one": "Filming ({{count}} shot)",
+        "filmingStage_other": "Filming ({{count}} shots)"
+    },
+    "shotLedger": {
+        "empty": "No per-shot data yet.",
+        "header": {
+            "type": "type",
+            "intent": "intent",
+            "background": "bg",
+            "audio": "audio",
+            "duration": "dur",
+            "words": "words",
+            "veoCredits": "veo cr",
+            "veoRequest": "veo req"
+        },
+        "audioPolicy": {
+            "intrinsic": "intrinsic",
+            "narrate": "narrate"
+        }
+    },
+    "artifacts": {
+        "shotMetaCount_one": "timeline.meta.shots[] has {{count}} per-shot entry",
+        "shotMetaCount_other": "timeline.meta.shots[] has {{count}} per-shot entries"
+    },
+    "kvGrid": {
+        "empty": "(none)"
+    },
+    "urlRow": {
+        "notPresent": "not present",
+        "copyLabel": "copy",
+        "openInNewTab": "Open in new tab"
+    },
+    "copy": {
+        "copyTitle": "Copy: {{value}}",
+        "copyButtonTitle": "Copy"
+    }
+}

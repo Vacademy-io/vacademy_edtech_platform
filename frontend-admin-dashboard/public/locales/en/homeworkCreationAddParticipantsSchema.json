@@ -1,0 +1,6 @@
+{
+    "validation": {
+        "endDateAfterStartDate": "End date must be greater than start date.",
+        "startDateRequired": "Registration start date is required for an open test."
+    }
+}

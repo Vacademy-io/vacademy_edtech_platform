@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { getInstituteId } from '@/constants/helper';
 import type { SlideGeneration, SlideType } from '../../../shared/types';
@@ -21,17 +22,18 @@ export const useContentGeneration = (
     setAbortController: React.Dispatch<React.SetStateAction<AbortController | null>>
 ) => {
     const navigate = useNavigate();
+    const { t } = useTranslation('studyLibraryGenerating');
 
     const handleConfirmGenerateCourseAssets = async () => {
         // Check if we have todos to generate content for
         if (!outlineTodos || outlineTodos.length === 0) {
-            toast.error('No todos found. Please regenerate the course outline.');
+            toast.error(t('contentGeneration.toast.noTodosFound'));
             return;
         }
 
         const instituteId = getInstituteId();
         if (!instituteId) {
-            toast.error('Institute ID not found. Please login again.');
+            toast.error(t('toast.instituteIdMissing'));
             return;
         }
 
@@ -141,7 +143,7 @@ export const useContentGeneration = (
         }
 
         setIsGeneratingContent(true);
-        setContentGenerationProgress('Starting content generation...');
+        setContentGenerationProgress(t('contentGeneration.startingContentGeneration'));
 
         // Create abort controller for this request
         const controller = new AbortController();
@@ -162,9 +164,7 @@ export const useContentGeneration = (
             );
 
             if (contentTodos.length === 0) {
-                toast.error(
-                    'No content todos found to generate. Please check your course outline.'
-                );
+                toast.error(t('contentGeneration.toast.noContentTodosFound'));
                 setIsGeneratingContent(false);
                 return;
             }
@@ -193,11 +193,7 @@ export const useContentGeneration = (
             if (payloadSize > 1024 * 1024) {
                 // 1MB
                 console.warn('⚠️ Large payload detected:', payloadSize, 'bytes');
-                if (
-                    !confirm(
-                        'The content generation payload is quite large. This might cause server issues. Continue anyway?'
-                    )
-                ) {
+                if (!confirm(t('contentGeneration.toast.largePayloadConfirm'))) {
                     setIsGeneratingContent(false);
                     return;
                 }
@@ -436,7 +432,9 @@ export const useContentGeneration = (
                                 setIsContentGenerated(false);
                                 localStorage.setItem('isGeneratingContent', 'true');
                                 setContentGenerationProgress(
-                                    `Reducing repetition — rewriting ${regenIds.size} slide(s)...`
+                                    t('contentGeneration.toast.reducingRepetition', {
+                                        count: regenIds.size,
+                                    })
                                 );
                                 try {
                                     const stored = localStorage.getItem('generatedSlides');
@@ -635,19 +633,20 @@ export const useContentGeneration = (
                             const videoUrl =
                                 update.contentData.url || update.contentData.embedUrl || '';
                             const description = update.contentData.description || '';
-                            const title = update.contentData.title || 'Video';
+                            const title =
+                                update.contentData.title || t('contentGeneration.defaultVideoTitle');
 
                             if (videoUrl) {
                                 content = `<div>
                                     <p><strong>${title}</strong></p>
                                     <p>${description}</p>
-                                    <p>YouTube URL: <a href="${videoUrl}" target="_blank">${videoUrl}</a></p>
+                                    <p>${t('contentGeneration.youtubeUrlLabel')} <a href="${videoUrl}" target="_blank">${videoUrl}</a></p>
                                 </div>`;
                                 console.log(
                                     `✅ [${update.path}] Video content created with URL: ${videoUrl}`
                                 );
                             } else {
-                                content = `<div><p><strong>${title}</strong></p><p>${description}</p><p>No video URL provided</p></div>`;
+                                content = `<div><p><strong>${title}</strong></p><p>${description}</p><p>${t('contentGeneration.noVideoUrlProvided')}</p></div>`;
                                 console.log(`⚠️ [${update.path}] No video URL found`);
                             }
                         } else if (update.slideType === 'AI_VIDEO') {
@@ -1156,7 +1155,9 @@ export const useContentGeneration = (
                 (error) => {
                     console.error('Content generation failed:', error);
 
-                    let userFriendlyMessage = `Content generation failed: ${error}`;
+                    let userFriendlyMessage = t('contentGeneration.errors.prefix', {
+                        message: error,
+                    });
 
                     // Special handling for different error types
                     if (typeof error === 'string') {
@@ -1174,23 +1175,23 @@ export const useContentGeneration = (
                             userFriendlyMessage = error;
                         } else if (lowerError.includes('500')) {
                             console.error('🔴 500 error detected');
-                            userFriendlyMessage = `Content generation encountered a server error (500). Try generating with fewer slides or contact support.`;
+                            userFriendlyMessage = t('contentGeneration.errors.serverError500');
                         } else if (lowerError.includes('aborted') || lowerError.includes('abort')) {
                             console.error('🔴 Stream aborted');
-                            userFriendlyMessage = `Content generation was interrupted. Try again.`;
+                            userFriendlyMessage = t('contentGeneration.errors.interrupted');
                         } else if (lowerError.includes('buffer')) {
                             console.error('🔴 Stream buffer issue');
-                            userFriendlyMessage = `Content generation failed due to stream buffer issues. Try generating fewer slides at once.`;
+                            userFriendlyMessage = t('contentGeneration.errors.bufferIssue');
                         } else if (lowerError.includes('timeout')) {
                             console.error('🔴 Stream timeout');
-                            userFriendlyMessage = `Content generation timed out. Try again later.`;
+                            userFriendlyMessage = t('contentGeneration.errors.timeout');
                         } else if (
                             lowerError.includes('network') ||
                             lowerError.includes('fetch') ||
                             lowerError.includes('failed to fetch')
                         ) {
                             console.error('🔴 Network error');
-                            userFriendlyMessage = `Network error during content generation. Check your connection and try again.`;
+                            userFriendlyMessage = t('contentGeneration.errors.networkError');
                         }
                     }
 
@@ -1228,7 +1229,12 @@ export const useContentGeneration = (
         } catch (error) {
             console.error('Error generating content:', error);
             toast.error(
-                `Failed to generate content: ${error instanceof Error ? error.message : 'Unknown error'}`,
+                t('contentGeneration.errors.failedToGenerate', {
+                    message:
+                        error instanceof Error
+                            ? error.message
+                            : t('contentGeneration.errors.unknownError'),
+                }),
                 { duration: 8000 }
             );
             setIsGeneratingContent(false);

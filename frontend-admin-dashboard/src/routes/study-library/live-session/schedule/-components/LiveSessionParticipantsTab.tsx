@@ -1,6 +1,14 @@
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
-import { useEffect, useMemo, useState, Suspense } from 'react';
+import {
+    useEffect,
+    useMemo,
+    useState,
+    Suspense,
+    type KeyboardEvent as ReactKeyboardEvent,
+    type MouseEvent as ReactMouseEvent,
+} from 'react';
+import { useTranslation } from 'react-i18next';
 import { Checkbox } from '@/components/ui/checkbox';
 import { UseFormReturn } from 'react-hook-form';
 import { z } from 'zod';
@@ -40,6 +48,33 @@ type SelectedLevel = {
 const sameLevel = (a: SelectedLevel, b: SelectedLevel) =>
     a.courseId === b.courseId && a.sessionId === b.sessionId && a.levelId === b.levelId;
 
+// This tab renders inside the schedule step-2 <form>, whose submit opens the
+// Review & confirm dialog. The shared learner-list pieces shown here (filter
+// chips, Manage filters, export buttons, sort header, pagination) use
+// MyButton / <button> without type="button", so the browser treats each one
+// as a submit button — and Enter in a search box submits implicitly. Cancel
+// only submissions aimed at the enclosing form; dialogs portaled out with
+// their own <form> are left alone. These run in the bubble phase, after the
+// clicked element's own handlers (popover toggles, page changes, exports).
+const preventSubmitClick = (e: ReactMouseEvent<HTMLElement>) => {
+    const form = e.currentTarget.closest('form');
+    if (!form) return;
+    const button = (e.target as Element).closest('button');
+    if (button?.type === 'submit' && button.form === form) {
+        e.preventDefault();
+    }
+};
+
+const preventSubmitOnEnter = (e: ReactKeyboardEvent<HTMLElement>) => {
+    if (e.key !== 'Enter' || e.nativeEvent.isComposing) return;
+    const form = e.currentTarget.closest('form');
+    if (!form) return;
+    const target = e.target;
+    if (target instanceof HTMLInputElement && target.form === form) {
+        e.preventDefault();
+    }
+};
+
 export function LiveSessionParticipantsTab({
     form,
     courses,
@@ -49,6 +84,7 @@ export function LiveSessionParticipantsTab({
     courses: Course[] | undefined;
     currentSession: { id: string; name: string } | undefined;
 }) {
+    const { t } = useTranslation('studyLibraryLiveSessionParticipantsTab');
     const [selectedTab, setSelectedTab] = useState(
         form.getValues('batchSelectionType') === 'individual' ? 'Individually' : 'Batch'
     );
@@ -66,7 +102,12 @@ export function LiveSessionParticipantsTab({
     }, [selectedTab, form]);
 
     return (
-        <Tabs value={selectedTab} onValueChange={handleChange}>
+        <Tabs
+            value={selectedTab}
+            onValueChange={handleChange}
+            onClick={preventSubmitClick}
+            onKeyDown={preventSubmitOnEnter}
+        >
             <TabsList className="mt-4 flex h-auto w-full flex-wrap justify-start border border-neutral-500 !bg-transparent p-0 sm:w-fit">
                 <TabsTrigger
                     value="Batch"
@@ -80,7 +121,7 @@ export function LiveSessionParticipantsTab({
                         <CheckCircle size={18} className="text-teal-800 dark:text-teal-400" />
                     )}
                     <span className={`${selectedTab === 'Batch' ? 'text-neutral-600' : ''}`}>
-                        Select Batch
+                        {t('tabs.selectBatch')}
                     </span>
                 </TabsTrigger>
                 <Separator className="!h-9 bg-neutral-600" orientation="vertical" />
@@ -98,7 +139,7 @@ export function LiveSessionParticipantsTab({
                     <span
                         className={`${selectedTab === 'Individually' ? 'text-neutral-600' : ''}`}
                     >
-                        Select Individually
+                        {t('tabs.selectIndividually')}
                     </span>
                 </TabsTrigger>
             </TabsList>
@@ -127,6 +168,7 @@ const LiveSessionBatchList = ({
     form: UseFormReturn<FormData>;
     currentSession: { id: string; name: string } | undefined;
 }) => {
+    const { t } = useTranslation('studyLibraryLiveSessionParticipantsTab');
     const { setValue, watch } = form;
     const selectedLevels = watch('selectedLevels') ?? [];
 
@@ -246,7 +288,7 @@ const LiveSessionBatchList = ({
     if (!currentSession) {
         return (
             <div className="rounded-md border border-dashed border-neutral-300 p-8 text-center text-sm text-neutral-500">
-                Select a session above to choose participants.
+                {t('emptyStates.selectSessionFirst')}
             </div>
         );
     }
@@ -263,7 +305,7 @@ const LiveSessionBatchList = ({
                     <Input
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
-                        placeholder="Search courses or batches…"
+                        placeholder={t('search.placeholder')}
                         className="h-9 pl-9 pr-9"
                     />
                     {search && (
@@ -271,7 +313,7 @@ const LiveSessionBatchList = ({
                             type="button"
                             onClick={clearSearch}
                             className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-neutral-400 hover:text-neutral-600"
-                            aria-label="Clear search"
+                            aria-label={t('search.clearAriaLabel')}
                         >
                             <X size={14} />
                         </button>
@@ -280,7 +322,10 @@ const LiveSessionBatchList = ({
 
                 <div className="flex items-center gap-2">
                     <Badge variant="secondary" className="rounded-full px-2.5 py-1 text-xs">
-                        {sessionSelectedLevels.length} of {totalLevelsInSession} batches
+                        {t('summary.selectedOfTotalBatches', {
+                            selected: sessionSelectedLevels.length,
+                            total: totalLevelsInSession,
+                        })}
                     </Badge>
                     {sessionSelectedLevels.length > 0 && (
                         <Button
@@ -290,7 +335,7 @@ const LiveSessionBatchList = ({
                             className="h-8 text-xs"
                             onClick={() => selectAllInSession(false)}
                         >
-                            Clear
+                            {t('actions.clear')}
                         </Button>
                     )}
                 </div>
@@ -316,13 +361,12 @@ const LiveSessionBatchList = ({
                                     : ''
                             )}
                         />
-                        Select all in this session
+                        {t('actions.selectAllInSession')}
                     </label>
                     <span className="text-xs text-neutral-500">
-                        {filteredCourses.length}{' '}
-                        {filteredCourses.length === 1 ? 'course' : 'courses'}
+                        {t('summary.courseCount', { count: filteredCourses.length })}
                         {sessionSelectedCourseCount > 0
-                            ? ` · ${sessionSelectedCourseCount} with selections`
+                            ? ` · ${t('summary.withSelections', { count: sessionSelectedCourseCount })}`
                             : ''}
                     </span>
                 </div>
@@ -334,8 +378,8 @@ const LiveSessionBatchList = ({
                     {filteredCourses.length === 0 && (
                         <div className="p-8 text-center text-sm text-neutral-500">
                             {search.trim()
-                                ? 'No courses or batches match your search.'
-                                : 'No courses available for this session.'}
+                                ? t('emptyStates.noSearchMatches')
+                                : t('emptyStates.noCoursesAvailable')}
                         </div>
                     )}
                     {filteredCourses.map((course) => {
@@ -457,10 +501,14 @@ const LiveSessionBatchList = ({
             {sessionSelectedLevels.length > 0 && (
                 <div className="sticky bottom-0 flex flex-wrap items-center gap-2 rounded-md border border-primary-200 bg-primary-50/60 px-3 py-2 text-xs text-neutral-700">
                     <span className="font-medium">
-                        {sessionSelectedLevels.length} batch
-                        {sessionSelectedLevels.length === 1 ? '' : 'es'} across{' '}
-                        {sessionSelectedCourseCount} course
-                        {sessionSelectedCourseCount === 1 ? '' : 's'} selected
+                        {t('summary.footerSelected', {
+                            batchPart: t('summary.batchCount', {
+                                count: sessionSelectedLevels.length,
+                            }),
+                            coursePart: t('summary.courseCount', {
+                                count: sessionSelectedCourseCount,
+                            }),
+                        })}
                     </span>
                 </div>
             )}

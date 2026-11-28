@@ -1,0 +1,41 @@
+{
+    "kpi": {
+        "medianDaysToConvert": {
+            "label": "Median Days to Convert",
+            "sub": "From first activity to Converted, for leads won in this range"
+        },
+        "conversionRate": {
+            "label": "Conversion Rate",
+            "sub": "Won in range ÷ submitted in range"
+        }
+    },
+    "section": {
+        "title": "Stage funnel"
+    },
+    "emptyHint": "No stage activity in this range.",
+    "csv": {
+        "headers": {
+            "stage": "Stage",
+            "entered": "Entered",
+            "inStageNow": "In stage now",
+            "medianDaysInStage": "Median days in stage",
+            "advanced": "Advanced",
+            "advancedPct": "Advanced %",
+            "regressed": "Regressed"
+        }
+    },
+    "table": {
+        "headers": {
+            "stage": "Stage",
+            "entered": "Entered",
+            "inStageNow": "In stage now",
+            "medianDays": "Median days",
+            "advancedPct": "Advanced %",
+            "regressed": "Regressed"
+        }
+    },
+    "stageBar": {
+        "nowSuffix": "· {{value}} now"
+    },
+    "footnote": "Median days = time spent in the stage for stints started in this range. Advanced / Regressed = moves to a later / earlier stage in your status order."
+}

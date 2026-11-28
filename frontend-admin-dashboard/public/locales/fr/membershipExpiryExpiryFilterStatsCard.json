@@ -1,0 +1,8 @@
+{
+    "title": "Statistiques de la période sélectionnée",
+    "subtitle": "En fonction de vos filtres actuels",
+    "membershipsFound_one": "{{count}} adhésion trouvée",
+    "membershipsFound_many": "{{count}} d'adhésions trouvées",
+    "membershipsFound_other": "{{count}} adhésions trouvées",
+    "viewList": "Voir la liste"
+}

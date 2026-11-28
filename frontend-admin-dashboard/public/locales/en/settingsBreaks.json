@@ -1,0 +1,35 @@
+{
+    "title": "Breaks and holds",
+    "description": "Let staff stop a learner’s reminders for a while, or pause an enrolment, from the learner’s Membership tab.",
+    "loadFailed": "Could not load this setting.",
+    "retry": "Try again",
+    "hold": {
+        "title": "Reminder hold",
+        "point1": "For a short absence, or a payment promised for later.",
+        "point2": "Class and/or fee reminders stop until the last day.",
+        "point3": "The learner stays enrolled, keeps paying and can still join classes."
+    },
+    "pause": {
+        "title": "Pause",
+        "point1": "For a long break when the learner does not pay meanwhile.",
+        "point2": "No charges, renewals or expiry; the course can be switched off.",
+        "point3": "On return, the membership dates move forward by the days paused (or stay the same after a long pause, if set below)."
+    },
+    "audit": "Every break is recorded on the learner’s timeline and in the activity log, with who made it and when.",
+    "save": "Save",
+    "saving": "Saving…",
+    "saved": "Breaks and holds setting saved.",
+    "saveFailed": "Could not save the setting.",
+    "toggleLabel": "Allow breaks and holds",
+    "offNote": "Switching this off stops new breaks. Breaks already running continue until they end.",
+    "keepDates": {
+        "label": "Keep due dates after a long pause (days)",
+        "hint": "When a pause has lasted longer than this, resuming keeps the membership dates as they were; staff can still move them or set a new date. Leave empty to always move dates by the days paused."
+    },
+    "extra": {
+        "title": "Extra classes",
+        "point1": "Link a learner to another batch for a few days, e.g. a make-up class.",
+        "point2": "No fee, no payment plan and no message.",
+        "point3": "Access starts on the first day and ends after the last day on its own."
+    }
+}

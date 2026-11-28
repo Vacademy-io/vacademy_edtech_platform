@@ -1,0 +1,36 @@
+{
+    "pageTitle": "प्रवेश फॉर्म",
+    "backToAdmissionList": "प्रवेश सूची पर वापस जाएं",
+    "downloadPdf": "पीडीएफ डाउनलोड करें",
+    "downloadingPdf": "बना रहे हैं...",
+    "print": "प्रिंट करें",
+    "previous": "पिछला",
+    "saveNext": "सहेजें और आगे बढ़ें",
+    "submitAdmission": "प्रवेश जमा करें",
+    "submitting": "जमा किया जा रहा है...",
+    "printDocumentTitle": "प्रवेश फॉर्म - {{studentName}}",
+    "steps": {
+        "studentDetails": "{{learnerLabel}} विवरण",
+        "previousSchoolPersonalDetails": "पिछला स्कूल और व्यक्तिगत विवरण",
+        "parentDetails": "{{learnerLabel}} के अभिभावक का विवरण",
+        "addressDetails": "पता विवरण",
+        "finish": "समाप्त करें",
+        "feeAssignment": "शुल्क निर्धारण"
+    },
+    "trackingLabel": {
+        "application": "आवेदन ट्रैकिंग आईडी",
+        "enquiry": "पूछताछ ट्रैकिंग आईडी",
+        "admission": "प्रवेश ट्रैकिंग आईडी"
+    },
+    "toast": {
+        "pdfTemplateNotReady": "पीडीएफ टेम्पलेट तैयार नहीं है। कृपया फिर से प्रयास करें।",
+        "generatingPdf": "पीडीएफ बनाई जा रही है...",
+        "pdfDownloaded": "पीडीएफ डाउनलोड हो गई!",
+        "pdfGenerationFailed": "पीडीएफ बनाने में विफल। कृपया फिर से प्रयास करें।",
+        "popupBlocked": "पॉप-अप अवरुद्ध है। प्रिंट करने के लिए कृपया पॉप-अप की अनुमति दें।",
+        "instituteDetailsUnavailable": "संस्थान का विवरण उपलब्ध नहीं है। कृपया फिर से प्रयास करें।",
+        "admissionSubmitted": "प्रवेश सफलतापूर्वक जमा हो गया! आईडी: {{admissionId}}",
+        "admissionSubmitFailed": "प्रवेश फॉर्म जमा करने में विफल। कृपया फिर से प्रयास करें।",
+        "submissionError": "एक त्रुटि हुई। कृपया अपना नेटवर्क जांचें और फिर से प्रयास करें।"
+    }
+}

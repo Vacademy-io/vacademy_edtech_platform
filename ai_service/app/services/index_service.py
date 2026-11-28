@@ -15,6 +15,10 @@ import httpx
 logger = logging.getLogger(__name__)
 
 
+class IndexCapacityError(RuntimeError):
+    """The render worker has no free slot right now. Retry, do not give up."""
+
+
 class IndexService:
     """Client for the /index-jobs endpoints on the render worker."""
 
@@ -67,7 +71,11 @@ class IndexService:
                     headers=self._headers(),
                 )
                 if resp.status_code == 429:
-                    raise RuntimeError("Index server at capacity (429)")
+                    # Transient: the worker is saturated, not the asset's fault.
+                    # Callers must be able to tell this apart from a permanent
+                    # failure so a batch upload retries instead of writing off
+                    # every asset that arrived while the queue was full.
+                    raise IndexCapacityError("Index server at capacity (429)")
                 resp.raise_for_status()
                 data = resp.json()
                 job_id = data.get("job_id")

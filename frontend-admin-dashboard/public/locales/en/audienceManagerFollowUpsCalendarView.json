@@ -1,0 +1,44 @@
+{
+    "dayLabels": {
+        "sun": "Sun",
+        "mon": "Mon",
+        "tue": "Tue",
+        "wed": "Wed",
+        "thu": "Thu",
+        "fri": "Fri",
+        "sat": "Sat"
+    },
+    "nav": {
+        "previousMonth": "Previous month",
+        "nextMonth": "Next month",
+        "today": "Today"
+    },
+    "error": {
+        "title": "Couldn't load follow-ups",
+        "description": "Something went wrong loading the calendar. Try again."
+    },
+    "overflowMore_one": "+{{count}} more",
+    "overflowMore_other": "+{{count}} more",
+    "agenda": {
+        "emptyTitle": "No follow-ups this month",
+        "emptyDescription": "Switch month using the arrows above or pick a counsellor.",
+        "tasks_one": "{{count}} task",
+        "tasks_other": "{{count}} tasks"
+    },
+    "dayCounts": {
+        "overdue_one": "{{count}} overdue",
+        "overdue_other": "{{count}} overdue",
+        "today_one": "{{count}} today",
+        "today_other": "{{count}} today",
+        "upcoming_one": "{{count}} upcoming",
+        "upcoming_other": "{{count}} upcoming",
+        "none": "No follow-ups"
+    },
+    "dayPanel": {
+        "emptyTitle": "Nothing on this day",
+        "emptyDescription": "Pick another day on the calendar above."
+    },
+    "pill": {
+        "openTooltip": "Open {{name}}"
+    }
+}

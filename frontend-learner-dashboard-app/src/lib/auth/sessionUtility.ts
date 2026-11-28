@@ -363,6 +363,17 @@ const removeTokensAndLogout = async (): Promise<void> => {
     /* best-effort */
   }
 
+  // The in-memory branding copy outlives the storage wipe above when the logout
+  // does not reload the page. Same dynamic import reason as above.
+  try {
+    const { setCachedInstituteBranding } = await import(
+      "@/services/domain-routing"
+    );
+    setCachedInstituteBranding(null);
+  } catch {
+    /* best-effort */
+  }
+
   // Restore the preserved institute id into Capacitor + localStorage so
   // branding / course comparison still work on the login screen.
   if (preservedInstituteId) {

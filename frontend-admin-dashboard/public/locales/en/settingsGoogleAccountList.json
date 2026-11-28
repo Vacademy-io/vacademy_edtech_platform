@@ -1,0 +1,54 @@
+{
+    "emptyState": "No Google Workspace account connected yet. Click \"Connect Google Workspace\" to enable Google Meet for this institute.",
+    "toasts": {
+        "updateFailed": "Could not update the account",
+        "connectedAs": "Connected as {{email}}",
+        "connectionFailed": "Connection failed",
+        "connectionTestFailed": "Connection test failed",
+        "disconnected": "Disconnected {{email}}",
+        "disconnectFailed": "Failed to disconnect",
+        "openJoinEnabled": "New meetings will use open join (anyone with the link)",
+        "setDefault": "{{email}} is now the default",
+        "autoRecordingDisabled": "Auto-recording disabled",
+        "autoRecordingEnabled": "Auto-recording enabled (needs a recording-capable Workspace edition)",
+        "requireKnockEnabled": "New meetings will require guests to knock"
+    },
+    "badges": {
+        "default": "Default",
+        "autoRecord": "Auto-record",
+        "reconnectNeeded": "Reconnect needed"
+    },
+    "accessLabel": {
+        "open": "Open join",
+        "restricted": "Restricted",
+        "knock": "Knock to join"
+    },
+    "row": {
+        "lastVerified": "· last verified {{date}}",
+        "actionsAriaLabel": "Account actions"
+    },
+    "menu": {
+        "testConnection": "Test connection",
+        "setAsDefault": "Set as default",
+        "disableAutoRecording": "Disable auto-recording",
+        "enableAutoRecording": "Enable auto-recording",
+        "requireKnock": "Require knock (Trusted)",
+        "allowOpenJoin": "Allow open join…",
+        "disconnect": "Disconnect"
+    },
+    "dialogs": {
+        "disconnect": {
+            "title": "Disconnect Google Workspace?",
+            "description": "{{email}} will be disconnected and its access revoked. Existing live sessions remain unaffected, but you won't be able to create new Google Meet sessions until you reconnect.",
+            "confirm": "Disconnect"
+        },
+        "openAccess": {
+            "title": "Allow open join?",
+            "description": "With open join, <1>anyone who has the meeting link can join without knocking</1> — a Google Meet link is a plain URL with no passcode. Use this only if you're comfortable that the link is shared solely with enrolled learners through Vacademy. You can switch back to \"require knock\" anytime.",
+            "confirm": "Allow open join"
+        }
+    },
+    "actions": {
+        "cancel": "Cancel"
+    }
+}

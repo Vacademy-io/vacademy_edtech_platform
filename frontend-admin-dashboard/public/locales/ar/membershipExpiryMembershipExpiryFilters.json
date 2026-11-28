@@ -1,0 +1,13 @@
+{
+    "filters": "عوامل التصفية",
+    "quick": "سريع:",
+    "last1Hour": "آخر ساعة",
+    "today": "اليوم",
+    "last7Days": "آخر 7 أيام",
+    "last30Days": "آخر 30 يومًا",
+    "allTime": "كل الأوقات",
+    "clearAll": "مسح الكل",
+    "filterByCourseSession": "تصفية حسب الدورة/الجلسة",
+    "startDate": "تاريخ البدء",
+    "endDate": "تاريخ الانتهاء"
+}

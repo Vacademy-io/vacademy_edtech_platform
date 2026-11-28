@@ -57,7 +57,7 @@ export const SubjectCard = ({ subject }: SubjectCardProps) => {
   return (
     <div onClick={handleCardClick} className="cursor-pointer w-full h-reg-280">
       <div
-        className={`group h-full relative flex flex-col items-center justify-center gap-3 border rounded-xl border-neutral-200 bg-gradient-to-br from-white to-neutral-50/50 hover:from-primary-50/30 hover:to-blue-50/40 hover:border-primary-200/60 transition-all duration-200 px-4 py-3 w-full hover:shadow-sm hover:scale-[1.02]`}
+        className={`group h-full relative flex flex-col items-center justify-center gap-3 border rounded-xl border-neutral-200 bg-gradient-to-br from-white to-neutral-50/50 hover:from-primary-50/30 hover:to-info-50/40 hover:border-primary-200/60 transition-all duration-200 px-4 py-3 w-full hover:shadow-sm hover:scale-[1.02]`}
       >
         <div className="h-[65%] w-full"> {/* design-lint-ignore: decorative positioning */}
           {imageUrl ? (
@@ -67,7 +67,7 @@ export const SubjectCard = ({ subject }: SubjectCardProps) => {
               className="size-full rounded-lg object-contain group-hover:scale-105 transition-transform duration-200"
             />
           ) : (
-            <div className="size-full flex items-center justify-center bg-gradient-to-br from-neutral-100 to-neutral-200 rounded-lg group-hover:from-primary-100 group-hover:to-blue-100 transition-all duration-200">
+            <div className="size-full flex items-center justify-center bg-gradient-to-br from-neutral-100 to-neutral-200 rounded-lg group-hover:from-primary-100 group-hover:to-info-100 transition-all duration-200">
               <SubjectDefaultImage />
             </div>
           )}

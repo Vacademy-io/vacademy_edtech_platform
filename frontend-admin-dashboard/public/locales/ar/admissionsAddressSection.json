@@ -1,0 +1,82 @@
+{
+    "sections": {
+        "residentialAddress": "عنوان الإقامة (الحالي)"
+    },
+    "fields": {
+        "houseNo": {
+            "label": "رقم المنزل / رقم الشقة / اسم المبنى",
+            "placeholder": "مثال: 12-A، شقق صن رايز"
+        },
+        "street": {
+            "label": "اسم الشارع / الطريق",
+            "placeholder": "مثال: طريق إم جي"
+        },
+        "area": {
+            "label": "المنطقة / الحي / القطاع",
+            "placeholder": "مثال: حي أريرا"
+        },
+        "landmark": {
+            "label": "علامة مميزة",
+            "placeholder": "مثال: بالقرب من سيتي مول"
+        },
+        "city": {
+            "label": "المدينة",
+            "placeholder": "مثال: بوبال"
+        },
+        "state": {
+            "label": "الولاية",
+            "placeholder": "اختر الولاية"
+        },
+        "pincode": {
+            "label": "الرمز البريدي",
+            "placeholder": "مثال: 462001",
+            "hint": "6 أرقام"
+        },
+        "country": {
+            "label": "الدولة",
+            "placeholder": "اختر الدولة"
+        }
+    },
+    "stateOptions": {
+        "andhraPradesh": "أندرا براديش",
+        "arunachalPradesh": "أروناتشال براديش",
+        "assam": "آسام",
+        "bihar": "بيهار",
+        "chhattisgarh": "تشاتيسجار",
+        "goa": "جوا",
+        "gujarat": "غوجارات",
+        "haryana": "هاريانا",
+        "himachalPradesh": "هيماشال براديش",
+        "jharkhand": "جهارخاند",
+        "karnataka": "كارناتاكا",
+        "kerala": "كيرالا",
+        "madhyaPradesh": "ماديا براديش",
+        "maharashtra": "ماهاراشترا",
+        "manipur": "مانيبور",
+        "meghalaya": "ميغالايا",
+        "mizoram": "ميزورام",
+        "nagaland": "ناغلاند",
+        "odisha": "أوديشا",
+        "punjab": "البنجاب",
+        "rajasthan": "راجاستان",
+        "sikkim": "سيكيم",
+        "tamilNadu": "تاميل نادو",
+        "telangana": "تيلانغانا",
+        "tripura": "تريبورا",
+        "uttarPradesh": "أوتار براديش",
+        "uttarakhand": "أوتاراخند",
+        "westBengal": "البنغال الغربية",
+        "andamanAndNicobarIslands": "جزر أندامان ونيكوبار",
+        "chandigarh": "تشانديغار",
+        "dadraAndNagarHaveliAndDamanAndDiu": "دادرا ونجار هافيلي ودامان وديو",
+        "delhi": "دلهي",
+        "jammuAndKashmir": "جامو وكشمير",
+        "ladakh": "لداخ",
+        "lakshadweep": "لاكشادويب",
+        "puducherry": "بودوتشيري"
+    },
+    "countryOptions": {
+        "india": "الهند",
+        "other": "أخرى"
+    }
+}

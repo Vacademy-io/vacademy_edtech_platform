@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Trophy, Crown, Buildings } from "@phosphor-icons/react";
 import { BadgeVisual } from "@/routes/dashboard/-components/badge-icons";
 import { AchievementsDialog } from "@/routes/dashboard/-components/AchievementsDialog";
@@ -16,6 +17,7 @@ import { cn } from "@/lib/utils";
  * "View all" opens the shared achievements popup (full badge wall + progress).
  */
 export const BadgesRankCard: React.FC = () => {
+  const { t } = useTranslation("userProfileExtra");
   const [badges, setBadges] = useState<{ name: string; icon: string }[]>([]);
   const [count, setCount] = useState(0);
   const [bestRank, setBestRank] = useState<number | null>(null);
@@ -85,7 +87,7 @@ export const BadgesRankCard: React.FC = () => {
       <div className="mb-4 flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <Trophy weight="fill" className="h-5 w-5 text-warning-500" />
-          <h3 className="text-body font-semibold text-foreground">Badges &amp; Rank</h3>
+          <h3 className="text-body font-semibold text-foreground">{t("badgesRank.title")}</h3>
         </div>
         {canOpen && (
           <button
@@ -93,7 +95,7 @@ export const BadgesRankCard: React.FC = () => {
             onClick={() => setOpen(true)}
             className="text-caption font-medium text-primary-500 underline-offset-2 hover:underline"
           >
-            View all
+            {t("badgesRank.viewAll")}
           </button>
         )}
       </div>
@@ -102,7 +104,7 @@ export const BadgesRankCard: React.FC = () => {
         <div className="rounded-lg bg-primary-50 px-3 py-2">
           <p className="text-h2 font-bold text-primary-600">{count}</p>
           <p className="text-caption text-muted-foreground">
-            badge{count === 1 ? "" : "s"} earned
+            {t("badgesRank.badgesEarned", { count })}
           </p>
         </div>
         {bestRank != null && (
@@ -110,7 +112,7 @@ export const BadgesRankCard: React.FC = () => {
             <Crown weight="fill" className="h-4 w-4 text-warning-500" />
             <div>
               <p className="text-body font-bold text-secondary-500">#{bestRank}</p>
-              <p className="text-caption text-muted-foreground">best rank</p>
+              <p className="text-caption text-muted-foreground">{t("badgesRank.bestRank")}</p>
             </div>
           </div>
         )}
@@ -119,7 +121,7 @@ export const BadgesRankCard: React.FC = () => {
             <Buildings weight="fill" className="h-4 w-4 text-tertiary-500" />
             <div>
               <p className="text-body font-bold text-tertiary-500">#{instituteRank}</p>
-              <p className="text-caption text-muted-foreground">institute rank</p>
+              <p className="text-caption text-muted-foreground">{t("badgesRank.instituteRank")}</p>
             </div>
           </div>
         )}

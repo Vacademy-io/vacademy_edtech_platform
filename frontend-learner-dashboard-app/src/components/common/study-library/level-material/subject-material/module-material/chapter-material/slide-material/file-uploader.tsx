@@ -3,6 +3,7 @@
 import type React from "react"
 
 import { useState, useRef } from "react"
+import { useTranslation } from "react-i18next"
 import { Button } from "@/components/ui/button"
 import { UploadSimple, X, FileText } from "@phosphor-icons/react"
 
@@ -93,8 +94,10 @@ const buildAcceptAttr = (allowed: AllowedFileType[]): string =>
     ])
     .join(",")
 
-const buildHintLabel = (allowed: AllowedFileType[]): string =>
-  allowed.map((t) => ALLOWED_TYPE_SPECS[t].label).join(", ")
+const buildHintLabel = (
+  allowed: AllowedFileType[],
+  translateLabel: (type: AllowedFileType) => string
+): string => allowed.map((t) => translateLabel(t)).join(", ")
 
 interface FileUploaderProps {
   onUpload: (file: File) => Promise<boolean>
@@ -113,8 +116,12 @@ export const FileUploader = ({
   allowedFileTypes,
   onRejected,
 }: FileUploaderProps) => {
+  const { t } = useTranslation("libraryCommonB")
   const [dragActive, setDragActive] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
+
+  const translateTypeLabel = (type: AllowedFileType) =>
+    t(`fileUploader.types.${type}`)
 
   // Empty / unset → no restriction: accept any of the known types.
   const isUnrestricted = !allowedFileTypes || allowedFileTypes.length === 0
@@ -124,11 +131,13 @@ export const FileUploader = ({
   // entirely (undefined) instead of an empty string so "unrestricted" truly
   // opens the general file browser.
   const acceptAttr = isUnrestricted ? undefined : buildAcceptAttr(allowed)
-  const hintLabel = isUnrestricted ? "Any file" : buildHintLabel(allowed)
+  const hintLabel = isUnrestricted
+    ? t("fileUploader.anyFile")
+    : buildHintLabel(allowed, translateTypeLabel)
 
   const guardedUpload = async (file: File) => {
     if (!isUnrestricted && !isFileAllowed(file, allowed)) {
-      const reason = `Only ${hintLabel} files are allowed for this assignment.`
+      const reason = t("fileUploader.onlyTypesAllowed", { types: hintLabel })
       onRejected?.(file, reason)
       return
     }
@@ -195,9 +204,9 @@ export const FileUploader = ({
             <UploadSimple className="h-6 w-6 text-gray-500" />
           </div>
           <div className="text-sm text-gray-600">
-            <span className="font-medium">Click to upload</span> or drag and drop
+            <span className="font-medium">{t("fileUploader.clickToUpload")}</span> {t("fileUploader.orDragAndDrop")}
           </div>
-          <p className="text-xs text-gray-500">{hintLabel} up to 10MB</p>
+          <p className="text-xs text-gray-500">{t("fileUploader.sizeLimit", { hint: hintLabel })}</p>
           <Button
             type="button"
             variant="outline"
@@ -205,15 +214,15 @@ export const FileUploader = ({
             onClick={() => inputRef.current?.click()}
             disabled={isUploading}
           >
-            {isUploading ? "Uploading..." : "Select File"}
+            {isUploading ? t("fileUploader.uploading") : t("fileUploader.selectFile")}
           </Button>
         </div>
       </div>
 
       {/* Uploaded Files List */}
       {uploadedFiles.length > 0 && (
-        <div className="mt-4">
-          <h4 className="text-sm font-medium mb-2">Uploaded Files</h4>
+        <div className="mt-4 space-y-2">
+          <h4 className="text-sm font-medium">{t("fileUploader.uploadedFiles")}</h4>
           <div className="space-y-2">
             {uploadedFiles.map((file, index) => (
               <div

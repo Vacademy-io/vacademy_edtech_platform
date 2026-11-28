@@ -64,8 +64,10 @@ public class NUMERICQuestionTypeBasedStrategy extends IQuestionTypeBasedStrategy
                 return 0.0;
             }
 
-            // If the selected option is correct, award full marks
-            if (validAnswers.contains(attemptedAnswer)) {
+            // If the answer matches a valid answer (within the question's ± tolerance,
+            // when it has one), award full marks
+            if (NumericAnswerMatcher.matches(validAnswers, attemptedAnswer,
+                    correctAnswerDto.getData().getTolerance())) {
                 setAnswerStatus(QuestionResponseEnum.CORRECT.name());
                 return totalMarks;
             }

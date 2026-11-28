@@ -44,4 +44,11 @@ public class CouponValidateRequestDTO {
 
     @NotNull
     private Double totalAmount;
+
+    /**
+     * How many courses are in the basket, for coupons that carry a minimum.
+     * Null from callers that do not deal in baskets (a single-course enrol),
+     * which is treated as one item.
+     */
+    private Integer itemCount;
 }

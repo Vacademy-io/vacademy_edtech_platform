@@ -16,8 +16,13 @@
 
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { FunnelSimple, CaretDown, Calendar } from "@phosphor-icons/react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+    getTerminologyPlural,
+} from "@/components/common/layout-container/sidebar/utils";
+import { ContentTerms, SystemTerms } from "@/types/naming-settings";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -72,12 +77,12 @@ const PRESET_DAYS: Record<string, number> = {
     "15days": 15,
 };
 
-/** Human-readable labels for each preset */
-const PRESET_LABELS: Record<string, string> = {
-    "1day": "1 Day",
-    "3days": "3 Days",
-    "7days": "7 Days",
-    "15days": "15 Days",
+/** Translation keys for each preset's human-readable label */
+const PRESET_LABEL_KEYS: Record<string, string> = {
+    "1day": "sessionFilter.presets.oneDay",
+    "3days": "sessionFilter.presets.threeDays",
+    "7days": "sessionFilter.presets.sevenDays",
+    "15days": "sessionFilter.presets.fifteenDays",
 };
 
 // ─── Component ───────────────────────────────────────────────────────────────
@@ -88,6 +93,9 @@ export function SessionFilter({
     alignment = "right",
     className = "",
 }: SessionFilterProps) {
+    const { t } = useTranslation("layoutCommonA");
+    const presetLabel = (key: string): string =>
+        PRESET_LABEL_KEYS[key] ? t(PRESET_LABEL_KEYS[key]) : "";
     // Internal state
     const [preset, setPreset] = useState<FilterPreset>(defaultFilter);
     const [startDate, setStartDate] = useState("");
@@ -167,11 +175,11 @@ export function SessionFilter({
     const label = (): string => {
         if (preset === "custom") {
             if (startDate && endDate) return `${toDisplay(startDate)} - ${toDisplay(endDate)}`;
-            if (startDate) return `From ${toDisplay(startDate)}`;
-            if (endDate) return `Until ${toDisplay(endDate)}`;
-            return "Custom";
+            if (startDate) return t("sessionFilter.fromDate", { date: toDisplay(startDate) });
+            if (endDate) return t("sessionFilter.untilDate", { date: toDisplay(endDate) });
+            return t("sessionFilter.custom");
         }
-        return PRESET_LABELS[preset] ?? "";
+        return presetLabel(preset);
     };
 
     const isActive = preset !== "none";
@@ -188,7 +196,7 @@ export function SessionFilter({
                         onClick={clearAll}
                         className="text-caption font-medium text-neutral-500 dark:text-neutral-400 hover:text-red-500 dark:hover:text-red-400 transition-colors whitespace-nowrap"
                     >
-                        Clear Filter
+                        {t("sessionFilter.clearFilter")}
                     </button>
                 )}
 
@@ -203,7 +211,7 @@ export function SessionFilter({
                         }`}
                 >
                     <FunnelSimple size={14} weight={isActive ? "fill" : "regular"} />
-                    <span>{isActive ? label() : "Filter"}</span>
+                    <span>{isActive ? label() : t("sessionFilter.filter")}</span>
                     <CaretDown
                         size={11}
                         className={`transition-transform duration-300 ease-out ${open ? "rotate-180" : ""}`}
@@ -221,9 +229,11 @@ export function SessionFilter({
             >
                 <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 rounded-xl shadow-lg shadow-black/8 dark:shadow-black/30 overflow-hidden">
                     {/* ── Preset pills ─────────────────────────────────────────── */}
-                    <div className="p-3 pb-2.5">
-                        <p className="text-3xs font-bold uppercase tracking-wide-08 text-neutral-400 dark:text-neutral-500 mb-2 px-0.5">
-                            Show sessions in next
+                    <div className="p-3 pb-2.5 space-y-2">
+                        <p className="text-3xs font-bold uppercase tracking-wide-08 text-neutral-400 dark:text-neutral-500 px-0.5">
+                            {t("sessionFilter.showSessionsInNext", {
+                                sessions: getTerminologyPlural(ContentTerms.Session, SystemTerms.Session),
+                            })}
                         </p>
                         <div className="flex flex-wrap gap-1.5">
                             {(["1day", "3days", "7days", "15days"] as FilterPreset[]).map((key) => (
@@ -235,7 +245,7 @@ export function SessionFilter({
                                             : "bg-white dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 border-neutral-200 dark:border-neutral-600 hover:border-primary-300 hover:text-primary-500"
                                         }`}
                                 >
-                                    {PRESET_LABELS[key]}
+                                    {presetLabel(key)}
                                 </button>
                             ))}
                         </div>
@@ -252,7 +262,7 @@ export function SessionFilter({
                         >
                             <div className="flex items-center gap-2">
                                 <Calendar size={14} />
-                                <span>Custom Range</span>
+                                <span>{t("sessionFilter.customRange")}</span>
                             </div>
                             <CaretDown
                                 size={11}
@@ -268,9 +278,9 @@ export function SessionFilter({
                                 }`}
                         >
                             <div className="grid grid-cols-2 gap-2">
-                                <div>
-                                    <label className="block text-3xs font-semibold uppercase tracking-wider text-neutral-400 dark:text-neutral-500 mb-1 px-0.5">
-                                        From
+                                <div className="space-y-1">
+                                    <label className="block text-3xs font-semibold uppercase tracking-wider text-neutral-400 dark:text-neutral-500 px-0.5">
+                                        {t("sessionFilter.fromLabel")}
                                     </label>
                                     <Input
                                         type="date"
@@ -280,9 +290,9 @@ export function SessionFilter({
                                         className="w-full text-xs h-8 rounded-lg text-neutral-700 dark:text-neutral-200"
                                     />
                                 </div>
-                                <div>
-                                    <label className="block text-3xs font-semibold uppercase tracking-wider text-neutral-400 dark:text-neutral-500 mb-1 px-0.5">
-                                        To
+                                <div className="space-y-1">
+                                    <label className="block text-3xs font-semibold uppercase tracking-wider text-neutral-400 dark:text-neutral-500 px-0.5">
+                                        {t("sessionFilter.toLabel")}
                                     </label>
                                     <Input
                                         type="date"
@@ -302,7 +312,7 @@ export function SessionFilter({
                                         notify("custom", startDate, endDate);
                                     }}
                                 >
-                                    Apply Range
+                                    {t("sessionFilter.applyRange")}
                                 </Button>
                             )}
                         </div>

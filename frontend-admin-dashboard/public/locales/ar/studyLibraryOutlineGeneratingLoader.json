@@ -1,0 +1,28 @@
+{
+    "title": {
+        "generatingOutline": "{{aiName}} يقوم بإنشاء مخطط الدورة الخاص بك"
+    },
+    "steps": {
+        "analyzingTopic": "جارٍ تحليل موضوعك...",
+        "structuringOutline": "جارٍ هيكلة المخطط...",
+        "organizing": "جارٍ تنظيم {{terms}} والمواضيع...",
+        "creatingObjectives": "جارٍ إنشاء أهداف التعلم...",
+        "finalizingOutline": "جارٍ إنهاء المخطط..."
+    },
+    "description": {
+        "estimatedTimeMinutes_zero": "الوقت المقدر: {{minutes}} دقيقة {{seconds}} ثانية",
+        "estimatedTimeMinutes_one": "الوقت المقدر: دقيقة واحدة {{seconds}} ثانية",
+        "estimatedTimeMinutes_two": "الوقت المقدر: دقيقتان {{seconds}} ثانية",
+        "estimatedTimeMinutes_few": "الوقت المقدر: {{minutes}} دقائق {{seconds}} ثانية",
+        "estimatedTimeMinutes_many": "الوقت المقدر: {{minutes}} دقيقة {{seconds}} ثانية",
+        "estimatedTimeMinutes_other": "الوقت المقدر: {{minutes}} دقيقة {{seconds}} ثانية",
+        "estimatedTimeSeconds_zero": "الوقت المقدر: {{seconds}} ثانية",
+        "estimatedTimeSeconds_one": "الوقت المقدر: ثانية واحدة",
+        "estimatedTimeSeconds_two": "الوقت المقدر: ثانيتان",
+        "estimatedTimeSeconds_few": "الوقت المقدر: {{seconds}} ثوانٍ",
+        "estimatedTimeSeconds_many": "الوقت المقدر: {{seconds}} ثانية",
+        "estimatedTimeSeconds_other": "الوقت المقدر: {{seconds}} ثانية",
+        "stillWorking": "لا تزال العملية جارية — على وشك الانتهاء...",
+        "craftingStructure": "{{aiName}} يقوم بصياغة هيكل دورتك. قد يستغرق هذا لحظة."
+    }
+}

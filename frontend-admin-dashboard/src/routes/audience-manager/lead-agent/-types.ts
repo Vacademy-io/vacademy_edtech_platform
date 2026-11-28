@@ -1,0 +1,349 @@
+/**
+ * Lead Agent types: mirror docs/crm/LEAD_AGENT_BUILD_SPEC.md §2 (tables) and §4 (the
+ * ai_service API at /ai-service/lead-agent/v1). All payloads are snake_case.
+ */
+
+export type SourceKey =
+    | 'organisation_search'
+    | 'maps'
+    | 'hiring'
+    | 'keyword'
+    | 'software_request'
+    | 'new_centre';
+export type AgentStatus = 'ACTIVE' | 'PAUSED' | 'ARCHIVED';
+export type AgentMode = 'LOCAL' | 'REMOTE' | 'AUTO';
+export type MinContact = 'direct' | 'likely' | 'general';
+/** How much extra checking (and spend) goes into confirming each lead's phone and email. */
+export type ValidationEffort = 'BASIC' | 'STANDARD' | 'DEEP';
+
+export type CandidateStatus =
+    | 'DISCOVERED'
+    | 'FETCHING'
+    | 'READY'
+    | 'RESEARCHING'
+    | 'REVIEW'
+    | 'APPROVED'
+    | 'DELIVERED'
+    | 'REJECTED'
+    | 'SKIPPED'
+    | 'FAILED';
+export type CandidateDecision = 'AUTO' | 'REVIEW' | 'REJECT';
+
+export interface Industry {
+    name: string;
+    search_term: string;
+}
+
+/** 1 = low, 2 = medium, 3 = high. */
+export type FitWeight = 1 | 2 | 3;
+
+/** What on a prospect's website shows they fit the offer. */
+export interface FitSignal {
+    /** Assigned by the server (fit_1 … fit_8); kept when present, never invented here. */
+    key?: string;
+    label: string;
+    description: string;
+    weight: FitWeight;
+}
+
+export interface Competitor {
+    name: string;
+    domain: string | null;
+}
+
+/** Kinds of software that compete with the offer (a prospect using one needs a switch pitch). */
+export type CompetitorKind = 'lms' | 'crm' | 'whatsapp' | 'chat' | 'payments' | 'website';
+
+/** What the tenant sells. GET always returns one (derived by the server for old briefs). */
+export interface AgentOffer {
+    name: string;
+    seller: string;
+    website: string | null;
+    fit_signals: FitSignal[];
+    competitors: Competitor[];
+    competitor_kinds: CompetitorKind[];
+    /** The target organisations are in education (turns on coaching-specific checks). */
+    education: boolean;
+    discovery_question: string;
+}
+
+/** brief_json, §2.1 */
+export interface AgentBrief {
+    /** Legacy product keys. The UI always sends []; `offer` replaces them. */
+    products: string[];
+    description: string;
+    offer: AgentOffer;
+    industries: Industry[];
+    buyer_roles: string[];
+    hiring_roles: string[];
+    keywords: string[];
+    must_have: string[];
+    deal_breakers: string[];
+    exclude: string[];
+    sources: SourceKey[];
+    find_contacts: boolean;
+}
+
+export interface Market {
+    country: string;
+    state?: string | null;
+    city?: string | null;
+}
+
+export interface AgentGate {
+    /** The lowest score a lead can have and still be sent (0 to 100). Each day the agent sends the
+     * best leads at or above it, best first, up to the daily quota. */
+    send_score: number;
+    /** Every lead waits for the admin's approval before it is sent. */
+    require_approval: boolean;
+    /** No longer decide anything. Kept in the payload for agents saved before "rank and fill", and
+     * sent back untouched on save. */
+    auto_score: number;
+    review_score: number;
+    min_contact: MinContact;
+    require_intent: boolean;
+    /** Leads already on a competitor's product are judged like any other (no review hold). */
+    auto_competitor_users: boolean;
+    /** Older agents have none; the API layer reads a missing value as STANDARD. */
+    effort: ValidationEffort;
+}
+
+export interface AgentWindow {
+    tz: string;
+    /** "HH:MM" */
+    start: string;
+    end: string;
+    /** ISO weekdays, 1 = Monday … 7 = Sunday. */
+    days: number[];
+}
+
+export interface AgentToday {
+    delivered: number;
+    review: number;
+    rejected: number;
+}
+
+/** The lead_agent row (JSON columns as objects) + audience_name, §4. */
+export interface LeadAgent {
+    id: string;
+    institute_id: string;
+    audience_id: string;
+    audience_name?: string | null;
+    name: string;
+    status: AgentStatus;
+    brief: AgentBrief;
+    markets: Market[];
+    daily_quota: number;
+    monthly_credit_cap: number | null;
+    mode: AgentMode;
+    gate: AgentGate;
+    window: AgentWindow;
+    plan_built_at?: string | null;
+    last_tick_at?: string | null;
+    last_error?: string | null;
+    created_by?: string | null;
+    created_at?: string | null;
+    updated_at?: string | null;
+    /** GET /agents only. */
+    today?: AgentToday;
+    workers_online?: number;
+    /** Size of the review queue (status=REVIEW). Not in §4; read when the server sends it. */
+    review_waiting?: number;
+}
+
+/** POST /agents body; PUT /agents/{id} takes any subset. */
+export interface AgentPayload {
+    audience_id: string;
+    name: string;
+    brief: AgentBrief;
+    markets: Market[];
+    daily_quota: number;
+    monthly_credit_cap: number | null;
+    mode: AgentMode;
+    gate: AgentGate;
+    window: AgentWindow;
+}
+
+/** One status, or several (the API takes them comma-separated). */
+export type CandidateStatusFilter = CandidateStatus | readonly CandidateStatus[];
+
+/** The phone or email delivery sends when there is no `send` (older servers). */
+export interface BestContact {
+    kind: string;
+    value: string;
+    quality: string;
+    label: string;
+}
+
+/** The phone delivery will send. */
+export interface SentPhone {
+    value: string;
+    quality: string;
+    quality_note: string | null;
+    /** A website number that the organisation's Google Maps listing also shows. */
+    maps_confirmed: boolean;
+    /** Taken from the organisation's Google Maps listing. */
+    from_maps: boolean;
+}
+
+/** The email delivery will send. */
+export interface SentEmail {
+    value: string;
+    quality: string;
+    quality_note: string | null;
+    /** Whose mailbox it is (own, sister, person, free…); null on older leads. */
+    owner: string | null;
+}
+
+/** What delivery will send for a lead (the API's `send`). */
+export interface SendPlan {
+    phone: SentPhone | null;
+    email: SentEmail | null;
+    /** The name the lead is delivered under: the phone's owner, else the organisation. */
+    name: string | null;
+    role: string | null;
+    /** "Name (Role)" of the person outreach asks for. */
+    ask_for: string | null;
+}
+
+export interface CandidateOrg {
+    name: string;
+    domain: string;
+    website: string | null;
+    city: string | null;
+}
+
+export interface CandidateSummary {
+    id: string;
+    status: CandidateStatus;
+    decision: CandidateDecision | null;
+    score: number | null;
+    stage: string | null;
+    org: CandidateOrg;
+    top_reason: string | null;
+    flags: string[];
+    best_contact: BestContact | null;
+    /** Null for older servers and for leads with nothing to send. */
+    send: SendPlan | null;
+    /** Judged from its Google Maps listing: the website could not be read. */
+    maps_only: boolean;
+    /** SKIPPED as the same organisation as another lead: that lead's domain. */
+    duplicate_of: string | null;
+    created_at: string | null;
+    delivered_at: string | null;
+    /** Not in the §4 summary; shown when the server includes it. */
+    reject_reason?: string | null;
+    /** Why a lead was SKIPPED (or a delivery problem). */
+    delivery_note?: string | null;
+    /** Score parts. Not in the §4 summary; read from `score_json` or top-level fit/intent/reach/risk when sent. */
+    parts?: ScoreParts | null;
+}
+
+export interface ScoreParts {
+    fit: number;
+    intent: number;
+    reach: number;
+    risk: number;
+}
+
+export interface CandidatePage {
+    items: CandidateSummary[];
+    total: number;
+}
+
+export interface ScoreBreakdown {
+    score: number;
+    fit: number;
+    intent: number;
+    reach: number;
+    risk: number;
+    products?: { key: string; name: string; score: number | null; why: string[] | string }[];
+    has_intent?: boolean;
+    flags?: string[];
+    reasons?: string[];
+}
+
+export interface EvidenceItem {
+    field: string;
+    quote: string;
+    url: string | null;
+}
+
+/** GET /candidates/{id} — the summary plus lead_json, score_json and evidence. */
+export interface Candidate extends CandidateSummary {
+    score_json: ScoreBreakdown | null;
+    lead_json: Record<string, unknown> | null;
+    evidence: EvidenceItem[];
+    reject_reason?: string | null;
+    reviewed_at?: string | null;
+    delivered_response_id?: string | null;
+}
+
+export type DecisionAction = 'APPROVE' | 'REJECT';
+
+export interface AgentStatsDay {
+    day: string;
+    discovered: number;
+    researched: number;
+    delivered: number;
+    review: number;
+    rejected: number;
+    searches: number;
+    pages: number;
+    cost_usd: number;
+    credits: number;
+}
+
+export interface SuggestRequest {
+    name?: string;
+    /** The seller's company, so the suggestion is written for its team. */
+    seller?: string;
+    description?: string;
+    url?: string;
+}
+
+export interface SuggestedIndustry {
+    name: string;
+    search_term: string;
+    fit?: string | number | null;
+    why?: string | null;
+    products?: string[];
+    buyer_roles?: string[];
+    hiring_phrases?: string[];
+    need_phrases?: string[];
+}
+
+export interface SuggestedOffer {
+    name: string;
+    fit_signals: Omit<FitSignal, 'key'>[];
+    competitors: Competitor[];
+    competitor_kinds: CompetitorKind[];
+    education: boolean;
+    discovery_question: string;
+}
+
+export interface SuggestResponse {
+    summary: string;
+    /** The product description written for the agent; '' when the server sends none. */
+    description: string;
+    keywords: string[];
+    industries: SuggestedIndustry[];
+    note?: string | null;
+    /** Null when the server sends none. */
+    offer: SuggestedOffer | null;
+}
+
+export interface LeadAgentWorker {
+    id: string;
+    label: string | null;
+    user_id: string | null;
+    last_seen_at: string | null;
+    online: boolean;
+    version: string | null;
+    pages_today: number;
+}
+
+export interface PairResponse {
+    token: string;
+    worker_id: string;
+}

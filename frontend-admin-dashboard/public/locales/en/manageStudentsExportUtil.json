@@ -1,0 +1,35 @@
+{
+    "columns": {
+        "learnerName": "{{term}} Name",
+        "enrollmentNumber": "Enrollment Number",
+        "username": "Username",
+        "email": "Email",
+        "mobileNumber": "Mobile Number",
+        "gender": "Gender",
+        "dateOfBirth": "Date of Birth",
+        "status": "Status",
+        "sessionExpiryDate": "{{term}} Expiry Date",
+        "address": "Address",
+        "city": "City",
+        "state": "State",
+        "country": "Country",
+        "pinCode": "Pin Code",
+        "collegeSchool": "College / School",
+        "fatherName": "Father / Male Guardian's Name",
+        "fatherMobile": "Father / Male Guardian's Mobile",
+        "fatherEmail": "Father / Male Guardian's Email",
+        "motherName": "Mother / Female Guardian's Name",
+        "motherMobile": "Mother / Female Guardian's Mobile",
+        "motherEmail": "Mother / Female Guardian's Email",
+        "attendancePercent": "Attendance %",
+        "referralsCount": "Referrals Count",
+        "createdAt": "Created At"
+    },
+    "groups": {
+        "identity": "Identity",
+        "contactAddress": "Contact & Address",
+        "guardian": "Guardian",
+        "other": "Other",
+        "customFields": "Custom Fields"
+    }
+}

@@ -60,9 +60,13 @@ public class LeadScore {
     @Column(name = "updated_at", insertable = false, updatable = false)
     private Timestamp updatedAt;
 
+    /**
+     * LEGACY tier from rawScore using the fixed 80/50 thresholds. Prefer
+     * {@code LeadTierService.deriveTier(getInstituteId(), getRawScore())}, which honours the
+     * institute's own tier catalog; this stays only for callers with no institute context.
+     */
     public String getTier() {
-        if (rawScore >= 80) return "HOT";
-        if (rawScore >= 50) return "WARM";
-        return "COLD";
+        return vacademy.io.admin_core_service.features.audience.service.LeadTierService
+                .legacyTier(rawScore != null ? rawScore : 0);
     }
 }

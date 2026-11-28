@@ -1,0 +1,17 @@
+{
+    "emptyHtmlFile": "Ce fichier HTML est vide",
+    "templateUploaded": "Modèle de certificat du cours envoyé",
+    "templateUploadedDescription": "Votre HTML sera affiché tel quel pour ce cours.",
+    "imageUploadFailed": "Impossible d’envoyer l’image du certificat",
+    "designUploaded": "Design du certificat du cours envoyé",
+    "designUploadedDescription": "Les espaces réservés utilisent la mise en page par défaut — vérifiez l’aperçu et envoyez un fichier HTML si vous avez besoin d’un placement précis.",
+    "processFailed": "Impossible de traiter ce fichier",
+    "usesOwnDesign": "Ce cours utilise son propre design de certificat.",
+    "hidePreview": "Masquer l’aperçu",
+    "preview": "Aperçu",
+    "previewIframeTitle": "Aperçu du certificat du cours",
+    "inheritingTemplate": "Utilise le modèle de certificat de l’établissement.",
+    "uploading": "Envoi en cours…",
+    "uploadCustomCertificate": "Envoyer un certificat personnalisé",
+    "helperText": "Un PNG ou JPG devient l’arrière-plan du certificat, avec les espaces réservés standard placés dessus. Envoyez plutôt un fichier .html si vous avez besoin d’un contrôle exact — il est affiché tel quel. Le supprimer revient au modèle de l’établissement."
+}

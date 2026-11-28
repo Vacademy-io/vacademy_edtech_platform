@@ -22,6 +22,9 @@ public class BulkAssignResponseDTO {
 
     private List<BulkAssignResultItemDTO> results;
 
+    /** Set when the request enrolled an admission package: how it split across the courses. */
+    private AdmissionPackagePreviewDTO admissionPackage;
+
     @Data
     @Builder
     @NoArgsConstructor

@@ -1,14 +1,25 @@
-import { FormProvider, useForm } from 'react-hook-form';
+import { FormProvider, useForm, useWatch } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
+import { Switch } from '@/components/ui/switch';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { MainViewComponentFactory } from '@/routes/assessment/question-papers/-components/QuestionPaperTemplatesTypes/MainViewComponentFactory';
 import { UploadQuestionPaperFormType } from '@/routes/assessment/question-papers/-components/QuestionPaperUpload';
 import { uploadQuestionPaperFormSchema } from '@/routes/assessment/question-papers/-utils/upload-question-paper-form-schema';
 import { QuestionType } from '@/constants/dummy-data';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { Slide } from '../-hooks/use-slides';
 import { useContentStore } from '../-stores/chapter-sidebar-store';
+import { mergeCbeSecret } from '@/components/cbe/types';
+import {
+    ensureCbeConfig,
+    isCbeQuestionType,
+} from '@/routes/assessment/question-papers/-utils/cbe-question';
+import { CbeSlideSecretContext } from '@/routes/assessment/question-papers/-components/QuestionPaperTemplatesTypes/CbeResponse/cbe-slide-secret-context';
+import { fetchQuestionSlideCbeSecret } from '../-services/cbe-evaluation-secret';
 
 export const StudyLibraryQuestionsPreview = ({ activeItem }: { activeItem: Slide }) => {
+    const { t } = useTranslation('studyLibraryAddQuestionDialog');
+    const showAnswerSwitchId = useId();
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
     const { setItems, setActiveItem, items } = useContentStore();
 
@@ -55,24 +66,112 @@ export const StudyLibraryQuestionsPreview = ({ activeItem }: { activeItem: Slide
         return () => subscription.unsubscribe(); // cleanup
     }, [watch, items, activeItem, form, setItems]);
 
+    // ---- Spreadsheet & Written Response: the slide's stored secret ----------
+    // The slide JSON carries only the learner-safe config; the solution, marking
+    // scheme and grading notes are read from the admin endpoint and merged into
+    // the form. Until that succeeds they stay locked, and a save sends no secret
+    // (the stored one is kept).
+    const slideQuestion = activeItem.question_slide as
+        | { questionType?: string; cbeSecretStatus?: string }
+        | undefined;
+    const isCbe = isCbeQuestionType(slideQuestion?.questionType);
+    const slideId = activeItem.id;
+    const loadToken = useRef(0);
+
+    const loadCbeSecret = useCallback(async () => {
+        const token = ++loadToken.current;
+        form.setValue('questions.0.cbeSecretStatus', 'loading', { shouldDirty: false });
+        try {
+            const secret = await fetchQuestionSlideCbeSecret(slideId);
+            if (token !== loadToken.current) return;
+            const merged = mergeCbeSecret(
+                ensureCbeConfig(form.getValues('questions.0.cbeConfig')),
+                secret
+            );
+            form.setValue('questions.0.cbeConfig', merged, { shouldDirty: false });
+            form.setValue('questions.0.cbeSecretStatus', 'owned', { shouldDirty: false });
+        } catch (error) {
+            if (token !== loadToken.current) return;
+            console.error('[cbe] could not load the slide solution', error);
+            form.setValue('questions.0.cbeSecretStatus', 'failed', { shouldDirty: false });
+        }
+    }, [form, slideId]);
+
+    // Load whenever the slide's question arrives without its secret: on open, and
+    // again when a refetch replaces the question (that copy is redacted too).
+    // `failed` waits for the editor's Retry; `loading` / `owned` need nothing.
+    const storeSecretStatus = slideQuestion?.cbeSecretStatus;
+    useEffect(() => {
+        if (!isCbe || !slideId || storeSecretStatus !== undefined) return;
+        void loadCbeSecret();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isCbe, slideId, storeSecretStatus]);
+    // An answer that arrives after unmount is dropped.
+    useEffect(
+        () => () => {
+            loadToken.current += 1;
+        },
+        []
+    );
+
+    const cbeSecretContext = useMemo(
+        () => (isCbe ? { retry: () => void loadCbeSecret() } : null),
+        [isCbe, loadCbeSecret]
+    );
+
+    // "Show correct answer after submit": unset (slides saved before the setting) = on.
+    // Spreadsheet & Written Response has its own AI feedback, so no switch there.
+    const showAnswerSetting = useWatch({
+        control: form.control,
+        name: `questions.${currentQuestionIndex}.showAnswerAfterSubmit`,
+    });
+
     return (
-        <div key={`question-${activeItem.id}`} className="size-full">
+        <div key={`question-${activeItem.id}`} className="dialog-height flex w-full flex-col">
+            {!isCbe && (
+                <div className="ml-6 mr-6 mt-4 flex shrink-0 items-center justify-between gap-4 rounded-lg border border-neutral-200 bg-neutral-50 px-4 py-3">
+                    <div className="flex flex-col">
+                        <label
+                            htmlFor={showAnswerSwitchId}
+                            className="text-body font-semibold text-neutral-700"
+                        >
+                            {t('showAnswerAfterSubmit')}
+                        </label>
+                        <span className="text-caption text-neutral-500">
+                            {t('showAnswerAfterSubmitHint')}
+                        </span>
+                    </div>
+                    <Switch
+                        id={showAnswerSwitchId}
+                        checked={showAnswerSetting !== false}
+                        onCheckedChange={(checked) =>
+                            form.setValue(
+                                `questions.${currentQuestionIndex}.showAnswerAfterSubmit`,
+                                checked,
+                                { shouldDirty: true }
+                            )
+                        }
+                    />
+                </div>
+            )}
             <FormProvider {...form}>
-                <MainViewComponentFactory
-                    key={currentQuestionIndex}
-                    type={
-                        form.getValues(
-                            `questions.${currentQuestionIndex}.questionType`
-                        ) as QuestionType
-                    }
-                    props={{
-                        form,
-                        currentQuestionIndex,
-                        setCurrentQuestionIndex,
-                        className:
-                            'dialog-height overflow-auto ml-6 flex w-full flex-col gap-6 pr-6 pt-4',
-                    }}
-                />
+                <CbeSlideSecretContext.Provider value={cbeSecretContext}>
+                    <MainViewComponentFactory
+                        key={currentQuestionIndex}
+                        type={
+                            form.getValues(
+                                `questions.${currentQuestionIndex}.questionType`
+                            ) as QuestionType
+                        }
+                        props={{
+                            form,
+                            currentQuestionIndex,
+                            setCurrentQuestionIndex,
+                            className:
+                                'min-h-0 flex-1 overflow-auto ml-6 flex w-full flex-col gap-6 pr-6 pt-4',
+                        }}
+                    />
+                </CbeSlideSecretContext.Provider>
             </FormProvider>
         </div>
     );

@@ -1,0 +1,23 @@
+{
+    "validation": {
+        "urlRequired": "الرابط مطلوب",
+        "enterValidUrl": "الرجاء إدخال رابط صالح",
+        "enterValidVimeoUrl": "الرجاء إدخال رابط فيميو صالح"
+    },
+    "defaultVideoName": "فيديو فيميو",
+    "urlPlaceholder": "https://vimeo.com/...",
+    "videoThumbnailAlt": "الصورة المصغرة للفيديو",
+    "updatingLink": "جارٍ تحديث الرابط...",
+    "addingVideo": "جارٍ إضافة الفيديو...",
+    "updateVimeoLink": "تحديث رابط فيميو",
+    "addVimeoVideo": "إضافة فيديو فيميو",
+    "toast": {
+        "invalidVimeoUrl": "رابط فيميو غير صالح",
+        "durationReadFailed": "تعذّرت قراءة مدة الفيديو من فيميو. قد يكون الفيديو خاصًا أو فشلت خدمة oEmbed. يرجى إعادة المحاولة.",
+        "linkUpdated": "تم تحديث رابط فيميو بنجاح!",
+        "videoAdded": "تمت إضافة فيديو فيميو بنجاح!",
+        "updateLinkFailed": "فشل تحديث الرابط",
+        "addVideoFailed": "فشلت إضافة الفيديو",
+        "reorderFailed": "تم إنشاء الشريحة لكن فشل إعادة الترتيب"
+    }
+}

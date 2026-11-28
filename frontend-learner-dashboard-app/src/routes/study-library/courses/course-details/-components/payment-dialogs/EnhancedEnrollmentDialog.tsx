@@ -137,8 +137,8 @@ export const EnhancedEnrollmentDialog: React.FC<EnhancedEnrollmentDialogProps> =
     return (
       <div className="fixed inset-0 z-50 bg-black/60 animate-fade-in flex items-center justify-center">
         <div className="bg-white rounded-lg p-6 max-w-sm">
-          <div className="text-center">
-            <SpinnerGap className="w-8 h-8 animate-spin mx-auto mb-4 text-primary-600" />
+          <div className="text-center space-y-4">
+            <SpinnerGap className="w-8 h-8 animate-spin mx-auto text-primary-600" />
             <p className="text-gray-600">Checking enrollment status...</p>
           </div>
         </div>
@@ -157,8 +157,8 @@ export const EnhancedEnrollmentDialog: React.FC<EnhancedEnrollmentDialogProps> =
       return (
         <div className="fixed inset-0 z-50 bg-black/60 animate-fade-in flex items-center justify-center">
           <div className="bg-white rounded-lg p-6 max-w-sm">
-            <div className="text-center">
-              <p className="text-red-600 mb-4">{error.message}</p>
+            <div className="text-center space-y-4">
+              <p className="text-red-600">{error.message}</p>
               <button
                 onClick={() => refetch()}
                 className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
@@ -349,8 +349,8 @@ export const EnhancedEnrollmentDialog: React.FC<EnhancedEnrollmentDialogProps> =
   return (
     <div className="fixed inset-0 z-50 bg-black/60 animate-fade-in flex items-center justify-center">
       <div className="bg-white rounded-lg p-6 max-w-sm">
-        <div className="text-center">
-          <p className="text-gray-600 mb-4">Payment type {paymentType} not yet supported in enhanced flow.</p>
+        <div className="text-center space-y-4">
+          <p className="text-gray-600">Payment type {paymentType} not yet supported in enhanced flow.</p>
           <button
             onClick={() => onOpenChange(false)}
             className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"

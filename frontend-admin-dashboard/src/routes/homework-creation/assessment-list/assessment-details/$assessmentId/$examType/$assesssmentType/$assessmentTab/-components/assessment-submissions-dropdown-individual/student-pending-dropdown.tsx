@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -17,18 +18,21 @@ const SendReminderComponent = ({
     student: AssessmentRevaluateStudentInterface;
     onClose: () => void;
 }) => {
+    const { t } = useTranslation('homeworkCreationStudentPendingDropdown');
     return (
         <DialogContent className="flex flex-col p-0">
-            <h1 className="rounded-md bg-primary-50 p-4 text-primary-500">Send Reminder</h1>
+            <h1 className="rounded-md bg-primary-50 p-4 text-primary-500">
+                {t('dialogs.sendReminder.title')}
+            </h1>
             <div className="flex flex-col gap-2 p-4">
                 <div className="flex items-center text-danger-600">
-                    <p>Attention</p>
+                    <p>{t('dialogs.attentionLabel')}</p>
                     <WarningCircle size={18} />
                 </div>
                 <h1>
-                    A reminder will be sent to{' '}
-                    <span className="text-primary-500">{student.full_name}</span> who hasn’t yet
-                    appeared for the Assessment
+                    {t('dialogs.sendReminder.confirmMessagePrefix')}{' '}
+                    <span className="text-primary-500">{student.full_name}</span>{' '}
+                    {t('dialogs.sendReminder.confirmMessageSuffix')}
                 </h1>
                 <div className="flex justify-end">
                     <MyButton
@@ -38,7 +42,7 @@ const SendReminderComponent = ({
                         className="mt-4 font-medium"
                         onClick={onClose}
                     >
-                        Send
+                        {t('dialogs.sendReminder.sendButton')}
                     </MyButton>
                 </div>
             </div>
@@ -53,18 +57,21 @@ const RemoveParticipantComponent = ({
     student: AssessmentRevaluateStudentInterface;
     onClose: () => void;
 }) => {
+    const { t } = useTranslation('homeworkCreationStudentPendingDropdown');
     return (
         <DialogContent className="flex flex-col p-0">
-            <h1 className="rounded-md bg-primary-50 p-4 text-primary-500">Remove Participant</h1>
+            <h1 className="rounded-md bg-primary-50 p-4 text-primary-500">
+                {t('dialogs.removeParticipant.title')}
+            </h1>
             <div className="flex flex-col gap-2 p-4">
                 <div className="flex items-center text-danger-600">
-                    <p>Attention</p>
+                    <p>{t('dialogs.attentionLabel')}</p>
                     <WarningCircle size={18} />
                 </div>
                 <h1>
-                    Are you sure you want remove{' '}
-                    <span className="text-primary-500">{student.full_name}</span> from this
-                    Assessment?
+                    {t('dialogs.removeParticipant.confirmMessagePrefix')}{' '}
+                    <span className="text-primary-500">{student.full_name}</span>{' '}
+                    {t('dialogs.removeParticipant.confirmMessageSuffix')}
                 </h1>
                 <div className="flex justify-end">
                     <MyButton
@@ -74,7 +81,7 @@ const RemoveParticipantComponent = ({
                         className="mt-4 font-medium"
                         onClick={onClose}
                     >
-                        Remove
+                        {t('dialogs.removeParticipant.removeButton')}
                     </MyButton>
                 </div>
             </div>
@@ -82,10 +89,13 @@ const RemoveParticipantComponent = ({
     );
 };
 
+type PendingMenuOption = 'sendReminder' | 'removeParticipants';
+
 const StudentPendingDropdown = ({ student }: { student: AssessmentRevaluateStudentInterface }) => {
-    const [selectedOption, setSelectedOption] = useState<string | null>(null);
+    const { t } = useTranslation('homeworkCreationStudentPendingDropdown');
+    const [selectedOption, setSelectedOption] = useState<PendingMenuOption | null>(null);
     const [openDialog, setOpenDialog] = useState(false);
-    const handleMenuOptionsChange = (value: string) => {
+    const handleMenuOptionsChange = (value: PendingMenuOption) => {
         setSelectedOption(value);
         setOpenDialog(true);
     };
@@ -106,24 +116,24 @@ const StudentPendingDropdown = ({ student }: { student: AssessmentRevaluateStude
                 <DropdownMenuContent>
                     <DropdownMenuItem
                         className="cursor-pointer"
-                        onClick={() => handleMenuOptionsChange('Send Reminder')}
+                        onClick={() => handleMenuOptionsChange('sendReminder')}
                     >
-                        Send Reminder
+                        {t('dropdown.sendReminder')}
                     </DropdownMenuItem>
                     <DropdownMenuItem
                         className="cursor-pointer"
-                        onClick={() => handleMenuOptionsChange('Remove Participants')}
+                        onClick={() => handleMenuOptionsChange('removeParticipants')}
                     >
-                        Remove Participants
+                        {t('dropdown.removeParticipants')}
                     </DropdownMenuItem>
                 </DropdownMenuContent>
             </DropdownMenu>
             {/* Dialog should be controlled by openDialog state */}
             <Dialog open={openDialog} onOpenChange={setOpenDialog}>
-                {selectedOption === 'Send Reminder' && (
+                {selectedOption === 'sendReminder' && (
                     <SendReminderComponent student={student} onClose={() => setOpenDialog(false)} />
                 )}
-                {selectedOption === 'Remove Participants' && (
+                {selectedOption === 'removeParticipants' && (
                     <RemoveParticipantComponent
                         student={student}
                         onClose={() => setOpenDialog(false)}

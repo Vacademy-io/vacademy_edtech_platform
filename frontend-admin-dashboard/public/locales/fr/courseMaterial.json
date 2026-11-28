@@ -1,0 +1,18 @@
+{
+    "deletedSuccess": "Cours supprimé avec succès",
+    "deleteFailed": "Échec de la suppression du cours",
+    "exploreTerm": "Explorer les {{term}}",
+    "tabs": {
+        "authoredTerm": "{{term}} créé(e)s",
+        "allTerm": "Tou(te)s les {{term}}",
+        "termInReview": "{{term}} en relecture",
+        "termApproval": "Approbation de {{term}}"
+    },
+    "noTermFound": "Aucun(e) {{term}} trouvé(e)",
+    "tryAddingNewTerm": "Essayez d'ajouter un(e) nouveau(elle) {{term}}.",
+    "courseSettings": "Paramètres du cours",
+    "createTermWithAI": "Créer un(e) {{term}} avec l'IA",
+    "exploreSubtitle": "Organisez, importez et suivez vos ressources pédagogiques en un seul endroit, sans effort.",
+    "noTermFoundForTab": "Aucun(e) {{term}} trouvé(e) pour cet onglet.",
+    "noTermFoundForFilters": "Aucun(e) {{term}} trouvé(e) pour les filtres appliqués."
+}

@@ -1,0 +1,34 @@
+{
+    "page": {
+        "title": "Onboarding Dashboard",
+        "subtitle": "Every onboarding instance across every lead/student — see who's pending, on which flow, and at which step, without opening each profile."
+    },
+    "filters": {
+        "flow": "Flow",
+        "status": "Status",
+        "allFlows": "All flows",
+        "allStatuses": "All statuses"
+    },
+    "columns": {
+        "person": "Person",
+        "flow": "Flow",
+        "currentStep": "Current step",
+        "status": "Status",
+        "startedBy": "Started by",
+        "started": "Started"
+    },
+    "statusLabels": {
+        "inProgress": "In progress",
+        "completed": "Completed",
+        "abandoned": "Abandoned",
+        "cancelled": "Cancelled"
+    },
+    "resolvedStudentPrefix": "→ student: {{name}}",
+    "unknownStep": "Unknown",
+    "states": {
+        "noInstitute": "Pick an institute to view the onboarding dashboard.",
+        "loadError": "Couldn't load the onboarding dashboard.",
+        "emptyTitle": "No onboarding instances found",
+        "emptyDescription": "Nobody matches these filters yet — start an onboarding flow from a student or lead's side-view to see them appear here."
+    }
+}

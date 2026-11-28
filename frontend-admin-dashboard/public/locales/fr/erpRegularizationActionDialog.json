@@ -1,0 +1,25 @@
+{
+    "rejectHeading": "Rejeter cette demande",
+    "approveHeading": "Approuver cette demande",
+    "cancel": "Annuler",
+    "saving": "Enregistrement…",
+    "rejectRequest": "Rejeter la demande",
+    "approveRequest": "Approuver la demande",
+    "employee": "Employé",
+    "unknownDate": "Date inconnue",
+    "noRecord": "Aucun enregistrement",
+    "times": "Horaires {{originalIn}}–{{originalOut}} → {{requestedIn}}–{{requestedOut}}",
+    "rejectNotice": "Le relevé de présence reste exactement tel quel. Vos remarques sont ce que voit l'employé.",
+    "approveNotice": "Approuver réécrit le relevé de présence de ce jour — le statut et les horaires demandés remplacent ce qui est enregistré, et le jour compte ainsi dans la paie.",
+    "remarksLabel": "Remarques",
+    "remarksPlaceholderReject": "Pourquoi cela ne peut pas être accepté",
+    "remarksPlaceholderApprove": "Remarque facultative pour l'enregistrement",
+    "toasts": {
+        "rejected": "Demande rejetée",
+        "approved": "Demande approuvée"
+    },
+    "errors": {
+        "remarksRequired": "Indiquez-lui pourquoi ceci a été rejeté",
+        "saveFailed": "Impossible d'enregistrer la décision."
+    }
+}

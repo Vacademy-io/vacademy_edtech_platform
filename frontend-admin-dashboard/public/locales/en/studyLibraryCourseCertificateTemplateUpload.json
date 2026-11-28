@@ -1,0 +1,17 @@
+{
+    "emptyHtmlFile": "That HTML file is empty",
+    "templateUploaded": "Course certificate template uploaded",
+    "templateUploadedDescription": "Your HTML will be rendered as-is for this course.",
+    "imageUploadFailed": "Could not upload the certificate image",
+    "designUploaded": "Course certificate design uploaded",
+    "designUploadedDescription": "Placeholders use the default layout — check the preview and upload HTML if you need exact placement.",
+    "processFailed": "Could not process that file",
+    "usesOwnDesign": "This course uses its own certificate design.",
+    "hidePreview": "Hide preview",
+    "preview": "Preview",
+    "previewIframeTitle": "Course certificate preview",
+    "inheritingTemplate": "Inheriting the institute certificate template.",
+    "uploading": "Uploading…",
+    "uploadCustomCertificate": "Upload custom certificate",
+    "helperText": "PNG or JPG becomes the certificate background with the standard placeholders laid out on top. Upload an .html file instead if you need exact control — it is rendered as-is. Removing it falls back to the institute template."
+}

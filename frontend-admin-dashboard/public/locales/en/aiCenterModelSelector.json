@@ -1,0 +1,10 @@
+{
+    "aiModelLabel": "AI Model",
+    "unableToLoadModels": "Unable to load models",
+    "tooltipDescription": "Select an AI model for processing. The default model is recommended for most use cases.",
+    "selectModel": "Select Model",
+    "defaultRecommended": "Default (Recommended)",
+    "defaultModelSummary": "{{name}} - {{description}}",
+    "availableModels": "Available Models",
+    "footerNote": "Different models have varying capabilities. The default model works best for most tasks."
+}

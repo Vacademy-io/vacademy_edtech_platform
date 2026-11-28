@@ -1,0 +1,16 @@
+{
+    "status": {
+        "new": "جديد",
+        "contacted": "تم التواصل",
+        "qualified": "مؤهل",
+        "notEligible": "غير مؤهل",
+        "followUp": "متابعة",
+        "closed": "مغلق",
+        "converted": "محوَّل",
+        "admitted": "مقبول"
+    },
+    "conversion": {
+        "hot": "ساخن",
+        "cold": "بارد"
+    }
+}

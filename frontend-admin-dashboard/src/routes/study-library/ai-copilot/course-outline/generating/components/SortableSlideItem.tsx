@@ -21,6 +21,7 @@ import {
     Eye,
     Sparkles,
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Editor } from '@monaco-editor/react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -38,6 +39,7 @@ import { markdownToHtml } from '../../../shared/utils/markdownToHtml';
 
 // Component to display script (can be text or HTML)
 const ScriptDisplay = ({ scriptUrl }: { scriptUrl: string }) => {
+    const { t } = useTranslation('studyLibrarySortableSlideItem');
     const [scriptContent, setScriptContent] = useState<string>('');
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -72,7 +74,7 @@ const ScriptDisplay = ({ scriptUrl }: { scriptUrl: string }) => {
                 }
             } catch (err) {
                 console.error('Error fetching script:', err);
-                setError(err instanceof Error ? err.message : 'Failed to load script');
+                setError(err instanceof Error ? err.message : t('status.failedToLoadScript'));
             } finally {
                 setIsLoading(false);
             }
@@ -88,7 +90,7 @@ const ScriptDisplay = ({ scriptUrl }: { scriptUrl: string }) => {
             <div className="min-w-0 overflow-hidden rounded-lg border border-neutral-200 bg-white p-4">
                 <div className="mb-3 flex items-center gap-2">
                     <FileText className="size-4 text-blue-600" />
-                    <Label className="text-sm font-semibold text-neutral-900">Video Script</Label>
+                    <Label className="text-sm font-semibold text-neutral-900">{t('labels.videoScript')}</Label>
                 </div>
                 <div className="flex items-center justify-center py-8">
                     <Loader2 className="size-5 animate-spin text-indigo-600" />
@@ -102,7 +104,7 @@ const ScriptDisplay = ({ scriptUrl }: { scriptUrl: string }) => {
             <div className="min-w-0 overflow-hidden rounded-lg border border-neutral-200 bg-white p-4">
                 <div className="mb-3 flex items-center gap-2">
                     <FileText className="size-4 text-blue-600" />
-                    <Label className="text-sm font-semibold text-neutral-900">Video Script</Label>
+                    <Label className="text-sm font-semibold text-neutral-900">{t('labels.videoScript')}</Label>
                 </div>
                 <div className="py-4 text-sm text-red-600">{error}</div>
             </div>
@@ -113,7 +115,7 @@ const ScriptDisplay = ({ scriptUrl }: { scriptUrl: string }) => {
         <div className="min-w-0 overflow-hidden rounded-lg border border-neutral-200 bg-white p-4">
             <div className="mb-3 flex items-center gap-2">
                 <FileText className="size-4 text-blue-600" />
-                <Label className="text-sm font-semibold text-neutral-900">Video Script</Label>
+                <Label className="text-sm font-semibold text-neutral-900">{t('labels.videoScript')}</Label>
             </div>
             <div className="max-h-[600px] w-full min-w-0 max-w-full overflow-auto rounded border border-neutral-200 bg-neutral-50 p-4">
                 {isHtml ? (
@@ -153,6 +155,10 @@ export const SortableSlideItem = React.memo(
         isOutlineMode = false,
     }: SortableSlideItemProps) => {
         // All hooks must be called before any conditional returns
+        const { t } = useTranslation('studyLibrarySortableSlideItem');
+        // executeCode renders its own error/status strings, so it needs a `t`
+        // bound to its own namespace plus the active locale.
+        const { t: tCodeEditorUtils, i18n } = useTranslation('studyLibraryCodeEditorUtils');
         const [isEditing, setIsEditing] = useState(false);
         const [isExpanded, setIsExpanded] = useState(false);
         const [editValue, setEditValue] = useState(slide?.slideTitle || '');
@@ -214,7 +220,7 @@ export const SortableSlideItem = React.memo(
             sections.push({
                 type: 'text',
                 content: trimmedContent,
-                label: 'Content',
+                label: t('labels.content'),
                 originalMatch: trimmedContent,
             });
             console.log(
@@ -222,7 +228,7 @@ export const SortableSlideItem = React.memo(
                 sections.length
             );
             return sections;
-        }, []);
+        }, [t]);
 
         useEffect(() => {
             if (!slide) return;
@@ -1220,15 +1226,13 @@ export const SortableSlideItem = React.memo(
                         <div className="flex items-center justify-center gap-3 py-8">
                             <Loader2 className="size-5 animate-spin text-indigo-600" />
                             <span className="text-sm font-medium text-neutral-600">
-                                Generating{' '}
                                 {slide.slideType === 'doc'
-                                    ? 'document'
+                                    ? t('status.generatingDocument')
                                     : slide.slideType === 'quiz' || slide.slideType === 'assessment'
-                                      ? 'quiz'
+                                      ? t('status.generatingQuiz')
                                       : slide.slideType === 'video'
-                                        ? 'video'
-                                        : 'content'}
-                                ...
+                                        ? t('status.generatingVideo')
+                                        : t('status.generatingContent')}
                             </span>
                         </div>
                     </div>
@@ -1253,7 +1257,7 @@ export const SortableSlideItem = React.memo(
                     <div className="ml-8 mt-3 rounded-md border border-neutral-200 bg-neutral-50 p-4">
                         <div className="flex items-center justify-center gap-3 py-8">
                             <span className="text-sm text-neutral-500">
-                                No content available yet
+                                {t('status.noContentAvailable')}
                             </span>
                         </div>
                     </div>
@@ -1271,7 +1275,7 @@ export const SortableSlideItem = React.memo(
                         <div className="flex items-center justify-center gap-3 py-8">
                             <Loader2 className="size-5 animate-spin text-indigo-600" />
                             <span className="text-sm font-medium text-neutral-600">
-                                Generating quiz...
+                                {t('status.generatingQuiz')}
                             </span>
                         </div>
                     </div>
@@ -1308,7 +1312,7 @@ export const SortableSlideItem = React.memo(
                                     <div className="mb-3 flex items-center gap-2">
                                         <Video className="size-4 text-purple-600" />
                                         <Label className="text-sm font-semibold text-neutral-900">
-                                            AI Generated Video
+                                            {t('labels.aiGeneratedVideo')}
                                         </Label>
                                     </div>
                                     {slide.aiVideoData?.timelineUrl &&
@@ -1328,7 +1332,7 @@ export const SortableSlideItem = React.memo(
                                 <div className="mt-4 flex items-center gap-2">
                                     <Loader2 className="size-4 animate-spin text-indigo-600" />
                                     <span className="text-sm text-neutral-600">
-                                        Generating video... {slide.progress || 0}%
+                                        {t('status.generatingVideoProgress', { progress: slide.progress || 0 })}
                                     </span>
                                 </div>
                             )}
@@ -1483,7 +1487,7 @@ export const SortableSlideItem = React.memo(
                                                 thumbnailUrl ||
                                                 `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`
                                             }
-                                            alt="Video thumbnail"
+                                            alt={t('alt.videoThumbnail')}
                                             className="size-full object-cover"
                                             onError={(e) => {
                                                 const img = e.target as HTMLImageElement;
@@ -1519,7 +1523,7 @@ export const SortableSlideItem = React.memo(
                                                 rel="noopener noreferrer"
                                                 className="flex items-center gap-2 text-sm font-semibold text-white transition-colors hover:text-yellow-300"
                                             >
-                                                ▶ Watch on YouTube
+                                                {t('actions.watchOnYoutube')}
                                             </a>
                                         </div>
                                     </div>
@@ -1528,7 +1532,7 @@ export const SortableSlideItem = React.memo(
                                         <div className="p-8 text-center text-white">
                                             <Video className="mx-auto mb-4 size-16" />
                                             <p className="mb-4 text-lg font-semibold">
-                                                YouTube Video Available
+                                                {t('status.youtubeVideoAvailable')}
                                             </p>
                                             <a
                                                 href={videoUrl}
@@ -1536,7 +1540,7 @@ export const SortableSlideItem = React.memo(
                                                 rel="noopener noreferrer"
                                                 className="inline-flex items-center gap-2 rounded-lg bg-white px-6 py-3 font-semibold text-red-600 transition-colors hover:bg-red-50"
                                             >
-                                                ▶ Watch on YouTube
+                                                {t('actions.watchOnYoutube')}
                                             </a>
                                         </div>
                                     </div>
@@ -1544,9 +1548,9 @@ export const SortableSlideItem = React.memo(
                                     <div className="flex aspect-video w-full items-center justify-center rounded-lg bg-black">
                                         <div className="text-center text-white">
                                             <Video className="mx-auto mb-4 size-16 opacity-50" />
-                                            <p className="text-lg">No Video URL Found</p>
+                                            <p className="text-lg">{t('status.noVideoUrlFound')}</p>
                                             <p className="text-sm opacity-75">
-                                                Please check the content for YouTube links
+                                                {t('status.checkContentForYoutubeLinks')}
                                             </p>
                                         </div>
                                     </div>
@@ -1556,15 +1560,15 @@ export const SortableSlideItem = React.memo(
                                 {displayScript && (
                                     <div className="mt-4 rounded-lg bg-white p-4">
                                         <div className="mb-2 flex items-center justify-between">
-                                            <h4 className="font-semibold">Video Script</h4>
+                                            <h4 className="font-semibold">{t('labels.videoScript')}</h4>
                                             {onRegenerate && (
                                                 <button
                                                     onClick={() => onRegenerate(slide.id)}
                                                     className="flex items-center gap-1 rounded p-1.5 text-xs text-indigo-600 transition-colors hover:bg-indigo-50"
-                                                    title="Regenerate Video Script"
+                                                    title={t('actions.regenerateVideoScript')}
                                                 >
                                                     <RefreshCw className="size-3.5" />
-                                                    Regenerate
+                                                    {t('actions.regenerate')}
                                                 </button>
                                             )}
                                         </div>
@@ -1589,17 +1593,17 @@ export const SortableSlideItem = React.memo(
                                 <div className="flex items-center gap-2">
                                     <Layers className="size-4 text-purple-600" />
                                     <Label className="text-sm font-semibold text-neutral-900">
-                                        Mermaid Diagram Code
+                                        {t('labels.mermaidDiagramCode')}
                                     </Label>
                                 </div>
                                 {onRegenerate && (
                                     <button
                                         onClick={() => onRegenerate(slide.id)}
                                         className="flex items-center gap-1.5 rounded px-2 py-1 text-xs font-medium text-indigo-600 transition-colors hover:bg-indigo-50"
-                                        title="Regenerate Diagram"
+                                        title={t('actions.regenerateDiagram')}
                                     >
                                         <RefreshCw className="size-3.5" />
-                                        Regenerate
+                                        {t('actions.regenerate')}
                                     </button>
                                 )}
                             </div>
@@ -1632,17 +1636,17 @@ export const SortableSlideItem = React.memo(
                                 <div className="flex items-center gap-2">
                                     <Code className="size-4 text-green-600" />
                                     <Label className="text-sm font-semibold text-neutral-900">
-                                        Code Snippet
+                                        {t('labels.codeSnippet')}
                                     </Label>
                                 </div>
                                 {onRegenerate && (
                                     <button
                                         onClick={() => onRegenerate(slide.id)}
                                         className="flex items-center gap-1.5 rounded px-2 py-1 text-xs font-medium text-indigo-600 transition-colors hover:bg-indigo-50"
-                                        title="Regenerate Code"
+                                        title={t('actions.regenerateCode')}
                                     >
                                         <RefreshCw className="size-3.5" />
-                                        Regenerate
+                                        {t('actions.regenerate')}
                                     </button>
                                 )}
                             </div>
@@ -1675,17 +1679,17 @@ export const SortableSlideItem = React.memo(
                                     <div className="flex items-center gap-2">
                                         <Video className="size-4 text-red-600" />
                                         <Label className="text-sm font-semibold text-neutral-900">
-                                            Video Script
+                                            {t('labels.videoScript')}
                                         </Label>
                                     </div>
                                     {onRegenerate && (
                                         <button
                                             onClick={() => onRegenerate(slide.id)}
                                             className="flex items-center gap-1.5 rounded px-2 py-1 text-xs font-medium text-indigo-600 transition-colors hover:bg-indigo-50"
-                                            title="Regenerate Video Script"
+                                            title={t('actions.regenerateVideoScript')}
                                         >
                                             <RefreshCw className="size-3.5" />
-                                            Regenerate
+                                            {t('actions.regenerate')}
                                         </button>
                                     )}
                                 </div>
@@ -1701,17 +1705,17 @@ export const SortableSlideItem = React.memo(
                                     <div className="flex items-center gap-2">
                                         <Code className="size-4 text-green-600" />
                                         <Label className="text-sm font-semibold text-neutral-900">
-                                            Code Snippet
+                                            {t('labels.codeSnippet')}
                                         </Label>
                                     </div>
                                     {onRegenerate && (
                                         <button
                                             onClick={() => onRegenerate(slide.id)}
                                             className="flex items-center gap-1.5 rounded px-2 py-1 text-xs font-medium text-indigo-600 transition-colors hover:bg-indigo-50"
-                                            title="Regenerate Code"
+                                            title={t('actions.regenerateCode')}
                                         >
                                             <RefreshCw className="size-3.5" />
-                                            Regenerate
+                                            {t('actions.regenerate')}
                                         </button>
                                     )}
                                 </div>
@@ -1766,17 +1770,17 @@ export const SortableSlideItem = React.memo(
                                         <div className="flex items-center gap-2">
                                             <Video className="size-4 text-red-600" />
                                             <Label className="text-sm font-semibold text-neutral-900">
-                                                Video Script
+                                                {t('labels.videoScript')}
                                             </Label>
                                         </div>
                                         {onRegenerate && (
                                             <button
                                                 onClick={() => onRegenerate(slide.id, 'video')}
                                                 className="flex items-center gap-1.5 rounded px-2 py-1 text-xs font-medium text-indigo-600 transition-colors hover:bg-indigo-50"
-                                                title="Regenerate Video Script"
+                                                title={t('actions.regenerateVideoScript')}
                                             >
                                                 <RefreshCw className="size-3.5" />
-                                                Regenerate
+                                                {t('actions.regenerate')}
                                             </button>
                                         )}
                                     </div>
@@ -1793,17 +1797,17 @@ export const SortableSlideItem = React.memo(
                                             <div className="flex items-center gap-2">
                                                 <Code className="size-4 text-green-600" />
                                                 <Label className="text-sm font-semibold text-neutral-900">
-                                                    Code Snippet
+                                                    {t('labels.codeSnippet')}
                                                 </Label>
                                             </div>
                                             {onRegenerate && (
                                                 <button
                                                     onClick={() => onRegenerate(slide.id, 'code')}
                                                     className="flex items-center gap-1.5 rounded px-2 py-1 text-xs font-medium text-indigo-600 transition-colors hover:bg-indigo-50"
-                                                    title="Regenerate Code"
+                                                    title={t('actions.regenerateCode')}
                                                 >
                                                     <RefreshCw className="size-3.5" />
-                                                    Regenerate
+                                                    {t('actions.regenerate')}
                                                 </button>
                                             )}
                                         </div>
@@ -1871,10 +1875,10 @@ export const SortableSlideItem = React.memo(
                                                 <button
                                                     onClick={() => onRegenerate(slide.id)}
                                                     className="flex items-center gap-1.5 rounded px-2 py-1 text-xs font-medium text-indigo-600 transition-colors hover:bg-indigo-50"
-                                                    title={`Regenerate ${section.label}`}
+                                                    title={t('actions.regenerateSection', { label: section.label })}
                                                 >
                                                     <RefreshCw className="size-3.5" />
-                                                    Regenerate
+                                                    {t('actions.regenerate')}
                                                 </button>
                                             )}
                                         </div>
@@ -1893,13 +1897,13 @@ export const SortableSlideItem = React.memo(
                                                 {section.content ? (
                                                     <div className="rounded border border-neutral-200 bg-white p-4">
                                                         <Label className="mb-2 block text-xs text-neutral-600">
-                                                            Diagram Preview
+                                                            {t('labels.diagramPreview')}
                                                         </Label>
                                                         <MermaidDiagram code={section.content} />
                                                     </div>
                                                 ) : (
                                                     <div className="text-sm text-red-500">
-                                                        ⚠️ Mermaid section has no content
+                                                        {t('status.mermaidSectionEmpty')}
                                                     </div>
                                                 )}
                                                 {/* Collapsible Mermaid Code Editor */}
@@ -1919,7 +1923,7 @@ export const SortableSlideItem = React.memo(
                                                         className="flex w-full items-center justify-between bg-neutral-50 p-2 transition-colors hover:bg-neutral-100"
                                                     >
                                                         <Label className="text-xs font-semibold text-neutral-600">
-                                                            Mermaid Code
+                                                            {t('labels.mermaidCode')}
                                                         </Label>
                                                         {expandedMermaidEditors.has(idx) ? (
                                                             <ChevronUp className="size-4 text-neutral-600" />
@@ -2100,10 +2104,10 @@ export const SortableSlideItem = React.memo(
                                         <button
                                             onClick={() => onRegenerate(slide.id)}
                                             className="flex items-center gap-1.5 rounded px-2 py-1 text-xs font-medium text-indigo-600 transition-colors hover:bg-indigo-50"
-                                            title="Regenerate Content"
+                                            title={t('actions.regenerateContent')}
                                         >
                                             <RefreshCw className="size-3.5" />
-                                            Regenerate
+                                            {t('actions.regenerate')}
                                         </button>
                                     </div>
                                 )}
@@ -2113,7 +2117,7 @@ export const SortableSlideItem = React.memo(
                                         <div className="mb-3 flex items-center gap-2">
                                             <Video className="size-4 text-red-600" />
                                             <Label className="text-sm font-semibold text-neutral-900">
-                                                Video
+                                                {t('labels.video')}
                                             </Label>
                                         </div>
                                         {/* Try iframe first, show thumbnail only if iframe fails */}
@@ -2186,7 +2190,7 @@ export const SortableSlideItem = React.memo(
                                                         thumbnailUrl ||
                                                         `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`
                                                     }
-                                                    alt="Video thumbnail"
+                                                    alt={t('alt.videoThumbnail')}
                                                     className="size-full object-cover"
                                                     onError={(e) => {
                                                         const img = e.target as HTMLImageElement;
@@ -2222,7 +2226,7 @@ export const SortableSlideItem = React.memo(
                                                         rel="noopener noreferrer"
                                                         className="flex items-center gap-2 text-sm font-semibold text-white transition-colors hover:text-yellow-300"
                                                     >
-                                                        ▶ Watch on YouTube
+                                                        {t('actions.watchOnYoutube')}
                                                     </a>
                                                 </div>
                                             </div>
@@ -2286,7 +2290,7 @@ export const SortableSlideItem = React.memo(
                                             </div>
                                         ) : (
                                             <div className="flex h-48 items-center justify-center rounded bg-neutral-100 text-sm text-neutral-500">
-                                                No video available
+                                                {t('status.noVideoAvailable')}
                                             </div>
                                         )}
                                     </div>
@@ -2297,7 +2301,7 @@ export const SortableSlideItem = React.memo(
                                             <div className="flex items-center gap-2">
                                                 <Code className="size-4 text-green-600" />
                                                 <Label className="text-sm font-semibold text-neutral-900">
-                                                    Code
+                                                    {t('labels.code')}
                                                 </Label>
                                             </div>
                                             <button
@@ -2334,7 +2338,10 @@ export const SortableSlideItem = React.memo(
                                                                 : 'python';
                                                         const result = await executeCode(
                                                             currentCode,
-                                                            normalizedLanguage as any
+                                                            normalizedLanguage as any,
+                                                            {},
+                                                            tCodeEditorUtils,
+                                                            i18n.language
                                                         );
                                                         setLocalRunning((prev) => ({
                                                             ...prev,
@@ -2373,12 +2380,12 @@ export const SortableSlideItem = React.memo(
                                                 localRunning[slide.id] ? (
                                                     <>
                                                         <Loader2 className="size-3.5 animate-spin" />
-                                                        Running...
+                                                        {t('actions.running')}
                                                     </>
                                                 ) : (
                                                     <>
                                                         <Play className="size-3.5" />
-                                                        Run Code
+                                                        {t('actions.runCode')}
                                                     </>
                                                 )}
                                             </button>
@@ -2410,7 +2417,7 @@ export const SortableSlideItem = React.memo(
                                                 <div className="mt-3 border-t border-neutral-200">
                                                     <div className="flex items-center justify-between bg-neutral-50 px-3 py-2">
                                                         <span className="text-xs font-medium text-neutral-700">
-                                                            Output
+                                                            {t('labels.output')}
                                                         </span>
                                                         {!(
                                                             codeOutput[slide.id]?.isRunning ||
@@ -2441,9 +2448,9 @@ export const SortableSlideItem = React.memo(
                                                         <pre className="whitespace-pre-wrap font-mono text-xs text-green-400">
                                                             {codeOutput[slide.id]?.isRunning ||
                                                             localRunning[slide.id]
-                                                                ? 'Loading Python environment (this may take a few seconds on first run)...'
+                                                                ? t('status.loadingPythonEnv')
                                                                 : codeOutput[slide.id]?.output ||
-                                                                  'No output yet. Click "Run Code" to execute.'}
+                                                                  t('status.noOutputYet')}
                                                         </pre>
                                                     </div>
                                                 </div>
@@ -2468,7 +2475,7 @@ export const SortableSlideItem = React.memo(
                                                         }}
                                                         className="mt-3 text-xs text-indigo-600 hover:text-indigo-700"
                                                     >
-                                                        Show Output
+                                                        {t('actions.showOutput')}
                                                     </button>
                                                 )}
                                         </div>
@@ -2581,10 +2588,10 @@ export const SortableSlideItem = React.memo(
                                         <button
                                             onClick={() => onRegenerate(slide.id)}
                                             className="flex items-center gap-1.5 rounded px-2 py-1 text-xs font-medium text-indigo-600 transition-colors hover:bg-indigo-50"
-                                            title="Regenerate Content"
+                                            title={t('actions.regenerateContent')}
                                         >
                                             <RefreshCw className="size-3.5" />
-                                            Regenerate
+                                            {t('actions.regenerate')}
                                         </button>
                                     </div>
                                 )}
@@ -2601,7 +2608,7 @@ export const SortableSlideItem = React.memo(
                                     <div className="mb-4 flex items-center gap-2">
                                         <Loader2 className="size-4 animate-spin text-indigo-600" />
                                         <span className="text-sm text-neutral-600">
-                                            Generating video... {slide.progress || 0}%
+                                            {t('status.generatingVideoProgress', { progress: slide.progress || 0 })}
                                         </span>
                                     </div>
                                 )}
@@ -2612,7 +2619,7 @@ export const SortableSlideItem = React.memo(
                                         <div className="mb-3 flex items-center gap-2">
                                             <Video className="size-4 text-purple-600" />
                                             <Label className="text-sm font-semibold text-neutral-900">
-                                                AI Video
+                                                {t('labels.aiVideo')}
                                             </Label>
                                         </div>
                                         {isVideoReady &&
@@ -2628,12 +2635,12 @@ export const SortableSlideItem = React.memo(
                                             <div className="flex h-48 flex-col items-center justify-center rounded bg-neutral-100">
                                                 <Loader2 className="mb-2 size-6 animate-spin text-indigo-600" />
                                                 <span className="text-sm text-neutral-600">
-                                                    Generating video... {videoData.progress || 0}%
+                                                    {t('status.generatingVideoProgress', { progress: videoData.progress || 0 })}
                                                 </span>
                                             </div>
                                         ) : (
                                             <div className="flex h-48 items-center justify-center rounded bg-neutral-100 text-sm text-neutral-500">
-                                                Video not available yet
+                                                {t('status.videoNotAvailableYet')}
                                             </div>
                                         )}
                                     </div>
@@ -2644,7 +2651,7 @@ export const SortableSlideItem = React.memo(
                                             <div className="flex items-center gap-2">
                                                 <Code className="size-4 text-green-600" />
                                                 <Label className="text-sm font-semibold text-neutral-900">
-                                                    Code
+                                                    {t('labels.code')}
                                                 </Label>
                                             </div>
                                             <button
@@ -2681,7 +2688,10 @@ export const SortableSlideItem = React.memo(
                                                                 : 'python';
                                                         const result = await executeCode(
                                                             currentCode,
-                                                            normalizedLanguage as any
+                                                            normalizedLanguage as any,
+                                                            {},
+                                                            tCodeEditorUtils,
+                                                            i18n.language
                                                         );
                                                         setLocalRunning((prev) => ({
                                                             ...prev,
@@ -2720,12 +2730,12 @@ export const SortableSlideItem = React.memo(
                                                 localRunning[slide.id] ? (
                                                     <>
                                                         <Loader2 className="size-3.5 animate-spin" />
-                                                        Running...
+                                                        {t('actions.running')}
                                                     </>
                                                 ) : (
                                                     <>
                                                         <Play className="size-3.5" />
-                                                        Run Code
+                                                        {t('actions.runCode')}
                                                     </>
                                                 )}
                                             </button>
@@ -2757,7 +2767,7 @@ export const SortableSlideItem = React.memo(
                                                 <div className="mt-3 border-t border-neutral-200">
                                                     <div className="flex items-center justify-between bg-neutral-50 px-3 py-2">
                                                         <span className="text-xs font-medium text-neutral-700">
-                                                            Output
+                                                            {t('labels.output')}
                                                         </span>
                                                         {!(
                                                             codeOutput[slide.id]?.isRunning ||
@@ -2788,9 +2798,9 @@ export const SortableSlideItem = React.memo(
                                                         <pre className="whitespace-pre-wrap font-mono text-xs text-green-400">
                                                             {codeOutput[slide.id]?.isRunning ||
                                                             localRunning[slide.id]
-                                                                ? 'Loading Python environment (this may take a few seconds on first run)...'
+                                                                ? t('status.loadingPythonEnv')
                                                                 : codeOutput[slide.id]?.output ||
-                                                                  'No output yet. Click "Run Code" to execute.'}
+                                                                  t('status.noOutputYet')}
                                                         </pre>
                                                     </div>
                                                 </div>
@@ -2815,7 +2825,7 @@ export const SortableSlideItem = React.memo(
                                                         }}
                                                         className="mt-3 text-xs text-indigo-600 hover:text-indigo-700"
                                                     >
-                                                        Show Output
+                                                        {t('actions.showOutput')}
                                                     </button>
                                                 )}
                                         </div>
@@ -2869,10 +2879,10 @@ export const SortableSlideItem = React.memo(
                                         <button
                                             onClick={() => onRegenerate(slide.id)}
                                             className="flex items-center gap-1.5 rounded px-2 py-1 text-xs font-medium text-indigo-600 transition-colors hover:bg-indigo-50"
-                                            title="Regenerate Content"
+                                            title={t('actions.regenerateContent')}
                                         >
                                             <RefreshCw className="size-3.5" />
-                                            Regenerate
+                                            {t('actions.regenerate')}
                                         </button>
                                     </div>
                                 )}
@@ -2899,17 +2909,17 @@ export const SortableSlideItem = React.memo(
                                 <div className="flex items-center gap-2">
                                     <FileQuestion className="size-4 text-purple-600" />
                                     <Label className="text-sm font-semibold text-neutral-900">
-                                        Quiz Content
+                                        {t('labels.quizContent')}
                                     </Label>
                                 </div>
                                 {onRegenerate && (
                                     <button
                                         onClick={() => onRegenerate(slide.id)}
                                         className="flex items-center gap-1.5 rounded px-2 py-1 text-xs font-medium text-indigo-600 transition-colors hover:bg-indigo-50"
-                                        title="Regenerate Quiz"
+                                        title={t('actions.regenerateQuiz')}
                                     >
                                         <RefreshCw className="size-3.5" />
-                                        Regenerate
+                                        {t('actions.regenerate')}
                                     </button>
                                 )}
                             </div>
@@ -2921,10 +2931,7 @@ export const SortableSlideItem = React.memo(
                                     style={{ minHeight: 400 }}
                                 />
                                 <p className="mt-2 text-xs text-neutral-500">
-                                    <strong>Note:</strong> Format questions as "Question 1",
-                                    "Question 2", etc. with ordered lists for options. Write the
-                                    correct answer below the options list as "Correct Answer:
-                                    [option text]".
+                                    <strong>{t('quizNote.label')}</strong> {t('quizNote.body')}
                                 </p>
                             </div>
                         </div>
@@ -2939,17 +2946,17 @@ export const SortableSlideItem = React.memo(
                                 <div className="flex items-center gap-2">
                                     <ClipboardList className="size-4 text-orange-600" />
                                     <Label className="text-sm font-semibold text-neutral-900">
-                                        Assignment
+                                        {t('labels.assignment')}
                                     </Label>
                                 </div>
                                 {onRegenerate && (
                                     <button
                                         onClick={() => onRegenerate(slide.id)}
                                         className="flex items-center gap-1.5 rounded px-2 py-1 text-xs font-medium text-indigo-600 transition-colors hover:bg-indigo-50"
-                                        title="Regenerate Assignment"
+                                        title={t('actions.regenerateAssignment')}
                                     >
                                         <RefreshCw className="size-3.5" />
-                                        Regenerate
+                                        {t('actions.regenerate')}
                                     </button>
                                 )}
                             </div>
@@ -3026,7 +3033,7 @@ export const SortableSlideItem = React.memo(
                             <button
                                 onClick={() => setShowPrompt(!showPrompt)}
                                 className="flex items-center gap-1 rounded px-2 py-1 text-xs font-medium text-purple-600 transition-colors hover:bg-purple-50"
-                                title={showPrompt ? 'Hide AI prompt' : 'View AI prompt'}
+                                title={showPrompt ? t('actions.hideAiPrompt') : t('actions.viewAiPrompt')}
                             >
                                 <Sparkles className="size-3.5" />
                                 {showPrompt ? (
@@ -3059,7 +3066,7 @@ export const SortableSlideItem = React.memo(
                                         }
                                     }}
                                     className="flex items-center gap-1 rounded px-2 py-1 text-xs font-medium text-indigo-600 transition-colors hover:bg-indigo-50"
-                                    title={isExpanded ? 'Hide content' : 'View content'}
+                                    title={isExpanded ? t('actions.hideContent') : t('actions.viewContent')}
                                 >
                                     <Eye className="size-3.5" />
                                     {isExpanded ? (
@@ -3076,14 +3083,14 @@ export const SortableSlideItem = React.memo(
                                 <button
                                     onClick={handleSaveEdit}
                                     className="rounded p-1 text-xs text-indigo-600 hover:bg-indigo-50"
-                                    title="Save"
+                                    title={t('actions.save')}
                                 >
                                     <CheckCircle className="size-3.5" />
                                 </button>
                                 <button
                                     onClick={handleCancelEdit}
                                     className="rounded p-1 text-xs text-neutral-600 hover:bg-neutral-100"
-                                    title="Cancel"
+                                    title={t('actions.cancel')}
                                 >
                                     <X className="size-3.5" />
                                 </button>
@@ -3093,21 +3100,21 @@ export const SortableSlideItem = React.memo(
                                 <button
                                     onClick={() => setIsEditing(true)}
                                     className="rounded p-1 text-xs text-indigo-600 transition-opacity hover:bg-indigo-50 md:opacity-0 md:group-hover:opacity-100"
-                                    title="Edit"
+                                    title={t('actions.edit')}
                                 >
                                     <Edit2 className="size-3.5" />
                                 </button>
                                 <button
                                     onClick={() => setIsEditing(true)}
                                     className="rounded p-1 text-xs text-indigo-600 transition-opacity hover:bg-indigo-50 md:opacity-0 md:group-hover:opacity-100"
-                                    title="Edit"
+                                    title={t('actions.edit')}
                                 >
                                     <Edit2 className="size-3.5" />
                                 </button>
                                 <button
                                     onClick={() => onDelete(slide.id)}
                                     className="rounded p-1 text-xs text-red-600 transition-opacity hover:bg-red-50 md:opacity-0 md:group-hover:opacity-100"
-                                    title="Delete"
+                                    title={t('actions.delete')}
                                 >
                                     <Trash2 className="size-3.5" />
                                 </button>
@@ -3135,7 +3142,7 @@ export const SortableSlideItem = React.memo(
                             <div className="mb-3 flex items-center gap-2">
                                 <Sparkles className="size-4 text-purple-600" />
                                 <Label className="text-sm font-semibold text-purple-900">
-                                    AI Prompt
+                                    {t('labels.aiPrompt')}
                                 </Label>
                             </div>
                             <div className="rounded-lg border border-purple-200 bg-white p-4">

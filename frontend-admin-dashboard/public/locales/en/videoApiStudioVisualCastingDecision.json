@@ -1,0 +1,28 @@
+{
+    "header": {
+        "title_one": "Pick visuals ({{count}} shot)",
+        "title_other": "Pick visuals ({{count}} shots)"
+    },
+    "empty": {
+        "noCandidates": "No visual candidates to review.",
+        "continue": "Continue"
+    },
+    "shot": {
+        "queryFallback": "visual",
+        "generateWithAi": "Generate with AI",
+        "searchPlaceholderClips": "Search clips…",
+        "searchPlaceholderPhotos": "Search photos…",
+        "search": "Search",
+        "upload": "Upload",
+        "noCandidates": "No candidates — search, upload, or let AI generate it.",
+        "yours": "Yours"
+    },
+    "footer": {
+        "letAiDoAll": "Let AI do all",
+        "useThese": "Use these"
+    },
+    "toast": {
+        "noResults": "No results — try different terms.",
+        "uploadFailed": "Upload failed. Try a smaller image."
+    }
+}

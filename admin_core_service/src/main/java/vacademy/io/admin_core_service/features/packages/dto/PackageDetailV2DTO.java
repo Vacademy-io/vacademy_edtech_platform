@@ -1,5 +1,6 @@
 package vacademy.io.admin_core_service.features.packages.dto;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import lombok.AllArgsConstructor;
@@ -7,6 +8,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import vacademy.io.common.auth.dto.UserDTO;
 
+import java.util.Date;
 import java.util.List;
 
 @JsonNaming(PropertyNamingStrategy.SnakeCaseStrategy.class)
@@ -58,4 +60,19 @@ public class PackageDetailV2DTO {
      * Drives the catalogue card's "Enrollment closed" / "Opens soon" badge.
      */
     private String enrollInviteAvailability;
+
+    /** Null unless the course is switched to "Coming Soon" (see {@link ComingSoonDTO}). */
+    private ComingSoonDTO comingSoon;
+
+    /**
+     * When the course (package) was created -- drives the catalogue's "Newest" sort and "New"
+     * badge. Serialised as {@code created_at}, ISO-8601 in UTC (e.g. 2026-09-01T10:15:30.000Z),
+     * pinned here so it does not depend on the global ObjectMapper's date settings.
+     *
+     * <p>MUST stay the LAST field: {@code @AllArgsConstructor} is positional and its one caller
+     * (OpenPackageService) passes the value last. A field inserted above it silently shifts the
+     * neighbouring arguments.
+     */
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSXXX", timezone = "UTC")
+    private Date createdAt;
 }

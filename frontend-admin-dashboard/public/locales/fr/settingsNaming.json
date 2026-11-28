@@ -1,0 +1,39 @@
+{
+    "loading": "Chargement...",
+    "header": {
+        "title": "Paramètres de nommage",
+        "description": "Personnalisez les conventions de nommage utilisées dans votre établissement",
+        "singularHint": "Veuillez saisir la forme singulière du terme"
+    },
+    "actions": {
+        "resetAll": "Tout réinitialiser",
+        "saving": "Enregistrement...",
+        "saveChanges": "Enregistrer les modifications"
+    },
+    "unsavedChangesBanner": "Vous avez des modifications non enregistrées. N'oubliez pas d'enregistrer vos mises à jour.",
+    "sections": {
+        "contentStructure": {
+            "title": "Contenu et structure",
+            "description": "Personnalisez les termes liés au contenu et à la structure des cours"
+        },
+        "userRoles": {
+            "title": "Rôles des utilisateurs",
+            "description": "Personnalisez les termes pour les différents rôles d'utilisateurs de votre établissement"
+        },
+        "other": {
+            "title": "Autre",
+            "description": "Personnalisez les termes pour les autres fonctionnalités"
+        }
+    },
+    "row": {
+        "singular": "Singulier",
+        "plural": "Pluriel",
+        "reset": "Réinitialiser"
+    },
+    "toasts": {
+        "syncFailed": "Échec de la synchronisation des paramètres avec le serveur.",
+        "settingsSaved": "Paramètres enregistrés",
+        "saveFailed": "Échec de l'enregistrement des paramètres. Veuillez réessayer."
+    },
+    "footerNote": "<0>Remarque :</0> les modifications seront appliquées à l'ensemble de votre établissement une fois enregistrées. Tous les utilisateurs verront la terminologie mise à jour dans leur interface."
+}

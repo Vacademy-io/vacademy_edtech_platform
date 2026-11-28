@@ -1,0 +1,84 @@
+{
+  "launcher": {
+    "open": "Discuter avec {{name}}",
+    "defaultName": "Posez-nous une question"
+  },
+  "greeting": {
+    "default": "Bonjour ! Comment puis-je vous aider aujourd'hui ?"
+  },
+  "panel": {
+    "close": "Fermer la discussion",
+    "aiNotice": "Assistant IA · les réponses peuvent être imparfaites",
+    "conversation": "Conversation",
+    "suggestions": "Questions suggérées"
+  },
+  "composer": {
+    "label": "Votre message",
+    "placeholder": "Écrivez votre question…",
+    "send": "Envoyer",
+    "remaining": "{{count}} caractères restants"
+  },
+  "status": {
+    "thinking": "Réflexion…",
+    "connecting": "Connexion…",
+    "connectFailed": "Impossible de démarrer la discussion. Veuillez réessayer.",
+    "retry": "Réessayer"
+  },
+  "errors": {
+    "rate_limited": "Vous avez posé beaucoup de questions en peu de temps. Patientez un instant, ou contactez directement notre équipe.",
+    "daily_cap": "Notre assistant a répondu à beaucoup de questions aujourd'hui. Notre équipe se fera un plaisir de vous aider directement.",
+    "no_credits": "Notre assistant fait une pause pour le moment. Notre équipe se fera un plaisir de vous aider directement.",
+    "disabled": "L'assistant n'est pas disponible pour le moment.",
+    "invalid": "Désolé, je n'ai pas pu traiter cette question. Merci de la reformuler.",
+    "internal": "Un problème est survenu de notre côté. Veuillez réessayer.",
+    "network": "La connexion a été interrompue. Veuillez réessayer.",
+    "unauthorized": "Cette discussion a expiré. Veuillez réessayer.",
+    "not_allowed": "Cet assistant n'est pas configuré pour ce site.",
+    "closed": "Cette discussion est terminée. Veuillez en commencer une nouvelle."
+  },
+  "feedback": {
+    "helpful": "Utile",
+    "notHelpful": "Pas utile",
+    "thanks": "Merci pour votre retour"
+  },
+  "cards": {
+    "viewCourse": "Voir le cours",
+    "seeAll": "Tout voir",
+    "takeMeThere": "Y aller",
+    "register": "S'inscrire",
+    "free": "Gratuit",
+    "paid": "Payant",
+    "until": "Jusqu'au {{date}}",
+    "compare": "Comparaison",
+    "step": "Étape {{n}}",
+    "liveClasses": "Prochains cours en direct",
+    "contactTitle": "Contacter notre équipe",
+    "email": "E-mail",
+    "phone": "Téléphone",
+    "whatsapp": "WhatsApp",
+    "address": "Adresse",
+    "login": "Se connecter"
+  },
+  "contact": {
+    "titleSales": "Parler à notre équipe",
+    "titleSupport": "Obtenir de l'aide de notre équipe",
+    "name": "Nom complet",
+    "email": "E-mail",
+    "phone": "Numéro de téléphone",
+    "select": "Choisir…",
+    "submit": "Envoyer mes coordonnées",
+    "sending": "Envoi…",
+    "success": "Merci ! Notre équipe vous contactera très bientôt.",
+    "failed": "Impossible d'envoyer vos coordonnées. Veuillez réessayer.",
+    "consentDefault": "J'accepte d'être contacté(e) au sujet de ma demande.",
+    "required": "{{label}} est obligatoire",
+    "invalidEmail": "Saisissez une adresse e-mail valide",
+    "invalidPhone": "Saisissez un numéro de téléphone valide",
+    "oneOf": "Saisissez un numéro de téléphone ou une adresse e-mail",
+    "consentRequired": "Veuillez accepter afin que nous puissions vous contacter",
+    "tooLong": "C'est trop long"
+  },
+  "a11y": {
+    "you": "Vous"
+  }
+}

@@ -1,0 +1,10 @@
+{
+    "header": {
+        "title": "Learner Activity",
+        "subtitle": "Real-time insights and activity trends"
+    },
+    "actions": {
+        "viewFullInsights": "View Full Insights"
+    },
+    "loading": "Loading analytics..."
+}

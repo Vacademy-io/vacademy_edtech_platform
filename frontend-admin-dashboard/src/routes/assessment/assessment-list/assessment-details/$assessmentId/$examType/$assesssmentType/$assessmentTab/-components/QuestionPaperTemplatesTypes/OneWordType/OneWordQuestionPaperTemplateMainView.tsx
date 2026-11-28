@@ -12,6 +12,7 @@ import { useEffect } from 'react';
 import { CollapsibleQuillEditor } from '@/routes/assessment/question-papers/-components/QuestionPaperTemplatesTypes/CollapsibleQuillEditor';
 import { formatStructure } from '@/routes/assessment/question-papers/-utils/helper';
 import { SectionQuestionPaperFormProps } from '../../../-utils/assessment-question-paper';
+import { useTranslation } from 'react-i18next';
 
 export const OneWordQuestionPaperTemplateMainView = ({
     form,
@@ -19,8 +20,9 @@ export const OneWordQuestionPaperTemplateMainView = ({
     className,
     selectedSectionIndex,
 }: SectionQuestionPaperFormProps) => {
+    const { t } = useTranslation('assessmentOneWordTemplateList');
     const { control, getValues } = form;
-    const explanationsType = 'Explanation:';
+    const explanationsType = t('explanation.label');
     const questionsType = '';
 
     useEffect(() => {
@@ -47,13 +49,13 @@ export const OneWordQuestionPaperTemplateMainView = ({
                     <PopoverContent>
                         <div className="mb-2 flex flex-col gap-4">
                             <div className="flex w-full items-center justify-between">
-                                <h1 className="text-primary-500">Questions Settings</h1>
+                                <h1 className="text-primary-500">{t('popover.title')}</h1>
                                 <PopoverClose>
                                     <X size={16} />
                                 </PopoverClose>
                             </div>
                             <SelectField
-                                label="Question Type"
+                                label={t('popover.questionTypeLabel')}
                                 name={`sections.${selectedSectionIndex}.questions.${currentQuestionIndex}.questionType`}
                                 options={QUESTION_TYPES.map((option, index) => ({
                                     value: option.code,
@@ -72,7 +74,7 @@ export const OneWordQuestionPaperTemplateMainView = ({
                 `sections.${selectedSectionIndex}.questions.${currentQuestionIndex}.parentRichTextContent`
             ) && (
                 <div className="flex w-full flex-col !flex-nowrap items-start gap-1">
-                    <span>Comprehension Text</span>
+                    <span>{t('comprehensionText')}</span>
                     <FormField
                         control={control}
                         name={`sections.${selectedSectionIndex}.questions.${currentQuestionIndex}.parentRichTextContent`}
@@ -93,10 +95,11 @@ export const OneWordQuestionPaperTemplateMainView = ({
             )}
             <div className="flex w-full flex-col !flex-nowrap items-start gap-1">
                 <span>
-                    Question&nbsp;
                     {questionsType
-                        ? formatStructure(questionsType, currentQuestionIndex + 1)
-                        : currentQuestionIndex + 1}
+                        ? t('question.labelWithNumber', {
+                              number: formatStructure(questionsType, currentQuestionIndex + 1),
+                          })
+                        : t('question.labelWithNumber', { number: currentQuestionIndex + 1 })}
                 </span>
                 <FormField
                     control={control}
@@ -117,7 +120,7 @@ export const OneWordQuestionPaperTemplateMainView = ({
             </div>
 
             <div className="flex w-full flex-col gap-4">
-                <span>Answer</span>
+                <span>{t('answer.label')}</span>
 
                 <FormField
                     control={control}

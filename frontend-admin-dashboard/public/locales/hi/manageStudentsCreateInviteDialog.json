@@ -1,0 +1,38 @@
+{
+    "dialog": {
+        "heading": "शिक्षार्थी को आमंत्रित करें"
+    },
+    "inviteLink": {
+        "label": "आमंत्रण लिंक का नाम",
+        "placeholder": "आमंत्रण लिंक का नाम दर्ज करें"
+    },
+    "activeStatus": {
+        "label": "सक्रिय स्थिति"
+    },
+    "batchSelection": {
+        "label": "बैच चयन",
+        "createBatch": "बैच बनाएं",
+        "assignBatches": "मैं बैच असाइन करना चाहता/चाहती हूं",
+        "learnersChooseBatches": "मैं चाहता/चाहती हूं कि {{term}} बैच चुनें",
+        "maxBatchesLabel": "छात्र द्वारा चुने जा सकने वाले बैचों की अधिकतम संख्या दर्ज करें"
+    },
+    "linkExpiration": {
+        "label": "लिंक समाप्ति दिन",
+        "days": "दिन"
+    },
+    "inviteeEmail": {
+        "label": "आमंत्रित व्यक्ति का ईमेल दर्ज करें",
+        "placeholder": "you@email.com",
+        "addButton": "जोड़ें"
+    },
+    "validation": {
+        "invalidEmail": "कृपया एक मान्य ईमेल पता दर्ज करें",
+        "duplicateEmail": "यह ईमेल पहले ही जोड़ा जा चुका है"
+    },
+    "toast": {
+        "batchCreateSuccess": "बैच सफलतापूर्वक बनाया गया",
+        "batchCreateError": "बैच बनाने में विफल",
+        "inviteError": "आमंत्रण अपडेट/बनाने में त्रुटि",
+        "formErrors": "कृपया सबमिट करने से पहले फ़ॉर्म की त्रुटियां ठीक करें"
+    }
+}

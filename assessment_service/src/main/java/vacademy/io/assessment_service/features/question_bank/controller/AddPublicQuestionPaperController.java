@@ -43,9 +43,18 @@ public class AddPublicQuestionPaperController {
     }
 
     @PostMapping("/add-only-question")
-    public ResponseEntity<AddQuestionDTO> addPrivateQuestion(@RequestAttribute("user") CustomUserDetails user, @RequestBody AddQuestionDTO questionRequestBody) {
+    public ResponseEntity<AddQuestionDTO> addPrivateQuestion(@RequestAttribute("user") CustomUserDetails user,
+                                                             @RequestHeader(value = "clientId", required = false) String clientId,
+                                                             @RequestBody AddQuestionDTO questionRequestBody) {
         try {
-            return ResponseEntity.ok(addQuestionPaperFromImportManager.addPrivateQuestions(user, questionRequestBody, false));
+            // Stamp the caller's institute on the new questions, or the question bank and
+            // the question library (both filter on question.institute_id) never show them.
+            // The JWT filter scopes authorities to the clientId institute, so a non-empty
+            // authority set means the caller belongs to it.
+            String instituteId = (clientId != null && !clientId.isBlank()
+                    && user != null && user.getAuthorities() != null && !user.getAuthorities().isEmpty())
+                    ? clientId : null;
+            return ResponseEntity.ok(addQuestionPaperFromImportManager.addPrivateQuestions(user, questionRequestBody, false, instituteId));
         } catch (JsonProcessingException e) {
             throw new VacademyException(e.getMessage());
         }
@@ -67,7 +76,7 @@ public class AddPublicQuestionPaperController {
     @PostMapping("public/add-only-question")
     public ResponseEntity<AddQuestionDTO> addPublicQuestion(@RequestAttribute("user") CustomUserDetails user, @RequestBody AddQuestionDTO questionRequestBody) {
         try {
-            return ResponseEntity.ok(addQuestionPaperFromImportManager.addPrivateQuestions(user, questionRequestBody, true));
+            return ResponseEntity.ok(addQuestionPaperFromImportManager.addPrivateQuestions(user, questionRequestBody, true, null));
         } catch (JsonProcessingException e) {
             throw new VacademyException(e.getMessage());
         }

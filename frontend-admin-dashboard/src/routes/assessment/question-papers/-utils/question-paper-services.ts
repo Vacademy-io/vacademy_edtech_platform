@@ -14,6 +14,7 @@ import {
     transformQuestionPaperEditData,
 } from './helper';
 import { FilterOption } from '@/types/assessments/question-paper-filter';
+import type { PaperFolderFilter } from '@/services/question-paper-folders';
 import {
     MyQuestionPaperFormEditInterface,
     MyQuestionPaperFormInterface,
@@ -130,7 +131,9 @@ export const getQuestionPaperDataWithFilters = async (
     pageSize: number,
     instituteId: string | undefined,
     data: Record<string, FilterOption[]>,
-    sortColumns: Record<string, string> = QUESTION_PAPER_DEFAULT_SORT
+    sortColumns: Record<string, string> = QUESTION_PAPER_DEFAULT_SORT,
+    /** Question Papers page with folders on: one folder, or the papers in no folder. */
+    folderFilter?: PaperFolderFilter
 ) => {
     try {
         const response = await authenticatedAxiosInstance({
@@ -141,7 +144,13 @@ export const getQuestionPaperDataWithFilters = async (
                 instituteId,
                 pageSize,
             },
-            data: { ...transformFilterData(data), sort_columns: sortColumns },
+            data: {
+                ...transformFilterData(data),
+                sort_columns: sortColumns,
+                // Sent only when set, so every other list's request body is unchanged.
+                ...(folderFilter?.folder_id ? { folder_id: folderFilter.folder_id } : {}),
+                ...(folderFilter?.unfiled_only ? { unfiled_only: true } : {}),
+            },
         });
         return response?.data;
     } catch (error: unknown) {

@@ -1,0 +1,15 @@
+{
+    "backToRuns": "सभी पेरोल रन",
+    "fallbackHeading": "पेरोल रन",
+    "fallbackRunType": "नियमित",
+    "errors": {
+        "loadFailed": "यह पेरोल रन लोड नहीं किया जा सका।"
+    },
+    "tabs": {
+        "entries_one": "प्रविष्टि ({{count}})",
+        "entries_other": "प्रविष्टियाँ ({{count}})",
+        "errors": "त्रुटियाँ",
+        "payslips": "वेतन पर्चियाँ",
+        "bankFile": "बैंक फ़ाइल"
+    }
+}

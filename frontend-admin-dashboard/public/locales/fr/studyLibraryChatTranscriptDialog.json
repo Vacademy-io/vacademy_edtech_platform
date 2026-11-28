@@ -1,0 +1,14 @@
+{
+    "chatHeading": "Discussion",
+    "chatWith": "Discussion avec {{name}}",
+    "started": "Démarrée {{time}}",
+    "loadingTranscript": "Chargement de la transcription…",
+    "loadFailed": "Impossible de charger cette transcription. Veuillez réessayer.",
+    "noMessages": "Cette discussion n'a aucun message.",
+    "practiceQuiz": "Quiz d'entraînement",
+    "quizResult": "Résultat du quiz",
+    "usedTool": "Outil utilisé : {{tool}}",
+    "aiUsedTool": "L'IA a utilisé un outil",
+    "toolResultNamed": "Résultat de {{tool}}",
+    "toolResult": "Résultat de l'outil"
+}

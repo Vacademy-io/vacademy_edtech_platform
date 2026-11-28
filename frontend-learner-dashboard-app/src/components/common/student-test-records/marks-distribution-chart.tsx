@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils";
+import { useTranslation } from "react-i18next";
 
 interface MarksDistributionChartProps {
   distribution: Array<{
@@ -19,6 +20,7 @@ export function MarksDistributionChart({
   studentMarks,
   totalParticipants,
 }: MarksDistributionChartProps) {
+  const { t } = useTranslation("testRecords");
   if (!distribution || distribution.length === 0) return null;
 
   // Create buckets of 10-mark ranges
@@ -103,14 +105,14 @@ export function MarksDistributionChart({
       <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-1 text-caption text-muted-foreground">
         <span className="inline-flex items-center gap-1.5">
           <span className="inline-block size-2.5 rounded-sm bg-primary-400" />
-          Your score range
+          {t("marksDistributionChart.yourScoreRange")}
         </span>
         <span className="inline-flex items-center gap-1.5">
           <span className="inline-block size-2.5 rounded-sm bg-neutral-200" />
-          Rest of the batch
+          {t("marksDistributionChart.restOfBatch")}
         </span>
         <span className="ms-auto tabular-nums">
-          {totalParticipants} students
+          {t("common.studentsCount", { count: totalParticipants })}
         </span>
       </div>
     </div>

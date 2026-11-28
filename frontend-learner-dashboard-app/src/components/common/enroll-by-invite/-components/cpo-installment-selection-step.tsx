@@ -6,6 +6,7 @@ import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Stack as Layers, WarningCircle as AlertCircle, CheckCircle as CheckCircle2, Clock } from "@phosphor-icons/react";
+import { useTranslation } from "react-i18next";
 import { CpoInstallmentDue } from "../-services/enroll-invite-services";
 import { getCurrencySymbol } from "./payment-selection-step";
 
@@ -43,6 +44,7 @@ const CpoInstallmentSelectionStep = ({
   customAmount,
   onCustomAmountChange,
 }: CpoInstallmentSelectionStepProps) => {
+  const { t } = useTranslation("enrollmentA");
   const [useCustomAmount, setUseCustomAmount] = useState(false);
   const [customAmountStr, setCustomAmountStr] = useState("");
 
@@ -128,10 +130,10 @@ const CpoInstallmentSelectionStep = ({
   if (dues.length === 0) {
     return (
       <Card className="shadow-lg w-full">
-        <CardContent className="p-6 flex flex-col items-center gap-3 text-center">
+        <CardContent className="p-card-lg flex flex-col items-center gap-stack text-center">
           <CheckCircle2 className="w-10 h-10 text-green-500" />
-          <p className="text-subtitle font-semibold text-gray-800">No dues found</p>
-          <p className="text-caption text-muted-foreground">All installments appear to be settled.</p>
+          <p className="text-subtitle font-semibold text-gray-800">{t("cpoInstallment.noDuesFound")}</p>
+          <p className="text-caption text-muted-foreground">{t("cpoInstallment.allSettled")}</p>
         </CardContent>
       </Card>
     );
@@ -141,16 +143,16 @@ const CpoInstallmentSelectionStep = ({
 
   return (
     <Card className="shadow-lg w-full">
-      <CardContent className="p-5 sm:p-6 space-y-5">
+      <CardContent className="p-5 sm:p-card-lg space-y-5">
         {/* Header */}
         <div className="flex items-start gap-3">
           <div className="p-2 bg-blue-100 rounded-lg flex-shrink-0">
             <Layers className="w-5 h-5 text-blue-600" />
           </div>
           <div>
-            <h2 className="text-title-lg font-semibold text-gray-900">Select Installments</h2>
+            <h2 className="text-title-lg font-semibold text-gray-900">{t("cpoInstallment.title")}</h2>
             <p className="text-caption text-muted-foreground mt-1">
-              Choose which installments you'd like to pay now
+              {t("cpoInstallment.subtitle")}
             </p>
           </div>
         </div>
@@ -163,29 +165,29 @@ const CpoInstallmentSelectionStep = ({
             onClick={selectAll}
             className="text-xs px-3 py-1.5 rounded-full border border-blue-300 text-blue-700 bg-blue-50 hover:bg-blue-100 transition-colors"
           >
-            Select All
+            {t("cpoInstallment.selectAll")}
           </button>
           {overdueDues.length > 0 && (
             <button
               onClick={selectOverdue}
               className="text-xs px-3 py-1.5 rounded-full border border-red-300 text-red-700 bg-red-50 hover:bg-red-100 transition-colors"
             >
-              Select Overdue ({overdueDues.length})
+              {t("cpoInstallment.selectOverdue", { count: overdueDues.length })}
             </button>
           )}
           <button
             onClick={clearAll}
             className="text-xs px-3 py-1.5 rounded-full border border-gray-300 text-gray-600 bg-white hover:bg-gray-50 transition-colors"
           >
-            Clear
+            {t("cpoInstallment.clear")}
           </button>
         </div>
 
         {/* Grouped installments */}
         <div className="space-y-4">
           {Object.entries(grouped).map(([feeTypeName, items]) => (
-            <div key={feeTypeName}>
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+            <div className="space-y-2" key={feeTypeName}>
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
                 {feeTypeName}
               </p>
               <div className="space-y-2">
@@ -221,10 +223,10 @@ const CpoInstallmentSelectionStep = ({
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between gap-2">
                           <span className="text-sm font-medium text-gray-800 truncate">
-                            {due.fee_type_name || "Installment"}
+                            {due.fee_type_name || t("cpoInstallment.installmentFallback")}
                           </span>
                           <span className={`text-sm font-semibold flex-shrink-0 ${isPaid ? "text-green-600" : "text-gray-900"}`}>
-                            {isPaid ? "Paid" : formatAmount(amountDue, currencySymbol)}
+                            {isPaid ? t("cpoInstallment.paid") : formatAmount(amountDue, currencySymbol)}
                           </span>
                         </div>
 
@@ -232,25 +234,25 @@ const CpoInstallmentSelectionStep = ({
                           {due.due_date && (
                             <span className="text-xs text-gray-500 flex items-center gap-1">
                               <Clock className="w-3 h-3" />
-                              Due: {formatDate(due.due_date)}
+                              {t("cpoInstallment.due", { date: formatDate(due.due_date) })}
                             </span>
                           )}
                           {due.is_overdue && !isPaid && (
                             <Badge variant="destructive" className="text-xs py-0 h-4">
                               <AlertCircle className="w-2.5 h-2.5 me-1" />
-                              {due.days_overdue ? `${due.days_overdue}d overdue` : "Overdue"}
+                              {due.days_overdue ? t("cpoInstallment.daysOverdue", { days: due.days_overdue }) : t("cpoInstallment.overdue")}
                             </Badge>
                           )}
                           {isPaid && (
                             <Badge variant="outline" className="text-xs py-0 h-4 text-green-600 border-green-300">
-                              Settled
+                              {t("cpoInstallment.settled")}
                             </Badge>
                           )}
                         </div>
 
                         {due.amount_paid > 0 && !isPaid && (
                           <p className="text-xs text-gray-400 mt-0.5">
-                            Paid so far: {formatAmount(due.amount_paid, currencySymbol)}
+                            {t("cpoInstallment.paidSoFar", { amount: formatAmount(due.amount_paid, currencySymbol) })}
                           </p>
                         )}
                       </div>
@@ -273,7 +275,7 @@ const CpoInstallmentSelectionStep = ({
               onCheckedChange={(checked) => toggleCustomAmount(!!checked)}
             />
             <Label htmlFor="custom-amount-toggle" className="text-sm text-gray-700 cursor-pointer">
-              Enter a custom amount instead
+              {t("cpoInstallment.customAmountLabel")}
             </Label>
           </div>
 
@@ -287,14 +289,14 @@ const CpoInstallmentSelectionStep = ({
                   type="number"
                   value={customAmountStr}
                   onChange={(e) => handleCustomAmountChange(e.target.value)}
-                  placeholder="0.00"
+                  placeholder={t("cpoInstallment.amountPlaceholder")}
                   className="ps-7"
                   min={0}
                   step="0.01"
                 />
               </div>
               <p className="text-xs text-muted-foreground">
-                Payment will be allocated across selected installments in order of due date.
+                {t("cpoInstallment.allocationHint")}
               </p>
             </div>
           )}
@@ -302,20 +304,20 @@ const CpoInstallmentSelectionStep = ({
 
         {/* Summary */}
         <Card className="bg-blue-50 border-blue-200">
-          <CardContent className="p-4">
+          <CardContent className="p-card">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600">
                   {useCustomAmount && customAmount !== undefined
-                    ? "Custom amount"
-                    : `${selectedSfpIds.length} installment${selectedSfpIds.length !== 1 ? "s" : ""} selected`}
+                    ? t("cpoInstallment.customAmount")
+                    : t("cpoInstallment.installmentsSelected", { count: selectedSfpIds.length })}
                 </p>
                 {!useCustomAmount && selectedSfpIds.length > 0 && (
                   <p className="text-xs text-gray-400 mt-0.5">
-                    Total outstanding: {formatAmount(
+                    {t("cpoInstallment.totalOutstanding", { amount: formatAmount(
                       pendingDues.reduce((s, d) => s + (d.amount_due ?? d.amount_expected ?? 0), 0),
                       currencySymbol
-                    )}
+                    ) })}
                   </p>
                 )}
               </div>

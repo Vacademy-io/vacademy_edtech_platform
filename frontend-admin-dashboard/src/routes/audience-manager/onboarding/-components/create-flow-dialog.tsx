@@ -3,6 +3,8 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useMutation } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { MyDialog } from '@/components/design-system/dialog';
 import { MyButton } from '@/components/design-system/button';
 import { MyInput } from '@/components/design-system/input';
@@ -10,12 +12,16 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { toast } from 'sonner';
 import { createOnboardingFlow, type OnboardingFlowDTO } from '../-services/onboarding-service';
 
-const createFlowSchema = z.object({
-    name: z.string().min(1, 'Flow name is required').max(150, 'Keep it under 150 characters'),
-    description: z.string().max(1000, 'Keep it under 1000 characters').optional(),
-});
+const buildCreateFlowSchema = (t: TFunction) =>
+    z.object({
+        name: z
+            .string()
+            .min(1, t('validation.nameRequired'))
+            .max(150, t('validation.nameMaxLength')),
+        description: z.string().max(1000, t('validation.descriptionMaxLength')).optional(),
+    });
 
-type CreateFlowForm = z.infer<typeof createFlowSchema>;
+type CreateFlowForm = z.infer<ReturnType<typeof buildCreateFlowSchema>>;
 
 interface CreateFlowDialogProps {
     instituteId: string;
@@ -25,8 +31,9 @@ interface CreateFlowDialogProps {
 }
 
 export function CreateFlowDialog({ instituteId, open, onOpenChange, onCreated }: CreateFlowDialogProps) {
+    const { t } = useTranslation('audienceManagerCreateFlowDialog');
     const form = useForm<CreateFlowForm>({
-        resolver: zodResolver(createFlowSchema),
+        resolver: zodResolver(buildCreateFlowSchema(t)),
         defaultValues: { name: '', description: '' },
     });
 
@@ -43,12 +50,12 @@ export function CreateFlowDialog({ instituteId, open, onOpenChange, onCreated }:
                 start_mode: 'MANUAL',
             }),
         onSuccess: (flow) => {
-            toast.success('Onboarding flow created');
+            toast.success(t('toasts.created'));
             onOpenChange(false);
             onCreated(flow);
         },
         onError: () => {
-            toast.error('Could not create the flow. Please try again.');
+            toast.error(t('toasts.createError'));
         },
     });
 
@@ -57,7 +64,7 @@ export function CreateFlowDialog({ instituteId, open, onOpenChange, onCreated }:
     const footer = (
         <div className="flex w-full items-center justify-end gap-2">
             <MyButton buttonType="secondary" scale="medium" onClick={() => onOpenChange(false)} disable={isPending}>
-                Cancel
+                {t('actions.cancel')}
             </MyButton>
             <MyButton
                 buttonType="primary"
@@ -65,13 +72,13 @@ export function CreateFlowDialog({ instituteId, open, onOpenChange, onCreated }:
                 onClick={form.handleSubmit(onSubmit)}
                 disable={isPending}
             >
-                {isPending ? 'Creating…' : 'Create Flow'}
+                {isPending ? t('actions.creating') : t('actions.createFlow')}
             </MyButton>
         </div>
     );
 
     return (
-        <MyDialog open={open} onOpenChange={onOpenChange} heading="Create Onboarding Flow" footer={footer} dialogWidth="max-w-md">
+        <MyDialog open={open} onOpenChange={onOpenChange} heading={t('heading')} footer={footer} dialogWidth="max-w-md">
             <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-4 px-6 py-6">
                     <FormField
@@ -79,11 +86,11 @@ export function CreateFlowDialog({ instituteId, open, onOpenChange, onCreated }:
                         name="name"
                         render={({ field }) => (
                             <FormItem>
-                                <FormLabel>Flow name</FormLabel>
+                                <FormLabel>{t('fields.name.label')}</FormLabel>
                                 <FormControl>
                                     <MyInput
                                         inputType="text"
-                                        inputPlaceholder="e.g. New Student Onboarding"
+                                        inputPlaceholder={t('fields.name.placeholder')}
                                         input={field.value}
                                         onChangeFunction={field.onChange}
                                         required
@@ -98,11 +105,11 @@ export function CreateFlowDialog({ instituteId, open, onOpenChange, onCreated }:
                         name="description"
                         render={({ field }) => (
                             <FormItem>
-                                <FormLabel>Description</FormLabel>
+                                <FormLabel>{t('fields.description.label')}</FormLabel>
                                 <FormControl>
                                     <MyInput
                                         inputType="text"
-                                        inputPlaceholder="What this flow is for (optional)"
+                                        inputPlaceholder={t('fields.description.placeholder')}
                                         input={field.value ?? ''}
                                         onChangeFunction={field.onChange}
                                     />

@@ -27,6 +27,11 @@ public class CourseDTO {
     private Integer courseDepth;
     private String courseHtmlDescription;
     private Double percentageCompleted;
+    /**
+     * Course page content (FAQs, course mode, ...) as a JSON object string from
+     * package_page_content. Filled by course-init only (single-course reads); null otherwise.
+     */
+    private String coursePageJson;
 
     public CourseDTO(PackageEntity packageEntity) {
         this.id = packageEntity.getId();

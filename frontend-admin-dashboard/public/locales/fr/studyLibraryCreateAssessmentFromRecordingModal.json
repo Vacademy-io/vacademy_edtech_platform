@@ -1,0 +1,127 @@
+{
+    "dialog": {
+        "headingPreview": "Aperçu de l’évaluation",
+        "headingCreate": "Créer une évaluation à partir de l’enregistrement",
+        "close": "Fermer",
+        "cancel": "Annuler"
+    },
+    "toast": {
+        "generatedQuestions_one": "{{count}} question générée",
+        "generatedQuestions_many": "{{count}} questions générées",
+        "generatedQuestions_other": "{{count}} questions générées",
+        "generationFailed": "Échec de la génération",
+        "createFailed": "Impossible de créer l’évaluation",
+        "dateTimeRequired": "La date et l’heure de début et de fin sont requises",
+        "endAfterStart": "La date et l’heure de fin doivent être postérieures à celles de début",
+        "questionCountRange": "Le nombre de questions doit être compris entre 1 et 50",
+        "pickQuestionType": "Choisissez au moins un type de question",
+        "publishSuccess": "Évaluation publiée",
+        "publishFailed": "Impossible de publier l’évaluation"
+    },
+    "loading": {
+        "generating_one": "Génération de {{count}} question avec l’IA",
+        "generating_many": "Génération de {{count}} questions avec l’IA",
+        "generating_other": "Génération de {{count}} questions avec l’IA",
+        "withIllustrations": " + illustrations",
+        "hintWithImages": "Cela prend généralement 30 à 90 secondes — le LLM choisit quelques questions où un schéma est utile et n’illustre que celles-ci. Veuillez ne pas fermer cette fenêtre.",
+        "hintPlain": "Cela prend généralement 15 à 45 secondes. Veuillez ne pas fermer cette fenêtre."
+    },
+    "failure": {
+        "title": "Échec de la génération",
+        "unknownError": "Erreur inconnue",
+        "tryAgain": "Réessayer"
+    },
+    "generate": "Générer l’évaluation",
+    "picker": {
+        "pickTypes": "Choisir les types de questions",
+        "selectedCount_one": "{{count}} sélectionné",
+        "selectedCount_many": "{{count}} sélectionnés",
+        "selectedCount_other": "{{count}} sélectionnés",
+        "note": "Remarque : le LLM ne génère actuellement de façon fiable que des QCM. Les autres types sont enregistrés avec votre évaluation, mais peuvent encore revenir sous forme de QCM tant que la prise en charge du prompt n’est pas disponible.",
+        "howMany": "Combien de questions ?",
+        "rangeHint": "Entre 1 et 50. Vous pourrez aussi modifier ce nombre à l’étape suivante.",
+        "includeImages": "Générer des illustrations pour les questions et les options"
+    },
+    "form": {
+        "titleGroup": "Titre",
+        "titleLabel": "Titre de l’évaluation",
+        "titlePlaceholderLoading": "Suggestion à partir de la transcription…",
+        "titlePlaceholderEmpty": "Laisser vide pour générer automatiquement à partir du cours",
+        "scheduleGroup": "Planification",
+        "startLabel": "Date et heure de début",
+        "endLabel": "Date et heure de fin",
+        "timezoneHint": "Heures affichées dans votre fuseau horaire local :",
+        "markingGroup": "Notation",
+        "marksLabel": "Points par question",
+        "durationLabel": "Durée totale du test",
+        "negativeMarkingLabel": "Activer la notation négative",
+        "deductLabel": "Déduire",
+        "perWrongAnswer": "par mauvaise réponse",
+        "attemptsGroup": "Tentatives et aperçu",
+        "reattemptLabel": "Nouvelles tentatives autorisées",
+        "reattemptHint": "Tentatives après la première soumission. 0 = tentative unique.",
+        "previewTimeLabel": "Temps d’aperçu (minutes)",
+        "previewTimeHint": "Temps de l’écran d’instructions/de couverture avant le démarrage du minuteur.",
+        "contentGroup": "Contenu et accès",
+        "numQuestionsLabel": "Nombre de questions",
+        "fixedAtGeneration": "fixé à la génération",
+        "visibilityLabel": "Visibilité",
+        "visibilityPrivate": "Privée",
+        "visibilityPrivateHint": "groupe uniquement",
+        "visibilityPublic": "Publique",
+        "visibilityPublicHint": "accès ouvert"
+    },
+    "context": {
+        "hideBatchList": "Masquer la liste des groupes",
+        "viewBatches": "Voir les groupes attachés",
+        "assignedToBatches_one": "Assigné à {{count}} groupe",
+        "assignedToBatches_many": "Assigné à {{count}} groupes",
+        "assignedToBatches_other": "Assigné à {{count}} groupes",
+        "noBatches": "Aucun groupe attaché — l’évaluation ne sera pas assignée automatiquement",
+        "languageHint": "Les questions seront générées en {{language}}."
+    },
+    "duration": {
+        "hoursAria": "Heures",
+        "hoursUnit": "h",
+        "minutesAria": "Minutes",
+        "minutesUnit": "min"
+    },
+    "preview": {
+        "untitled": "Sans titre",
+        "titleAria": "Titre de l’évaluation",
+        "questionsCount_one": "{{count}} question",
+        "questionsCount_many": "{{count}} questions",
+        "questionsCount_other": "{{count}} questions",
+        "batchesCount_one": "{{count}} groupe",
+        "batchesCount_many": "{{count}} groupes",
+        "batchesCount_other": "{{count}} groupes",
+        "assignedBatchesHeader": "Groupes assignés ({{count}})",
+        "publishedBanner_one": "Publiée dans l’onglet Évaluations de l’établissement — enregistrée pour {{count}} groupe.",
+        "publishedBanner_many": "Publiée dans l’onglet Évaluations de l’établissement — enregistrée pour {{count}} groupes.",
+        "publishedBanner_other": "Publiée dans l’onglet Évaluations de l’établissement — enregistrée pour {{count}} groupes.",
+        "reviewHintPrefix": "Passez en revue les questions ci-dessus. Ouvrez",
+        "reviewHintSuffix": "pour définir le titre, la planification et la notation — vous pouvez publier depuis cette fenêtre.",
+        "addToCourse": "Ajouter au cours",
+        "createAssessment": "Créer une évaluation",
+        "addToCourseAsSlide": "Ajouter au cours comme diapositive",
+        "defaultTitle": "Évaluation"
+    },
+    "config": {
+        "heading": "Créer une évaluation",
+        "description": "Définissez le titre, la planification, la notation et la visibilité — ces valeurs remplacent celles envoyées lors de la publication, donc ce que vous voyez ici est exactement ce que recevront les apprenants.",
+        "cancel": "Annuler",
+        "publishing": "Publication…",
+        "publish": "Publier l’évaluation"
+    },
+    "questions": {
+        "empty": "Aucune question à prévisualiser pour le moment.",
+        "multipleChoice": "Choix multiple",
+        "questionLabel": "Question {{number}}",
+        "difficultyMedium": "Moyen",
+        "answer": "Réponse",
+        "why": "Pourquoi :"
+    },
+    "timezone": {
+        "fallback": "votre fuseau horaire local"
+    }
+}

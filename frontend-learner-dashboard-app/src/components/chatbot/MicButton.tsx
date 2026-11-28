@@ -1,5 +1,6 @@
 import React, { useState, useRef, useCallback, useEffect } from "react";
-import { Microphone, MicrophoneSlash, SpinnerGap } from "@phosphor-icons/react";
+import { Microphone, SpinnerGap } from "@phosphor-icons/react";
+import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { useVoiceRecorder } from "@/hooks/useVoiceRecorder";
 import authenticatedAxiosInstance from "@/lib/auth/axiosInstance";
@@ -22,6 +23,7 @@ export const MicButton: React.FC<MicButtonProps> = ({
   disabled,
   sessionId,
 }) => {
+  const { t } = useTranslation("chatFeatureB");
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [recordingSeconds, setRecordingSeconds] = useState(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -99,8 +101,9 @@ export const MicButton: React.FC<MicButtonProps> = ({
       <button
         type="button"
         disabled
-        className="h-7 w-7 flex items-center justify-center rounded-md text-muted-foreground"
-        title="Transcribing..."
+        className="h-8 w-8 shrink-0 flex items-center justify-center rounded-lg text-muted-foreground"
+        title={t("micButton.transcribing")}
+        aria-label={t("micButton.transcribing")}
       >
         <SpinnerGap className="h-4 w-4 animate-spin" />
       </button>
@@ -111,9 +114,10 @@ export const MicButton: React.FC<MicButtonProps> = ({
     return (
       <button
         type="button"
-        className="flex items-center gap-1.5 h-7 px-2 rounded-md text-red-500 hover:bg-red-500/10 transition-colors"
+        className="flex shrink-0 items-center gap-1.5 h-8 px-2 rounded-lg text-red-500 hover:bg-red-500/10 transition-colors"
         onClick={handleClick}
-        title="Stop recording"
+        title={t("micButton.stopRecording")}
+        aria-label={t("micButton.stopRecording")}
       >
         <span className="relative flex h-2 w-2">
           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
@@ -130,14 +134,15 @@ export const MicButton: React.FC<MicButtonProps> = ({
     <button
       type="button"
       className={cn(
-        "h-7 w-7 flex items-center justify-center rounded-md transition-colors",
+        "h-8 w-8 shrink-0 flex items-center justify-center rounded-lg transition-colors",
         disabled
           ? "text-muted-foreground/50 cursor-not-allowed"
           : "text-muted-foreground hover:text-foreground hover:bg-accent",
       )}
       onClick={handleClick}
       disabled={disabled}
-      title="Voice to text"
+      title={t("micButton.voiceToText")}
+      aria-label={t("micButton.voiceToText")}
     >
       <Microphone className="h-4 w-4" />
     </button>

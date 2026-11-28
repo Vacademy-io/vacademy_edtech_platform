@@ -26,7 +26,8 @@ public class OpenInvoiceController {
     @GetMapping("/{invoiceId}")
     public ResponseEntity<InvoiceDTO> getInvoicePublic(@PathVariable String invoiceId) {
         InvoiceDTO invoice = invoiceService.getInvoiceById(invoiceId);
-        return ResponseEntity.ok(invoice);
+        // Public (learner payment link): never expose the admin's discount notes.
+        return ResponseEntity.ok(invoice.withoutInternalDiscountNotes());
     }
 
     /**

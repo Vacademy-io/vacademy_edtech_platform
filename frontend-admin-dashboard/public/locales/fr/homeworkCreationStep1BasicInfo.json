@@ -1,0 +1,51 @@
+{
+    "heading": {
+        "createHomework": "Créer un devoir",
+        "updateHomework": "Mettre à jour le devoir"
+    },
+    "page": {
+        "title": "Informations de base",
+        "nextButton": "Suivant",
+        "updateButton": "Mettre à jour"
+    },
+    "toast": {
+        "updateSuccess": "Les données de l'étape 1 ont été mises à jour avec succès !",
+        "saveSuccess": "Les données de l'étape 1 ont été enregistrées avec succès !"
+    },
+    "errors": {
+        "saveFailed": "Échec de l'enregistrement des informations de base."
+    },
+    "fields": {
+        "assessmentName": {
+            "label": "Nom de l'évaluation",
+            "placeholder": "Ajouter un titre"
+        },
+        "assessmentInstructions": {
+            "sectionTitle": "Instructions de l'évaluation",
+            "placeholder": "Rédigez les instructions du devoir"
+        },
+        "liveDateRange": {
+            "sectionTitle": "Plage de dates en direct",
+            "startDateLabel": "Date et heure de début",
+            "endDateLabel": "Date et heure de fin"
+        },
+        "attemptSettings": {
+            "sectionTitle": "Paramètres de tentative",
+            "reattemptCountLabel": "Nombre de nouvelles tentatives",
+            "reattemptCountPlaceholder": "Nombre de nouvelles tentatives"
+        },
+        "evaluationType": {
+            "label": "Type d'évaluation"
+        },
+        "submissionType": {
+            "label": "Type de soumission"
+        },
+        "assessmentPreview": {
+            "allowLabel": "Autoriser l'aperçu de l'évaluation",
+            "previewTimeLimitLabel": "Durée limite de l'aperçu"
+        },
+        "switchSections": {
+            "label": "Autoriser les {{term}}s à changer de section"
+        }
+    }
+}

@@ -1,0 +1,107 @@
+{
+    "title": "تقرير اختبار الطالب",
+    "toast": {
+        "exportPdfSuccess": "تم تصدير بيانات تقرير الاختبار بصيغة PDF بنجاح!",
+        "exportPdfFailed": "تعذّر تصدير التقرير. يُرجى المحاولة مرة أخرى."
+    },
+    "info": {
+        "subject": "المادة:",
+        "attemptDate": "تاريخ المحاولة:",
+        "marks": "الدرجات:",
+        "completionTime": "وقت الإنجاز:",
+        "minutes": "{{value}} دقيقة",
+        "startTime": "وقت البدء:",
+        "endTime": "وقت الانتهاء:"
+    },
+    "score": {
+        "heading": "تقرير النتيجة",
+        "rank": "الترتيب",
+        "percentile": "المئين",
+        "marks": "الدرجات"
+    },
+    "response": {
+        "heading": "توزيع الإجابات",
+        "attempted": "تمت الإجابة عليها:",
+        "skipped": "تم تخطيها:"
+    },
+    "marksBreakdown": {
+        "heading": "توزيع الدرجات",
+        "correctRespondents": "الإجابات الصحيحة:",
+        "partiallyCorrectRespondents": "الإجابات الصحيحة جزئيًا:",
+        "wrongRespondents": "الإجابات الخاطئة:",
+        "skipped": "تم تخطيها:"
+    },
+    "review": {
+        "heading": "مراجعة الإجابات",
+        "question": "السؤال ({{number}}.)",
+        "timeTakenSeconds_zero": "{{count}} ثانية",
+        "timeTakenSeconds_one": "{{count}} ثانية واحدة",
+        "timeTakenSeconds_two": "{{count}} ثانيتان",
+        "timeTakenSeconds_few": "{{count}} ثوانٍ",
+        "timeTakenSeconds_many": "{{count}} ثانية",
+        "timeTakenSeconds_other": "{{count}} ثانية",
+        "studentAnswer": "إجابة الطالب:",
+        "marksLabel": "{{marks}} درجة",
+        "correctAnswer": "الإجابة الصحيحة:",
+        "explanation": "التوضيح:",
+        "noResponse": "لا توجد إجابة",
+        "empty": "لا توجد مراجعة إجابات متاحة"
+    },
+    "meta": {
+        "timeRange": "{{start}} – {{end}}"
+    },
+    "stats": {
+        "score": "النتيجة",
+        "rank": "الترتيب",
+        "percentile": "المئين",
+        "timeTaken": "الوقت المستغرق"
+    },
+    "duration": {
+        "seconds": "{{value}} ث",
+        "minutes": "{{minutes}} د",
+        "minutesSeconds": "{{minutes}} د {{seconds}} ث",
+        "hoursMinutes": "{{hours}} س {{minutes}} د"
+    },
+    "charts": {
+        "attempted": "تمت الإجابة",
+        "skipped": "تم تخطيها",
+        "correct": "صحيحة",
+        "partial": "صحيحة جزئيًا",
+        "wrong": "خاطئة",
+        "attemptedCenter": "تمت الإجابة",
+        "marksCenter": "درجة"
+    },
+    "filter": {
+        "ariaLabel": "تصفية الأسئلة حسب النتيجة",
+        "all": "الكل ({{n}})",
+        "correct": "صحيحة ({{n}})",
+        "partial": "جزئية ({{n}})",
+        "wrong": "خاطئة ({{n}})",
+        "pending": "لم تُصحَّح ({{n}})",
+        "skipped": "تم تخطيها ({{n}})"
+    },
+    "status": {
+        "correct": "صحيحة",
+        "partial": "صحيحة جزئيًا",
+        "wrong": "خاطئة",
+        "pending": "لم تُصحَّح بعد",
+        "skipped": "تم تخطيها"
+    },
+    "answer": {
+        "questionShort": "س{{number}}",
+        "marks": "{{marks}} درجة",
+        "learnerChoice": "اختيار الطالب",
+        "correct": "صحيحة",
+        "learnerAnswer": "إجابة الطالب",
+        "correctAnswer": "الإجابة الصحيحة",
+        "noOptionChosen": "لم يتم اختيار أي خيار",
+        "choiceNotOnPaper": "الخيار الذي اختاره الطالب لم يعد موجودًا في هذا السؤال؛ فقد تم تعديله بعد الاختبار.",
+        "optionsUnavailable": "تعذّر تحميل خيارات هذا السؤال.",
+        "explanation": "التوضيح",
+        "teacherRemark": "ملاحظة المعلم",
+        "aiFeedback": "ملاحظات الذكاء الاصطناعي",
+        "noMatch": "لا توجد أسئلة تطابق عامل التصفية هذا.",
+        "sectionFallback": "القسم {{number}}"
+    },
+    "openSubmission": "فتح الإجابة"
+}

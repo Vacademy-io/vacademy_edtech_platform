@@ -1,0 +1,26 @@
+---
+title: "Versioning"
+description: "What may change within v1, and what will not."
+---
+
+The version is in the path: `https://api.vacademy.ai/catalog/v1`. Within v1, changes are **additive only**.
+
+**May change within v1** (write your code to tolerate these):
+
+- New endpoints and new optional query parameters.
+- New fields in responses, including inside nested objects. Ignore fields you don't know.
+- New values in fields that are open lists by nature: `formats[].key`, `languages[].code`, `tags`, stream and category slugs.
+- New error `code` values. Treat an unknown code by its HTTP status.
+- New optional fields in `POST /leads`.
+- Error `message` wording.
+- The `structured_data` object, as schema.org and search engines evolve.
+
+**Will not change within v1:**
+
+- Existing paths, methods and parameters.
+- Existing field names, types and meaning; a nullable field stays nullable and a non-null one stays non-null.
+- Enumerated values: `availability` (`available`, `coming_soon`, `not_started`, `closed`), `mode`, `preview_video.kind`, `sort`, the `POST /leads` statuses (`received`, `duplicate`).
+- The error envelope `{"error": {"code", "message", "request_id", "details"}}` and existing error codes.
+- Authentication with `vak_pub_` keys.
+
+Anything that would break these ships as `v2`, with v1 kept running alongside and a deprecation date announced in the [changelog](/platform/changelog).

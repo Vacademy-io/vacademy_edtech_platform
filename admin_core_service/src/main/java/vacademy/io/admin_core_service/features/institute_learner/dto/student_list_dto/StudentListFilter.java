@@ -40,6 +40,12 @@ public class StudentListFilter {
     // CustomFieldListFilterDTO). Coexists with the legacy values-IN map above;
     // both AND together when sent.
     private List<vacademy.io.admin_core_service.features.common.dto.CustomFieldListFilterDTO> customFieldTypedFilters;
+    // Campaign (UTM) attribution filter — same shape on every list surface.
+    // Pre-resolved into user ids and folded into cfTypedMatchedUserIds /
+    // cfTypedExcludedUserIds below, so it rides the same custom-repo path.
+    private vacademy.io.admin_core_service.features.utm_attribution.dto.UtmListFilterDTO utmFilters;
+    /** TRIAL and/or PAID. Empty = no membership filter; a learner with no plan never matches. */
+    private List<String> membershipTypes;
     private LocalDate startDate;
     private LocalDate endDate;
 
@@ -49,6 +55,16 @@ public class StudentListFilter {
     // Audience filter — when set, restrict to learners who have an audience_response
     // in one of these audiences (and that response isn't OPTED_OUT).
     private List<String> audienceIds;
+
+    // Learner city / region (state) filters, matched on student.city / student.region
+    // ignoring case and surrounding spaces. Empty or absent = no filter. Like gender,
+    // these are user-scoped and do not drop audience-only rows.
+    private List<String> cities;
+    private List<String> regions;
+
+    // Journey status keys (JOURNEY_STATUS_SETTING). Learners with a current batch on one of these
+    // statuses; pre-resolved into cfTypedMatchedUserIds. Ignored while the setting is off.
+    private List<String> journeyStatuses;
 
     // Internal fields - auto-injected by server for faculty ENROLL_INVITE filtering
     @JsonIgnore

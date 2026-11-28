@@ -1,0 +1,93 @@
+{
+    "title": "Tarification régionale — {{name}}",
+    "section": {
+        "title": "Tarification régionale",
+        "afterSave": "Après l'enregistrement, le panneau de tarification régionale s'ouvre : vous pourrez y vérifier les prix automatiques et fixer des prix exacts pour certains pays."
+    },
+    "steps": {
+        "settings": "1. Activer et choisir les devises",
+        "prices": "2. Prix de chaque plan"
+    },
+    "settings": {
+        "enabledLabel": "Facturer aux apprenants le prix de leur pays",
+        "enabledHelp": "Nous détectons le pays de chaque apprenant à partir de sa connexion internet. Les apprenants d'un pays pour lequel vous avez fixé un prix paient ce prix ; les autres paient le prix normal de ce plan.",
+        "currenciesLabel": "Devises à tarifer automatiquement",
+        "currenciesHelp": "Pour chaque devise choisie, chaque plan reçoit un prix converti depuis son prix normal au taux du jour et arrondi à un montant net (par exemple 999 ₹ devient 11,99 $). Les apprenants de tous les pays qui utilisent cette devise le paient.",
+        "currenciesPlaceholder": "Recherchez et choisissez des devises, ex. dollar américain",
+        "noCurrencies": "Aucune devise choisie : seuls les pays auxquels vous donnez un prix fixe verront un prix différent.",
+        "ratesFetched": "Taux de change mis à jour le {{date}}",
+        "ratesNever": "Les taux de change n'ont pas encore été récupérés",
+        "gatewayNote": "Les apprenants ne sont facturés que dans une devise acceptée par votre passerelle de paiement. PhonePe et Cashfree acceptent uniquement l'INR, et eWay l'AUD et le NZD. Razorpay nécessite l'activation des paiements internationaux dans votre compte Razorpay."
+    },
+    "plans": {
+        "explain": "Les prix automatiques suivent le taux de change. Vous pouvez modifier n'importe lequel ou ajouter un prix fixe pour un seul pays. Le prix d'un pays l'emporte toujours sur celui de la devise.",
+        "offNote": "La tarification régionale est désactivée : chaque apprenant paie le prix normal. Les prix ci-dessous sont conservés pour le jour où vous l'activerez.",
+        "empty": "Cette option de paiement n'a aucun plan.",
+        "basePrice": "Prix normal {{price}}",
+        "freePlan": "Les plans gratuits sont gratuits partout.",
+        "byCurrency": "Prix automatiques par devise",
+        "byCountry": "Prix fixes pour certains pays",
+        "noCurrencyPrices": "Aucun pour l'instant. Choisissez des devises à l'étape 1 pour les créer.",
+        "noCountryPrices": "Aucun pour l'instant."
+    },
+    "row": {
+        "allCountries": "Tous ceux qui paient en {{currency}}",
+        "paidIn": "Payé en {{currency}}",
+        "reviewHint": "Le prix normal de ce plan a changé depuis que vous avez fixé celui-ci. Vérifiez qu'il convient toujours.",
+        "price": "Prix ({{currency}})",
+        "strikePrice": "Prix barré (facultatif)",
+        "priceInvalid": "Saisissez un prix supérieur à 0"
+    },
+    "source": {
+        "auto": "Automatique",
+        "manual": "Défini par vous",
+        "review": "Prix à vérifier"
+    },
+    "add": {
+        "button": "Ajouter un prix pour un pays précis",
+        "title": "Prix fixe pour un pays",
+        "country": "Pays",
+        "countryPlaceholder": "Choisissez un pays",
+        "countrySearch": "Rechercher un pays…",
+        "countryEmpty": "Aucun pays trouvé",
+        "currency": "Devise de paiement",
+        "currencyPlaceholder": "Choisissez une devise",
+        "currencySearch": "Rechercher une devise…",
+        "currencyEmpty": "Aucune devise trouvée",
+        "currencyHint": "Pré-rempli avec la devise locale de {{country}}. Modifiez-la pour facturer dans une autre devise.",
+        "price": "Prix {{currency}}",
+        "auto": "Calculer plutôt le prix à partir du taux de change",
+        "save": "Ajouter le prix"
+    },
+    "delete": {
+        "title": "Supprimer le prix pour {{region}} ?",
+        "description": "Les apprenants de ce pays recevront le prix de leur devise, ou le prix normal."
+    },
+    "actions": {
+        "close": "Fermer",
+        "retry": "Réessayer",
+        "refresh": "Actualiser les taux",
+        "refreshing": "Actualisation…",
+        "saveSettings": "Enregistrer",
+        "saving": "Enregistrement…",
+        "save": "Enregistrer",
+        "keep": "Garder ce prix",
+        "resetToAuto": "Revenir à l'automatique",
+        "delete": "Supprimer",
+        "cancel": "Annuler",
+        "openDialog": "Tarification régionale"
+    },
+    "toast": {
+        "settingsSaved": "Tarification régionale enregistrée",
+        "refreshed": "Prix mis à jour avec les taux du jour",
+        "refreshFailed": "Impossible d'actualiser les taux de change",
+        "priceSaved": "Prix enregistré",
+        "kept": "Prix conservé",
+        "reset": "Prix remis en automatique",
+        "deleted": "Prix supprimé",
+        "saveFailed": "Enregistrement impossible. Veuillez réessayer."
+    },
+    "error": {
+        "load": "Impossible de charger la tarification régionale."
+    }
+}

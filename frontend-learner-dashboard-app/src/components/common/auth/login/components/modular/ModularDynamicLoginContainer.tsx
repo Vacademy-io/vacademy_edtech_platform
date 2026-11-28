@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { FcGoogle } from "react-icons/fc"; // design-lint-ignore: Google brand logo
+import { EnterpriseSsoButton } from "@/components/common/auth/login/enterprise-sso-button";
 import { ArrowRight } from "@phosphor-icons/react";
 import { isIOSNative, shouldHideThirdPartyLogin } from "@/utils/ios-iap-compliance";
 import { LOGIN_URL_GOOGLE_GITHUB } from "@/constants/urls";
@@ -44,6 +45,8 @@ interface ModularDynamicLoginContainerProps {
   onSwitchToForgotPassword?: () => void;
   onLoginSuccess?: () => void;
   className?: string;
+  /** "Don't have an account? Sign up here" under the form. Off unless the caller offers signup. */
+  showSignupLink?: boolean;
 }
 
 export function ModularDynamicLoginContainer({
@@ -55,7 +58,8 @@ export function ModularDynamicLoginContainer({
   onSwitchToSignup,
   onSwitchToForgotPassword,
   onLoginSuccess,
-  className = ""
+  className = "",
+  showSignupLink = false
 }: ModularDynamicLoginContainerProps) {
   const { t } = useTranslation("auth");
   const navigate = useNavigate();
@@ -728,6 +732,11 @@ export function ModularDynamicLoginContainer({
         </div>
       </motion.div>
 
+      <EnterpriseSsoButton
+        instituteId={instituteId}
+        returnPath={new URLSearchParams(window.location.search).get("redirect")}
+      />
+
       {/* OAuth Providers. On native iOS, Sign in with Apple (below) provides the
           Guideline 4.8 parity that previously required hiding Google/GitHub.
           web / Android / Electron unaffected. */}
@@ -892,6 +901,23 @@ export function ModularDynamicLoginContainer({
           </div>
         </div>
       </motion.div> */}
+
+      {/* Sign up link, the mirror of the signup screen's "Sign in here" */}
+      {showSignupLink && onSwitchToSignup && (
+        <div className="text-center text-xs text-gray-600 p-4">
+          <p>
+            {t("common.dontHaveAccount")}{" "}
+            <motion.button
+              type="button"
+              whileHover={{ scale: 1.02 }}
+              onClick={() => onSwitchToSignup()}
+              className="text-gray-800 hover:text-gray-900 font-medium underline cursor-pointer"
+            >
+              {t("common.signUpHere")}
+            </motion.button>
+          </p>
+        </div>
+      )}
 
       {/* Footer Links */}
       <motion.div

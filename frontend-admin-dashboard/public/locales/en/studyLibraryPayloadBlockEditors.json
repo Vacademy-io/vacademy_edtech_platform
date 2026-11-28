@@ -1,0 +1,62 @@
+{
+    "flashcard": {
+        "title": "Flashcard",
+        "flip": "Flip",
+        "front": "FRONT",
+        "back": "BACK",
+        "frontPlaceholder": "Front of the card…",
+        "backPlaceholder": "Back of the card…",
+        "aspectRatio": "Aspect ratio:"
+    },
+    "tabs": {
+        "title": "Tabbed content",
+        "addTab": "Add tab",
+        "tabDefaultLabel": "Tab {{number}}",
+        "tabLabelPlaceholder": "Tab label",
+        "contentPlaceholder": "Tab content…"
+    },
+    "quiz": {
+        "title": "Quiz",
+        "mcq": "MCQ",
+        "trueFalse": "True/False",
+        "true": "True",
+        "false": "False",
+        "questionPlaceholder": "Question…",
+        "optionPlaceholder": "Option {{letter}}…",
+        "addOption": "Add option",
+        "explanationLabel": "Explanation (shown after answering)",
+        "explanationPlaceholder": "Why is this the correct answer?"
+    },
+    "timeline": {
+        "title": "Timeline",
+        "addStep": "Add step",
+        "stepDefaultTitle": "Step {{number}}",
+        "stepTitlePlaceholder": "Step title",
+        "descriptionPlaceholder": "Description (optional)",
+        "stepColorAriaLabel": "Step color"
+    },
+    "columns": {
+        "title": "Columns ({{count}})",
+        "addColumn": "Add column",
+        "removeLast": "Remove last",
+        "columnPlaceholder": "Column {{number}}…"
+    },
+    "accordion": {
+        "title": "Accordion",
+        "addSection": "Add section",
+        "sectionDefaultHeading": "Section {{number}}",
+        "toggleSectionAriaLabel": "Toggle section",
+        "sectionHeadingPlaceholder": "Section heading",
+        "sectionContentPlaceholder": "Section content…"
+    },
+    "code": {
+        "languageAriaLabel": "Code language",
+        "placeholder": "// code"
+    },
+    "multiLangCode": {
+        "title": "{{language}} Code Editor",
+        "languageAriaLabel": "Language",
+        "placeholder": "# {{language}} code — learners get an interactive runner",
+        "output": "Output:"
+    }
+}

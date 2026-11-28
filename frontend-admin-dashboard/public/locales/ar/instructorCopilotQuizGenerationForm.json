@@ -1,0 +1,16 @@
+{
+    "title": "إنشاء اختبار من النص المفرغ",
+    "description": "إنشاء أسئلة الاختبار بناءً على النص المفرغ للمعلم",
+    "numberOfQuestions": "عدد الأسئلة",
+    "classLevel": "المستوى الدراسي",
+    "classLevelPlaceholder": "مثال: الصف التاسع، المرحلة الثانوية",
+    "classLevelHint": "حدد المستوى أو الصف الدراسي",
+    "questionType": "نوع السؤال",
+    "language": "اللغة",
+    "generateButton": "إنشاء اختبار من النص المفرغ",
+    "generatingButton": "جاري إنشاء الاختبار...",
+    "errors": {
+        "noTranscript": "لا يوجد نص مفرغ متاح. يرجى التأكد من تفريغ الصوت أولاً.",
+        "classLevelRequired": "يرجى إدخال المستوى الدراسي"
+    }
+}

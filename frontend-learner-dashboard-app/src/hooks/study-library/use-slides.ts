@@ -174,10 +174,12 @@ export interface Slide {
 }
 
 export const fetchSlidesByChapterId = async (
-  chapterId: string
+  chapterId: string,
+  signal?: AbortSignal
 ): Promise<Slide[]> => {
   const response = await authenticatedAxiosInstance.get(
-    `${GET_SLIDES}?chapterId=${chapterId}`
+    `${GET_SLIDES}?chapterId=${chapterId}`,
+    { signal }
   );
   return response.data;
 };

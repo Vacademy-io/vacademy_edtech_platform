@@ -1,0 +1,535 @@
+{
+    "title": "Poste de numérisation",
+    "subtitle": "Transformez une pile numérisée en une copie par élève, puis faites-les corriger par l'IA.",
+    "back": "Retour aux remises",
+    "backToList": "Retour aux évaluations",
+    "loading": "Chargement…",
+    "retry": "Réessayer",
+    "loadFailed": "Impossible d'ouvrir le poste de numérisation. Réessayez.",
+    "readOnly": "Les copies sont prêtes. Cliquez sur Modifier quelque chose pour les changer.",
+    "off": {
+        "title": "Le poste de numérisation n'est pas activé pour cet établissement",
+        "body": "En attendant, importez un PDF par élève via Corriger avec l'IA → Importer des copies."
+    },
+    "steps": {
+        "title": "Comment ça marche",
+        "one": {
+            "title": "Numérisez la pile",
+            "body": "Placez les copies dans le scanner et numérisez-les dans un dossier, en JPEG ou PDF."
+        },
+        "two": {
+            "title": "Retournez la pile",
+            "body": "Retournez toute la pile, pour que la page du dessus se retrouve en dessous, face vers le bas, et numérisez-la à nouveau dans un second dossier."
+        },
+        "three": {
+            "title": "Ajoutez les deux numérisations ici",
+            "body": "Ajoutez les deux dossiers comme un seul lot. Numérisez la pile suivante comme lot suivant."
+        },
+        "modes": "Les deux passages dans un seul dossier, ou un scanner recto verso, fonctionnent aussi : indiquez comment vous avez numérisé en ajoutant un lot."
+    },
+    "sessions": {
+        "title": "Sessions de numérisation de ce test",
+        "empty": "Aucune session de numérisation pour l'instant.",
+        "new": "Démarrer une nouvelle session",
+        "creating": "Démarrage…",
+        "createFailed": "Impossible de démarrer une session de numérisation.",
+        "resume": "Reprendre",
+        "open": "Ouvrir",
+        "summary": "{{loads}} lots · {{copies}} copies",
+        "notFound": "Cette session de numérisation est introuvable.",
+        "backToList": "Retour aux sessions"
+    },
+    "status": {
+        "OPEN": "Ouverte",
+        "BUILDING": "Création des copies",
+        "BUILT": "Copies créées",
+        "STARTING": "Lancement de la correction",
+        "STARTED": "Correction lancée",
+        "FAILED": "Échec de la création des copies"
+    },
+    "addLoad": {
+        "first": "Ajouter le premier lot",
+        "next": "Ajouter le lot suivant",
+        "hint": "Vous pouvez ajouter le lot suivant pendant la lecture des précédents.",
+        "full": "Cette session a atteint le nombre maximal de lots ({{max}}).",
+        "title": "Ajouter le lot {{load}}"
+    },
+    "guided": {
+        "title": "Numériser avec le scanner",
+        "useFolders": "Utiliser plutôt des dossiers",
+        "useScanner": "Utiliser plutôt le scanner",
+        "device": {
+            "feeder": "chargeur",
+            "oneSide": "numérise un côté",
+            "bothSides": "numérise les deux côtés",
+            "printsTwoSided": "imprime en recto verso",
+            "printsOneSided": "imprime un seul côté"
+        },
+        "detect": {
+            "checking": "Recherche de Vacademy Scan Helper…",
+            "install": {
+                "title": "Installer Vacademy Scan Helper",
+                "body": "Une petite application pour ce Mac qui permet à cette page de piloter votre scanner : vous cliquez sur Démarrer et les pages arrivent directement, dans l'ordre. Mac uniquement pour l'instant.",
+                "download": "Télécharger pour Mac",
+                "hint": "Déjà installée ? Ouvrez-la depuis Applications. Cette page la trouve en quelques secondes."
+            },
+            "lost": "Contact perdu avec Vacademy Scan Helper. Vérifiez qu'elle est toujours ouverte.",
+            "noScanner": "Allumez le scanner ou connectez-le.",
+            "otherApp": "Fermez Transfert d'images (ou l'application du scanner), puis réessayez.",
+            "busy": "Le scanner est occupé par une autre numérisation. Attendez qu'elle se termine.",
+            "glassOnly": "Ce scanner n'a pas de chargeur ; utilisez la méthode des dossiers."
+        },
+        "side": {
+            "first": "premier côté",
+            "second": "second côté",
+            "both": "les deux côtés",
+            "written": "côté écrit"
+        },
+        "loadSide": "Lot {{load}} · {{side}}",
+        "stepA": "Placez jusqu'à {{max}} feuilles dans le chargeur, écriture vers le haut, bord supérieur en premier.",
+        "stepB1": "Prenez toute la pile et regardez la page du dessus.",
+        "stepB2": "Retournez toute la pile de gauche à droite, pour que cette page se retrouve en dessous, face vers le bas. Gardez les feuilles dans le même ordre.",
+        "stepB3": "Remettez la pile dans le chargeur, le même bord en premier, puis cliquez sur Démarrer la numérisation.",
+        "start": "Démarrer la numérisation",
+        "cancel": "Annuler",
+        "cancelled": "Numérisation annulée. Ces pages ont été supprimées.",
+        "scanning_one": "Numérisation… {{count}} page pour l'instant",
+        "scanning_other": "Numérisation… {{count}} pages pour l'instant",
+        "sideDone_one": "{{count}} page numérisée.",
+        "sideDone_other": "{{count}} pages numérisées.",
+        "pageAlt": "Page numérisée {{n}}",
+        "mismatch": "Le premier côté a {{a}} pages, le second {{b}}. Une feuille a été entraînée deux fois ou sautée. Remettez cette pile et numérisez ce côté à nouveau.",
+        "mismatchDuplex": "{{count}} pages sont arrivées, un nombre impair : une feuille a été entraînée deux fois ou sautée. Remettez toute la pile et numérisez ce lot à nouveau.",
+        "rescanSide": "Numériser ce côté à nouveau",
+        "restartLoad": "Recommencer ce lot",
+        "downloading": "Récupération des pages du scanner… {{done}} sur {{total}}",
+        "retry": "Réessayer",
+        "sent": "Lot {{load}} envoyé. Placez la pile suivante, ou cliquez sur Terminer.",
+        "finish": "Terminer",
+        "finished": "Numérisation terminée. Les lots sont en cours de lecture.",
+        "scanAnother": "Numériser un autre lot",
+        "errors": {
+            "SCANNER_BUSY": "Le scanner est occupé. Fermez Transfert d'images ou attendez l'autre numérisation, puis réessayez.",
+            "SCANNER_NOT_FOUND": "Le scanner n'est plus visible. Allumez-le ou connectez-le, puis réessayez.",
+            "NO_PAPER": "Pas de papier dans le chargeur. Placez la pile, puis réessayez.",
+            "UNSUPPORTED": "Ce scanner ne peut pas faire cela. Utilisez la méthode des dossiers.",
+            "PAPER_JAM": "Bourrage papier. Dégagez-le, remettez toute la pile de ce côté, puis numérisez ce côté à nouveau.",
+            "DEVICE_GONE": "Le scanner a été déconnecté. Reconnectez-le, remettez la pile de ce côté, puis réessayez.",
+            "UNREACHABLE": "Vacademy Scan Helper ne répond pas. Vérifiez qu'elle est ouverte, puis réessayez.",
+            "ORIGIN_NOT_ALLOWED": "Vacademy Scan Helper n'a pas autorisé cette page. Cliquez sur Autoriser dans son message sur le Mac, puis réessayez.",
+            "NOTHING_SCANNED": "Aucune page n'est arrivée. Vérifiez que la pile est dans le chargeur, puis réessayez.",
+            "DOWNLOAD": "Impossible de récupérer les pages depuis Vacademy Scan Helper ; rien n'a été envoyé. Réessayez.",
+            "UNKNOWN": "La numérisation n'a pas abouti. Remettez la pile de ce côté et réessayez."
+        },
+        "stepOneUp": "Placez jusqu'à {{max}} feuilles dans le chargeur, écriture vers le haut, dans l'ordre (premier élève dessus).",
+        "stepOneDown": "Placez jusqu'à {{max}} feuilles dans le chargeur, écriture vers le BAS : ce scanner lit le côté du dessous.",
+        "lookingAtPages": "Examen des pages…",
+        "wrongSide": {
+            "body_one": "Cette page est vide : le scanner a lu le côté blanc. Retournez toute la pile et numérisez à nouveau.",
+            "body_other": "Ces {{count}} pages sont vides : le scanner a lu le côté blanc de chaque feuille. Retournez toute la pile et numérisez à nouveau.",
+            "again": "Numériser à nouveau",
+            "useAnyway": "Les pages sont bonnes, les utiliser"
+        }
+    },
+    "loads": {
+        "title": "Lots"
+    },
+    "intake": {
+        "mode": {
+            "label": "Comment avez-vous numérisé ?",
+            "TWO_PASSES": {
+                "title": "Deux passages",
+                "body": "Rectos et versos dans deux dossiers (recommandé)."
+            },
+            "ONE_FOLDER": {
+                "title": "Les deux passages dans un dossier",
+                "body": "Numérisés l'un après l'autre dans le même dossier."
+            },
+            "DUPLEX": {
+                "title": "Mon scanner fait le recto verso",
+                "body": "Chaque feuille enregistrée recto, verso, recto, verso."
+            }
+        },
+        "first": "Premier passage",
+        "second": "Second passage",
+        "one": "Dossier numérisé",
+        "drop": "Déposez un dossier ou des fichiers ici",
+        "chooseFolder": "Choisir un dossier",
+        "chooseFiles": "Choisir des fichiers",
+        "clear": "Effacer",
+        "pickFailed": "Impossible de lire ce dossier. Essayez plutôt de choisir les fichiers.",
+        "files_one": "{{count}} fichier",
+        "files_other": "{{count}} fichiers",
+        "summary_one": "{{count}} page, triée par {{source}}",
+        "summary_other": "{{count}} pages, triées par {{source}}",
+        "source": {
+            "IMAGE_CAPTURE_SUFFIX": "numéro de numérisation",
+            "NUMERIC_SUFFIX": "le numéro dans le nom du fichier",
+            "MODIFIED_TIME": "l'heure d'enregistrement de chaque fichier",
+            "NAME": "nom du fichier"
+        },
+        "checking": "Vérification des fichiers…",
+        "ready": "{{a}} + {{b}} pages, rien ne manque. Prêt à importer.",
+        "splitAsk": "{{first}} + {{second}} pages, séparées après {{name}}. Est-ce correct ?",
+        "splitConfirm": "Oui, séparer ici",
+        "splitConfirmed": "Séparation confirmée",
+        "duplexUntested": "Les scanners recto verso n'ont pas encore été testés. Vérifiez attentivement les copies.",
+        "errors": {
+            "COUNT_MISMATCH": "Le premier passage a {{a}} pages, le second {{b}}. Une feuille a été prise deux fois ou sautée. Renumérisez ce lot.",
+            "INDEX_GAP": "{{pass}} : une page manque après {{name}} (numéro {{index}}).",
+            "DUPLICATE_INDEX": "{{pass}} : {{names}} porte le même numéro qu'une autre page.",
+            "MIXED_STEMS": "{{pass}} : les fichiers viennent de deux numérisations différentes. Gardez une numérisation par dossier.",
+            "UNSUPPORTED_FILE": "{{names}} ne peut pas être utilisé. Enregistrez en JPEG, PNG ou PDF (pas HEIC ni TIFF).",
+            "PDF_UNREADABLE": "{{names}} ne s'ouvre pas comme PDF.",
+            "EMPTY_PASS": "Ajoutez les deux passages.",
+            "TOO_MANY_PAGES": "Un passage peut avoir au plus {{max}} pages. Numérisez la pile en lots plus petits.",
+            "DUPLICATE_FILE": "{{names}} est le même fichier qu'un autre.",
+            "MIXED_KINDS": "Un passage mélange PDF et images. Numérisez chaque passage dans un seul format.",
+            "NO_CLEAR_GAP": "Impossible de savoir où commence le second passage. Choisissez Deux passages et ajoutez chaque passage séparément.",
+            "ODD_COUNT": "Le dossier a {{count}} pages, un nombre impair : ce ne peut pas être deux passages égaux.",
+            "EMPTY": "Ajoutez le dossier numérisé."
+        },
+        "warnings": {
+            "MTIME_DISAGREES": "{{pass}} : les heures d'enregistrement ne suivent pas les numéros de page. Vérifiez l'ordre ; ce lot sera signalé pour vérification."
+        },
+        "submit": "Importer et lire",
+        "submitReplace": "Importer et remplacer le lot {{load}}",
+        "uploading": "Import {{done}} sur {{total}}…",
+        "sending": "Envoi…",
+        "uploadFailed": "{{name}} n'a pas été importé, rien n'a été envoyé. Réessayez.",
+        "addFailed": "Impossible d'ajouter le lot.",
+        "added": "Lot {{load}} ajouté. Lecture des noms et appariement des faces…",
+        "replaced": "Lot {{load}} remplacé. Nouvelle lecture…",
+        "cancel": "Annuler",
+        "replaceTitle": "Renumériser le lot {{load}}"
+    },
+    "load": {
+        "title": "Lot {{load}}",
+        "status": {
+            "PENDING": "En attente",
+            "ANALYSING": "Lecture",
+            "DONE": "Terminé",
+            "FAILED": "À renumériser"
+        },
+        "files": "{{first}} + {{second}} pages",
+        "reading": "Lecture des noms et appariement des faces…",
+        "failed": "Ce lot n'a pas pu être lu. {{message}}",
+        "sheets_one": "{{count}} feuille",
+        "sheets_other": "{{count}} feuilles",
+        "blankLeftOut_one": "{{count}} verso blanc retiré",
+        "blankLeftOut_other": "{{count}} versos blancs retirés",
+        "checkThem": "Les vérifier",
+        "layout": {
+            "frontsPass": "Le passage {{pass}} contenait les rectos",
+            "frontsTurned": "rectos à l'envers (corrigé)",
+            "backsReversed": "versos dans l'ordre inverse (corrigé)",
+            "backsTurned": "versos à l'envers (corrigé)"
+        },
+        "rescan": "Renumériser ce lot",
+        "remove": "Retirer",
+        "removeConfirm": "Retirer le lot {{load}} ? Ses copies quittent cette session.",
+        "removed": "Lot {{load}} retiré."
+    },
+    "blanks": {
+        "title": "Versos blancs retirés du lot {{load}}",
+        "help": "Ces versos semblent vides et ne seront pas dans les copies. Cliquez sur une page pour la garder.",
+        "allBlank": "Ils sont tous blancs",
+        "confirmed": "Blancs confirmés",
+        "none": "Aucune page n'est retirée.",
+        "keep": "Garder",
+        "keepPage": "Garder la page {{ref}}"
+    },
+    "copies": {
+        "title_one": "{{count}} copie",
+        "title_other": "{{count}} copies",
+        "empty": "Les copies apparaissent ici dès qu'un lot a été lu.",
+        "onlyReview": "Seulement les copies à vérifier",
+        "noneToReview": "Aucune copie à vérifier."
+    },
+    "copy": {
+        "title": "Copie {{n}}",
+        "loadSheets_one": "Lot {{load}} · {{count}} feuille",
+        "loadSheets_other": "Lot {{load}} · {{count}} feuilles",
+        "pages_one": "{{count}} page",
+        "pages_other": "{{count}} pages",
+        "noName": "Nom illisible — sera associé à la main",
+        "accept": "C'est correct",
+        "accepted": "Vérifiée",
+        "exclude": "Écarter",
+        "include": "Remettre",
+        "excluded": "Écartée : cette copie ne sera pas corrigée.",
+        "merge": "Joindre à la copie précédente",
+        "split": "Commencer une nouvelle copie ici",
+        "startHere": "Une copie commence ici",
+        "clearSheet": "Annuler la modification",
+        "dropPage": "Retirer",
+        "keepPage": "Garder",
+        "leftOutPage": "Retirée comme blanche",
+        "sheet": "Lot {{load}} · feuille {{n}}",
+        "side": {
+            "FRONT": "Recto",
+            "BACK": "Verso"
+        },
+        "firstSheetHelp": "La première feuille n'a pas de cadre de nom. Si la pile a été numérisée dans l'autre sens, essayez les rectos dans l'autre ordre. Sinon, marquez où commence la copie, ou écartez-la.",
+        "tryDirection": {
+            "FORWARD": "Essayer les rectos dans l'ordre de numérisation",
+            "REVERSED": "Essayer les rectos dans l'ordre inverse"
+        }
+    },
+    "actions": {
+        "accept": "C'est correct",
+        "openBlanks": "Vérifier les pages blanches",
+        "openPair": "Vérifier la paire"
+    },
+    "pair": {
+        "title": "Vérifier la paire",
+        "help": "Ce verso est-il bien l'autre face de ce recto ? Comparez l'écriture, les bords du papier et l'encre qui transparaît.",
+        "sheet": "Feuille {{n}} du lot {{load}}",
+        "front": "Recto",
+        "back": "Verso",
+        "right": "C'est le bon verso",
+        "rescan": "Renumériser ce lot"
+    },
+    "direction": {
+        "title": "Dans quel sens sont les rectos ?",
+        "help": "Impossible de savoir si les rectos sont sortis du premier au dernier ou l'inverse. Choisissez l'ordre où la copie commence par le cadre du nom.",
+        "FORWARD": "Rectos dans l'ordre de numérisation",
+        "REVERSED": "Rectos dans l'ordre inverse",
+        "choose": "C'est celui-ci",
+        "none": "Aucune copie n'a encore plus d'une feuille, l'ordre ne change donc rien."
+    },
+    "verdict": {
+        "EMPTY": "Ajoutez le premier lot pour commencer.",
+        "ANALYSING": "Lecture des noms et appariement des faces…",
+        "BLOCKED_one": "{{count}} problème à renumériser ou corriger",
+        "BLOCKED_other": "{{count}} problèmes à renumériser ou corriger",
+        "NEEDS_REVIEW_one": "Vérifier {{count}} élément",
+        "NEEDS_REVIEW_other": "Vérifier {{count}} éléments",
+        "READY": "Prêt : {{copies}} copies, {{pages}} pages"
+    },
+    "bar": {
+        "totals": "{{loads}} lots · {{sheets}} feuilles · {{copies}} copies",
+        "next": "Point suivant",
+        "build": "Créer les copies et lancer la correction",
+        "building_one": "Création de {{count}} copie…",
+        "building_other": "Création de {{count}} copies…",
+        "built_one": "{{count}} copie créée",
+        "built_other": "{{count}} copies créées",
+        "start": "Lancer la correction",
+        "change": "Modifier quelque chose",
+        "retry": "Réessayer",
+        "failed": "La création des copies a échoué. {{message}}",
+        "starting": "Lancement de la correction…",
+        "openChecks": "Ouvrir les corrections groupées",
+        "buildFailed": "Impossible de créer les copies.",
+        "reopenFailed": "Impossible de rouvrir la session.",
+        "buildingProgress": "Création des copies… {{done}} sur {{total}} faites",
+        "aiBusy": "Le service d'IA est occupé. Les copies seront faites dès qu'il sera libre ; vous pouvez garder cette page ouverte ou revenir plus tard."
+    },
+    "start": {
+        "title": "Lancer la correction",
+        "intro_one": "{{count}} copie ({{pages}} pages) part à la correction IA. Elle est associée à un élève par le nom inscrit ; sinon, elle vous attend dans Corrections groupées.",
+        "intro_other": "{{count}} copies ({{pages}} pages) partent à la correction IA. Chacune est associée à un élève par le nom inscrit ; celles qui ne peuvent pas l'être vous attendent dans Corrections groupées.",
+        "cost_one": "{{count}} copie · {{pages}} pages · {{credits}} crédits",
+        "cost_other": "{{count}} copies · {{pages}} pages · {{credits}} crédits",
+        "counting": "Calcul du coût…",
+        "balance_one": "Solde : {{count}}",
+        "balance_other": "Solde : {{count}}",
+        "insufficient": "Crédits insuffisants pour toutes ces copies. Ajoutez des crédits à l'établissement.",
+        "notifyEmail": "M'envoyer un e-mail à la fin des corrections",
+        "cancel": "Annuler",
+        "confirm_one": "Corriger {{count}} copie",
+        "confirm_other": "Corriger {{count}} copies",
+        "starting": "Lancement…",
+        "started_one": "Correction lancée pour {{count}} copie.",
+        "started_other": "Correction lancée pour {{count}} copies.",
+        "failed": "Impossible de lancer la correction.",
+        "planChanged": "Les copies ont changé après leur création, la correction n'a donc pas été lancée. Refaites les copies, puis lancez la correction.",
+        "noRoute": "La correction est lancée. Ouvrez l'onglet Remises du test pour la suivre."
+    },
+    "started": {
+        "title": "La correction est lancée",
+        "body": "Les copies sont dans Corrections groupées. Les noms non associés vous y attendent.",
+        "show": "Afficher les corrections groupées"
+    },
+    "thumb": {
+        "failed": "Pas d'aperçu"
+    },
+    "errors": {
+        "decision": "Impossible d'enregistrer ce changement.",
+        "locked": "La session a changé entre-temps. Elle a été actualisée ; réessayez.",
+        "copyChanged": "Cette copie a changé pendant que vous la regardiez. Elle a été actualisée ; vérifiez-la à nouveau avant de la valider.",
+        "flagChanged": "Ce point a changé pendant que vous le regardiez. Il a été actualisé ; vérifiez-le à nouveau avant de le valider.",
+        "blanksChanged": "Les pages retirées comme blanches ont changé. Elles ont été actualisées ; vérifiez-les à nouveau."
+    },
+    "flags": {
+        "COUNT_MISMATCH": {
+            "title": "Nombres de pages différents",
+            "help": "Les deux passages n'ont pas le même nombre de pages. Renumérisez ce lot."
+        },
+        "FILE_UNREADABLE": {
+            "title": "Un fichier est illisible",
+            "help": "Un des fichiers numérisés ne s'ouvre pas. Renumérisez ce lot."
+        },
+        "NO_NAME_BOX_FOUND": {
+            "title": "Aucun cadre de nom trouvé",
+            "help": "Aucune page de ce lot n'a le cadre de nom imprimé. Vérifiez que les bonnes feuilles ont été numérisées, puis renumérisez."
+        },
+        "LOAD_TOO_LARGE": {
+            "title": "Lot trop grand",
+            "help": "Ce lot a trop de pages. Numérisez la pile en lots plus petits."
+        },
+        "PAIR_SHIFT_DETECTED": {
+            "title": "Pages décalées",
+            "help": "À partir d'une feuille, chaque verso correspond au recto suivant : une feuille a été prise deux fois ou sautée. Renumérisez ce lot."
+        },
+        "BACK_HAS_LABEL": {
+            "title": "Une feuille était retournée",
+            "help": "Un verso porte le cadre de nom imprimé : une feuille était dans le mauvais sens. Renumérisez ce lot."
+        },
+        "LABEL_NO_VALUE": {
+            "title": "Cadre de nom vide",
+            "help": "Le cadre de nom a été trouvé mais rien n'a pu y être lu. La copie sera associée à la main."
+        },
+        "LABEL_UNUSUAL": {
+            "title": "Cadre de nom inhabituel",
+            "help": "Ce cadre de nom ne ressemble pas aux autres. Vérifiez qu'il commence bien une nouvelle copie."
+        },
+        "PAIR_NOT_ROW_MAX": {
+            "title": "Verso peut-être erroné",
+            "help": "Ce verso ne correspond pas clairement à son recto. Regardez la paire."
+        },
+        "ORDER_UNCERTAIN": {
+            "title": "Ordre des versos incertain",
+            "help": "Impossible de savoir avec certitude dans quel sens les versos sont sortis. Regardez une paire."
+        },
+        "FRONT_BLANK": {
+            "title": "Recto blanc",
+            "help": "Un recto semble vide. Vérifiez que c'est la bonne page."
+        },
+        "DPI_LOW": {
+            "title": "Qualité de numérisation faible",
+            "help": "La résolution est faible ; l'écriture risque d'être mal lue. Renumérisez avec une meilleure résolution si possible."
+        },
+        "BLANK_RULE_SUSPECT": {
+            "title": "Versos blancs conservés",
+            "help": "Trop de pages semblaient blanches, aucun verso n'a donc été retiré de ce lot."
+        },
+        "DPI_ASSUMED": {
+            "title": "Résolution supposée",
+            "help": "Les fichiers n'indiquaient pas leur résolution ; une valeur standard a été supposée."
+        },
+        "UNSURE_KEPT": {
+            "title": "Pages pâles conservées",
+            "help": "Certains versos sont peut-être blancs mais ont été gardés par prudence."
+        },
+        "ANALYSIS_FAILED": {
+            "title": "Lot illisible",
+            "help": "La lecture de ce lot a échoué. Renumérisez-le ou retirez-le."
+        },
+        "FIRST_SHEET_NO_LABEL": {
+            "title": "Première feuille sans cadre de nom",
+            "help": "La toute première feuille doit commencer une copie. Si la pile a été numérisée dans l'autre sens, essayez les rectos dans l'autre ordre ; sinon marquez-la comme début de copie, écartez-la ou renumérisez."
+        },
+        "TOO_MANY_COPIES": {
+            "title": "Trop de copies",
+            "help": "Cette session a plus de copies qu'elle ne peut en contenir. Retirez un lot et numérisez-le dans une nouvelle session."
+        },
+        "FRONT_ORDER_UNCERTAIN": {
+            "title": "Ordre des rectos incertain",
+            "help": "Choisissez dans quel sens les rectos sont sortis du scanner."
+        },
+        "LOAD_STARTS_MID_COPY": {
+            "title": "Le lot commence en milieu de copie",
+            "help": "La première feuille de ce lot n'a pas de cadre de nom ; elle a été jointe à la dernière copie du lot précédent. Vérifiez."
+        },
+        "SAME_NAME": {
+            "title": "Même nom deux fois",
+            "help": "Une autre copie porte le même nom. Vérifiez que deux copies n'ont pas été mal fusionnées ou séparées."
+        },
+        "COPY_UNUSUALLY_LONG": {
+            "title": "Copie anormalement longue",
+            "help": "Cette copie a bien plus de feuilles que les autres. Un cadre de nom a peut-être été manqué."
+        },
+        "TOO_MANY_PAGES": {
+            "title": "Beaucoup de pages",
+            "help": "Cette copie a plus de 40 pages. Vérifiez qu'il s'agit bien de la copie d'un seul élève."
+        },
+        "BLANKS_TO_CONFIRM": {
+            "title": "Vérifier les pages blanches",
+            "help": "Certains versos seront retirés comme blancs. Jetez un œil avant la création des copies."
+        },
+        "MTIME_DISAGREES": {
+            "title": "Heures des fichiers dans le désordre",
+            "help": "Les heures d'enregistrement ne suivent pas les numéros de page. Vérifiez l'ordre de numérisation."
+        },
+        "NO_COPIES": {
+            "title": "Aucune copie à créer",
+            "help": "Toutes les copies sont écartées. Incluez au moins une copie pour continuer."
+        },
+        "UNKNOWN": {
+            "title": "À vérifier",
+            "help": "Vérifiez cet élément."
+        }
+    },
+    "handsFree": {
+        "title": "Fonctionnement de ce poste",
+        "change": "Modifier le fonctionnement de ce poste",
+        "sides": {
+            "label": "Les réponses sont écrites sur",
+            "ONE": "Un seul côté de chaque feuille",
+            "BOTH": "Les deux côtés de chaque feuille",
+            "oneHint": "Une numérisation par pile : placez la pile et appuyez sur Démarrer.",
+            "bothHint": "Ce scanner lit un côté à la fois : chaque pile est numérisée deux fois, une fois puis retournée."
+        },
+        "auto": {
+            "label": "Lancer la correction automatiquement",
+            "hint": "Quand les copies sont triées et que rien n'est à vérifier, la correction IA démarre avec les réglages habituels de ce test. Utilise des crédits IA."
+        },
+        "print": {
+            "label": "Imprimer chaque copie corrigée sur {{printer}}",
+            "noPrinter": "Imprimer chaque copie corrigée",
+            "noPrinterHint": "Aucune imprimante trouvée sur cet ordinateur.",
+            "needsAuto": "Activez « Lancer la correction automatiquement » pour imprimer au fil des corrections.",
+            "twoSided": "Imprime recto verso dès que chaque copie est corrigée.",
+            "oneSided": "Imprime dès que chaque copie est corrigée."
+        },
+        "match": {
+            "label": "Associer les copies aux élèves de ce test",
+            "onHint": "La note va à l'élève dont le nom figure sur la copie.",
+            "offHint": "Chaque copie est corrigée sous le nom écrit dessus, sans être ajoutée aux résultats d'un élève. Idéal pour les démonstrations."
+        }
+    },
+    "board": {
+        "title": "Correction des copies",
+        "doneTitle": "Toutes les copies sont corrigées",
+        "counts": "{{checked}} sur {{total}} corrigées",
+        "printedCount_one": "{{count}} imprimée",
+        "printedCount_other": "{{count}} imprimées",
+        "nextPile": "Numériser la pile suivante",
+        "noPrinter": "L'imprimante est injoignable. Vérifiez qu'elle est allumée et que Vacademy Scan Helper fonctionne ; l'impression reprendra d'elle-même.",
+        "needsYou_one": "1 copie a besoin de vous : le nom écrit ne correspond à aucun élève. Choisissez l'élève ci-dessous.",
+        "needsYou_other": "{{count}} copies ont besoin de vous : les noms écrits ne correspondent à aucun élève. Choisissez les élèves ci-dessous.",
+        "loading": "Chargement des copies…",
+        "copyN": "Copie {{n}}",
+        "stage": {
+            "reading": "Lecture du nom",
+            "waiting": "En attente de correction",
+            "checking": "Correction des réponses",
+            "checkingQ": "Correction de la question {{done}} sur {{total}}",
+            "checked": "Corrigée",
+            "needsYou": "Qui l'a écrite ? Choisissez l'élève ci-dessous",
+            "failed": "Correction impossible",
+            "skipped": "Ignorée"
+        },
+        "print": {
+            "waiting": "En attente de l'imprimante",
+            "sending": "Envoi à l'imprimante",
+            "queued": "Dans la file de l'imprimante",
+            "printing": "Impression",
+            "done": "Imprimée",
+            "failed": "Non imprimée",
+            "retry": "Imprimer à nouveau"
+        }
+    }
+}

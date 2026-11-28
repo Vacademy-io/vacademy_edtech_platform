@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 import { AxiosError } from 'axios';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Eye } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
 
 const AIEvaluatePreview = ({
     task,
@@ -22,6 +23,7 @@ const AIEvaluatePreview = ({
     openEvaluatePreview: boolean;
     setOpenEvaluatePreview: Dispatch<SetStateAction<boolean>>;
 }) => {
+    const { t } = useTranslation('aiCenterAIEvaluatePreview');
     const [noResponse, setNoResponse] = useState(false);
     const queryClient = useQueryClient();
     const [evaluateLecture, setEvaluateLecture] = useState<AILectureFeedbackInterface>({
@@ -74,7 +76,7 @@ const AIEvaluatePreview = ({
                 queryClient.invalidateQueries({ queryKey: ['GET_INDIVIDUAL_AI_LIST_DATA'] });
             }, 100);
             if (!response) {
-                toast.success('No data exists!');
+                toast.success(t('toast.noDataExists'));
                 return;
             }
             setEvaluateLecture(response);
@@ -104,10 +106,10 @@ const AIEvaluatePreview = ({
             <Dialog open={noResponse} onOpenChange={setNoResponse}>
                 <DialogContent className="p-0">
                     <h1 className="rounded-t-lg bg-primary-50 p-2 text-primary-500">
-                        Failed to load questions
+                        {t('failedDialog.heading')}
                     </h1>
                     <h1 className="p-4">
-                        Click{' '}
+                        {t('failedDialog.clickPrefix')}{' '}
                         <MyButton
                             type="button"
                             scale="small"
@@ -115,9 +117,9 @@ const AIEvaluatePreview = ({
                             className="!w-0 !min-w-8 border-none !p-0 text-sm !text-blue-600 shadow-none hover:bg-transparent hover:underline focus:bg-transparent focus:outline-none focus:ring-0 active:bg-transparent"
                             onClick={() => handleRetryTask(task.id)}
                         >
-                            Here
+                            {t('failedDialog.hereLink')}
                         </MyButton>{' '}
-                        to retry
+                        {t('failedDialog.retrySuffix')}
                     </h1>
                 </DialogContent>
             </Dialog>
@@ -129,7 +131,11 @@ const AIEvaluatePreview = ({
                     className="border-none text-sm !text-blue-600 shadow-none hover:bg-transparent focus:bg-transparent focus:outline-none focus:ring-0 active:bg-transparent"
                     onClick={() => handleRetryTask(task.id)}
                 >
-                    {getRetryMutation.status === 'pending' ? <DashboardLoader /> : 'Retry'}
+                    {getRetryMutation.status === 'pending' ? (
+                        <DashboardLoader />
+                    ) : (
+                        t('retryButton.label')
+                    )}
                 </MyButton>
             ) : (
                 <MyButton
@@ -142,12 +148,12 @@ const AIEvaluatePreview = ({
                     {getChatListMutation.status === 'pending' ? (
                         <>
                             <div className="mr-1 size-3 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
-                            <span>Loading…</span>
+                            <span>{t('viewReviewButton.loading')}</span>
                         </>
                     ) : (
                         <>
                             <Eye size={14} weight="bold" />
-                            View review
+                            {t('viewReviewButton.label')}
                         </>
                     )}
                 </MyButton>

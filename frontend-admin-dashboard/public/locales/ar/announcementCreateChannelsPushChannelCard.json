@@ -1,0 +1,8 @@
+{
+    "mirrorTitleAndContent": "مطابقة عنوان الإعلان ومحتواه",
+    "pushTitle": "عنوان الإشعار",
+    "titlePlaceholder": "عنوان قصير ومحدد",
+    "pushBody": "نص الإشعار",
+    "bodyPlaceholder": "سطر واحد من التفاصيل",
+    "syncedHint": "أوقف المفتاح لكتابة نص إشعار مختلف عن الإعلان."
+}

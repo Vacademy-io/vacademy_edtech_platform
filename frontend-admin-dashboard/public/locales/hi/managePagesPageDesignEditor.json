@@ -1,0 +1,227 @@
+{
+    "palette": {
+        "header": { "label": "हेडर", "description": "लोगो + नेविगेशन बार" },
+        "heroSection": { "label": "हीरो बैनर", "description": "फ़ोटो कोलाज के साथ स्प्लिट लेआउट" },
+        "footer": { "label": "फ़ुटर", "description": "लिंक + कॉपीराइट बार" },
+        "productCourseGrid": { "label": "कोर्स ग्रिड", "description": "फ़िल्टर के साथ कोर्स सूची" },
+        "textBlock": { "label": "टेक्स्ट ब्लॉक", "description": "रिच टेक्स्ट पैराग्राफ" },
+        "imageBlock": { "label": "इमेज", "description": "पूरी चौड़ाई की क्लिक करने योग्य इमेज" },
+        "videoEmbed": { "label": "वीडियो एम्बेड", "description": "YouTube / Vimeo एम्बेड" },
+        "htmlBlock": { "label": "HTML ब्लॉक", "description": "कस्टम HTML / CSS (सैंडबॉक्स्ड, बिना स्क्रिप्ट)" },
+        "statsHighlights": { "label": "आँकड़े", "description": "मुख्य संख्याओं की झलक" },
+        "testimonialSection": { "label": "प्रशंसापत्र", "description": "छात्रों की समीक्षाएँ" },
+        "faqSection": { "label": "सामान्य प्रश्न", "description": "अक्सर पूछे जाने वाले प्रश्न" },
+        "ctaBanner": { "label": "CTA बैनर", "description": "कॉल-टू-एक्शन सेक्शन" },
+        "featureGrid": { "label": "फ़ीचर ग्रिड", "description": "प्रोग्राम की खासियतें" },
+        "stepsProcess": { "label": "चरण / प्रक्रिया", "description": "यह कैसे काम करता है" },
+        "marquee": { "label": "मार्की", "description": "स्क्रॉलिंग टिकर स्ट्रिप" }
+    },
+    "groups": {
+        "layout": "लेआउट",
+        "course": "कोर्स",
+        "content": "सामग्री",
+        "marketing": "मार्केटिंग"
+    },
+    "heroLayouts": {
+        "split": { "label": "स्प्लिट", "description": "टेक्स्ट बाएँ, इमेज दाएँ" },
+        "centered": { "label": "केंद्रित", "description": "टेक्स्ट केंद्र में, पूरी चौड़ाई" }
+    },
+    "colorField": {
+        "reset": "रीसेट करें"
+    },
+    "common": {
+        "sectionColors": "सेक्शन रंग",
+        "background": "पृष्ठभूमि",
+        "backgroundColor": "पृष्ठभूमि का रंग",
+        "textColor": "टेक्स्ट का रंग",
+        "heading": "हेडिंग",
+        "subheading": "सबहेडिंग",
+        "description": "विवरण",
+        "content": "सामग्री",
+        "title": "शीर्षक",
+        "image": "इमेज",
+        "alignment": "अलाइनमेंट",
+        "alignLeft": "बाएँ",
+        "alignCenter": "बीच में",
+        "alignRight": "दाएँ",
+        "ctaButton": "CTA बटन",
+        "buttonBackground": "बटन की पृष्ठभूमि",
+        "buttonTextColor": "बटन टेक्स्ट का रंग",
+        "add": "जोड़ें",
+        "labelPlaceholder": "लेबल",
+        "urlPlaceholder": "URL",
+        "urlOrSectionPlaceholder": "URL या #section",
+        "enrollNowPlaceholder": "अभी नामांकन करें",
+        "descriptionEllipsisPlaceholder": "विवरण…",
+        "noEditorFor": "\"{{type}}\" के लिए कोई एडिटर नहीं"
+    },
+    "heroEditor": {
+        "layoutLabel": "लेआउट",
+        "tags": "टैग",
+        "addTag": "टैग जोड़ें",
+        "tagPlaceholder": "टैग",
+        "headingPlaceholder": "मज़बूत नींव का निर्माण…",
+        "subheadingPlaceholder": "एक छोटी सहायक हेडलाइन…",
+        "descriptionPlaceholder": "एक सहायक विवरण जोड़ें…",
+        "ctaTextPlaceholder": "कोर्स देखें",
+        "ctaUrlPlaceholder": "URL या #courses",
+        "rightSideImage": "दाईं ओर की इमेज",
+        "singleImage": "एकल इमेज",
+        "photoCollage": "फ़ोटो कोलाज (5 तक)",
+        "collageHint": "दाईं ओर मोज़ेक ग्रिड के रूप में दिखता है।",
+        "photoLabel": "फ़ोटो {{number}}",
+        "backgroundImageOptional": "पृष्ठभूमि इमेज (वैकल्पिक)",
+        "backgroundImageHint": "केंद्रित टेक्स्ट के पीछे पूरी चौड़ाई की पृष्ठभूमि के रूप में दिखाया गया।"
+    },
+    "headerEditor": {
+        "navLinkColor": "नेव लिंक का रंग",
+        "siteTitle": "साइट शीर्षक",
+        "siteTitlePlaceholder": "मेरी अकादमी",
+        "logo": "लोगो",
+        "navLinks": "नेव लिंक",
+        "addLink": "लिंक जोड़ें"
+    },
+    "footerEditor": {
+        "brandName": "ब्रांड का नाम",
+        "brandTagline": "ब्रांड टैगलाइन",
+        "brandTaglinePlaceholder": "बिना सीमाओं के सीखें।",
+        "linkSections": "लिंक सेक्शन",
+        "sectionTitlePlaceholder": "सेक्शन शीर्षक",
+        "addLink": "लिंक जोड़ें",
+        "copyrightNote": "कॉपीराइट नोट",
+        "copyrightPlaceholder": "© {{year}} मेरी अकादमी"
+    },
+    "courseGridEditor": {
+        "sectionTitle": "सेक्शन शीर्षक",
+        "sectionTitlePlaceholder": "हमारे कोर्स",
+        "layoutPreset": "लेआउट प्रीसेट",
+        "layoutGrid3": "ग्रिड 3",
+        "layoutGrid4": "ग्रिड 4",
+        "layoutList": "सूची",
+        "showFilters": "फ़िल्टर दिखाएँ",
+        "showPrice": "कीमत दिखाएँ",
+        "showBadge": "बैज दिखाएँ"
+    },
+    "textBlockEditor": {
+        "contentPlaceholder": "अपना टेक्स्ट यहाँ लिखें…"
+    },
+    "imageBlockEditor": {
+        "altText": "Alt टेक्स्ट",
+        "altTextPlaceholder": "वर्णनात्मक alt टेक्स्ट",
+        "linkUrlOptional": "लिंक URL (वैकल्पिक)"
+    },
+    "htmlBlockEditor": {
+        "html": "HTML",
+        "cssScoped": "CSS (इस सेक्शन तक सीमित)"
+    },
+    "statsEditor": {
+        "headingPlaceholder": "हमारे आँकड़े",
+        "stats": "आँकड़े",
+        "valuePlaceholder": "10,000+",
+        "labelPlaceholder": "छात्र"
+    },
+    "testimonialEditor": {
+        "headingPlaceholder": "हमारे शिक्षार्थी क्या कहते हैं",
+        "testimonials": "प्रशंसापत्र",
+        "namePlaceholder": "नाम",
+        "rolePlaceholder": "भूमिका",
+        "feedbackPlaceholder": "फ़ीडबैक…"
+    },
+    "faqEditor": {
+        "headingPlaceholder": "सामान्य प्रश्न",
+        "questions": "प्रश्न",
+        "questionPlaceholder": "प्रश्न?",
+        "answerPlaceholder": "उत्तर…"
+    },
+    "videoEmbedEditor": {
+        "videoUrl": "वीडियो URL",
+        "caption": "कैप्शन",
+        "aspectRatio": "पहलू अनुपात"
+    },
+    "ctaBannerEditor": {
+        "showButton": "बटन दिखाएँ"
+    },
+    "featureGridEditor": {
+        "headingPlaceholder": "हमें क्यों चुनें",
+        "columns": "कॉलम",
+        "features": "फ़ीचर्स",
+        "iconEmojiPlaceholder": "आइकन/इमोजी"
+    },
+    "stepsEditor": {
+        "headingPlaceholder": "यह कैसे काम करता है",
+        "layout": "लेआउट",
+        "horizontal": "क्षैतिज",
+        "vertical": "लंबवत",
+        "steps": "चरण",
+        "stepTitlePlaceholder": "चरण शीर्षक"
+    },
+    "marqueeEditor": {
+        "icons": {
+            "none": "कोई नहीं",
+            "star": "स्टार",
+            "check": "चेक",
+            "graduate": "ग्रेजुएट",
+            "trophy": "ट्रॉफ़ी",
+            "rocket": "रॉकेट",
+            "bulb": "बल्ब",
+            "books": "किताबें",
+            "fire": "आग",
+            "sparkle": "स्पार्कल",
+            "diamond": "डायमंड",
+            "circle": "सर्कल",
+            "pipe": "पाइप"
+        },
+        "appearance": "स्वरूप",
+        "iconColor": "आइकन का रंग",
+        "fontSize": "फ़ॉन्ट साइज़",
+        "motion": "मोशन",
+        "speed": "गति",
+        "speedSlow": "धीमी",
+        "speedMedium": "मध्यम",
+        "speedFast": "तेज़",
+        "direction": "दिशा",
+        "directionLeft": "बाएँ",
+        "directionRight": "दाएँ",
+        "pauseOnHover": "होवर पर रोकें",
+        "defaultSeparatorIcon": "डिफ़ॉल्ट सेपरेटर आइकन",
+        "defaultItem1": "आइटम 1",
+        "defaultItem2": "आइटम 2",
+        "newItem": "नया आइटम",
+        "items": "आइटम",
+        "addItem": "आइटम जोड़ें",
+        "itemTextPlaceholder": "आइटम टेक्स्ट",
+        "noItemsYet": "अभी तक कोई आइटम नहीं। ऊपर कुछ जोड़ें।"
+    },
+    "layersPanel": {
+        "noComponentsYet": "अभी तक कोई कॉम्पोनेंट नहीं"
+    },
+    "canvas": {
+        "moveUp": "ऊपर ले जाएँ",
+        "moveDown": "नीचे ले जाएँ",
+        "hideComponent": "कॉम्पोनेंट छिपाएँ",
+        "showComponent": "कॉम्पोनेंट दिखाएँ",
+        "removeComponent": "कॉम्पोनेंट हटाएँ",
+        "hiddenBadge": "छिपा हुआ",
+        "viewportDesktop": "डेस्कटॉप",
+        "viewportTablet": "टैबलेट",
+        "viewportMobile": "मोबाइल",
+        "emptyHint": "कॉम्पोनेंट यहाँ खींचें या जोड़ने के लिए + पर क्लिक करें",
+        "componentCountHint_one": "{{count}} कॉम्पोनेंट · चुनने के लिए क्लिक करें",
+        "componentCountHint_other": "{{count}} कॉम्पोनेंट्स · चुनने के लिए क्लिक करें",
+        "pageEmptyTitle": "यह पेज खाली है",
+        "pageEmptyHint": "बाएँ पैनल से खींचें या कॉम्पोनेंट जोड़ने के लिए + पर क्लिक करें"
+    },
+    "rightPanel": {
+        "pageSettings": "पेज सेटिंग्स",
+        "brandColor": "ब्रांड रंग",
+        "selectComponentHint": "इसके गुण संपादित करने के लिए कैनवास पर कोई भी कॉम्पोनेंट क्लिक करें।",
+        "hide": "छिपाएँ",
+        "show": "दिखाएँ",
+        "remove": "हटाएँ",
+        "design": "डिज़ाइन"
+    },
+    "sidebar": {
+        "addTab": "जोड़ें",
+        "layersTab": "लेयर्स"
+    }
+}

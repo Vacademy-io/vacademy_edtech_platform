@@ -1,0 +1,104 @@
+{
+    "header": {
+        "title": "Intelligence IA",
+        "subtitle": "Qualité des appels et activité quotidienne dans le temps — l'équipe d'abord, puis chaque conseiller, avec l'évolution par rapport à la période précédente pour voir ce qui s'est amélioré.",
+        "settings": "Intelligence settings"
+    },
+    "loadingInstitute": "Chargement de l'établissement…",
+    "emptyState": {
+        "title": "L'intelligence IA est désactivée",
+        "description": "Activez l'intelligence des appels dans les paramètres pour transcrire et analyser les appels ; cette page affichera ensuite les tendances de l'équipe et par conseiller."
+    },
+    "banner": {
+        "offWithData": "L'intelligence des appels est désactivée — aucun nouvel appel n'est analysé. Les données déjà analysées sont affichées. Activez-la dans les paramètres pour reprendre l'analyse."
+    },
+    "comparing": {
+        "label": "Comparaison",
+        "against": "par rapport à la période précédente"
+    },
+    "period": {
+        "days_one": "{{count}} jour",
+        "days_many": "{{count}} de jours",
+        "days_other": "{{count}} jours",
+        "custom": "Personnalisé",
+        "startDateLabel": "Date de début",
+        "endDateLabel": "Date de fin",
+        "to": "à"
+    },
+    "months": {
+        "jan": "Janv.",
+        "feb": "Févr.",
+        "mar": "Mars",
+        "apr": "Avr.",
+        "may": "Mai",
+        "jun": "Juin",
+        "jul": "Juil.",
+        "aug": "Août",
+        "sep": "Sept.",
+        "oct": "Oct.",
+        "nov": "Nov.",
+        "dec": "Déc."
+    },
+    "delta": {
+        "noChange": "aucun changement"
+    },
+    "teamInsights": {
+        "heading": "Aperçu de l'équipe",
+        "groupCallQuality": "Appels et qualité des appels",
+        "groupActivity": "Activité quotidienne",
+        "metrics": {
+            "callsAnalyzed": "Appels analysés",
+            "avgCallerRating": "Note moyenne de l'appelant",
+            "avgCallOutput": "Résultat moyen de l'appel",
+            "positiveSentiment": "Sentiment positif",
+            "leadsDispositioned": "Prospects qualifiés",
+            "callsMade": "Appels passés",
+            "teamReach": "Portée de l'équipe"
+        },
+        "summary": {
+            "noChangeYet": "Aucun changement significatif par rapport à la période précédente pour l'instant.",
+            "aiSummaryLabel": "Résumé IA —",
+            "whatImproved": "Ce qui s'est amélioré",
+            "needsAttention": "À surveiller"
+        },
+        "aiSummary": {
+            "improved": "Amélioration : {{list}}.",
+            "watch": "À surveiller : {{list}}.",
+            "coachingFocus": "Axe de coaching IA : {{tip}}",
+            "mostHitObjection": "Objection la plus fréquente : {{objection}}."
+        }
+    },
+    "counsellorBreakdown": {
+        "heading": "Répartition par conseiller",
+        "subtitle": "indicateurs par rapport à la période équivalente précédente",
+        "columns": {
+            "counsellor": "Conseiller",
+            "analyzed": "Analysés",
+            "avgCaller": "Moy. appelant",
+            "avgOutput": "Moy. résultat",
+            "dispositioned": "Qualifiés",
+            "reach": "Portée"
+        },
+        "noActivity": "Aucune activité de conseiller sur cette période.",
+        "whatTheyCanImprove": "Ce qu'ils peuvent améliorer",
+        "coaching": {
+            "loading": "Chargement du coaching…",
+            "noCoaching": "Aucun appel analysé sur cette période — pas encore de coaching pour ce conseiller.",
+            "weakestSkills": "Compétences les plus faibles :",
+            "notEnoughSignal": "Pas assez de données pour le coaching sur cette période."
+        },
+        "collapseAll": "Collapse all",
+        "expandAll": "Expand all"
+    },
+    "hero": {
+        "eyebrow": "Call quality · {{range}}",
+        "unit": "/10 avg caller rating",
+        "analyzed_one": "{{count}} call analyzed",
+        "analyzed_other": "{{count}} calls analyzed",
+        "positive": "{{value}}% positive sentiment",
+        "reach": "{{value}}% team reach"
+    },
+    "kpi": {
+        "was": "was {{value}}"
+    }
+}

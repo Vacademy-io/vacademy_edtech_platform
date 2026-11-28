@@ -1,0 +1,37 @@
+{
+    "heading": "Schedule day-wise unlock",
+    "alerts": {
+        "dripDisabled": "Drip conditions are switched off for this institute. The schedule will save but nothing locks until you enable them in Settings → Course → Drip Conditions."
+    },
+    "emptyState": "This course has no content to schedule yet.",
+    "form": {
+        "releaseOne": "Release one",
+        "everyDays": "Every … days",
+        "firstOneOpensOnDay": "First one opens on day",
+        "countedFrom": "Counted from",
+        "anchorEnrollment": "Each learner's enrollment date",
+        "anchorSessionStart": "The batch start date",
+        "opensAt": "Opens at",
+        "untilThen": "Until then",
+        "showLocked": "Show locked",
+        "hideCompletely": "Hide completely"
+    },
+    "preview": {
+        "summary_one": "{{items}} released over {{count}} day, per learner.",
+        "summary_other": "{{items}} released over {{count}} days, per learner.",
+        "existingRules_one": "{{count}} existing rule at this level will be replaced.",
+        "existingRules_other": "{{count}} existing rules at this level will be replaced."
+    },
+    "table": {
+        "day": "Day",
+        "dayLabel": "Day {{day}}"
+    },
+    "actions": {
+        "clearSchedule": "Clear schedule",
+        "cancel": "Cancel",
+        "saving": "Saving…",
+        "applySchedule": "Apply schedule"
+    },
+    "clearConfirm_one": "Remove {{count}} unlock rule from this course? Every {{level}} opens for all learners immediately.",
+    "clearConfirm_other": "Remove {{count}} unlock rules from this course? Every {{level}} opens for all learners immediately."
+}

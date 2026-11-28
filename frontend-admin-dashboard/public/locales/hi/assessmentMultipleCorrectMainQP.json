@@ -1,0 +1,9 @@
+{
+    "emptyState": "प्रश्न विवरण दिखाने के लिए कृपया एक प्रश्न जोड़ें",
+    "comprehensionText": "गद्यांश पाठ",
+    "questionLabel": "प्रश्न",
+    "questionLabelNumbered": "प्रश्न {{number}}",
+    "questionPlaceholder": "प्रश्न लिखें",
+    "explanationHint": "यह शिक्षार्थियों को उनके परिणाम के साथ दिखाया जाता है।",
+    "explanationPlaceholder": "व्याख्या"
+}

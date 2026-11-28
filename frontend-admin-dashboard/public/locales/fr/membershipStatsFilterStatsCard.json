@@ -1,0 +1,10 @@
+{
+    "title": "Statistiques de la période sélectionnée",
+    "subtitle": "En fonction de vos filtres actuels",
+    "usersFound_one": "{{count}} utilisateur trouvé",
+    "usersFound_many": "{{count}} d'utilisateurs trouvés",
+    "usersFound_other": "{{count}} utilisateurs trouvés",
+    "new": "Nouveau",
+    "retainer": "Fidélisé",
+    "viewMembers": "Voir les membres"
+}

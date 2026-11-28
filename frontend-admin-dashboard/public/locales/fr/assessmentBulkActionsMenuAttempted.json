@@ -1,0 +1,18 @@
+{
+    "menu": {
+        "provideReattempt": "Autoriser une nouvelle tentative",
+        "revaluate": "Réévaluer",
+        "questionWise": "Par question",
+        "entireAssessment": "Évaluation entière",
+        "releaseResult": "Publier le résultat",
+        "checkWithAi": "Corriger / Recorriger avec l’IA",
+        "exportReports": "Exporter les rapports (ZIP)",
+        "remarkWithKey": "Recorriger avec le corrigé",
+        "remarkByQuestion": "Recorriger avec le corrigé (par question)"
+    },
+    "actionInfo": {
+        "selectedStudents_one": "{{count}} étudiant",
+        "selectedStudents_many": "{{count}} étudiants",
+        "selectedStudents_other": "{{count}} étudiants"
+    }
+}

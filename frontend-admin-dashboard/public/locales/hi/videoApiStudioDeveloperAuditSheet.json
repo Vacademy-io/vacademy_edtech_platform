@@ -1,0 +1,71 @@
+{
+    "sheet": {
+        "title": "डेवलपर ऑडिट",
+        "internalBadge": "आंतरिक",
+        "pipelineBadge": "पाइपलाइन {{version}}",
+        "targetBadge": "लक्ष्य: {{stage}}",
+        "copyAuditButton": "पूरा ऑडिट JSON के रूप में कॉपी करें",
+        "copySuccess": "ऑडिट JSON क्लिपबोर्ड पर कॉपी हो गया",
+        "copyError": "कॉपी विफल"
+    },
+    "section": {
+        "configuration": "कॉन्फ़िगरेशन",
+        "routingDecisions": "रूटिंग निर्णय",
+        "modelsAndCosts": "मॉडल और लागत",
+        "pipelinePath": "पाइपलाइन पथ",
+        "perShotLedger": "प्रति-शॉट लेजर ({{count}})",
+        "artifactsAndCurl": "आर्टिफ़ैक्ट्स और curl",
+        "rawJson": "रॉ JSON"
+    },
+    "routing": {
+        "noSnapshot": "इस (पुराने) वीडियो के लिए कोई इंटेंट-रूटिंग स्नैपशॉट सहेजा नहीं गया।",
+        "none": "कोई नहीं"
+    },
+    "models": {
+        "aiVideoHeading": "AI वीडियो (Veo)"
+    },
+    "pipelinePath": {
+        "shotIndex": "शॉट {{index}}",
+        "shotCount_one": "({{count}} शॉट)",
+        "shotCount_other": "({{count}} शॉट्स)"
+    },
+    "synthesizedPath": {
+        "noLiveLog": "इस रन के लिए कोई लाइव इवेंट लॉग नहीं है (इतिहास से लोड किया गया)। पथ सहेजी गई स्थिति से बनाया गया है।",
+        "reviewModeStopped": "समीक्षा-मोड रन — {{stage}} पर रुका।",
+        "filmingStage_one": "फ़िल्मांकन ({{count}} शॉट)",
+        "filmingStage_other": "फ़िल्मांकन ({{count}} शॉट्स)"
+    },
+    "shotLedger": {
+        "empty": "अभी तक कोई प्रति-शॉट डेटा नहीं है।",
+        "header": {
+            "type": "प्रकार",
+            "intent": "इंटेंट",
+            "background": "पृष्ठभूमि",
+            "audio": "ऑडियो",
+            "duration": "अवधि",
+            "words": "शब्द",
+            "veoCredits": "Veo क्रेडिट",
+            "veoRequest": "Veo अनुरोध"
+        },
+        "audioPolicy": {
+            "intrinsic": "अंतर्निहित",
+            "narrate": "वर्णन"
+        }
+    },
+    "artifacts": {
+        "shotMetaCount_one": "timeline.meta.shots[] में {{count}} प्रति-शॉट प्रविष्टि है",
+        "shotMetaCount_other": "timeline.meta.shots[] में {{count}} प्रति-शॉट प्रविष्टियाँ हैं"
+    },
+    "kvGrid": {
+        "empty": "(कोई नहीं)"
+    },
+    "urlRow": {
+        "notPresent": "उपलब्ध नहीं",
+        "copyLabel": "कॉपी",
+        "openInNewTab": "नए टैब में खोलें"
+    },
+    "copy": {
+        "copyTitle": "कॉपी करें: {{value}}",
+        "copyButtonTitle": "कॉपी"
+    }
+}

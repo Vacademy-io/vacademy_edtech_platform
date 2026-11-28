@@ -1,0 +1,41 @@
+{
+    "period": {
+        "week": "Hebdomadaire",
+        "month": "Mensuel",
+        "custom": "Personnalisé"
+    },
+    "periodOptions": {
+        "week": "Hebdomadaire (récurrent)",
+        "month": "Mensuel (récurrent)",
+        "custom": "Plage personnalisée"
+    },
+    "progress": {
+        "thisWeek": "Cette semaine",
+        "thisMonth": "Ce mois-ci"
+    },
+    "configuredTargets": {
+        "heading": "Objectifs configurés",
+        "loading": "Chargement…",
+        "empty": "Aucun objectif défini. Utilisez « Définir des objectifs » dans la liste des conseillers pour en ajouter un."
+    },
+    "toast": {
+        "removeSuccess": "Objectif supprimé",
+        "removeError": "Impossible de supprimer l'objectif",
+        "saveSuccess": "Objectif enregistré",
+        "saveError": "Impossible d'enregistrer l'objectif"
+    },
+    "form": {
+        "heading": "Ajouter / mettre à jour un objectif",
+        "metric": "Indicateur",
+        "timeline": "Période",
+        "target": "Objectif",
+        "targetPlaceholder": "ex. 50",
+        "from": "Du",
+        "to": "Au",
+        "save": "Enregistrer l'objectif",
+        "saving": "Enregistrement…"
+    },
+    "row": {
+        "removeTarget": "Supprimer l'objectif"
+    }
+}

@@ -1,0 +1,23 @@
+{
+    "expandGuidesAndSupport": "Expand guides & support",
+    "minimize": "Minimize",
+    "guides": "Guides",
+    "training": "Training",
+    "webinars": "Webinars",
+    "webinarLive": "Live",
+    "webinarLiveAria": "Webinar is live now. Open to join",
+    "assist": "Assist",
+    "issues": "Issues",
+    "whatsNew": "What's new",
+    "explore": "Explore",
+    "adminApp": "Admin App",
+    "tutorials": "Tutorials",
+    "closeTutorials": "Close tutorials",
+    "noTutorialsForThisPage": "No tutorials for this page yet.",
+    "assistantFab": {
+        "label": "Open {{chatbotName}}",
+        "tooltip": "Ask {{chatbotName}}",
+        "hint": "Ask the assistant",
+        "dismissHint": "Dismiss hint"
+    }
+}

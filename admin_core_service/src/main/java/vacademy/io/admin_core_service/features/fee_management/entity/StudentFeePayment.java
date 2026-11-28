@@ -51,6 +51,14 @@ public class StudentFeePayment {
     @Column(name = "i_id")
     private String iId;
 
+    /**
+     * Position in the learner's schedule. Set on bills generated from an installment
+     * schedule (V575), which have no aft_installments row to take a number from.
+     * Null on template-generated bills; readers fall back to the template's number.
+     */
+    @Column(name = "installment_number")
+    private Integer installmentNumber;
+
     @Column(name = "amount_expected", nullable = false)
     private BigDecimal amountExpected;
 

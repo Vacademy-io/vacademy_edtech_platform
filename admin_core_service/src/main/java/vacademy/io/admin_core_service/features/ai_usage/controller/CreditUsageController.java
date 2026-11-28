@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import vacademy.io.admin_core_service.core.security.InstituteAccessValidator;
 import vacademy.io.admin_core_service.features.ai_usage.dto.CreditUsageDtos.ChatMessageRow;
 import vacademy.io.admin_core_service.features.ai_usage.dto.CreditUsageDtos.ChatbotSessionRow;
 import vacademy.io.admin_core_service.features.ai_usage.dto.CreditUsageDtos.ChatbotSummary;
@@ -18,11 +19,14 @@ import vacademy.io.admin_core_service.features.ai_usage.dto.CreditUsageDtos.Conv
 import vacademy.io.admin_core_service.features.ai_usage.dto.CreditUsageDtos.FlatLogRow;
 import vacademy.io.admin_core_service.features.ai_usage.dto.CreditUsageDtos.FlatMessageRow;
 import vacademy.io.admin_core_service.features.ai_usage.dto.CreditUsageDtos.FlatSessionRow;
+import vacademy.io.admin_core_service.features.ai_usage.dto.CreditUsageDtos.FlowAiUsageLogRow;
+import vacademy.io.admin_core_service.features.ai_usage.dto.CreditUsageDtos.FlowAiUsageSummary;
 import vacademy.io.admin_core_service.features.ai_usage.dto.CreditUsageDtos.RoleSummaryRow;
 import vacademy.io.admin_core_service.features.ai_usage.dto.CreditUsageDtos.UsageLogRow;
 import vacademy.io.admin_core_service.features.ai_usage.dto.CreditUsageDtos.UserUsageRow;
 import vacademy.io.admin_core_service.features.ai_usage.service.ConversationService;
 import vacademy.io.admin_core_service.features.ai_usage.service.CreditUsageService;
+import vacademy.io.common.auth.model.CustomUserDetails;
 import vacademy.io.common.exceptions.VacademyException;
 
 import java.sql.Timestamp;
@@ -43,6 +47,8 @@ import java.util.List;
  *   GET /ai-usage/v1/conversations/{id}/messages    full transcript (prompts + AI answers)
  *   GET /ai-usage/v1/chatbot/summary                Student-AI aggregate data points (Chatbot Analysis)
  *   GET /ai-usage/v1/chatbot/sessions               institute-wide chats, paginated + searchable
+ *   GET /ai-usage/v1/chatbot-flows/usage            Automations chatbot AI spend + balance state
+ *   GET /ai-usage/v1/chatbot-flows/logs             per-turn charge log for those flows
  *
  * Dates are epoch millis; default window is the last 30 days.
  */
@@ -59,6 +65,9 @@ public class CreditUsageController {
 
     @Autowired
     private ConversationService conversationService;
+
+    @Autowired
+    private InstituteAccessValidator instituteAccessValidator;
 
     @GetMapping("/users")
     public ResponseEntity<Page<UserUsageRow>> listUsers(
@@ -200,6 +209,37 @@ public class CreditUsageController {
                 onlyWithMessages, pageable));
     }
 
+    // ── Automations chatbot AI credits (Automations -> Chatbot Flows) ───────
+
+    /**
+     * What the Automations chatbot's AI replies have cost in the window, per flow,
+     * plus the institute's balance and whether the feature is currently funded.
+     */
+    @GetMapping("/chatbot-flows/usage")
+    public ResponseEntity<FlowAiUsageSummary> chatbotFlowUsage(
+            HttpServletRequest request,
+            @RequestParam(required = false) Long startDate,
+            @RequestParam(required = false) Long endDate) {
+        String instituteId = requireInstituteId(request);
+        return ResponseEntity.ok(service.chatbotFlowUsage(instituteId, from(startDate), to(endDate)));
+    }
+
+    /** Per-turn charge log behind those figures, newest first; optionally one flow. */
+    @GetMapping("/chatbot-flows/logs")
+    public ResponseEntity<Page<FlowAiUsageLogRow>> chatbotFlowLogs(
+            HttpServletRequest request,
+            @RequestParam(required = false) String flowId,
+            @RequestParam(required = false) Long startDate,
+            @RequestParam(required = false) Long endDate,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        String instituteId = requireInstituteId(request);
+        String flowFilter = (flowId == null || flowId.isBlank()) ? null : flowId;
+        Pageable pageable = PageRequest.of(page, size);
+        return ResponseEntity.ok(
+                service.chatbotFlowLogs(instituteId, flowFilter, from(startDate), to(endDate), pageable));
+    }
+
     private Timestamp from(Long startDate) {
         return new Timestamp(startDate != null ? startDate : System.currentTimeMillis() - THIRTY_DAYS_MS);
     }
@@ -208,11 +248,20 @@ public class CreditUsageController {
         return new Timestamp(endDate != null ? endDate : System.currentTimeMillis());
     }
 
+    /**
+     * The clientId-header institute, after checking the caller is STAFF there (admin, teacher,
+     * evaluator, mentor) with no root-user bypass. These endpoints return per-user AI usage and
+     * the text of AI conversations, so a learner, a parent or a member of another institute must
+     * never reach them by setting the header.
+     */
     private String requireInstituteId(HttpServletRequest request) {
         String instituteId = request.getHeader("clientId");
         if (instituteId == null || instituteId.isBlank()) {
             throw new VacademyException("Missing clientId header");
         }
+        Object user = request.getAttribute("user");
+        instituteAccessValidator.requireInstituteStaff(
+                user instanceof CustomUserDetails details ? details : null, instituteId);
         return instituteId;
     }
 }

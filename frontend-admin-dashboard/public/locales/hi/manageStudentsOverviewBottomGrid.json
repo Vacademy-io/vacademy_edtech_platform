@@ -1,0 +1,19 @@
+{
+    "enrolment": {
+        "heading": "नामांकन विवरण",
+        "rows": {
+            "plan": "प्लान",
+            "enrollmentNo": "नामांकन संख्या",
+            "session": "सत्र",
+            "gender": "लिंग",
+            "school": "स्कूल"
+        }
+    },
+    "contact": {
+        "heading": "संपर्क",
+        "rows": {
+            "mobileNo": "मोबाइल नंबर",
+            "email": "ईमेल"
+        }
+    }
+}

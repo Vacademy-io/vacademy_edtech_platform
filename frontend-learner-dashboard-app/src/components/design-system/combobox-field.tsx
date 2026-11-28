@@ -23,6 +23,7 @@ import {
 import { Check, CaretUpDown } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { useState, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 
 interface Options {
   _id: string | number;
@@ -52,6 +53,7 @@ const ComboboxField: React.FC<SelectFieldProps> = ({
   disabled = false,
   className,
 }) => {
+  const { t } = useTranslation("uiAtomsA");
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -90,7 +92,7 @@ const ComboboxField: React.FC<SelectFieldProps> = ({
                     ? options.find(
                         (option) => option.value.toString() === field.value
                       )?.label || field.value
-                    : `Select ${label}`}
+                    : t("comboboxField.selectLabel", { label })}
                   <CaretUpDown className="ms-2 h-4 w-4 shrink-0 opacity-50" />
                 </Button>
               </FormControl>
@@ -98,12 +100,12 @@ const ComboboxField: React.FC<SelectFieldProps> = ({
             <PopoverContent className="w-radix-popover p-0">
               <Command shouldFilter={false}>
                 <CommandInput
-                  placeholder={`Search ${label}...`}
+                  placeholder={t("comboboxField.searchLabel", { label })}
                   value={searchQuery}
                   onValueChange={setSearchQuery}
                 />
                 <CommandList>
-                  <CommandEmpty>No results found.</CommandEmpty>
+                  <CommandEmpty>{t("comboboxField.noResults")}</CommandEmpty>
                   <CommandGroup>
                     {filteredOptions.map((option) => (
                       <CommandItem

@@ -1,0 +1,23 @@
+{
+    "heading": {
+        "title": "लंबित कार्य",
+        "description": "अभी आपकी प्रतीक्षा में मौजूद आइटम"
+    },
+    "error": "लंबित कार्य लोड नहीं हो सके।",
+    "partialError": "कुछ आइटम लोड नहीं हो सके।",
+    "empty": {
+        "title": "सब कुछ ठीक है",
+        "description": "अभी आपके ध्यान देने योग्य कुछ भी नहीं है।"
+    },
+    "actionType": {
+        "overduePayment": "बकाया भुगतान",
+        "pendingApproval": "लंबित अनुमोदन",
+        "unreadAlert": "अपठित सूचना"
+    },
+    "age": {
+        "now": "अभी",
+        "lessThanHour": "<1घं",
+        "hoursFormat": "{{hours}}घं",
+        "daysFormat": "{{days}}दि"
+    }
+}

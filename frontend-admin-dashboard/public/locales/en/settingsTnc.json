@@ -1,0 +1,43 @@
+{
+    "loading": "Loading T&C settings...",
+    "toggle": {
+        "enabled": "Enabled",
+        "disabled": "Disabled"
+    },
+    "documentCard": {
+        "title": "Student Terms & Conditions",
+        "description": "Enable Terms & Conditions to require learners to digitally sign the agreement before they can access their dashboard content.",
+        "pdfLabel": "Terms and Conditions PDF",
+        "pdfDescription": "Upload the base PDF document. When a learner accepts it, their name and date will be appended as a new page.",
+        "currentlyUploaded": "Currently Uploaded PDF",
+        "viewDocument": "View T&C Document",
+        "remove": "Remove",
+        "acceptFormatMsg": "Supported format: PDF",
+        "uploading": "Uploading PDF...",
+        "nameLabel": "Learner Name on Signature",
+        "nameDescription": "Choose how the learner's name is captured when they sign the Terms & Conditions.",
+        "prefillLabel": "Prefill learner's name (non-editable)",
+        "prefillHintOn": "The learner's registered name will be auto-filled and locked on the signature field.",
+        "prefillHintOff": "The learner will be required to type their full name manually when signing."
+    },
+    "notifyCard": {
+        "title": "Notify on Sign",
+        "description": "Send an email notification with the signed PDF link whenever a student accepts the Terms & Conditions.",
+        "recipientEmailsLabel": "Recipient Emails",
+        "recipientEmailsPlaceholder": "admin@example.com, hr@example.com",
+        "recipientEmailsHint": "Separate multiple email addresses with commas. Each address will receive the signed PDF link."
+    },
+    "actions": {
+        "save": "Save Settings",
+        "saving": "Saving..."
+    },
+    "toasts": {
+        "saveSuccess": "Terms & Conditions settings saved",
+        "saveError": "Failed to save T&C settings",
+        "missingFile": "Please upload a PDF file to enable Terms & Conditions",
+        "missingEmails": "Please enter at least one recipient email for notifications",
+        "invalidFileType": "Only PDF files are supported",
+        "uploadSuccess": "PDF uploaded successfully",
+        "uploadError": "Failed to upload PDF file"
+    }
+}

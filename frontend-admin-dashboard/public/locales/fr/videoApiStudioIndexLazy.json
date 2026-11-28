@@ -1,0 +1,41 @@
+{
+    "header": {
+        "title": "Studio d'API de contenu IA",
+        "subtitle": "Gérez vos clés API et accédez aux API de génération vidéo",
+        "consoleButton": "Console IA de contenu"
+    },
+    "tabs": {
+        "keys": "Clés API",
+        "docs": "Documentation"
+    },
+    "keysTab": {
+        "empty": {
+            "title": "Aucune clé API trouvée",
+            "description": "Créez votre première clé API pour commencer à utiliser l'API de génération vidéo IA de Vacademy. Votre clé vous permettra de générer des vidéos alimentées par l'IA de manière programmatique.",
+            "createButton": "Créer votre première clé"
+        },
+        "list": {
+            "title": "Vos clés API",
+            "activeKeys_one": "{{count}} clé active",
+            "activeKeys_many": "{{count}} clés actives",
+            "activeKeys_other": "{{count}} clés actives",
+            "createButton": "Créer une nouvelle clé"
+        },
+        "securityTip": {
+            "title": "Conseil de sécurité",
+            "description": "Gardez vos clés API sécurisées et ne les exposez jamais dans du code côté client. Utilisez des variables d'environnement ou une gestion des secrets pour les applications de production."
+        }
+    },
+    "docsTab": {
+        "cardTitle": "API de génération de contenu IA Vacademy",
+        "cardDescription": "Générez des vidéos IA de haute qualité à partir d'invites textuelles de manière programmatique"
+    },
+    "toasts": {
+        "fetchKeysFailed": "Échec de la récupération des clés API",
+        "instituteIdMissing": "ID de l'institut introuvable",
+        "generateSuccess": "Clé API générée avec succès",
+        "generateFailed": "Échec de la génération de la clé API",
+        "revokeSuccess": "Clé API révoquée avec succès",
+        "revokeFailed": "Échec de la révocation de la clé API"
+    }
+}

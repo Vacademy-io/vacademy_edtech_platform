@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -39,6 +40,7 @@ export function PushChannelCard({
     errors,
     showErrors,
 }: PushChannelCardProps) {
+    const { t } = useTranslation('announcementCreateChannelsPushChannelCard');
     const err = (key: string) => (showErrors ? errors[key] : undefined);
 
     return (
@@ -48,45 +50,41 @@ export function PushChannelCard({
                     checked={synced}
                     onCheckedChange={(value) => onSyncedChange(Boolean(value))}
                 />
-                <span className="text-caption">Mirror the announcement title and content</span>
+                <span className="text-caption">{t('mirrorTitleAndContent')}</span>
             </label>
 
             <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-1">
                     <div className="flex items-center justify-between gap-2">
-                        <Label className="text-caption font-semibold">Push title</Label>
+                        <Label className="text-caption font-semibold">{t('pushTitle')}</Label>
                         <CharacterCount value={config.title} limit={TITLE_LIMIT} />
                     </div>
                     <Input
                         value={config.title}
                         onChange={(e) => onChange({ title: e.target.value })}
                         disabled={synced}
-                        placeholder="Short, specific headline"
+                        placeholder={t('titlePlaceholder')}
                         className={cn(err('push.title') && 'border-danger-400')}
                     />
                     <FieldError message={err('push.title')} />
                 </div>
                 <div className="space-y-1">
                     <div className="flex items-center justify-between gap-2">
-                        <Label className="text-caption font-semibold">Push body</Label>
+                        <Label className="text-caption font-semibold">{t('pushBody')}</Label>
                         <CharacterCount value={config.body} limit={BODY_LIMIT} />
                     </div>
                     <Input
                         value={config.body}
                         onChange={(e) => onChange({ body: e.target.value })}
                         disabled={synced}
-                        placeholder="One line of detail"
+                        placeholder={t('bodyPlaceholder')}
                         className={cn(err('push.body') && 'border-danger-400')}
                     />
                     <FieldError message={err('push.body')} />
                 </div>
             </div>
 
-            {synced && (
-                <FieldHint>
-                    Turn the switch off to write push copy that differs from the announcement.
-                </FieldHint>
-            )}
+            {synced && <FieldHint>{t('syncedHint')}</FieldHint>}
         </div>
     );
 }

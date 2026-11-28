@@ -18,9 +18,20 @@ import {
   LoadingState,
 } from "@/components/design-system/states";
 import { FileText, Eye } from "@phosphor-icons/react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { getFileDetail } from "@/services/upload_file";
 import { toast } from "sonner";
 import { EvaluatedReportDialog } from "@/components/common/student-test-records/evaluated-report-dialog";
+import { useTranslation } from "react-i18next";
+import { isReportableAttempt } from "../-utils/reportable-attempt";
+import { openStudentReport } from "@/services/student-report-routing";
+import { RevisedTag } from "@/components/common/student-test-records/revised-tag";
 
 interface EvaluatedPreview {
   url: string;
@@ -29,12 +40,12 @@ interface EvaluatedPreview {
   title: string;
 }
 
-const PLAY_MODE_LABELS: Record<string, string> = {
-  EXAM: "Exam",
-  MOCK: "Mock",
-  PRACTICE: "Practice",
-  SURVEY: "Survey",
-  MANUAL_UPLOAD_EXAM: "Offline exam",
+const PLAY_MODE_KEYS: Record<string, string> = {
+  EXAM: "card.playMode.exam",
+  MOCK: "card.playMode.mock",
+  PRACTICE: "card.playMode.practice",
+  SURVEY: "card.playMode.survey",
+  MANUAL_UPLOAD_EXAM: "card.playMode.offlineExam",
 };
 
 export const viewStudentReport = async (
@@ -70,17 +81,24 @@ export const handleGetStudentReport = ({
   };
 };
 
+type ReportSortOrder = "latest" | "oldest";
+
 const AssessmentReportList = ({
   assessment_types,
 }: {
   assessment_types: "HOMEWORK" | "ASSESSMENT";
 }) => {
+  const { t } = useTranslation("assessment");
   const navigate = useNavigate();
   const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [pageNo, setPageNo] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  // Newest first by default (the server's order); "oldest" asks for the reverse.
+  const [sortOrder, setSortOrder] = useState<ReportSortOrder>("latest");
+  // Bumped on every sort change so a page still loading for the old order is dropped.
+  const requestSeq = useRef(0);
   const pageSize = 10;
   const observer = useRef<IntersectionObserver | null>(null);
   const loadingRef = useRef<HTMLDivElement | null>(null);
@@ -96,8 +114,8 @@ const AssessmentReportList = ({
   const { setNavHeading } = useNavHeadingStore();
 
   useEffect(() => {
-    setNavHeading("Reports");
-  }, []);
+    setNavHeading(t("reportList.navHeading"));
+  }, [setNavHeading, t]);
 
   useEffect(() => {
     const fetchInstituteDetails = async () => {
@@ -108,30 +126,21 @@ const AssessmentReportList = ({
 
     fetchInstituteDetails();
   }, []);
-  const handleViewAIReport = (report: Report) => {
-    navigate({
-      to: `/assessment/reports/ai-report`,
-      search: {
+  // One report per attempt: the AI report once it exists, otherwise the normal report.
+  const [openingReportFor, setOpeningReportFor] = useState<string | null>(null);
+  const handleViewReport = async (report: Report) => {
+    setOpeningReportFor(report.attempt_id);
+    try {
+      await openStudentReport(navigate as never, {
         assessmentId: report.assessment_id,
         assessmentName: report.assessment_name,
         attemptId: report.attempt_id,
-      },
-    });
-  };
-
-  const handleViewComparison = (report: Report) => {
-    navigate({
-      to: `/assessment/reports/comparison`,
-      search: {
-        assessmentId: report.assessment_id,
-        attemptId: report.attempt_id,
-      },
-      state: {
-        report,
-        assessmentName: report.assessment_name,
         evaluationType: report.evaluation_type,
-      } as any,
-    });
+        state: { report },
+      });
+    } finally {
+      setOpeningReportFor(null);
+    }
   };
 
   // Open the evaluated copy for a manual report. Rendered in the shared in-app
@@ -152,7 +161,7 @@ const AssessmentReportList = ({
       });
       const fileId = res.data?.evaluated_file_id;
       if (!fileId) {
-        toast.error("Evaluated copy is not available yet.");
+        toast.error(t("reportList.toast.evaluatedNotAvailable"));
         return;
       }
       const detail = await getFileDetail(fileId);
@@ -161,15 +170,17 @@ const AssessmentReportList = ({
           url: detail.url,
           fileName:
             detail.fileName ||
-            `${report.assessment_name || "assessment"} - evaluated`,
+            t("reportList.evaluatedFileName", {
+              name: report.assessment_name || t("reportList.fallback.assessmentName"),
+            }),
           fileType: detail.fileType,
-          title: `${report.assessment_name || "Evaluated copy"}`,
+          title: `${report.assessment_name || t("reportList.fallback.evaluatedCopy")}`,
         });
       } else {
-        toast.error("Could not open the evaluated copy.");
+        toast.error(t("reportList.toast.evaluatedOpenFailed"));
       }
     } catch {
-      toast.error("Could not open the evaluated copy.");
+      toast.error(t("reportList.toast.evaluatedOpenFailed"));
     } finally {
       setLoadingEvaluatedFor(null);
     }
@@ -180,6 +191,7 @@ const AssessmentReportList = ({
 
   const fetchReports = async () => {
     if (loading || !hasMore) return;
+    const seq = requestSeq.current;
 
     try {
       setLoading(true);
@@ -204,7 +216,7 @@ const AssessmentReportList = ({
           // (as "Pending evaluation"). Marks/report stay gated until RELEASED.
           release_result_status: ["RELEASED", "PENDING"],
           assessment_type: [assessment_types],
-          sort_columns: {},
+          sort_columns: sortOrder === "oldest" ? { attempt_date: "ASC" } : {},
         },
         {
           params: {
@@ -216,17 +228,44 @@ const AssessmentReportList = ({
         }
       );
 
-      const newReports = response.data.content;
+      if (seq !== requestSeq.current) return;
+
+      const newReports = (response.data.content as Report[]).filter(
+        isReportableAttempt
+      );
       setReports((prev) =>
         pageNo === 0 ? newReports : [...prev, ...newReports]
       );
-      setHasMore(!response.data.last);
+
+      const isLastPage = response.data.last;
+      setHasMore(!isLastPage);
+
+      // Infinite scroll advances when the LAST RENDERED row scrolls into view.
+      // A page that filters down to nothing (all surveys) renders no new row, so
+      // the observer would never fire again and the remaining pages would be
+      // unreachable. Pull the next page ourselves instead.
+      if (newReports.length === 0 && !isLastPage) {
+        setPageNo((prev) => prev + 1);
+      }
     } catch (err) {
+      if (seq !== requestSeq.current) return;
       console.error("Error fetching reports:", err);
-      setError("Failed to load reports. Please try again later.");
+      setError(t("reportList.error.loadFailed"));
     } finally {
-      setLoading(false);
+      if (seq === requestSeq.current) setLoading(false);
     }
+  };
+
+  const changeSortOrder = (next: ReportSortOrder) => {
+    if (next === sortOrder) return;
+    requestSeq.current += 1;
+    setSortOrder(next);
+    // The current rows stay until page 0 of the new order replaces them, so the
+    // empty state never flashes in between.
+    setError(null);
+    setHasMore(true);
+    setLoading(false);
+    setPageNo(0);
   };
 
   // Setup intersection observer for infinite scrolling
@@ -250,10 +289,10 @@ const AssessmentReportList = ({
     [loading, hasMore]
   );
 
-  // Load initial data
+  // Load initial data, the next page, or the first page of a new sort order
   useEffect(() => {
     fetchReports();
-  }, [pageNo]);
+  }, [pageNo, sortOrder]);
 
   // Cleanup observer on component unmount
   useEffect(() => {
@@ -272,7 +311,7 @@ const AssessmentReportList = ({
     return (
       <div className="p-4 md:p-6 lg:p-8">
         <ErrorState
-          title="Could not load reports"
+          title={t("reportList.error.loadTitle")}
           message={error}
           onRetry={() => fetchReports()}
         />
@@ -282,6 +321,25 @@ const AssessmentReportList = ({
 
   return (
     <div className="w-full space-y-4 p-4 md:p-6 lg:p-8">
+      {(reports.length > 0 || sortOrder !== "latest") && (
+        <div className="flex items-center justify-end gap-2">
+          <span className="text-caption text-muted-foreground">
+            {t("reportList.sort.label")}
+          </span>
+          <Select
+            value={sortOrder}
+            onValueChange={(value) => changeSortOrder(value as ReportSortOrder)}
+          >
+            <SelectTrigger className="h-9 w-44" aria-label={t("reportList.sort.label")}>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="latest">{t("reportList.sort.latest")}</SelectItem>
+              <SelectItem value="oldest">{t("reportList.sort.oldest")}</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      )}
       {reports.map((report: Report, index: number) => {
         const released = isReportReleased(report);
         // The list API's `total_marks` is the attempt's achieved score
@@ -308,15 +366,23 @@ const AssessmentReportList = ({
             ref={index === reports.length - 1 ? lastReportElementRef : null}
           >
             <Card className="w-full transition-shadow hover:shadow-sm [.ui-play_&]:rounded-2xl">
-              <CardContent className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:gap-5 sm:p-5">
+              <CardContent className="flex flex-col gap-4 p-card sm:flex-row sm:items-center sm:gap-5 sm:p-5">
                 {/* Score first: the figure the learner came for */}
                 <div className="flex w-fit shrink-0 items-baseline gap-1.5 rounded-lg bg-primary-50 px-4 py-2 sm:w-24 sm:flex-col sm:items-center sm:gap-0 sm:py-3 [.ui-play_&]:rounded-play-card-sm [.ui-play_&]:border [.ui-play_&]:border-border [.ui-play_&]:bg-play-gold-soft [.ui-vibrant_&]:border-t-4 [.ui-vibrant_&]:border-t-primary-300">
-                  <span className="text-h2 font-bold tabular-nums text-primary-500 [.ui-play_&]:font-black [.ui-play_&]:text-play-ink">
-                    {score != null ? score : "-"}
-                  </span>
-                  <span className="text-3xs font-medium uppercase tracking-wide text-muted-foreground [.ui-play_&]:text-play-ink/70">
-                    marks
-                  </span>
+                  {score != null ? (
+                    <>
+                      <span className="text-h2 font-bold tabular-nums text-primary-500 [.ui-play_&]:font-black [.ui-play_&]:text-play-ink">
+                        {score}
+                      </span>
+                      <span className="text-3xs font-medium uppercase tracking-wide text-muted-foreground [.ui-play_&]:text-play-ink/70">
+                        {t("reportList.meta.marksLabel")}
+                      </span>
+                    </>
+                  ) : (
+                    <span className="text-caption font-medium text-muted-foreground [.ui-play_&]:text-play-ink/70">
+                      {t("reportList.meta.marksNotOut")}
+                    </span>
+                  )}
                 </div>
 
                 <div className="min-w-0 flex-1">
@@ -327,8 +393,8 @@ const AssessmentReportList = ({
                     {report.evaluation_type && (
                       <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-100 px-2 py-0.5 text-2xs font-medium text-slate-700">
                         {report.evaluation_type === "MANUAL"
-                          ? "Manual"
-                          : "Auto"}
+                          ? t("reportList.status.manual")
+                          : t("reportList.status.auto")}
                       </span>
                     )}
                     <span
@@ -338,11 +404,20 @@ const AssessmentReportList = ({
                           : "inline-flex items-center rounded-full border border-amber-200 bg-amber-100 px-2 py-0.5 text-2xs font-medium text-amber-700"
                       }
                     >
-                      {released ? "Released" : "Pending evaluation"}
+                      {released
+                        ? t("reportList.status.released")
+                        : t("reportList.status.pendingEvaluation")}
                     </span>
+                    {/* A teacher changed a mark after release: the score above
+                        is already the new one; the tag says so (spec W11). */}
+                    {released && report.result_revised_at && (
+                      <RevisedTag at={report.result_revised_at} />
+                    )}
                     {assessment_types !== "HOMEWORK" && (
                       <span className="inline-flex items-center rounded-full border border-border bg-muted px-2 py-0.5 text-2xs font-medium text-muted-foreground">
-                        {PLAY_MODE_LABELS[report.play_mode] ?? report.play_mode}
+                        {PLAY_MODE_KEYS[report.play_mode]
+                          ? t(PLAY_MODE_KEYS[report.play_mode])
+                          : report.play_mode}
                       </span>
                     )}
                   </div>
@@ -354,22 +429,14 @@ const AssessmentReportList = ({
                 </div>
 
                 <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
-                  {!isManualReport(report) && (
-                    <MyButton
-                      className="min-h-11 w-full sm:min-h-9 sm:w-auto"
-                      onClick={() => handleViewAIReport(report)}
-                      disable={!released}
-                    >
-                      View AI Report
-                    </MyButton>
-                  )}
                   <MyButton
-                    buttonType="secondary"
                     className="min-h-11 w-full sm:min-h-9 sm:w-auto"
-                    onClick={() => handleViewComparison(report)}
-                    disable={!released}
+                    onClick={() => handleViewReport(report)}
+                    disable={!released || openingReportFor === report.attempt_id}
                   >
-                    Report
+                    {openingReportFor === report.attempt_id
+                      ? t("reportList.button.opening")
+                      : t("reportList.button.viewReport")}
                   </MyButton>
                   {isManualReport(report) && (
                     <MyButton
@@ -381,8 +448,8 @@ const AssessmentReportList = ({
                       <span className="inline-flex items-center gap-1.5">
                         <Eye className="size-4" />
                         {loadingEvaluatedFor === report.attempt_id
-                          ? "Opening…"
-                          : "View Evaluated"}
+                          ? t("reportList.button.opening")
+                          : t("reportList.button.viewEvaluated")}
                       </span>
                     </MyButton>
                   )}
@@ -401,17 +468,20 @@ const AssessmentReportList = ({
 
       {!hasMore && reports.length > 0 && (
         <p className="text-center text-caption text-muted-foreground py-4">
-          No more reports to load
+          {t("reportList.meta.noMore")}
         </p>
       )}
 
       {reports.length === 0 && !loading && (
         <EmptyState
           icon={FileText}
-          title="No reports yet"
-          description="Reports appear here once you finish a test and its results are released."
+          title={t("reportList.empty.title")}
+          description={t("reportList.empty.description")}
           action={{
-            label: assessment_types === "HOMEWORK" ? "Go to homework" : "Go to tests",
+            label:
+              assessment_types === "HOMEWORK"
+                ? t("reportList.empty.actionHomework")
+                : t("reportList.empty.actionAssessment"),
             onClick: () =>
               navigate({
                 to:
@@ -433,7 +503,7 @@ const AssessmentReportList = ({
         fileUrl={evaluatedPreview?.url ?? null}
         fileName={evaluatedPreview?.fileName}
         fileType={evaluatedPreview?.fileType}
-        title={evaluatedPreview?.title || "Evaluated copy"}
+        title={evaluatedPreview?.title || t("reportList.fallback.evaluatedCopy")}
       />
     </div>
   );

@@ -9,11 +9,15 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import vacademy.io.admin_core_service.features.certificate.dto.CertificateEligibilityDto;
+import vacademy.io.admin_core_service.features.certificate.dto.CertificateTestOptionDto;
 import vacademy.io.admin_core_service.features.certificate.dto.CourseCertificateDashboardDto;
 import vacademy.io.admin_core_service.features.certificate.dto.CourseCertificateSettingDto;
 import vacademy.io.admin_core_service.features.certificate.dto.CourseCertificateSettingsResponse;
 import vacademy.io.admin_core_service.features.certificate.service.CourseCertificateService;
 import vacademy.io.common.auth.model.CustomUserDetails;
+
+import java.util.List;
 
 /**
  * Admin certificate management for a single course, backing the Certificates tab
@@ -82,9 +86,32 @@ public class CourseCertificateController {
             @RequestParam String packageSessionId,
             @RequestParam String userId,
             @RequestParam(defaultValue = "false") boolean regenerate,
-            @RequestParam(required = false) String courseName) {
+            @RequestParam(required = false) String courseName,
+            @RequestParam(defaultValue = "false") boolean force) {
         return ResponseEntity.ok(courseCertificateService
-                .issueForLearner(user, instituteId, packageSessionId, userId, regenerate, courseName));
+                .issueForLearner(user, instituteId, packageSessionId, userId, regenerate, courseName, force));
+    }
+
+    /**
+     * Every quiz and assessment in the course, across its batches, in course order -
+     * the choices for the "which tests count" picker in the course certificate settings.
+     */
+    @GetMapping("/tests")
+    public ResponseEntity<List<CertificateTestOptionDto>> tests(
+            @RequestAttribute("user") CustomUserDetails user,
+            @RequestParam String instituteId,
+            @RequestParam String packageId) {
+        return ResponseEntity.ok(courseCertificateService.getCourseTests(user, instituteId, packageId));
+    }
+
+    /** One learner's standing against the course's certificate rule, test by test. */
+    @GetMapping("/learner-eligibility")
+    public ResponseEntity<CertificateEligibilityDto> learnerEligibility(
+            @RequestAttribute("user") CustomUserDetails user,
+            @RequestParam String instituteId,
+            @RequestParam String packageSessionId,
+            @RequestParam String userId) {
+        return ResponseEntity.ok(courseCertificateService.getEligibility(user, instituteId, packageSessionId, userId));
     }
 
     @PostMapping("/resend")

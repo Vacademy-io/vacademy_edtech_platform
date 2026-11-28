@@ -1,0 +1,36 @@
+{
+    "dialog": {
+        "heading": "اختر قالبًا موجودًا أو أنشئ قالبًا جديدًا لبريدك الإلكتروني",
+        "cancel": "إلغاء"
+    },
+    "search": {
+        "placeholder": "البحث في القوالب..."
+    },
+    "actions": {
+        "createNewTemplate": "إنشاء قالب جديد"
+    },
+    "loading": {
+        "templates": "جارٍ تحميل القوالب..."
+    },
+    "empty": {
+        "noSearchResults": "لم يتم العثور على قوالب مطابقة لبحثك.",
+        "noTemplates": "لم يتم العثور على أي قوالب بريد إلكتروني.",
+        "getStarted": "أنشئ أول قالب لك للبدء."
+    },
+    "table": {
+        "templateName": "اسم القالب",
+        "subject": "الموضوع",
+        "contentPreview": "معاينة المحتوى",
+        "noSubject": "لا يوجد موضوع",
+        "noContent": "لا يوجد محتوى"
+    },
+    "pagination": {
+        "showingRange": "عرض {{start}} إلى {{end}} من أصل {{total}} قالب",
+        "rowsPerPage": "عدد الصفوف في الصفحة:",
+        "pageOf": "صفحة {{current}} من {{total}}"
+    },
+    "errors": {
+        "loadTemplatesFailed": "فشل تحميل قوالب البريد الإلكتروني",
+        "loadTemplateContentFailed": "فشل تحميل محتوى القالب. سيتم استخدام النسخة المخزنة مؤقتًا."
+    }
+}

@@ -6,6 +6,7 @@ import { useNavHeadingStore } from '@/stores/layout-container/useNavHeadingStore
 import { CaretLeft } from '@phosphor-icons/react';
 import { getSubjectName } from '@/utils/helpers/study-library-helpers.ts/get-name-by-id/getSubjectNameById';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
 import { SubjectType } from '@/stores/study-library/use-study-library-store';
 import { getSubjectsByLevelAndSession } from '@/utils/courseUtils';
@@ -23,6 +24,7 @@ export const Route = createLazyFileRoute('/study-library/courses/course-details/
 );
 
 function RouteComponent() {
+    const { t } = useTranslation('studyLibraryModulesIndex');
     const queryClient = useQueryClient();
 
     const { setNavHeading } = useNavHeadingStore();
@@ -39,7 +41,7 @@ function RouteComponent() {
     const heading = (
         <div className="flex items-center gap-4">
             <CaretLeft onClick={() => window.history.back()} className="cursor-pointer" />
-            <div>{`${subjectName} Modules`}</div>
+            <div>{t('heading', { subject: subjectName })}</div>
         </div>
     );
 

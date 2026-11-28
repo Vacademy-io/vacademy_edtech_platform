@@ -1,0 +1,20 @@
+{
+    "title": "Notifications des demandes des apprenants",
+    "description": "Choisissez les rôles prévenus lorsqu'un apprenant, pendant un test, signale un problème sur une question, demande plus de temps ou une nouvelle tentative. Par défaut, seuls les administrateurs sont prévenus. Chaque demande apparaît aussi dans l'onglet Demandes des apprenants du test.",
+    "rolesHeading": "Prévenir ces rôles",
+    "channelsHeading": "Envoyer par",
+    "roles": {
+        "admin": "Administrateur"
+    },
+    "channels": {
+        "inApp": {
+            "label": "Cloche du tableau de bord et notification push",
+            "hint": "Apparaît dans la cloche de notifications et sur l'application du personnel."
+        },
+        "email": {
+            "label": "E-mail",
+            "hint": "Un e-mail par demande. Quand plusieurs apprenants signalent la même question, le personnel est prévenu une fois toutes les 10 minutes."
+        }
+    },
+    "nobodyWarning": "Personne ne sera prévenu. Les demandes apparaîtront seulement dans l'onglet Demandes des apprenants."
+}

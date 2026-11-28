@@ -13,7 +13,10 @@
  *       (they are deliberate per-direction overrides).
  *   (b) locale-less .toLocaleString()/.toLocaleDateString()/
  *       .toLocaleTimeString() calls — these silently format in the
- *       browser's locale instead of the user's chosen locale.
+ *       browser's locale instead of the user's chosen locale. The same
+ *       calls with an explicit `undefined` locale
+ *       (.toLocaleDateString(undefined, {...})) are flagged too — identical
+ *       browser-locale fallback.
  *   (c) literal 'Asia/Kolkata' — hardcoded timezone; use the user/institute
  *       timezone setting.
  *
@@ -37,7 +40,9 @@ const FRONTEND_FILE = /^frontend-(admin-dashboard|learner-dashboard-app)\/src\/.
 const RULES = [
   {
     id: 'physical-direction-utility',
-    appliesTo: /\.(tsx|ts|css)$/,
+    // Not the classroom panel app: it targets Chrome 66 WebViews, which lack the CSS logical
+    // properties (margin-inline-start, inset-inline-start) the logical utilities compile to.
+    appliesTo: /^(?!frontend-admin-dashboard\/src\/panel\/).*\.(tsx|ts|css)$/,
     test: /(?<!\w)(?:ml|mr|pl|pr)-\d|(?<!\w)(?:left|right)-\d|(?<!\w)text-(?:left|right)(?![\w-])|(?<!\w)space-x-\d/g,
     hint(match) {
       const swaps = { ml: 'ms', mr: 'me', pl: 'ps', pr: 'pe' };
@@ -61,6 +66,18 @@ const RULES = [
     hint(match) {
       const fn = match.slice(1, match.indexOf('('));
       return `pass the active locale explicitly, e.g. .${fn}(locale, { ... }) — no-arg calls format in the browser locale`;
+    },
+  },
+  {
+    // `.toLocaleDateString(undefined, { ... })` is the same browser-locale
+    // fallback as the no-arg call, just spelled out — it slips past the rule
+    // above because it has arguments.
+    id: 'undefined-locale-toLocale',
+    appliesTo: /\.(tsx|ts)$/,
+    test: /\.toLocale(?:Date|Time)?String\(\s*undefined\s*[,)]/g,
+    hint(match) {
+      const fn = match.slice(1, match.indexOf('('));
+      return `replace the undefined locale with the active one, e.g. .${fn}(locale, { ... }) — undefined means "browser locale"`;
     },
   },
   {

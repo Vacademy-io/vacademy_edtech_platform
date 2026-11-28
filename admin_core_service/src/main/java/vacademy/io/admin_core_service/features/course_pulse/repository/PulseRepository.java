@@ -207,4 +207,107 @@ public interface PulseRepository extends JpaRepository<ActivityLog, String> {
     List<FeedEventProjection> getFeed(@Param("batchId") String batchId,
                                       @Param("sinceCutoff") Instant sinceCutoff,
                                       @Param("limitCount") int limitCount);
+
+    /**
+     * One learner, latest slides first: each slide once, with when it was last seen, engaged time,
+     * visits and how far through the slide the learner is, since a cutoff. Learner Academic Activity tab.
+     * Row: [slide_id, title, source_type, chapter_name, last_seen_at, engaged_ms, visits, percent].
+     *
+     * The percent is the slide completion the chapter rollup uses (learner_operation), so it
+     * matches course progress. activity_log.percentage_watched is only a percentage for video and
+     * audio. For documents, code, Scratch and notebook slides the learner app stores a count of
+     * pages or actions in that session there, so it is used as a fallback for video and audio only.
+     */
+    @Query(value = """
+            SELECT s.id,
+                   s.title,
+                   s.source_type,
+                   (SELECT c.chapter_name FROM chapter_to_slides cts
+                        JOIN chapter c ON c.id = cts.chapter_id
+                        WHERE cts.slide_id = s.id AND cts.status <> 'DELETED'
+                        LIMIT 1),
+                   MAX(COALESCE(al.last_seen_at, CAST(al.created_at AS timestamptz))) AS seen,
+                   SUM(COALESCE(al.engaged_ms, 0)),
+                   COUNT(*),
+                   COALESCE(
+                       (SELECT MAX(LEAST(CAST(lo.value AS FLOAT), 100))
+                        FROM learner_operation lo
+                        WHERE lo.user_id = :userId
+                          AND lo.source = 'SLIDE'
+                          AND lo.source_id = s.id
+                          AND lo.operation IN ('PERCENTAGE_VIDEO_WATCHED','PERCENTAGE_DOCUMENT_COMPLETED',
+                                               'PERCENTAGE_QUIZ_COMPLETED','PERCENTAGE_QUESTION_COMPLETED',
+                                               'PERCENTAGE_ASSIGNMENT_COMPLETED','PERCENTAGE_ASSESSMENT_DONE',
+                                               'PERCENTAGE_SCORM_COMPLETED','PERCENTAGE_AUDIO_LISTENED')
+                          AND lo.value ~ '^[0-9]+([.][0-9]+)?$'),
+                       CASE WHEN s.source_type IN ('VIDEO', 'AUDIO')
+                            THEN LEAST(MAX(al.percentage_watched), 100) END)
+            FROM activity_log al
+                JOIN slide s ON s.id = al.slide_id
+            WHERE al.user_id = :userId
+              AND al.slide_id IS NOT NULL
+              AND al.created_at >= :since
+            GROUP BY s.id, s.title, s.source_type
+            ORDER BY seen DESC
+            LIMIT :maxRows
+            """, nativeQuery = true)
+    List<Object[]> getLearnerRecentSlides(@Param("userId") String userId,
+                                          @Param("since") java.sql.Timestamp since,
+                                          @Param("maxRows") int maxRows);
+
+    /**
+     * One learner since a cutoff, as one row: [engaged_ms, active_days, slides_opened, visits,
+     * engaged_ms in the last seven days, engaged_ms in the seven days before]. Academic Activity tab.
+     */
+    @Query(value = """
+            SELECT COALESCE(SUM(COALESCE(al.engaged_ms, 0)), 0),
+                   COUNT(DISTINCT DATE(al.created_at AT TIME ZONE 'UTC' AT TIME ZONE :zone)),
+                   COUNT(DISTINCT al.slide_id),
+                   COUNT(*),
+                   COALESCE(SUM(COALESCE(al.engaged_ms, 0)) FILTER (WHERE al.created_at >= :weekAgo), 0),
+                   COALESCE(SUM(COALESCE(al.engaged_ms, 0))
+                            FILTER (WHERE al.created_at >= :twoWeeksAgo AND al.created_at < :weekAgo), 0)
+            FROM activity_log al
+            WHERE al.user_id = :userId
+              AND al.slide_id IS NOT NULL
+              AND al.created_at >= :since
+            """, nativeQuery = true)
+    List<Object[]> getLearnerTotals(@Param("userId") String userId,
+                                    @Param("zone") String zone,
+                                    @Param("since") java.sql.Timestamp since,
+                                    @Param("weekAgo") java.sql.Timestamp weekAgo,
+                                    @Param("twoWeeksAgo") java.sql.Timestamp twoWeeksAgo);
+
+    /** One learner since a cutoff: [slide_source_type, engaged_ms, slides_opened] rows, most time first. */
+    @Query(value = """
+            SELECT s.source_type, SUM(COALESCE(al.engaged_ms, 0)), COUNT(DISTINCT s.id)
+            FROM activity_log al
+                JOIN slide s ON s.id = al.slide_id
+            WHERE al.user_id = :userId
+              AND al.slide_id IS NOT NULL
+              AND al.created_at >= :since
+            GROUP BY s.source_type
+            ORDER BY 2 DESC
+            """, nativeQuery = true)
+    List<Object[]> getLearnerContentMix(@Param("userId") String userId,
+                                        @Param("since") java.sql.Timestamp since);
+
+    /**
+     * One learner since a cutoff, by local weekday and hour: [iso_weekday, hour, engaged_ms] rows.
+     * Monday is 1. Study rhythm on the Academic Activity tab.
+     */
+    @Query(value = """
+            SELECT CAST(EXTRACT(ISODOW FROM al.created_at AT TIME ZONE 'UTC' AT TIME ZONE :zone) AS int),
+                   CAST(EXTRACT(HOUR FROM al.created_at AT TIME ZONE 'UTC' AT TIME ZONE :zone) AS int),
+                   SUM(COALESCE(al.engaged_ms, 0))
+            FROM activity_log al
+            WHERE al.user_id = :userId
+              AND al.slide_id IS NOT NULL
+              AND COALESCE(al.engaged_ms, 0) > 0
+              AND al.created_at >= :since
+            GROUP BY 1, 2
+            """, nativeQuery = true)
+    List<Object[]> getLearnerRhythm(@Param("userId") String userId,
+                                    @Param("zone") String zone,
+                                    @Param("since") java.sql.Timestamp since);
 }

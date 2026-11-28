@@ -1,0 +1,14 @@
+{
+    "dialog": {
+        "triggerButton": "Gérer les utilisateurs",
+        "title": "Gérer les utilisateurs par type de rôle"
+    },
+    "tabs": {
+        "instituteUsers": "Utilisateurs de l'établissement",
+        "invites": "Invitations"
+    },
+    "filters": {
+        "roleTypeLabel": "Type de rôle",
+        "statusLabel": "Statut"
+    }
+}

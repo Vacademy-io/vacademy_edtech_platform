@@ -1,0 +1,42 @@
+{
+    "trigger": {
+        "editProfile": "تعديل الملف الشخصي"
+    },
+    "dialog": {
+        "title": "تعديل الملف الشخصي"
+    },
+    "logoAlt": "الشعار",
+    "menu": {
+        "uploadNew": "رفع صورة جديدة",
+        "removeImage": "إزالة الصورة"
+    },
+    "fields": {
+        "name": {
+            "label": "اسم الملف الشخصي",
+            "placeholder": "الاسم الكامل (الأول والأخير)"
+        },
+        "email": {
+            "label": "البريد الإلكتروني",
+            "placeholder": "you@email.com"
+        },
+        "phone": {
+            "label": "رقم الجوال",
+            "placeholder": "123 456 7890"
+        }
+    },
+    "roles": {
+        "label": "نوع الدور",
+        "empty": "لا توجد أدوار مُسندة",
+        "managedNote": "تُدار الأدوار من قِبل مسؤول مؤسستك ولا يمكن تغييرها من هنا."
+    },
+    "sections": {
+        "contactInformation": "معلومات الاتصال"
+    },
+    "actions": {
+        "saveChanges": "حفظ التغييرات",
+        "cancel": "إلغاء"
+    },
+    "toast": {
+        "updateSuccess": "تم تحديث بياناتك بنجاح!"
+    }
+}

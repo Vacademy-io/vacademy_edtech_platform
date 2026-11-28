@@ -1,0 +1,13 @@
+{
+    "copy": "Copier",
+    "copied": "Copié",
+    "copyLinkAriaLabel": "Copier le lien",
+    "copiedAriaLabel": "Copié",
+    "shortLink": {
+        "shorten": "Court",
+        "showFull": "Complet",
+        "shortenHint": "Utiliser un lien court, facile à envoyer ou à dicter",
+        "showFullHint": "Afficher à nouveau l'adresse complète du formulaire",
+        "failed": "Impossible de créer un lien court — l'adresse complète est affichée"
+    }
+}

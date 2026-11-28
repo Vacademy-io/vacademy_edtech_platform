@@ -1,0 +1,41 @@
+{
+    "columns": {
+        "user": "المستخدم",
+        "plan": "الخطة",
+        "status": "الحالة",
+        "autoRenewal": "التجديد التلقائي",
+        "planEndDate": "تاريخ انتهاء الخطة",
+        "finalExpiry": "الانتهاء النهائي",
+        "reenrollment": "إعادة التسجيل"
+    },
+    "unknownUser": "مستخدم غير معروف",
+    "unknownPlan": "خطة غير معروفة",
+    "notApplicable": "غير متاح",
+    "autoRenewal": "التجديد التلقائي",
+    "noAutoRenewal": "بدون تجديد تلقائي",
+    "paymentAttemptOn": "ستتم محاولة الدفع في {{date}}",
+    "scheduledDate": "التاريخ المحدد",
+    "autoRenewalDisabled": "التجديد التلقائي معطل لهذه العضوية",
+    "gracePeriod_zero": "بدون فترة سماح",
+    "gracePeriod_one": "فترة سماح مدتها يوم واحد",
+    "gracePeriod_two": "فترة سماح مدتها يومان",
+    "gracePeriod_few": "فترة سماح مدتها {{count}} أيام",
+    "gracePeriod_many": "فترة سماح مدتها {{count}} يومًا",
+    "gracePeriod_other": "فترة سماح مدتها {{count}} يوم",
+    "notAllowed": "غير مسموح",
+    "availableNow": "متاح الآن",
+    "reenrollmentGap_zero": "لا حاجة لفترة انتظار قبل إعادة التسجيل",
+    "reenrollmentGap_one": "يلزم الانتظار يومًا واحدًا قبل إعادة التسجيل",
+    "reenrollmentGap_two": "يلزم الانتظار يومين قبل إعادة التسجيل",
+    "reenrollmentGap_few": "يلزم الانتظار {{count}} أيام قبل إعادة التسجيل",
+    "reenrollmentGap_many": "يلزم الانتظار {{count}} يومًا قبل إعادة التسجيل",
+    "reenrollmentGap_other": "يلزم الانتظار {{count}} يوم قبل إعادة التسجيل",
+    "reenrollImmediately": "يمكن إعادة التسجيل فورًا بعد الانتهاء",
+    "errorLoadingData": "خطأ في تحميل البيانات",
+    "status": {
+        "ended": "منتهية",
+        "aboutToEnd": "على وشك الانتهاء",
+        "lifetime": "مدى الحياة",
+        "active": "نشطة"
+    }
+}

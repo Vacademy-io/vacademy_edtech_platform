@@ -1,0 +1,9 @@
+{
+    "headerRefs_one": "{{count}} référence",
+    "headerRefs_many": "{{count}} de références",
+    "headerRefs_other": "{{count}} références",
+    "briefLabel": "Le pitch",
+    "referencesAttached_one": "{{count}} référence jointe",
+    "referencesAttached_many": "{{count}} de références jointes",
+    "referencesAttached_other": "{{count}} références jointes"
+}

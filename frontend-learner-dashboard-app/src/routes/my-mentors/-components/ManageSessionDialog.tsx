@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 import { CalendarCheck, WarningCircle } from "@phosphor-icons/react";
 import { MyButton } from "@/components/design-system/button";
 import { MyInput } from "@/components/design-system/input";
@@ -39,6 +40,7 @@ export function ManageSessionDialog({
     mentorSlug: string | null | undefined;
     onOpenChange: (open: boolean) => void;
 }) {
+    const { t } = useTranslation("miscRoutesA");
     const queryClient = useQueryClient();
     const [reason, setReason] = useState("");
     const [slot, setSlot] = useState<string | null>(null);
@@ -87,7 +89,11 @@ export function ManageSessionDialog({
             });
         },
         onSuccess: () => {
-            toast.success(action === "cancel" ? "Session cancelled" : "Session moved");
+            toast.success(
+                action === "cancel"
+                    ? t("myMentors.manageDialog.toast.cancelled")
+                    : t("myMentors.manageDialog.toast.moved")
+            );
             refresh();
             onOpenChange(false);
         },
@@ -99,8 +105,8 @@ export function ManageSessionDialog({
                 extra: { bookingInstanceId: session?.booking_instance_id },
                 fallbackMessage:
                     action === "cancel"
-                        ? "Couldn't cancel the session."
-                        : "Couldn't move the session.",
+                        ? t("myMentors.manageDialog.toast.cancelFailed")
+                        : t("myMentors.manageDialog.toast.moveFailed"),
             });
             refresh();
         },
@@ -111,7 +117,11 @@ export function ManageSessionDialog({
 
     return (
         <MyDialog
-            heading={cancelling ? "Cancel this session" : "Move this session"}
+            heading={
+                cancelling
+                    ? t("myMentors.manageDialog.headingCancel")
+                    : t("myMentors.manageDialog.headingMove")
+            }
             open={!!action}
             onOpenChange={onOpenChange}
             dialogWidth="max-w-lg"
@@ -123,7 +133,7 @@ export function ManageSessionDialog({
                         scale="medium"
                         onClick={() => onOpenChange(false)}
                     >
-                        Keep as is
+                        {t("myMentors.manageDialog.keepAsIs")}
                     </MyButton>
                     <MyButton
                         type="button"
@@ -131,7 +141,7 @@ export function ManageSessionDialog({
                         scale="medium"
                         onClick={() => {
                             if (!cancelling && !slot) {
-                                toast.error("Pick a new time first");
+                                toast.error(t("myMentors.manageDialog.pickTimeFirst"));
                                 return;
                             }
                             run.mutate();
@@ -139,10 +149,10 @@ export function ManageSessionDialog({
                         disable={run.isPending || (!cancelling && !slot)}
                     >
                         {run.isPending
-                            ? "Saving…"
+                            ? t("myMentors.manageDialog.saving")
                             : cancelling
-                              ? "Cancel session"
-                              : "Move session"}
+                              ? t("myMentors.manageDialog.cancelSession")
+                              : t("myMentors.manageDialog.moveSession")}
                     </MyButton>
                 </div>
             }
@@ -152,7 +162,7 @@ export function ManageSessionDialog({
                     <CalendarCheck size={18} className="shrink-0 text-primary-500" />
                     <div className="flex min-w-0 flex-col">
                         <span className="truncate text-body font-semibold text-neutral-700">
-                            {session.mentor_name || "Your mentor"}
+                            {session.mentor_name || t("myMentors.common.yourMentor")}
                         </span>
                         <span className="text-caption text-neutral-500">
                             {sessionWhen(session.scheduled_start_utc)}
@@ -163,9 +173,7 @@ export function ManageSessionDialog({
                 {cancelling ? (
                     <>
                         <p className="text-body text-neutral-600">
-                            Your mentor is told the session is off, and the calendar entry
-                            and reminders are removed. You can book another time whenever
-                            you like.
+                            {t("myMentors.manageDialog.cancelDescription")}
                         </p>
                         <MyInput
                             input={reason}
@@ -173,8 +181,8 @@ export function ManageSessionDialog({
                                 setReason(e.target.value)
                             }
                             inputType="text"
-                            inputPlaceholder="e.g. Clashes with a class"
-                            label="Reason (shared with your mentor)"
+                            inputPlaceholder={t("myMentors.manageDialog.reasonPlaceholder")}
+                            label={t("myMentors.manageDialog.reasonLabel")}
                             className="w-full"
                         />
                     </>
@@ -186,17 +194,17 @@ export function ManageSessionDialog({
                             className="mt-0.5 shrink-0 text-warning-600"
                         />
                         <p className="text-caption text-neutral-600">
-                            We can&apos;t show this mentor&apos;s available times right now — they
-                            may not have a booking page set up. You can cancel this session
-                            instead, or message them to agree a new time.
+                            {t("myMentors.manageDialog.noAvailability")}
                         </p>
                     </div>
                 ) : pageQuery.isLoading ? (
-                    <p className="text-caption text-neutral-500">Loading available times…</p>
+                    <p className="text-caption text-neutral-500">
+                        {t("myMentors.manageDialog.loadingTimes")}
+                    </p>
                 ) : pageQuery.isError || !pageQuery.data ? (
                     <div className="flex flex-col items-start gap-2 rounded-lg border border-danger-100 bg-danger-50 p-3">
                         <p className="text-caption text-danger-600">
-                            Couldn&apos;t load your mentor&apos;s availability.
+                            {t("myMentors.manageDialog.loadAvailabilityFailed")}
                         </p>
                         <MyButton
                             type="button"
@@ -204,7 +212,7 @@ export function ManageSessionDialog({
                             scale="small"
                             onClick={() => pageQuery.refetch()}
                         >
-                            Retry
+                            {t("myMentors.common.retry")}
                         </MyButton>
                     </div>
                 ) : (

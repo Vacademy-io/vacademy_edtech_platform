@@ -3,16 +3,22 @@
 import { useMemo } from 'react';
 import { ArrowLeft, Info, Warning, XCircle } from '@phosphor-icons/react';
 import { MyButton } from '@/components/design-system/button';
-import { getTerminologyPlural } from '@/components/common/layout-container/sidebar/utils';
+import { Switch } from '@/components/ui/switch';
+import {
+    getTerminology,
+    getTerminologyPlural,
+} from '@/components/common/layout-container/sidebar/utils';
 import { ContentTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
 import { formatBytes } from '../conventions';
 import { PreviewTree } from '../preview-tree';
 import {
+    selectCreatedNodes,
     selectMultiReadiness,
     selectSectionsOrdered,
     selectUnresolvedNodes,
     useBulkContentUploadingStore,
 } from '../use-bulk-content-uploading-store';
+import type { NodeKind } from '../types';
 import { CourseSectionCard } from './course-section-card';
 import { CsvPreview } from './csv-preview';
 import type { SectionCallbacks } from '../bulk-content-uploading-wizard';
@@ -21,6 +27,29 @@ interface PreviewStepProps {
     onConfirm: () => void;
     sectionCallbacks?: SectionCallbacks;
 }
+
+const TERM_FOR_KIND: Record<NodeKind, { key: string; fallback: string }> = {
+    subject: { key: ContentTerms.Subject, fallback: SystemTerms.Subject },
+    module: { key: ContentTerms.Module, fallback: SystemTerms.Module },
+    chapter: { key: ContentTerms.Chapter, fallback: SystemTerms.Chapter },
+};
+
+/** "1 module and 3 chapters", institute naming applied. Empty when nothing is new. */
+const describeCreatable = (counts: Record<NodeKind, number>): string => {
+    const parts = (Object.keys(TERM_FOR_KIND) as NodeKind[])
+        .filter((kind) => counts[kind] > 0)
+        .map((kind) => {
+            const { key, fallback } = TERM_FOR_KIND[kind];
+            const term =
+                counts[kind] === 1
+                    ? getTerminology(key, fallback)
+                    : getTerminologyPlural(key, fallback);
+            return `${counts[kind]} ${term.toLowerCase()}`;
+        });
+    if (parts.length === 0) return '';
+    if (parts.length === 1) return parts[0]!;
+    return `${parts.slice(0, -1).join(', ')} and ${parts[parts.length - 1]}`;
+};
 
 const MultiCoursePreview = ({
     onConfirm,
@@ -42,8 +71,17 @@ const MultiCoursePreview = ({
 
     const sections = useMemo(() => selectSectionsOrdered(courseSections), [courseSections]);
     const readiness = useMemo(
-        () => selectMultiReadiness({ courseSections, sectionSnapshots, items, nodes, fatalErrors }),
-        [courseSections, sectionSnapshots, items, nodes, fatalErrors]
+        () =>
+            selectMultiReadiness({
+                courseSections,
+                sectionSnapshots,
+                items,
+                nodes,
+                fatalErrors,
+                options,
+            }),
+        // `options` belongs here — toggling createMissing changes the gate.
+        [courseSections, sectionSnapshots, items, nodes, fatalErrors, options]
     );
     const totalItems = useMemo(() => {
         const readyIds = new Set(sections.filter((s) => s.status === 'ready').map((s) => s.id));
@@ -146,6 +184,7 @@ const SingleCoursePreview = ({ onConfirm }: { onConfirm: () => void }) => {
     const zipFileName = useBulkContentUploadingStore((state) => state.zipFileName);
     const zipTotalBytes = useBulkContentUploadingStore((state) => state.zipTotalBytes);
     const options = useBulkContentUploadingStore((state) => state.options);
+    const setOptions = useBulkContentUploadingStore((state) => state.setOptions);
     const resetForNewZip = useBulkContentUploadingStore((state) => state.resetForNewZip);
 
     const stats = useMemo(() => {
@@ -153,8 +192,10 @@ const SingleCoursePreview = ({ onConfirm }: { onConfirm: () => void }) => {
         const itemList = Object.values(items);
         const count = (kind: string) =>
             nodeList.filter((n) => n.kind === kind && n.mapping.action !== 'skip').length;
-        const toCreate = (kind: string) =>
-            nodeList.filter((n) => n.kind === kind && n.mapping.action === 'create').length;
+        // selectCreatedNodes drops the synthetic root and anything under a
+        // skipped ancestor, so "(N new)" only promises what Phase 1 will do.
+        const creatable = selectCreatedNodes(nodes);
+        const toCreate = (kind: string) => creatable.filter((n) => n.kind === kind).length;
         return {
             subjects: count('subject'),
             subjectsToCreate: toCreate('subject'),
@@ -175,15 +216,33 @@ const SingleCoursePreview = ({ onConfirm }: { onConfirm: () => void }) => {
             <Info className="size-4 shrink-0 text-neutral-400" />
         );
 
-    const unresolved = useMemo(() => selectUnresolvedNodes(nodes), [nodes]);
+    // options.createMissing MUST stay in the deps — without it, unticking the
+    // switch would leave a stale [] here and the Upload button wrongly enabled.
+    const unresolved = useMemo(
+        () => selectUnresolvedNodes(nodes, undefined, options.createMissing),
+        [nodes, options.createMissing]
+    );
 
-    const statChip = (label: string, total: number, unmatched: number) =>
+    const createSummary = useMemo(
+        () =>
+            describeCreatable({
+                subject: stats.subjectsToCreate,
+                module: stats.modulesToCreate,
+                chapter: stats.chaptersToCreate,
+            }),
+        [stats.subjectsToCreate, stats.modulesToCreate, stats.chaptersToCreate]
+    );
+
+    const statChip = (label: string, total: number, toCreate: number) =>
         total > 0 && (
             <span className="rounded-md bg-neutral-50 px-3 py-1.5 text-caption text-neutral-600">
                 <span className="font-semibold text-neutral-700">{total}</span> {label}
-                {unmatched > 0 && (
-                    <span className="text-warning-700"> ({unmatched} unmatched)</span>
-                )}
+                {toCreate > 0 &&
+                    (options.createMissing ? (
+                        <span className="text-primary-600"> ({toCreate} new)</span>
+                    ) : (
+                        <span className="text-warning-700"> ({toCreate} unmatched)</span>
+                    ))}
             </span>
         );
 
@@ -257,6 +316,27 @@ const SingleCoursePreview = ({ onConfirm }: { onConfirm: () => void }) => {
                         ))}
                     </ul>
                 </div>
+            )}
+
+            {/* Unmatched folders only become visible after parsing, so the switch
+                is repeated here — going back a step to flip it would lose the zip. */}
+            {createSummary && (
+                <label className="flex items-center justify-between gap-4 rounded-lg border border-neutral-200 bg-white p-3">
+                    <span className="flex flex-col">
+                        <span className="text-subtitle text-neutral-700">
+                            Create missing folders
+                        </span>
+                        <span className="text-caption text-neutral-500">
+                            {options.createMissing
+                                ? `${createSummary} will be created`
+                                : `${createSummary} have no match — map or skip each one below to continue`}
+                        </span>
+                    </span>
+                    <Switch
+                        checked={options.createMissing}
+                        onCheckedChange={(checked) => setOptions({ createMissing: checked })}
+                    />
+                </label>
             )}
 
             <div className="flex items-center justify-between gap-2">

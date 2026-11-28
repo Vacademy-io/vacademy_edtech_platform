@@ -1,7 +1,7 @@
 "use client";
 
 import type React from "react";
-import { useMemo } from "react";
+import { useEffect } from "react";
 
 import {
   FormControl,
@@ -10,12 +10,38 @@ import {
   FormLabel,
   FormMessage,
 } from "../ui/form";
-import type { Control } from "react-hook-form";
+import { useWatch, type Control } from "react-hook-form";
 import PhoneInput from "react-phone-input-2";
 import "react-phone-input-2/lib/bootstrap.css";
-import { getPreferredPhoneCountries } from "@/services/domain-routing";
-import { phoneValidateRule } from "@/lib/phone-validation";
+import {
+  phoneFieldHasInput,
+  usePreferredPhoneCountries,
+} from "@/hooks/use-preferred-phone-countries";
+import {
+  normalizeStoredPhone,
+  phoneValidateRule,
+  repairedStoredPhone,
+} from "@/lib/phone-validation";
 import { cn } from "@/lib/utils";
+
+/**
+ * Writes a repaired bare number back into the form, so validation and submit
+ * see the same "+91…" value the widget shows instead of the "8712345678" a
+ * prefill put there. Renders nothing.
+ */
+const RepairStoredPhone = ({
+  repaired,
+  onRepair,
+}: {
+  repaired: string | null;
+  onRepair: (value: string) => void;
+}) => {
+  useEffect(() => {
+    if (repaired) onRepair(repaired);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [repaired]);
+  return null;
+};
 
 interface PhoneInputFieldProps {
   label: string;
@@ -57,25 +83,44 @@ const PhoneInputField: React.FC<PhoneInputFieldProps> = ({
   labelClassName,
   inputClassName,
 }) => {
+  // Watched at component level (the Controller below only re-runs its own
+  // render prop) purely so the `freeze` flag is current when a late preference
+  // arrives — see the second rule in `usePreferredPhoneCountries`.
+  const watchedValue = useWatch({ control: control as Control, name });
+
   // Read institute-configured preferred countries from domain routing cache.
   // First entry becomes the default selected country; the full list is used
   // to order options in the country picker dropdown. An explicit `country`
   // prop still wins for intentional callers.
-  const { effectiveCountry, preferredCountries } = useMemo(() => {
-    const { defaultCountry, preferredCountries } = getPreferredPhoneCountries();
-    return {
-      effectiveCountry: country ?? defaultCountry,
-      preferredCountries,
-    };
-  }, [country]);
+  //
+  // The hook (rather than a memoized one-shot read) is what lets a form that
+  // rendered before domain routing answered still land on the right country —
+  // on a slow connection the field used to mount first and stay on the platform
+  // fallback, showing +91 to a visitor in any country. It takes the institute's
+  // answer whenever it lands, and never once this field holds a number.
+  const currentValue = value || (watchedValue as string | undefined);
+  const { defaultCountry, preferredCountries } = usePreferredPhoneCountries({
+    freeze: phoneFieldHasInput(currentValue),
+  });
+  const effectiveCountry = country ?? defaultCountry;
 
   return (
     <FormField
       control={control as Control}
       name={name}
       rules={validate ? { validate: phoneValidateRule({ required, label }) } : undefined}
-      render={({ field }) => (
+      render={({ field }) => {
+        const rawValue = (value || field.value) as string | undefined;
+        const displayValue = normalizeStoredPhone(rawValue, effectiveCountry);
+        return (
         <FormItem className="!w-full">
+          <RepairStoredPhone
+            repaired={repairedStoredPhone(rawValue, effectiveCountry)}
+            onRepair={(repaired) => {
+              field.onChange(repaired);
+              if (onChange) onChange(repaired);
+            }}
+          />
           <FormLabel className={labelClassName}>
             {label}
             {required && <span className="text-danger-600"> *</span>}
@@ -98,7 +143,7 @@ const PhoneInputField: React.FC<PhoneInputFieldProps> = ({
               )}
               buttonClass="!rounded-s-md !border-input"
               disabled={disabled}
-              value={value || field.value}
+              value={displayValue}
               countryCodeEditable={false}
               enableAreaCodes={false}
               disableCountryGuess={false}
@@ -107,7 +152,8 @@ const PhoneInputField: React.FC<PhoneInputFieldProps> = ({
           </FormControl>
           <FormMessage />
         </FormItem>
-      )}
+        );
+      }}
     />
   );
 };

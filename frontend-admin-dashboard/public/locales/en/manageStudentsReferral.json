@@ -1,0 +1,28 @@
+{
+    "noReferrals": "No one has joined through this member's link yet.",
+    "unknownFriend": "Unknown",
+    "fields": {
+        "code": "Referral code",
+        "link": "Referral link",
+        "opens": "Link opens"
+    },
+    "labels": {
+        "rewards": "Rewards earned",
+        "referred": "Referred ({{count}})"
+    },
+    "rewards": {
+        "ready": "Ready for next renewal",
+        "pending": "Waiting for friend to pay",
+        "used": "Used"
+    },
+    "status": {
+        "converted": "Converted",
+        "pending": "Pending",
+        "convertedHint": "Made their first payment",
+        "pendingHint": "On trial or has not paid yet"
+    },
+    "toast": {
+        "copied": "{{field}} copied",
+        "copyFailed": "Could not copy {{field}}"
+    }
+}

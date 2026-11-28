@@ -1,0 +1,25 @@
+{
+    "title": "Template variables",
+    "helper": "Choose what fills each blank in the message for every lead.",
+    "preview": "Message preview",
+    "pickerLabel": "Value for variable {{key}}",
+    "placeholder": "Choose a value",
+    "groups": {
+        "lead": "Lead details",
+        "form": "Form fields"
+    },
+    "lead": {
+        "leadName": "Lead's name",
+        "email": "Lead's email",
+        "phone": "Lead's phone number",
+        "listName": "Lead list name",
+        "submittedOn": "Submitted on",
+        "instituteName": "Institute name"
+    },
+    "loadingFields": "Loading form fields…",
+    "noFormFields": "This form has no custom fields",
+    "customText": "Custom text…",
+    "customTextPlaceholder": "Same text for every lead",
+    "incomplete": "Choose a value for every variable — WhatsApp rejects the message while any is empty.",
+    "allMapped": "Every variable has a value."
+}

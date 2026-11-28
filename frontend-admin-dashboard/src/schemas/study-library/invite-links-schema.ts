@@ -46,6 +46,30 @@ export interface InviteLinkDataInterface {
     package_session_to_payment_options: PackageSessionToPaymentOption[];
     package_session_ids: string[];
     short_url?: string | null;
+    updated_at?: string | null;
+    /** auth_service user id of the creator; null on invites made before it was recorded. */
+    created_by_user_id?: string | null;
+    /** Display name for created_by_user_id, resolved server-side; null when unknown. */
+    created_by_name?: string | null;
+    updated_by_user_id?: string | null;
+    updated_by_name?: string | null;
+    /** List endpoint only: the payment option on each batch, one entry per package session. */
+    payment_summaries?: InvitePaymentSummary[] | null;
+}
+
+export interface InvitePaymentSummary {
+    package_session_id: string;
+    /** Mapping row id — the "old" id PUT /enroll-invite-payment-option replaces. */
+    mapping_id: string;
+    payment_option_id: string;
+    payment_option_name: string | null;
+    /** SUBSCRIPTION | ONE_TIME | FREE | DONATION | CPO */
+    type: string | null;
+    require_approval: boolean;
+    plan_count: number;
+    min_price: number | null;
+    max_price: number | null;
+    currency: string | null;
 }
 
 export interface InstituteCustomField {

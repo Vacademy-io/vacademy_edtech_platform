@@ -1,0 +1,162 @@
+{
+    "card": {
+        "title": "Student AI",
+        "description": "Configure AI tutor behavior and settings for student interactions"
+    },
+    "fields": {
+        "enable": "Enable",
+        "role": "Role",
+        "rolePlaceholder": "e.g., Tutor, Mentor, Guide",
+        "assistantName": "Assistant Name",
+        "assistantNamePlaceholder": "e.g., Savir, Alex",
+        "instituteName": "Institute Name",
+        "coreInstruction": "Core Instruction",
+        "coreInstructionPlaceholder": "Define the core behavior of your AI tutor..."
+    },
+    "avatar": {
+        "label": "Assistant Icon",
+        "helpText": "Shown on the chat button and beside every assistant message. PNG, JPG or WEBP, up to 2 MB. Square images work best.",
+        "upload": "Upload icon",
+        "uploading": "Uploading...",
+        "reset": "Use default",
+        "previewAlt": "Assistant icon preview",
+        "uploaded": "Icon uploaded. Save settings to apply it.",
+        "uploadFailed": "Failed to upload the icon",
+        "invalidType": "Please choose a PNG, JPG or WEBP image",
+        "tooLarge": "Image is too large. Please choose a file under 2 MB"
+    },
+    "hardRules": {
+        "label": "Hard Rules",
+        "addPlaceholder": "Add a new hard rule...",
+        "add": "Add"
+    },
+    "adherence": {
+        "label": "Adherence Level",
+        "strict": "Strict",
+        "moderate": "Moderate",
+        "flexible": "Flexible",
+        "helpText": "How strictly the AI follows the configured rules",
+        "temperature": "Temperature ({{value}})",
+        "temperatureHelp": "Controls creativity (0 = focused, 1 = creative)"
+    },
+    "modes": {
+        "label": "Enabled Chat Modes",
+        "helpText": "Choose which interaction modes are available to students",
+        "general": {
+            "label": "General Chat",
+            "description": "Free conversation"
+        },
+        "doubt": {
+            "label": "Ask Doubt",
+            "description": "Question & answer"
+        },
+        "practice": {
+            "label": "Practice Quiz",
+            "description": "MCQ practice"
+        },
+        "voiceInterview": {
+            "label": "🎤 Mock Interview",
+            "description": "Voice interview practice"
+        },
+        "voiceDoubt": {
+            "label": "🎤 Voice Doubt",
+            "description": "Discuss doubts via voice"
+        },
+        "voiceOralTest": {
+            "label": "🎤 Oral Test",
+            "description": "Voice-based testing"
+        }
+    },
+    "voice": {
+        "label": "Voice Settings",
+        "defaultLanguage": "Default Language",
+        "defaultVoice": "Default Voice",
+        "male": "Male",
+        "female": "Female",
+        "languages": {
+            "enIN": "English (Indian)",
+            "hiIN": "Hindi",
+            "bnIN": "Bengali",
+            "taIN": "Tamil",
+            "teIN": "Telugu",
+            "knIN": "Kannada",
+            "mlIN": "Malayalam",
+            "mrIN": "Marathi",
+            "guIN": "Gujarati",
+            "paIN": "Punjabi",
+            "odIN": "Odia"
+        },
+        "voices": {
+            "shubh": "Shubh",
+            "aditya": "Aditya",
+            "rahul": "Rahul",
+            "rohan": "Rohan",
+            "amit": "Amit",
+            "dev": "Dev",
+            "ritu": "Ritu",
+            "priya": "Priya",
+            "neha": "Neha",
+            "pooja": "Pooja",
+            "simran": "Simran",
+            "kavya": "Kavya"
+        }
+    },
+    "pageVisibility": {
+        "label": "Chatbot Page Visibility",
+        "helpText": "Choose which pages show the AI chatbot to students",
+        "dashboard": {
+            "label": "Dashboard",
+            "description": "Student home dashboard"
+        },
+        "allCourses": {
+            "label": "All Courses",
+            "description": "Course listing & browse pages"
+        },
+        "courseDetails": {
+            "label": "Course Details",
+            "description": "Individual course overview pages"
+        },
+        "studyMaterial": {
+            "label": "Study Material",
+            "description": "Slides, videos, quizzes & assignments"
+        },
+        "catalogue": {
+            "label": "Catalogue Pages (Logged Out)",
+            "description": "Public course catalogue for visitors"
+        }
+    },
+    "launcher": {
+        "label": "Floating Launcher",
+        "helpText": "How the floating chat button behaves in the student app",
+        "draggable": {
+            "label": "Draggable",
+            "description": "Let students drag the button and snap it to either side edge"
+        },
+        "nudge": {
+            "label": "Periodic message",
+            "description": "Briefly pop a nudge (\"Any doubts?\") on a timer, then collapse"
+        },
+        "showEvery": "Show every (seconds)",
+        "stayOpenFor": "Stay open for (seconds)",
+        "bounce": {
+            "label": "Bounce animation",
+            "description": "Bounce the button while the message shows, to catch attention"
+        }
+    },
+    "header": {
+        "label": "Chatbot Header",
+        "helpText": "What the chat window shows in its title bar",
+        "aiSettingsShortcut": {
+            "label": "AI settings shortcut",
+            "description": "Show the gear that opens the learner's AI settings page (own API keys and token spend). Off by default — students do not see it."
+        }
+    },
+    "actions": {
+        "saving": "Saving...",
+        "save": "Save Settings"
+    },
+    "toast": {
+        "saveSuccess": "Student AI configuration saved successfully!",
+        "saveFailed": "Failed to save Student AI configuration"
+    }
+}

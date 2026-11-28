@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Check, ImageSquare, Star } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import {
@@ -34,6 +35,7 @@ export const CertificateTemplateGallery = ({
     onSelectCustom,
     disabled,
 }: CertificateTemplateGalleryProps) => {
+    const { t } = useTranslation('settingsCertificateTemplateGallery');
     // Thumbnails always render with each template's *default* customizations
     // so the gallery shows what the design looks like out-of-the-box, not the
     // admin's in-progress tweaks (which are reflected in the main editor canvas
@@ -55,17 +57,15 @@ export const CertificateTemplateGallery = ({
             <div className="mb-3 flex items-center justify-between">
                 <div>
                     <h3 className="text-sm font-semibold text-neutral-800">
-                        Choose a Certificate Template
+                        {t('header.title')}
                     </h3>
-                    <p className="text-xs text-neutral-500">
-                        Pick a ready-made design or upload your own image / PDF below.
-                    </p>
+                    <p className="text-xs text-neutral-500">{t('header.subtitle')}</p>
                 </div>
                 {activeTemplateId && (
-                    <span className="rounded-full bg-purple-50 px-2.5 py-1 text-[10px] font-medium uppercase tracking-wide text-purple-700">
+                    <span className="rounded-full bg-purple-50 px-2.5 py-1 text-2xs font-medium uppercase tracking-wide text-purple-700">
                         {hasCustomUpload && activeTemplateId === 'custom'
-                            ? 'Custom Upload'
-                            : 'Built-in'}
+                            ? t('badge.customUpload')
+                            : t('badge.builtin')}
                     </span>
                 )}
             </div>
@@ -96,15 +96,15 @@ export const CertificateTemplateGallery = ({
                                     draggable={false}
                                 />
                                 {template.isDefault && !isActive && (
-                                    <span className="absolute left-1.5 top-1.5 flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-medium text-amber-700">
+                                    <span className="absolute start-1.5 top-1.5 flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-2xs font-medium text-amber-700">
                                         <Star size={10} weight="fill" />
-                                        Default
+                                        {t('card.default')}
                                     </span>
                                 )}
                                 {isActive && (
-                                    <span className="absolute right-1.5 top-1.5 flex items-center gap-1 rounded-full bg-purple-600 px-2 py-0.5 text-[10px] font-medium text-white">
+                                    <span className="absolute end-1.5 top-1.5 flex items-center gap-1 rounded-full bg-purple-600 px-2 py-0.5 text-2xs font-medium text-white">
                                         <Check size={10} weight="bold" />
-                                        Selected
+                                        {t('card.selected')}
                                     </span>
                                 )}
                             </div>
@@ -112,7 +112,7 @@ export const CertificateTemplateGallery = ({
                                 <div className="text-xs font-semibold text-neutral-800">
                                     {template.name}
                                 </div>
-                                <div className="line-clamp-1 text-[11px] text-neutral-500">
+                                <div className="line-clamp-1 text-2xs text-neutral-500">
                                     {template.description}
                                 </div>
                             </div>
@@ -135,35 +135,41 @@ export const CertificateTemplateGallery = ({
                     )}
                     title={
                         hasCustomUpload
-                            ? 'Use the image you uploaded'
-                            : 'Upload an image or PDF below to enable this slot'
+                            ? t('customCard.tooltipUse')
+                            : t('customCard.tooltipEnable')
                     }
                 >
                     <div className="relative flex aspect-[1123/794] w-full items-center justify-center bg-neutral-50">
                         {hasCustomUpload && customThumbnailUrl ? (
                             <img
                                 src={customThumbnailUrl}
-                                alt="Custom upload"
+                                alt={t('customCard.altText')}
                                 className="size-full object-contain"
                                 draggable={false}
                             />
                         ) : (
                             <div className="flex flex-col items-center gap-1.5 text-neutral-400">
                                 <ImageSquare size={28} weight="thin" />
-                                <span className="text-[11px]">Your upload</span>
+                                <span className="text-2xs">
+                                    {t('customCard.uploadPlaceholder')}
+                                </span>
                             </div>
                         )}
                         {activeTemplateId === 'custom' && (
-                            <span className="absolute right-1.5 top-1.5 flex items-center gap-1 rounded-full bg-purple-600 px-2 py-0.5 text-[10px] font-medium text-white">
+                            <span className="absolute end-1.5 top-1.5 flex items-center gap-1 rounded-full bg-purple-600 px-2 py-0.5 text-2xs font-medium text-white">
                                 <Check size={10} weight="bold" />
-                                Selected
+                                {t('card.selected')}
                             </span>
                         )}
                     </div>
                     <div className="border-t px-2.5 py-2">
-                        <div className="text-xs font-semibold text-neutral-800">Custom Upload</div>
-                        <div className="line-clamp-1 text-[11px] text-neutral-500">
-                            {hasCustomUpload ? 'Your uploaded design' : 'Upload below to use'}
+                        <div className="text-xs font-semibold text-neutral-800">
+                            {t('customCard.title')}
+                        </div>
+                        <div className="line-clamp-1 text-2xs text-neutral-500">
+                            {hasCustomUpload
+                                ? t('customCard.descriptionUploaded')
+                                : t('customCard.descriptionEmpty')}
                         </div>
                     </div>
                 </button>

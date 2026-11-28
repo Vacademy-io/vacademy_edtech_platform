@@ -1,0 +1,1929 @@
+{
+  "_comment": "Shared drip parity cases. Run by src/utils/drip-conditions/dripParity.test.ts (vitest) and ai_service/tests/test_course_knowledge_drip_parity.py (pytest). Anchors and now are at 12:00 UTC so results are the same in UTC and Asia/Kolkata; unlock_time values avoid the 12:00-17:30 window. message: exact text (null = no message); message_regex: pattern for locale-formatted dates. Change both evaluators together.",
+  "now": "2026-10-10T12:00:00.000Z",
+  "evaluate": [
+    {
+      "name": "no condition is open",
+      "condition": null,
+      "progress": {
+        "percentageCompleted": 0,
+        "itemIndex": 1
+      },
+      "expected": {
+        "is_locked": false,
+        "is_hidden": false,
+        "message": null
+      }
+    },
+    {
+      "name": "empty rules are open",
+      "condition": {
+        "behavior": "lock",
+        "rules": []
+      },
+      "progress": {
+        "percentageCompleted": 0,
+        "itemIndex": 1
+      },
+      "expected": {
+        "is_locked": false,
+        "is_hidden": false,
+        "message": null
+      }
+    },
+    {
+      "name": "is_enabled false never locks",
+      "condition": {
+        "behavior": "lock",
+        "rules": [
+          {
+            "type": "date_based",
+            "params": {
+              "unlock_date": "2026-11-12T12:00:00.000Z"
+            }
+          }
+        ],
+        "is_enabled": false
+      },
+      "progress": {
+        "percentageCompleted": 0,
+        "itemIndex": 1
+      },
+      "expected": {
+        "is_locked": false,
+        "is_hidden": false,
+        "message": null
+      }
+    },
+    {
+      "name": "date_based in the past opens",
+      "condition": {
+        "behavior": "lock",
+        "rules": [
+          {
+            "type": "date_based",
+            "params": {
+              "unlock_date": "2026-10-01T12:00:00.000Z"
+            }
+          }
+        ]
+      },
+      "progress": {
+        "percentageCompleted": 0,
+        "itemIndex": 1
+      },
+      "expected": {
+        "is_locked": false,
+        "is_hidden": false,
+        "message": null
+      }
+    },
+    {
+      "name": "date_based in the future locks",
+      "condition": {
+        "behavior": "lock",
+        "rules": [
+          {
+            "type": "date_based",
+            "params": {
+              "unlock_date": "2026-11-12T12:00:00.000Z"
+            }
+          }
+        ]
+      },
+      "progress": {
+        "percentageCompleted": 0,
+        "itemIndex": 1
+      },
+      "expected": {
+        "is_locked": true,
+        "is_hidden": false,
+        "message_regex": "^Available from "
+      }
+    },
+    {
+      "name": "date_based exactly now opens (now >= unlock_date)",
+      "condition": {
+        "behavior": "lock",
+        "rules": [
+          {
+            "type": "date_based",
+            "params": {
+              "unlock_date": "2026-10-10T12:00:00.000Z"
+            }
+          }
+        ]
+      },
+      "progress": {
+        "percentageCompleted": 0,
+        "itemIndex": 1
+      },
+      "expected": {
+        "is_locked": false,
+        "is_hidden": false,
+        "message": null
+      }
+    },
+    {
+      "name": "date_based future with behavior hide hides",
+      "condition": {
+        "behavior": "hide",
+        "rules": [
+          {
+            "type": "date_based",
+            "params": {
+              "unlock_date": "2026-11-12T12:00:00.000Z"
+            }
+          }
+        ]
+      },
+      "progress": {
+        "percentageCompleted": 0,
+        "itemIndex": 1
+      },
+      "expected": {
+        "is_locked": false,
+        "is_hidden": true,
+        "message_regex": "^Available from "
+      }
+    },
+    {
+      "name": "date_based future with behavior both locks and hides",
+      "condition": {
+        "behavior": "both",
+        "rules": [
+          {
+            "type": "date_based",
+            "params": {
+              "unlock_date": "2026-11-12T12:00:00.000Z"
+            }
+          }
+        ]
+      },
+      "progress": {
+        "percentageCompleted": 0,
+        "itemIndex": 1
+      },
+      "expected": {
+        "is_locked": true,
+        "is_hidden": true,
+        "message_regex": "^Available from "
+      }
+    },
+    {
+      "name": "unknown behavior fails open",
+      "condition": {
+        "behavior": "fade",
+        "rules": [
+          {
+            "type": "date_based",
+            "params": {
+              "unlock_date": "2026-11-12T12:00:00.000Z"
+            }
+          }
+        ]
+      },
+      "progress": {
+        "percentageCompleted": 0,
+        "itemIndex": 1
+      },
+      "expected": {
+        "is_locked": false,
+        "is_hidden": false,
+        "message": null
+      }
+    },
+    {
+      "name": "date_based invalid params pass",
+      "condition": {
+        "behavior": "lock",
+        "rules": [
+          {
+            "type": "date_based",
+            "params": {
+              "date": "2026-11-12T12:00:00.000Z"
+            }
+          }
+        ]
+      },
+      "progress": {
+        "percentageCompleted": 0,
+        "itemIndex": 1
+      },
+      "expected": {
+        "is_locked": false,
+        "is_hidden": false,
+        "message": null
+      }
+    },
+    {
+      "name": "date_based unparseable date never passes",
+      "condition": {
+        "behavior": "lock",
+        "rules": [
+          {
+            "type": "date_based",
+            "params": {
+              "unlock_date": "not-a-date"
+            }
+          }
+        ]
+      },
+      "progress": {
+        "percentageCompleted": 0,
+        "itemIndex": 1
+      },
+      "expected": {
+        "is_locked": true,
+        "is_hidden": false,
+        "message": "Available from Invalid Date"
+      }
+    },
+    {
+      "name": "date_based null unlock_date is the epoch (passes)",
+      "condition": {
+        "behavior": "lock",
+        "rules": [
+          {
+            "type": "date_based",
+            "params": {
+              "unlock_date": null
+            }
+          }
+        ]
+      },
+      "progress": {
+        "percentageCompleted": 0,
+        "itemIndex": 1
+      },
+      "expected": {
+        "is_locked": false,
+        "is_hidden": false,
+        "message": null
+      }
+    },
+    {
+      "name": "date_based first item gets no exemption",
+      "condition": {
+        "behavior": "lock",
+        "rules": [
+          {
+            "type": "date_based",
+            "params": {
+              "unlock_date": "2026-11-12T12:00:00.000Z"
+            }
+          }
+        ]
+      },
+      "progress": {
+        "percentageCompleted": 0,
+        "itemIndex": 0
+      },
+      "expected": {
+        "is_locked": true,
+        "is_hidden": false,
+        "message_regex": "^Available from "
+      }
+    },
+    {
+      "name": "relative_date day 3 after enrolment opens",
+      "condition": {
+        "behavior": "lock",
+        "rules": [
+          {
+            "type": "relative_date",
+            "params": {
+              "unlock_on_day": 3
+            }
+          }
+        ]
+      },
+      "progress": {
+        "percentageCompleted": 0,
+        "itemIndex": 3,
+        "enrollmentDate": "2026-10-05T12:00:00.000Z"
+      },
+      "expected": {
+        "is_locked": false,
+        "is_hidden": false,
+        "message": null
+      }
+    },
+    {
+      "name": "relative_date day 6 opens on its day",
+      "condition": {
+        "behavior": "lock",
+        "rules": [
+          {
+            "type": "relative_date",
+            "params": {
+              "unlock_on_day": 6,
+              "anchor": "enrollment",
+              "unlock_time": "00:00"
+            }
+          }
+        ]
+      },
+      "progress": {
+        "percentageCompleted": 0,
+        "itemIndex": 3,
+        "enrollmentDate": "2026-10-05T12:00:00.000Z"
+      },
+      "expected": {
+        "is_locked": false,
+        "is_hidden": false,
+        "message": null
+      }
+    },
+    {
+      "name": "relative_date day 7 is locked until tomorrow",
+      "condition": {
+        "behavior": "lock",
+        "rules": [
+          {
+            "type": "relative_date",
+            "params": {
+              "unlock_on_day": 7
+            }
+          }
+        ]
+      },
+      "progress": {
+        "percentageCompleted": 0,
+        "itemIndex": 3,
+        "enrollmentDate": "2026-10-05T12:00:00.000Z"
+      },
+      "expected": {
+        "is_locked": true,
+        "is_hidden": false,
+        "message_regex": "^Unlocks in 1 day \\("
+      }
+    },
+    {
+      "name": "relative_date day 6 at 20:00 is locked until tonight",
+      "condition": {
+        "behavior": "lock",
+        "rules": [
+          {
+            "type": "relative_date",
+            "params": {
+              "unlock_on_day": 6,
+              "unlock_time": "20:00"
+            }
+          }
+        ]
+      },
+      "progress": {
+        "percentageCompleted": 0,
+        "itemIndex": 3,
+        "enrollmentDate": "2026-10-05T12:00:00.000Z"
+      },
+      "expected": {
+        "is_locked": true,
+        "is_hidden": false,
+        "message_regex": "^Unlocks in 1 day \\("
+      }
+    },
+    {
+      "name": "relative_date day 6 at 09:00 has opened",
+      "condition": {
+        "behavior": "lock",
+        "rules": [
+          {
+            "type": "relative_date",
+            "params": {
+              "unlock_on_day": 6,
+              "unlock_time": "09:00"
+            }
+          }
+        ]
+      },
+      "progress": {
+        "percentageCompleted": 0,
+        "itemIndex": 3,
+        "enrollmentDate": "2026-10-05T12:00:00.000Z"
+      },
+      "expected": {
+        "is_locked": false,
+        "is_hidden": false,
+        "message": null
+      }
+    },
+    {
+      "name": "relative_date day 30 is weeks away",
+      "condition": {
+        "behavior": "lock",
+        "rules": [
+          {
+            "type": "relative_date",
+            "params": {
+              "unlock_on_day": 30
+            }
+          }
+        ]
+      },
+      "progress": {
+        "percentageCompleted": 0,
+        "itemIndex": 3,
+        "enrollmentDate": "2026-10-05T12:00:00.000Z"
+      },
+      "expected": {
+        "is_locked": true,
+        "is_hidden": false,
+        "message_regex": "^Unlocks in 24 days \\("
+      }
+    },
+    {
+      "name": "relative_date with no enrolment anchor passes",
+      "condition": {
+        "behavior": "lock",
+        "rules": [
+          {
+            "type": "relative_date",
+            "params": {
+              "unlock_on_day": 30
+            }
+          }
+        ]
+      },
+      "progress": {
+        "percentageCompleted": 0,
+        "itemIndex": 3
+      },
+      "expected": {
+        "is_locked": false,
+        "is_hidden": false,
+        "message": null
+      }
+    },
+    {
+      "name": "relative_date session_start anchor locks day 20",
+      "condition": {
+        "behavior": "lock",
+        "rules": [
+          {
+            "type": "relative_date",
+            "params": {
+              "unlock_on_day": 20,
+              "anchor": "session_start"
+            }
+          }
+        ]
+      },
+      "progress": {
+        "percentageCompleted": 0,
+        "itemIndex": 3,
+        "enrollmentDate": "2026-10-05T12:00:00.000Z",
+        "sessionStartDate": "2026-09-25T12:00:00.000Z"
+      },
+      "expected": {
+        "is_locked": true,
+        "is_hidden": false,
+        "message_regex": "^Unlocks in [45] days \\("
+      }
+    },
+    {
+      "name": "relative_date session_start anchor opens day 16",
+      "condition": {
+        "behavior": "lock",
+        "rules": [
+          {
+            "type": "relative_date",
+            "params": {
+              "unlock_on_day": 16,
+              "anchor": "session_start"
+            }
+          }
+        ]
+      },
+      "progress": {
+        "percentageCompleted": 0,
+        "itemIndex": 3,
+        "sessionStartDate": "2026-09-25T12:00:00.000Z"
+      },
+      "expected": {
+        "is_locked": false,
+        "is_hidden": false,
+        "message": null
+      }
+    },
+    {
+      "name": "relative_date session_start with no batch start passes",
+      "condition": {
+        "behavior": "lock",
+        "rules": [
+          {
+            "type": "relative_date",
+            "params": {
+              "unlock_on_day": 30,
+              "anchor": "session_start"
+            }
+          }
+        ]
+      },
+      "progress": {
+        "percentageCompleted": 0,
+        "itemIndex": 3,
+        "enrollmentDate": "2026-10-05T12:00:00.000Z"
+      },
+      "expected": {
+        "is_locked": false,
+        "is_hidden": false,
+        "message": null
+      }
+    },
+    {
+      "name": "relative_date invalid params pass",
+      "condition": {
+        "behavior": "lock",
+        "rules": [
+          {
+            "type": "relative_date",
+            "params": {
+              "day": 30
+            }
+          }
+        ]
+      },
+      "progress": {
+        "percentageCompleted": 0,
+        "itemIndex": 3,
+        "enrollmentDate": "2026-10-05T12:00:00.000Z"
+      },
+      "expected": {
+        "is_locked": false,
+        "is_hidden": false,
+        "message": null
+      }
+    },
+    {
+      "name": "relative_date day 0 means day 1",
+      "condition": {
+        "behavior": "lock",
+        "rules": [
+          {
+            "type": "relative_date",
+            "params": {
+              "unlock_on_day": 0
+            }
+          }
+        ]
+      },
+      "progress": {
+        "percentageCompleted": 0,
+        "itemIndex": 3,
+        "enrollmentDate": "2026-10-05T12:00:00.000Z"
+      },
+      "expected": {
+        "is_locked": false,
+        "is_hidden": false,
+        "message": null
+      }
+    },
+    {
+      "name": "relative_date non-numeric day never passes",
+      "condition": {
+        "behavior": "lock",
+        "rules": [
+          {
+            "type": "relative_date",
+            "params": {
+              "unlock_on_day": "abc"
+            }
+          }
+        ]
+      },
+      "progress": {
+        "percentageCompleted": 0,
+        "itemIndex": 3,
+        "enrollmentDate": "2026-10-05T12:00:00.000Z"
+      },
+      "expected": {
+        "is_locked": true,
+        "is_hidden": false,
+        "message": "Unlocks in NaN days (Invalid Date)"
+      }
+    },
+    {
+      "name": "relative_date numeric string day is a number",
+      "condition": {
+        "behavior": "lock",
+        "rules": [
+          {
+            "type": "relative_date",
+            "params": {
+              "unlock_on_day": "7"
+            }
+          }
+        ]
+      },
+      "progress": {
+        "percentageCompleted": 0,
+        "itemIndex": 3,
+        "enrollmentDate": "2026-10-05T12:00:00.000Z"
+      },
+      "expected": {
+        "is_locked": true,
+        "is_hidden": false,
+        "message_regex": "^Unlocks in 1 day \\("
+      }
+    },
+    {
+      "name": "relative_date first item gets no exemption",
+      "condition": {
+        "behavior": "lock",
+        "rules": [
+          {
+            "type": "relative_date",
+            "params": {
+              "unlock_on_day": 30
+            }
+          }
+        ]
+      },
+      "progress": {
+        "percentageCompleted": 0,
+        "itemIndex": 0,
+        "enrollmentDate": "2026-10-05T12:00:00.000Z"
+      },
+      "expected": {
+        "is_locked": true,
+        "is_hidden": false,
+        "message_regex": "^Unlocks in "
+      }
+    },
+    {
+      "name": "average_of_last_n opens the first N items",
+      "condition": {
+        "behavior": "lock",
+        "rules": [
+          {
+            "type": "completion_based",
+            "params": {
+              "metric": "average_of_last_n",
+              "count": 2,
+              "threshold": 75
+            }
+          }
+        ]
+      },
+      "progress": {
+        "percentageCompleted": 0,
+        "itemIndex": 1
+      },
+      "expected": {
+        "is_locked": false,
+        "is_hidden": false,
+        "message": null
+      }
+    },
+    {
+      "name": "average_of_last_n opens item 2 when count is 3",
+      "condition": {
+        "behavior": "lock",
+        "rules": [
+          {
+            "type": "completion_based",
+            "params": {
+              "metric": "average_of_last_n",
+              "count": 3,
+              "threshold": 75
+            }
+          }
+        ]
+      },
+      "progress": {
+        "percentageCompleted": 0,
+        "itemIndex": 2,
+        "recentScores": [
+          0,
+          0
+        ]
+      },
+      "expected": {
+        "is_locked": false,
+        "is_hidden": false,
+        "message": null
+      }
+    },
+    {
+      "name": "average_of_last_n below threshold locks",
+      "condition": {
+        "behavior": "lock",
+        "rules": [
+          {
+            "type": "completion_based",
+            "params": {
+              "metric": "average_of_last_n",
+              "count": 2,
+              "threshold": 75
+            }
+          }
+        ]
+      },
+      "progress": {
+        "percentageCompleted": 0,
+        "itemIndex": 3,
+        "recentScores": [
+          100,
+          50,
+          50
+        ]
+      },
+      "expected": {
+        "is_locked": true,
+        "is_hidden": false,
+        "message": "Score average of 75% needed (current: 50%)"
+      }
+    },
+    {
+      "name": "average_of_last_n above threshold opens",
+      "condition": {
+        "behavior": "lock",
+        "rules": [
+          {
+            "type": "completion_based",
+            "params": {
+              "metric": "average_of_last_n",
+              "count": 2,
+              "threshold": 75
+            }
+          }
+        ]
+      },
+      "progress": {
+        "percentageCompleted": 0,
+        "itemIndex": 3,
+        "recentScores": [
+          0,
+          80,
+          90
+        ]
+      },
+      "expected": {
+        "is_locked": false,
+        "is_hidden": false,
+        "message": null
+      }
+    },
+    {
+      "name": "average_of_last_n rounds the current average half up",
+      "condition": {
+        "behavior": "lock",
+        "rules": [
+          {
+            "type": "completion_based",
+            "params": {
+              "metric": "average_of_last_n",
+              "count": 2,
+              "threshold": 75
+            }
+          }
+        ]
+      },
+      "progress": {
+        "percentageCompleted": 0,
+        "itemIndex": 3,
+        "recentScores": [
+          0,
+          60,
+          61
+        ]
+      },
+      "expected": {
+        "is_locked": true,
+        "is_hidden": false,
+        "message": "Score average of 75% needed (current: 61%)"
+      }
+    },
+    {
+      "name": "average_of_last_n with too few scores locks",
+      "condition": {
+        "behavior": "lock",
+        "rules": [
+          {
+            "type": "completion_based",
+            "params": {
+              "metric": "average_of_last_n",
+              "count": 2,
+              "threshold": 75
+            }
+          }
+        ]
+      },
+      "progress": {
+        "percentageCompleted": 0,
+        "itemIndex": 2,
+        "recentScores": [
+          90
+        ]
+      },
+      "expected": {
+        "is_locked": true,
+        "is_hidden": false,
+        "message": "Complete 1 more slide/chapter to unlock"
+      }
+    },
+    {
+      "name": "average_of_last_n missing count means 1",
+      "condition": {
+        "behavior": "lock",
+        "rules": [
+          {
+            "type": "completion_based",
+            "params": {
+              "metric": "average_of_last_n",
+              "threshold": 50
+            }
+          }
+        ]
+      },
+      "progress": {
+        "percentageCompleted": 0,
+        "itemIndex": 1,
+        "recentScores": [
+          40
+        ]
+      },
+      "expected": {
+        "is_locked": true,
+        "is_hidden": false,
+        "message": "Score average of 50% needed (current: 40%)"
+      }
+    },
+    {
+      "name": "average_of_all below threshold locks",
+      "condition": {
+        "behavior": "lock",
+        "rules": [
+          {
+            "type": "completion_based",
+            "params": {
+              "metric": "average_of_all",
+              "threshold": 75
+            }
+          }
+        ]
+      },
+      "progress": {
+        "percentageCompleted": 0,
+        "itemIndex": 2,
+        "recentScores": [
+          50,
+          60
+        ]
+      },
+      "expected": {
+        "is_locked": true,
+        "is_hidden": false,
+        "message": "Overall average of 75% needed (current: 55%)"
+      }
+    },
+    {
+      "name": "average_of_all with nothing before passes",
+      "condition": {
+        "behavior": "lock",
+        "rules": [
+          {
+            "type": "completion_based",
+            "params": {
+              "metric": "average_of_all",
+              "threshold": 75
+            }
+          }
+        ]
+      },
+      "progress": {
+        "percentageCompleted": 0,
+        "itemIndex": 1,
+        "recentScores": []
+      },
+      "expected": {
+        "is_locked": false,
+        "is_hidden": false,
+        "message": null
+      }
+    },
+    {
+      "name": "completion with an unknown metric passes",
+      "condition": {
+        "behavior": "lock",
+        "rules": [
+          {
+            "type": "completion_based",
+            "params": {
+              "metric": "median",
+              "threshold": 75
+            }
+          }
+        ]
+      },
+      "progress": {
+        "percentageCompleted": 0,
+        "itemIndex": 2,
+        "recentScores": [
+          0,
+          0
+        ]
+      },
+      "expected": {
+        "is_locked": false,
+        "is_hidden": false,
+        "message": null
+      }
+    },
+    {
+      "name": "completion invalid params pass",
+      "condition": {
+        "behavior": "lock",
+        "rules": [
+          {
+            "type": "completion_based",
+            "params": {
+              "metric": "average_of_all"
+            }
+          }
+        ]
+      },
+      "progress": {
+        "percentageCompleted": 0,
+        "itemIndex": 2,
+        "recentScores": [
+          0,
+          0
+        ]
+      },
+      "expected": {
+        "is_locked": false,
+        "is_hidden": false,
+        "message": null
+      }
+    },
+    {
+      "name": "first item is exempt from progress-only rules",
+      "condition": {
+        "behavior": "lock",
+        "rules": [
+          {
+            "type": "sequential",
+            "params": {
+              "requires_previous": true,
+              "threshold": 100
+            }
+          }
+        ]
+      },
+      "progress": {
+        "percentageCompleted": 0,
+        "itemIndex": 0,
+        "previousItemCompletion": 0
+      },
+      "expected": {
+        "is_locked": false,
+        "is_hidden": false,
+        "message": null
+      }
+    },
+    {
+      "name": "missing itemIndex counts as the first item",
+      "condition": {
+        "behavior": "lock",
+        "rules": [
+          {
+            "type": "sequential",
+            "params": {
+              "requires_previous": true,
+              "threshold": 100
+            }
+          },
+          {
+            "type": "prerequisite",
+            "params": {
+              "threshold": 100,
+              "required_chapters": [
+                "c9"
+              ]
+            }
+          }
+        ]
+      },
+      "progress": {
+        "percentageCompleted": 0
+      },
+      "expected": {
+        "is_locked": false,
+        "is_hidden": false,
+        "message": null
+      }
+    },
+    {
+      "name": "first item with a time rule too gets no exemption",
+      "condition": {
+        "behavior": "lock",
+        "rules": [
+          {
+            "type": "sequential",
+            "params": {
+              "requires_previous": true,
+              "threshold": 100
+            }
+          },
+          {
+            "type": "date_based",
+            "params": {
+              "unlock_date": "2026-11-12T12:00:00.000Z"
+            }
+          }
+        ]
+      },
+      "progress": {
+        "percentageCompleted": 0,
+        "itemIndex": 0
+      },
+      "expected": {
+        "is_locked": true,
+        "is_hidden": false,
+        "message_regex": "^Complete previous item with 100% \\(current: 0%\\); Available from .+$"
+      }
+    },
+    {
+      "name": "sequential below threshold locks",
+      "condition": {
+        "behavior": "lock",
+        "rules": [
+          {
+            "type": "sequential",
+            "params": {
+              "requires_previous": true,
+              "threshold": 80
+            }
+          }
+        ]
+      },
+      "progress": {
+        "percentageCompleted": 0,
+        "itemIndex": 2,
+        "previousItemCompletion": 50
+      },
+      "expected": {
+        "is_locked": true,
+        "is_hidden": false,
+        "message": "Complete previous item with 80% (current: 50%)"
+      }
+    },
+    {
+      "name": "sequential at threshold opens",
+      "condition": {
+        "behavior": "lock",
+        "rules": [
+          {
+            "type": "sequential",
+            "params": {
+              "requires_previous": true,
+              "threshold": 80
+            }
+          }
+        ]
+      },
+      "progress": {
+        "percentageCompleted": 0,
+        "itemIndex": 2,
+        "previousItemCompletion": 80
+      },
+      "expected": {
+        "is_locked": false,
+        "is_hidden": false,
+        "message": null
+      }
+    },
+    {
+      "name": "sequential with no previous completion is 0",
+      "condition": {
+        "behavior": "lock",
+        "rules": [
+          {
+            "type": "sequential",
+            "params": {
+              "requires_previous": true,
+              "threshold": 80
+            }
+          }
+        ]
+      },
+      "progress": {
+        "percentageCompleted": 0,
+        "itemIndex": 2
+      },
+      "expected": {
+        "is_locked": true,
+        "is_hidden": false,
+        "message": "Complete previous item with 80% (current: 0%)"
+      }
+    },
+    {
+      "name": "sequential string threshold is coerced",
+      "condition": {
+        "behavior": "lock",
+        "rules": [
+          {
+            "type": "sequential",
+            "params": {
+              "requires_previous": true,
+              "threshold": "80"
+            }
+          }
+        ]
+      },
+      "progress": {
+        "percentageCompleted": 0,
+        "itemIndex": 2,
+        "previousItemCompletion": 90
+      },
+      "expected": {
+        "is_locked": false,
+        "is_hidden": false,
+        "message": null
+      }
+    },
+    {
+      "name": "sequential string threshold shows as written",
+      "condition": {
+        "behavior": "lock",
+        "rules": [
+          {
+            "type": "sequential",
+            "params": {
+              "requires_previous": true,
+              "threshold": "80"
+            }
+          }
+        ]
+      },
+      "progress": {
+        "percentageCompleted": 0,
+        "itemIndex": 2,
+        "previousItemCompletion": 50.5
+      },
+      "expected": {
+        "is_locked": true,
+        "is_hidden": false,
+        "message": "Complete previous item with 80% (current: 50.5%)"
+      }
+    },
+    {
+      "name": "sequential invalid params pass",
+      "condition": {
+        "behavior": "lock",
+        "rules": [
+          {
+            "type": "sequential",
+            "params": {
+              "threshold": 80
+            }
+          }
+        ]
+      },
+      "progress": {
+        "percentageCompleted": 0,
+        "itemIndex": 2
+      },
+      "expected": {
+        "is_locked": false,
+        "is_hidden": false,
+        "message": null
+      }
+    },
+    {
+      "name": "prerequisite partly met locks",
+      "condition": {
+        "behavior": "lock",
+        "rules": [
+          {
+            "type": "prerequisite",
+            "params": {
+              "threshold": 100,
+              "required_chapters": [
+                "c1",
+                "c2"
+              ]
+            }
+          }
+        ]
+      },
+      "progress": {
+        "percentageCompleted": 0,
+        "itemIndex": 2,
+        "prerequisiteCompletions": {
+          "c1": 100,
+          "c2": 40
+        }
+      },
+      "expected": {
+        "is_locked": true,
+        "is_hidden": false,
+        "message": "Complete 1 prerequisite(s) with 100% completion"
+      }
+    },
+    {
+      "name": "prerequisite chapters and slides all met opens",
+      "condition": {
+        "behavior": "lock",
+        "rules": [
+          {
+            "type": "prerequisite",
+            "params": {
+              "threshold": 80,
+              "required_chapters": [
+                "c1"
+              ],
+              "required_slides": [
+                "s1"
+              ]
+            }
+          }
+        ]
+      },
+      "progress": {
+        "percentageCompleted": 0,
+        "itemIndex": 2,
+        "prerequisiteCompletions": {
+          "c1": 80,
+          "s1": 95
+        }
+      },
+      "expected": {
+        "is_locked": false,
+        "is_hidden": false,
+        "message": null
+      }
+    },
+    {
+      "name": "prerequisite unknown ids count as 0",
+      "condition": {
+        "behavior": "lock",
+        "rules": [
+          {
+            "type": "prerequisite",
+            "params": {
+              "threshold": 50,
+              "required_slides": [
+                "s1",
+                "s2"
+              ]
+            }
+          }
+        ]
+      },
+      "progress": {
+        "percentageCompleted": 0,
+        "itemIndex": 2,
+        "prerequisiteCompletions": {}
+      },
+      "expected": {
+        "is_locked": true,
+        "is_hidden": false,
+        "message": "Complete 2 prerequisite(s) with 50% completion"
+      }
+    },
+    {
+      "name": "prerequisite with empty lists passes",
+      "condition": {
+        "behavior": "lock",
+        "rules": [
+          {
+            "type": "prerequisite",
+            "params": {
+              "threshold": 100,
+              "required_chapters": [],
+              "required_slides": []
+            }
+          }
+        ]
+      },
+      "progress": {
+        "percentageCompleted": 0,
+        "itemIndex": 2
+      },
+      "expected": {
+        "is_locked": false,
+        "is_hidden": false,
+        "message": null
+      }
+    },
+    {
+      "name": "prerequisite invalid params pass",
+      "condition": {
+        "behavior": "lock",
+        "rules": [
+          {
+            "type": "prerequisite",
+            "params": {
+              "required_chapters": [
+                "c1"
+              ]
+            }
+          }
+        ]
+      },
+      "progress": {
+        "percentageCompleted": 0,
+        "itemIndex": 2
+      },
+      "expected": {
+        "is_locked": false,
+        "is_hidden": false,
+        "message": null
+      }
+    },
+    {
+      "name": "unknown rule type passes",
+      "condition": {
+        "behavior": "lock",
+        "rules": [
+          {
+            "type": "geo_fence",
+            "params": {
+              "country": "IN"
+            }
+          }
+        ]
+      },
+      "progress": {
+        "percentageCompleted": 0,
+        "itemIndex": 1
+      },
+      "expected": {
+        "is_locked": false,
+        "is_hidden": false,
+        "message": null
+      }
+    },
+    {
+      "name": "all rules must pass: only the failing rule is reported",
+      "condition": {
+        "behavior": "lock",
+        "rules": [
+          {
+            "type": "date_based",
+            "params": {
+              "unlock_date": "2026-10-01T12:00:00.000Z"
+            }
+          },
+          {
+            "type": "prerequisite",
+            "params": {
+              "threshold": 100,
+              "required_chapters": [
+                "c1"
+              ]
+            }
+          }
+        ]
+      },
+      "progress": {
+        "percentageCompleted": 0,
+        "itemIndex": 2,
+        "prerequisiteCompletions": {
+          "c1": 10
+        }
+      },
+      "expected": {
+        "is_locked": true,
+        "is_hidden": false,
+        "message": "Complete 1 prerequisite(s) with 100% completion"
+      }
+    },
+    {
+      "name": "progress rule unmet with behavior hide hides",
+      "condition": {
+        "behavior": "hide",
+        "rules": [
+          {
+            "type": "sequential",
+            "params": {
+              "requires_previous": true,
+              "threshold": 100
+            }
+          }
+        ]
+      },
+      "progress": {
+        "percentageCompleted": 0,
+        "itemIndex": 1,
+        "previousItemCompletion": 20
+      },
+      "expected": {
+        "is_locked": false,
+        "is_hidden": true,
+        "message": "Complete previous item with 100% (current: 20%)"
+      }
+    },
+    {
+      "name": "invalid params next to a failing rule only report the failure",
+      "condition": {
+        "behavior": "lock",
+        "rules": [
+          {
+            "type": "date_based",
+            "params": {}
+          },
+          {
+            "type": "date_based",
+            "params": {
+              "unlock_date": "2026-11-12T12:00:00.000Z"
+            }
+          }
+        ]
+      },
+      "progress": {
+        "percentageCompleted": 0,
+        "itemIndex": 1
+      },
+      "expected": {
+        "is_locked": true,
+        "is_hidden": false,
+        "message_regex": "^Available from [^;]+$"
+      }
+    }
+  ],
+  "resolve": [
+    {
+      "name": "empty settings resolve to nothing",
+      "settings_json": "",
+      "target": {
+        "level": "slide",
+        "levelId": "s1",
+        "packageId": "p1"
+      },
+      "expected": {
+        "enabled": false,
+        "apply_configured_rules": false,
+        "condition": null
+      }
+    },
+    {
+      "name": "unparseable settings resolve to nothing",
+      "settings_json": "{not json",
+      "target": {
+        "level": "slide",
+        "levelId": "s1",
+        "packageId": "p1"
+      },
+      "expected": {
+        "enabled": false,
+        "apply_configured_rules": false,
+        "condition": null
+      }
+    },
+    {
+      "name": "whole-payload shape {setting: {COURSE_SETTING}}",
+      "settings_json": "{\"setting\": {\"COURSE_SETTING\": {\"key\": \"COURSE_SETTING\", \"data\": {\"dripConditions\": {\"enabled\": true, \"conditions\": [{\"id\": \"slide-s1\", \"level\": \"slide\", \"level_id\": \"s1\", \"drip_condition\": [{\"behavior\": \"lock\", \"rules\": [{\"type\": \"date_based\", \"params\": {\"unlock_date\": \"2026-11-12T12:00:00.000Z\"}}]}], \"enabled\": true}]}}}}}",
+      "target": {
+        "level": "slide",
+        "levelId": "s1",
+        "packageId": "p1"
+      },
+      "expected": {
+        "enabled": true,
+        "apply_configured_rules": false,
+        "condition": {
+          "behavior": "lock",
+          "rules": [
+            {
+              "type": "date_based",
+              "params": {
+                "unlock_date": "2026-11-12T12:00:00.000Z"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "setting-only shape {COURSE_SETTING}",
+      "settings_json": "{\"COURSE_SETTING\": {\"key\": \"COURSE_SETTING\", \"data\": {\"dripConditions\": {\"enabled\": true, \"conditions\": [{\"id\": \"slide-s1\", \"level\": \"slide\", \"level_id\": \"s1\", \"drip_condition\": {\"behavior\": \"lock\", \"rules\": [{\"type\": \"date_based\", \"params\": {\"unlock_date\": \"2026-11-12T12:00:00.000Z\"}}]}, \"enabled\": true}]}}}}",
+      "target": {
+        "level": "slide",
+        "levelId": "s1",
+        "packageId": "p1"
+      },
+      "expected": {
+        "enabled": true,
+        "apply_configured_rules": false,
+        "condition": {
+          "behavior": "lock",
+          "rules": [
+            {
+              "type": "date_based",
+              "params": {
+                "unlock_date": "2026-11-12T12:00:00.000Z"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "enabled must be exactly true",
+      "settings_json": "{\"setting\": {\"COURSE_SETTING\": {\"key\": \"COURSE_SETTING\", \"data\": {\"dripConditions\": {\"enabled\": \"true\", \"applyConfiguredRules\": 1, \"conditions\": [{\"id\": \"slide-s1\", \"level\": \"slide\", \"level_id\": \"s1\", \"drip_condition\": {\"behavior\": \"lock\", \"rules\": [{\"type\": \"date_based\", \"params\": {\"unlock_date\": \"2026-11-12T12:00:00.000Z\"}}]}, \"enabled\": true}]}}}}}",
+      "target": {
+        "level": "slide",
+        "levelId": "s1",
+        "packageId": "p1"
+      },
+      "expected": {
+        "enabled": false,
+        "apply_configured_rules": false,
+        "condition": {
+          "behavior": "lock",
+          "rules": [
+            {
+              "type": "date_based",
+              "params": {
+                "unlock_date": "2026-11-12T12:00:00.000Z"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "applyConfiguredRules off drops a progress-only condition",
+      "settings_json": "{\"setting\": {\"COURSE_SETTING\": {\"key\": \"COURSE_SETTING\", \"data\": {\"dripConditions\": {\"enabled\": true, \"conditions\": [{\"id\": \"slide-s1\", \"level\": \"slide\", \"level_id\": \"s1\", \"drip_condition\": {\"behavior\": \"lock\", \"rules\": [{\"type\": \"sequential\", \"params\": {\"requires_previous\": true, \"threshold\": 100}}]}, \"enabled\": true}]}}}}}",
+      "target": {
+        "level": "slide",
+        "levelId": "s1",
+        "packageId": "p1"
+      },
+      "expected": {
+        "enabled": true,
+        "apply_configured_rules": false,
+        "condition": null
+      }
+    },
+    {
+      "name": "applyConfiguredRules on keeps a progress-only condition",
+      "settings_json": "{\"setting\": {\"COURSE_SETTING\": {\"key\": \"COURSE_SETTING\", \"data\": {\"dripConditions\": {\"enabled\": true, \"applyConfiguredRules\": true, \"conditions\": [{\"id\": \"slide-s1\", \"level\": \"slide\", \"level_id\": \"s1\", \"drip_condition\": {\"behavior\": \"lock\", \"rules\": [{\"type\": \"sequential\", \"params\": {\"requires_previous\": true, \"threshold\": 100}}]}, \"enabled\": true}]}}}}}",
+      "target": {
+        "level": "slide",
+        "levelId": "s1",
+        "packageId": "p1"
+      },
+      "expected": {
+        "enabled": true,
+        "apply_configured_rules": true,
+        "condition": {
+          "behavior": "lock",
+          "rules": [
+            {
+              "type": "sequential",
+              "params": {
+                "requires_previous": true,
+                "threshold": 100
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "applyConfiguredRules off narrows a mixed condition to its time rules",
+      "settings_json": "{\"setting\": {\"COURSE_SETTING\": {\"key\": \"COURSE_SETTING\", \"data\": {\"dripConditions\": {\"enabled\": true, \"conditions\": [{\"id\": \"slide-s1\", \"level\": \"slide\", \"level_id\": \"s1\", \"drip_condition\": {\"behavior\": \"lock\", \"rules\": [{\"type\": \"date_based\", \"params\": {\"unlock_date\": \"2026-11-12T12:00:00.000Z\"}}, {\"type\": \"sequential\", \"params\": {\"requires_previous\": true, \"threshold\": 100}}]}, \"enabled\": true}]}}}}}",
+      "target": {
+        "level": "slide",
+        "levelId": "s1",
+        "packageId": "p1"
+      },
+      "expected": {
+        "enabled": true,
+        "apply_configured_rules": false,
+        "condition": {
+          "behavior": "lock",
+          "rules": [
+            {
+              "type": "date_based",
+              "params": {
+                "unlock_date": "2026-11-12T12:00:00.000Z"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "applyConfiguredRules on keeps a mixed condition whole",
+      "settings_json": "{\"setting\": {\"COURSE_SETTING\": {\"key\": \"COURSE_SETTING\", \"data\": {\"dripConditions\": {\"enabled\": true, \"applyConfiguredRules\": true, \"conditions\": [{\"id\": \"slide-s1\", \"level\": \"slide\", \"level_id\": \"s1\", \"drip_condition\": {\"behavior\": \"lock\", \"rules\": [{\"type\": \"date_based\", \"params\": {\"unlock_date\": \"2026-11-12T12:00:00.000Z\"}}, {\"type\": \"sequential\", \"params\": {\"requires_previous\": true, \"threshold\": 100}}]}, \"enabled\": true}]}}}}}",
+      "target": {
+        "level": "slide",
+        "levelId": "s1",
+        "packageId": "p1"
+      },
+      "expected": {
+        "enabled": true,
+        "apply_configured_rules": true,
+        "condition": {
+          "behavior": "lock",
+          "rules": [
+            {
+              "type": "date_based",
+              "params": {
+                "unlock_date": "2026-11-12T12:00:00.000Z"
+              }
+            },
+            {
+              "type": "sequential",
+              "params": {
+                "requires_previous": true,
+                "threshold": 100
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "package condition targeting the level is the fallback",
+      "settings_json": "{\"setting\": {\"COURSE_SETTING\": {\"key\": \"COURSE_SETTING\", \"data\": {\"dripConditions\": {\"enabled\": true, \"conditions\": [{\"id\": \"package-p1\", \"level\": \"package\", \"level_id\": \"p1\", \"drip_condition\": [{\"behavior\": \"lock\", \"rules\": [{\"type\": \"relative_date\", \"params\": {\"unlock_on_day\": 5}}], \"target\": \"chapter\"}, {\"behavior\": \"lock\", \"rules\": [{\"type\": \"relative_date\", \"params\": {\"unlock_on_day\": 5}}], \"target\": \"slide\"}], \"enabled\": true}]}}}}}",
+      "target": {
+        "level": "slide",
+        "levelId": "s9",
+        "packageId": "p1"
+      },
+      "expected": {
+        "enabled": true,
+        "apply_configured_rules": false,
+        "condition": {
+          "behavior": "lock",
+          "rules": [
+            {
+              "type": "relative_date",
+              "params": {
+                "unlock_on_day": 5
+              }
+            }
+          ],
+          "target": "slide"
+        }
+      }
+    },
+    {
+      "name": "package condition for another level is ignored",
+      "settings_json": "{\"setting\": {\"COURSE_SETTING\": {\"key\": \"COURSE_SETTING\", \"data\": {\"dripConditions\": {\"enabled\": true, \"conditions\": [{\"id\": \"package-p1\", \"level\": \"package\", \"level_id\": \"p1\", \"drip_condition\": [{\"behavior\": \"lock\", \"rules\": [{\"type\": \"relative_date\", \"params\": {\"unlock_on_day\": 5}}], \"target\": \"chapter\"}], \"enabled\": true}]}}}}}",
+      "target": {
+        "level": "slide",
+        "levelId": "s9",
+        "packageId": "p1"
+      },
+      "expected": {
+        "enabled": true,
+        "apply_configured_rules": false,
+        "condition": null
+      }
+    },
+    {
+      "name": "package condition of another course is ignored",
+      "settings_json": "{\"setting\": {\"COURSE_SETTING\": {\"key\": \"COURSE_SETTING\", \"data\": {\"dripConditions\": {\"enabled\": true, \"conditions\": [{\"id\": \"package-p2\", \"level\": \"package\", \"level_id\": \"p2\", \"drip_condition\": [{\"behavior\": \"lock\", \"rules\": [{\"type\": \"relative_date\", \"params\": {\"unlock_on_day\": 5}}], \"target\": \"slide\"}], \"enabled\": true}]}}}}}",
+      "target": {
+        "level": "slide",
+        "levelId": "s9",
+        "packageId": "p1"
+      },
+      "expected": {
+        "enabled": true,
+        "apply_configured_rules": false,
+        "condition": null
+      }
+    },
+    {
+      "name": "own condition wins over the package condition",
+      "settings_json": "{\"setting\": {\"COURSE_SETTING\": {\"key\": \"COURSE_SETTING\", \"data\": {\"dripConditions\": {\"enabled\": true, \"conditions\": [{\"id\": \"package-p1\", \"level\": \"package\", \"level_id\": \"p1\", \"drip_condition\": [{\"behavior\": \"lock\", \"rules\": [{\"type\": \"relative_date\", \"params\": {\"unlock_on_day\": 5}}], \"target\": \"slide\"}], \"enabled\": true}, {\"id\": \"slide-s1\", \"level\": \"slide\", \"level_id\": \"s1\", \"drip_condition\": [{\"behavior\": \"lock\", \"rules\": [{\"type\": \"date_based\", \"params\": {\"unlock_date\": \"2026-11-12T12:00:00.000Z\"}}]}], \"enabled\": true}]}}}}}",
+      "target": {
+        "level": "slide",
+        "levelId": "s1",
+        "packageId": "p1"
+      },
+      "expected": {
+        "enabled": true,
+        "apply_configured_rules": false,
+        "condition": {
+          "behavior": "lock",
+          "rules": [
+            {
+              "type": "date_based",
+              "params": {
+                "unlock_date": "2026-11-12T12:00:00.000Z"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "a disabled stored entry falls back to the package",
+      "settings_json": "{\"setting\": {\"COURSE_SETTING\": {\"key\": \"COURSE_SETTING\", \"data\": {\"dripConditions\": {\"enabled\": true, \"conditions\": [{\"id\": \"slide-s1\", \"level\": \"slide\", \"level_id\": \"s1\", \"drip_condition\": [{\"behavior\": \"lock\", \"rules\": [{\"type\": \"date_based\", \"params\": {\"unlock_date\": \"2026-11-12T12:00:00.000Z\"}}]}], \"enabled\": false}, {\"id\": \"package-p1\", \"level\": \"package\", \"level_id\": \"p1\", \"drip_condition\": [{\"behavior\": \"lock\", \"rules\": [{\"type\": \"relative_date\", \"params\": {\"unlock_on_day\": 5}}], \"target\": \"slide\"}], \"enabled\": true}]}}}}}",
+      "target": {
+        "level": "slide",
+        "levelId": "s1",
+        "packageId": "p1"
+      },
+      "expected": {
+        "enabled": true,
+        "apply_configured_rules": false,
+        "condition": {
+          "behavior": "lock",
+          "rules": [
+            {
+              "type": "relative_date",
+              "params": {
+                "unlock_on_day": 5
+              }
+            }
+          ],
+          "target": "slide"
+        }
+      }
+    },
+    {
+      "name": "an is_enabled false config falls back to the package",
+      "settings_json": "{\"setting\": {\"COURSE_SETTING\": {\"key\": \"COURSE_SETTING\", \"data\": {\"dripConditions\": {\"enabled\": true, \"conditions\": [{\"id\": \"slide-s1\", \"level\": \"slide\", \"level_id\": \"s1\", \"drip_condition\": [{\"behavior\": \"lock\", \"rules\": [{\"type\": \"date_based\", \"params\": {\"unlock_date\": \"2026-11-12T12:00:00.000Z\"}}], \"is_enabled\": false}], \"enabled\": true}, {\"id\": \"package-p1\", \"level\": \"package\", \"level_id\": \"p1\", \"drip_condition\": [{\"behavior\": \"lock\", \"rules\": [{\"type\": \"relative_date\", \"params\": {\"unlock_on_day\": 5}}], \"target\": \"slide\"}], \"enabled\": true}]}}}}}",
+      "target": {
+        "level": "slide",
+        "levelId": "s1",
+        "packageId": "p1"
+      },
+      "expected": {
+        "enabled": true,
+        "apply_configured_rules": false,
+        "condition": {
+          "behavior": "lock",
+          "rules": [
+            {
+              "type": "relative_date",
+              "params": {
+                "unlock_on_day": 5
+              }
+            }
+          ],
+          "target": "slide"
+        }
+      }
+    },
+    {
+      "name": "the first enforceable config of an array wins",
+      "settings_json": "{\"setting\": {\"COURSE_SETTING\": {\"key\": \"COURSE_SETTING\", \"data\": {\"dripConditions\": {\"enabled\": true, \"conditions\": [{\"id\": \"chapter-c1\", \"level\": \"chapter\", \"level_id\": \"c1\", \"drip_condition\": [{\"behavior\": \"lock\", \"rules\": [{\"type\": \"sequential\", \"params\": {\"requires_previous\": true, \"threshold\": 100}}]}, {\"behavior\": \"lock\", \"rules\": [{\"type\": \"relative_date\", \"params\": {\"unlock_on_day\": 5}}], \"target\": \"chapter\"}], \"enabled\": true}]}}}}}",
+      "target": {
+        "level": "chapter",
+        "levelId": "c1",
+        "packageId": "p1"
+      },
+      "expected": {
+        "enabled": true,
+        "apply_configured_rules": false,
+        "condition": {
+          "behavior": "lock",
+          "rules": [
+            {
+              "type": "relative_date",
+              "params": {
+                "unlock_on_day": 5
+              }
+            }
+          ],
+          "target": "chapter"
+        }
+      }
+    },
+    {
+      "name": "subject level conditions resolve too",
+      "settings_json": "{\"setting\": {\"COURSE_SETTING\": {\"key\": \"COURSE_SETTING\", \"data\": {\"dripConditions\": {\"enabled\": true, \"conditions\": [{\"id\": \"subject-sub1\", \"level\": \"subject\", \"level_id\": \"sub1\", \"drip_condition\": {\"behavior\": \"lock\", \"rules\": [{\"type\": \"relative_date\", \"params\": {\"unlock_on_day\": 3}}]}, \"enabled\": true}]}}}}}",
+      "target": {
+        "level": "subject",
+        "levelId": "sub1",
+        "packageId": "p1"
+      },
+      "expected": {
+        "enabled": true,
+        "apply_configured_rules": false,
+        "condition": {
+          "behavior": "lock",
+          "rules": [
+            {
+              "type": "relative_date",
+              "params": {
+                "unlock_on_day": 3
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "level_select": [
+    {
+      "name": "single condition for its own level",
+      "drip_json": "{\"behavior\": \"lock\", \"rules\": [{\"type\": \"sequential\", \"params\": {\"requires_previous\": true, \"threshold\": 100}}], \"target\": \"slide\"}",
+      "level": "slide",
+      "expected": {
+        "success": true,
+        "condition": {
+          "behavior": "lock",
+          "rules": [
+            {
+              "type": "sequential",
+              "params": {
+                "requires_previous": true,
+                "threshold": 100
+              }
+            }
+          ],
+          "target": "slide"
+        }
+      }
+    },
+    {
+      "name": "single condition for another level",
+      "drip_json": "{\"behavior\": \"lock\", \"rules\": [{\"type\": \"sequential\", \"params\": {\"requires_previous\": true, \"threshold\": 100}}], \"target\": \"slide\"}",
+      "level": "chapter",
+      "expected": {
+        "success": true,
+        "condition": null
+      }
+    },
+    {
+      "name": "a condition with no target applies to every level",
+      "drip_json": "{\"behavior\": \"lock\", \"rules\": [{\"type\": \"relative_date\", \"params\": {\"unlock_on_day\": 2}}]}",
+      "level": "chapter",
+      "expected": {
+        "success": true,
+        "condition": {
+          "behavior": "lock",
+          "rules": [
+            {
+              "type": "relative_date",
+              "params": {
+                "unlock_on_day": 2
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "an array picks the entry for the level",
+      "drip_json": "[{\"behavior\": \"lock\", \"rules\": [{\"type\": \"sequential\", \"params\": {\"requires_previous\": true, \"threshold\": 100}}], \"target\": \"chapter\"}, {\"behavior\": \"lock\", \"rules\": [{\"type\": \"sequential\", \"params\": {\"requires_previous\": true, \"threshold\": 100}}], \"target\": \"slide\"}]",
+      "level": "slide",
+      "expected": {
+        "success": true,
+        "condition": {
+          "behavior": "lock",
+          "rules": [
+            {
+              "type": "sequential",
+              "params": {
+                "requires_previous": true,
+                "threshold": 100
+              }
+            }
+          ],
+          "target": "slide"
+        }
+      }
+    },
+    {
+      "name": "a disabled condition is ignored",
+      "drip_json": "{\"behavior\": \"lock\", \"rules\": [{\"type\": \"sequential\", \"params\": {\"requires_previous\": true, \"threshold\": 100}}], \"target\": \"slide\", \"is_enabled\": false}",
+      "level": "slide",
+      "expected": {
+        "success": true,
+        "condition": null
+      }
+    },
+    {
+      "name": "missing behavior fails to parse",
+      "drip_json": "{\"rules\": []}",
+      "level": "slide",
+      "expected": {
+        "success": false,
+        "condition": null
+      }
+    },
+    {
+      "name": "more than two targets fail to parse",
+      "drip_json": "[{\"behavior\": \"lock\", \"rules\": [{\"type\": \"sequential\", \"params\": {\"requires_previous\": true, \"threshold\": 100}}], \"target\": \"chapter\"}, {\"behavior\": \"lock\", \"rules\": [{\"type\": \"sequential\", \"params\": {\"requires_previous\": true, \"threshold\": 100}}], \"target\": \"slide\"}, {\"behavior\": \"lock\", \"rules\": [{\"type\": \"relative_date\", \"params\": {\"unlock_on_day\": 2}}]}]",
+      "level": "slide",
+      "expected": {
+        "success": false,
+        "condition": null
+      }
+    },
+    {
+      "name": "empty input is no condition",
+      "drip_json": "",
+      "level": "slide",
+      "expected": {
+        "success": true,
+        "condition": null
+      }
+    }
+  ]
+}

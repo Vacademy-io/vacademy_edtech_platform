@@ -1,14 +1,15 @@
 import { ReactNode } from 'react';
 import { Handle, Position } from 'reactflow';
-import { CheckCircle2, AlertTriangle, XCircle, Loader2, Clock } from 'lucide-react';
-import { NODE_LABELS, type PipelineNodeId } from '../-utils/stage-vocab';
+import { useTranslation } from 'react-i18next';
+import { CheckCircle, Warning, XCircle, CircleNotch, Clock } from '@phosphor-icons/react';
+import { buildNodeLabels, type PipelineNodeId } from '../-utils/stage-vocab';
 import type { NodeState } from '../-utils/derive-pipeline-state';
 import { NODE_SIZES } from '../-utils/build-pipeline-graph';
 
 interface BaseNodeShellProps {
     kind: PipelineNodeId;
     state: NodeState;
-    /** Optional override for the header label (defaults to NODE_LABELS[kind]). */
+    /** Optional override for the header label (defaults to buildNodeLabels(t)[kind]). */
     label?: string;
     /** Right-aligned chip in the header (e.g. "8 scenes" / "12.4s" / "wrapped 2m"). */
     headerMeta?: ReactNode;
@@ -45,21 +46,21 @@ const STATE_VISUAL: Record<
     in_production: {
         ring: 'ring-2 ring-blue-500 animate-pulse',
         bg: 'bg-blue-50/50',
-        icon: <Loader2 className="size-3.5 animate-spin" />,
+        icon: <CircleNotch className="size-3.5 animate-spin" />,
         iconColor: 'text-blue-600',
         label: 'In production',
     },
     wrapped: {
         ring: 'ring-2 ring-green-500',
         bg: 'bg-green-50/40',
-        icon: <CheckCircle2 className="size-3.5" />,
+        icon: <CheckCircle className="size-3.5" />,
         iconColor: 'text-green-600',
         label: 'Wrapped',
     },
     reshoot: {
         ring: 'ring-2 ring-amber-500',
         bg: 'bg-amber-50/50',
-        icon: <AlertTriangle className="size-3.5" />,
+        icon: <Warning className="size-3.5" />,
         iconColor: 'text-amber-600',
         label: 'Reshoot',
     },
@@ -91,8 +92,9 @@ export function BaseNodeShell({
     emphasized,
     clickable = true,
 }: BaseNodeShellProps) {
+    const { t } = useTranslation('videoApiStudioStageVocab');
     const visual = STATE_VISUAL[state];
-    const title = label ?? NODE_LABELS[kind];
+    const title = label ?? buildNodeLabels(t)[kind];
 
     return (
         <div
@@ -134,7 +136,7 @@ export function BaseNodeShell({
             <div className="flex shrink-0 items-center gap-2 border-b border-black/5 px-3 py-2">
                 <span className={visual.iconColor}>{visual.icon}</span>
                 <span className="truncate text-sm font-semibold text-foreground">{title}</span>
-                <span className="ml-auto shrink-0 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                <span className="ml-auto shrink-0 text-2xs font-medium uppercase tracking-wider text-muted-foreground">
                     {headerMeta ?? visual.label}
                 </span>
             </div>

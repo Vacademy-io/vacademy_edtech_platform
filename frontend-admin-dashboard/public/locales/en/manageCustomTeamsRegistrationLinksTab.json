@@ -1,0 +1,95 @@
+{
+    "filters": {
+        "searchPlaceholder": "Search by link name",
+        "allStatuses": "All statuses",
+        "allTypes": "All types",
+        "active": "Active",
+        "inactive": "Inactive",
+        "paid": "Paid",
+        "free": "Free"
+    },
+    "actions": {
+        "createLink": "Create Registration Link",
+        "edit": "Edit",
+        "view": "View"
+    },
+    "table": {
+        "name": "Name",
+        "link": "Link",
+        "status": "Status",
+        "registrations": "Registrations",
+        "created": "Created",
+        "actions": "Actions",
+        "attemptsSuffix_one": "{{count}} attempt",
+        "attemptsSuffix_other": "{{count}} attempts"
+    },
+    "empty": {
+        "noMatchFilters": "No registration links match your filters.",
+        "noLinksYet": "No registration links yet.",
+        "createOneHint": "Create one to let organizations register themselves as {{term}}."
+    },
+    "badge": {
+        "kyc": "KYC"
+    },
+    "link": {
+        "copyTitle": "Copy registration link",
+        "toggleStatusAria": "Toggle {{name}} status"
+    },
+    "toast": {
+        "linkActivated": "Registration link activated",
+        "linkDeactivated": "Registration link deactivated",
+        "updateStatusFailed": "Failed to update status",
+        "loadDetailFailed": "Failed to load registration link details",
+        "linkCopied": "Registration link copied",
+        "noRegistrationsToExport": "No registrations to export.",
+        "exportedCount_one": "Exported {{count}} registration.",
+        "exportedCount_other": "Exported {{count}} registrations.",
+        "exportFailed": "Failed to export registrations."
+    },
+    "dialog": {
+        "heading": "Registrations — {{name}}",
+        "headingDefault": "Registrations",
+        "searchPlaceholder": "Search org, admin or email",
+        "cityLabel": "City",
+        "stateLabel": "State",
+        "pincodeLabel": "Pincode",
+        "searchCityPlaceholder": "Search city…",
+        "searchStatePlaceholder": "Search state…",
+        "searchPincodePlaceholder": "Search pincode…",
+        "searchFieldPlaceholder": "Search {{field}}…",
+        "registrationCount_one": "{{count}} registration",
+        "registrationCount_other": "{{count}} registrations",
+        "filteredSuffix": " · filtered",
+        "clear": "Clear",
+        "exportCsv": "Export CSV",
+        "noMatchFilters": "No registrations match these filters.",
+        "noRegistrationsYet": "No registrations through this link yet.",
+        "table": {
+            "organization": "Organization",
+            "admin": "Admin",
+            "email": "Email",
+            "phone": "Phone",
+            "city": "City",
+            "state": "State",
+            "pincode": "Pincode",
+            "seats": "Seats",
+            "status": "Status",
+            "kyc": "KYC",
+            "date": "Date"
+        }
+    },
+    "csv": {
+        "organization": "Organization",
+        "admin": "Admin",
+        "email": "Email",
+        "phone": "Phone",
+        "city": "City",
+        "state": "State",
+        "pincode": "Pincode",
+        "seatsUsed": "Seats Used",
+        "seatsTotal": "Seats Total",
+        "status": "Status",
+        "kyc": "KYC",
+        "registeredOn": "Registered On"
+    }
+}

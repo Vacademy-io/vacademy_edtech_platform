@@ -14,7 +14,11 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -56,6 +60,90 @@ public class PolicyGate {
         return dao.optedOutUserIds(instituteId, userIds);
     }
 
+    /**
+     * Why a lead member must not be contacted any more. OPTED_OUT: the lead asked us to stop
+     * (overall_status). EXITED: the admin removed the lead row (audience_status INACTIVE) or it
+     * is gone; the nightly reconcile would exit it too, and revives it if the row comes back.
+     * CONVERTED: the CRM marked the lead Converted; it stops only members the engine reaches as a
+     * lead (see {@link #effectiveLeadBlock}), and the member leaves as EXITED. LOST: the CRM marked
+     * the lead Lost or Not interested (L2); handled exactly like CONVERTED.
+     */
+    public enum LeadBlock { OPTED_OUT, EXITED, CONVERTED, LOST }
+
+    /** The lead's pipeline ended (Converted or Lost): stops the engine's own sends, not a human's. */
+    public static boolean isLeadOutcome(LeadBlock block) {
+        return block == LeadBlock.CONVERTED || block == LeadBlock.LOST;
+    }
+
+    private static final ObjectMapper AUDIENCE_READER = new ObjectMapper();
+
+    /**
+     * The block that applies to this member of this engine. A converted lead is done for an engine
+     * that reaches it only as a lead. An engine that also targets learners (a batch or named users)
+     * keeps a converted lead who has an account: enrolment marks a lead Converted, and a learner
+     * engine must not lose the learners it exists for.
+     */
+    public static LeadBlock effectiveLeadBlock(LeadBlock block, EngagementEngine engine, EngagementMember member) {
+        if (!isLeadOutcome(block)) return block;
+        return member == null || stopsAsLead(engine, member.getUserId()) ? block : null;
+    }
+
+    /**
+     * True when a lead outcome (Converted, a clear "not interested") ends this member's place in
+     * this engine: the member has no account, or the engine reaches people only as leads.
+     */
+    public static boolean stopsAsLead(EngagementEngine engine, String memberUserId) {
+        return memberUserId == null || !targetsLearners(engine);
+    }
+
+    /** True when the engine's audience has a PACKAGE_SESSION or USER selector (or can't be read). */
+    static boolean targetsLearners(EngagementEngine engine) {
+        if (engine == null || engine.getAudience() == null) return true;
+        try {
+            for (JsonNode sel : AUDIENCE_READER.readTree(engine.getAudience())) {
+                String type = sel.path("type").asText("");
+                if ("PACKAGE_SESSION".equals(type) || "USER".equals(type)) return true;
+            }
+            return false;
+        } catch (Exception e) {
+            return true; // unreadable audience: keep today's behaviour, never stop on a guess
+        }
+    }
+
+    /**
+     * Batch lead consent for a cohort, by audience_response_id: one query, members without a
+     * lead row are not looked up. Only blocked leads are in the result.
+     */
+    public Map<String, LeadBlock> blockedLeads(String instituteId, Collection<String> audienceResponseIds) {
+        Map<String, LeadBlock> out = new HashMap<>();
+        if (audienceResponseIds == null || audienceResponseIds.isEmpty()) return out;
+        Set<String> ids = new HashSet<>(audienceResponseIds);
+        Set<String> seen = new HashSet<>();
+        for (Object[] row : dao.leadConsentRows(instituteId, ids)) {
+            String id = (String) row[0];
+            seen.add(id);
+            if ("OPTED_OUT".equals(row[1])) {
+                out.put(id, LeadBlock.OPTED_OUT);
+            } else if (!"ACTIVE".equals(row[2])) {
+                out.put(id, LeadBlock.EXITED);
+            } else if (row.length > 3 && "CONVERTED".equals(row[3])) {
+                out.put(id, LeadBlock.CONVERTED);
+            } else if (row.length > 3 && "LOST".equals(row[3])) {
+                out.put(id, LeadBlock.LOST);
+            }
+        }
+        for (String id : ids) {
+            if (!seen.contains(id)) out.put(id, LeadBlock.EXITED);
+        }
+        return out;
+    }
+
+    /** {@link #blockedLeads} for one member at send time; null when the lead may be contacted. */
+    public LeadBlock leadBlock(String instituteId, String audienceResponseId) {
+        if (audienceResponseId == null) return null;
+        return blockedLeads(instituteId, List.of(audienceResponseId)).get(audienceResponseId);
+    }
+
     /** Per-member pre-LLM gate. Consent is checked at cohort level; this adds the cap. */
     public Verdict preDecision(EngagementMember member, Set<String> optedOut) {
         if (member.getUserId() != null && optedOut.contains(member.getUserId())) {
@@ -70,6 +158,35 @@ public class PolicyGate {
         return Verdict.PROCEED;
     }
 
+    /** How a send's time is chosen; see {@link #scheduleSend}. */
+    public enum SendTiming {
+        /** Answering someone who wrote in: quiet hours only. */
+        REPLY,
+        /** Quiet hours and the engine's days (a new person's first touch, a resumed engine's due send). */
+        ANYTIME,
+        /** Planned outreach: the engine's send window, days and quiet hours. */
+        PLANNED
+    }
+
+    /**
+     * The time a send may go out at, at or after {@code proposed}. Quiet hours always apply (see
+     * {@link #clampToAllowedWindow}); the engine's days apply except to replies; planned outreach
+     * also waits for the engine's send window ({@link EngagementSendSchedule}).
+     */
+    public Instant scheduleSend(EngagementEngine engine, Instant proposed, SendTiming timing) {
+        if (timing == SendTiming.REPLY) return clampToAllowedWindow(engine, proposed);
+        EngagementSendSchedule schedule = EngagementSendSchedule.of(engine.getQuietHours(), objectMapper);
+        Instant t = proposed;
+        // Each pass moves forward by at least a day when it fails, so 8 passes cover a week.
+        for (int i = 0; i < 8; i++) {
+            if (timing == SendTiming.PLANNED) t = schedule.nextSendTime(t);
+            t = clampToAllowedWindow(engine, t);
+            if (schedule.allowsDay(t)) return t;
+            t = schedule.startOfNextAllowedDay(t);
+        }
+        return clampToAllowedWindow(engine, t);
+    }
+
     /**
      * Clamp a proposed action time out of quiet hours. Correctness matters here: an off-by-one
      * sends outreach at 2 AM. The institute floor (default 21:00→08:00, wrapping midnight) is
@@ -79,11 +196,14 @@ public class PolicyGate {
      * creates tasks only, which respect the floor.
      */
     public Instant clampToAllowedWindow(EngagementEngine engine, Instant proposed) {
-        ZoneId zone = ZoneId.of(quietTimezone);              // pinned — engine cannot move it
+        ZoneId floorZone = ZoneId.of(quietTimezone);         // pinned — engine cannot move it
         int floorStart = quietStartHour * 60;
         int floorEnd = quietEndHour * 60;
 
         Integer engStart = null, engEnd = null;
+        // The engine's own hours are in the zone the admin picked in the wizard (quietHours.timezone),
+        // not the floor's: reading "21-8 Europe/London" as IST let sends go out around 02:30 London.
+        ZoneId engineZone = floorZone;
         try {
             JsonNode qh = objectMapper.readTree(engine.getQuietHours());
             if (qh.hasNonNull("startHour") && qh.hasNonNull("endHour")) {
@@ -96,23 +216,46 @@ public class PolicyGate {
                     engEnd = ee;
                 }
             }
+            if (qh.hasNonNull("timezone")) {
+                try {
+                    engineZone = ZoneId.of(qh.get("timezone").asText());
+                } catch (Exception badZone) {
+                    // unknown zone id → keep the floor's zone
+                }
+            }
         } catch (Exception ignored) {
             // unparseable engine quiet hours → institute floor alone applies
         }
 
-        ZonedDateTime t = proposed.atZone(zone);
-        // Walk forward in 15-min steps to the first minute that is neither floor- nor engine-quiet.
-        // Bounded to 24h of steps; the floor+engine union can never cover a full day (floor is
-        // 11h and the engine interval is ignored if it equals a full wrap), so a slot always exists.
+        Instant slot = firstAllowed(proposed, floorZone, floorStart, floorEnd, engineZone, engStart, engEnd);
+        if (slot != null) return slot;
+        // The engine's hours plus the floor cover the whole day (e.g. an admin who read the
+        // pickers as "active hours" and chose 8-21). Returning the proposed time here sent at
+        // 2 AM; the floor is the compliance minimum, so fall back to it alone.
+        log.warn("Engine {}: its quiet hours and the institute floor leave no free time; using the floor only",
+                engine.getId());
+        slot = firstAllowed(proposed, floorZone, floorStart, floorEnd, engineZone, null, null);
+        return slot != null ? slot : proposed;
+    }
+
+    /**
+     * The first 15-minute step within 24h that is neither floor-quiet (in the floor's zone) nor
+     * engine-quiet (in the engine's zone), or null when every step is blocked.
+     */
+    private static Instant firstAllowed(Instant proposed, ZoneId floorZone, int floorStart, int floorEnd,
+                                        ZoneId engineZone, Integer engStart, Integer engEnd) {
+        ZonedDateTime t = proposed.atZone(floorZone);
         for (int i = 0; i <= 96; i++) {
             ZonedDateTime candidate = t.plusMinutes(15L * i).withSecond(0).withNano(0);
-            int minute = candidate.getHour() * 60 + candidate.getMinute();
-            if (!inInterval(minute, floorStart, floorEnd)
-                    && (engStart == null || !inInterval(minute, engStart, engEnd))) {
-                return candidate.toInstant();
+            int floorMinute = candidate.getHour() * 60 + candidate.getMinute();
+            if (inInterval(floorMinute, floorStart, floorEnd)) continue;
+            if (engStart != null) {
+                ZonedDateTime local = candidate.withZoneSameInstant(engineZone);
+                if (inInterval(local.getHour() * 60 + local.getMinute(), engStart, engEnd)) continue;
             }
+            return candidate.toInstant();
         }
-        return t.toInstant(); // unreachable in practice; fail open rather than loop
+        return null;
     }
 
     /** [start, end) minutes-of-day membership, wrapping past midnight when start > end. */

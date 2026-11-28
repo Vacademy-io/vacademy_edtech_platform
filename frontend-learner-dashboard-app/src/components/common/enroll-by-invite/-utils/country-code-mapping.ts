@@ -260,11 +260,31 @@ export const COUNTRY_NAME_TO_CODE_MAP: Record<string, string> = {
 export const getCountryCode = (
   countryName: string,
   defaultCode: string = "au"
-): string => {
-  if (!countryName) return defaultCode;
+): string => lookupCountryCode(countryName) ?? defaultCode;
 
-  const normalizedName = countryName.toLowerCase().trim();
-  return COUNTRY_NAME_TO_CODE_MAP[normalizedName] || defaultCode;
+/**
+ * The same lookup, but able to say "no opinion".
+ *
+ * A form that asks the visitor for their country should let that answer drive
+ * the phone field — but only when there IS an answer. `getCountryCode` folds
+ * "nothing selected" and "selected something we cannot map" into its caller's
+ * fallback, which means a caller cannot tell whether the country it got back
+ * was really chosen. Callers that hand the result to `PhoneInputField` need
+ * that distinction: passing a `country` prop overrides the field's own
+ * institute-preference / geo resolution, so passing a *guess* would suppress
+ * the correct answer. Returning undefined lets the field resolve for itself.
+ */
+export const lookupCountryCode = (
+  countryName: string | null | undefined
+): string | undefined => {
+  // Guarded at runtime, not just by the signature. The callers read this out of
+  // dynamically-built form state (`formValues[countryFieldKey]?.value`), whose
+  // static type is `string` but whose real content is whatever a custom field
+  // put there — a dropdown could hand back a number. `getCountryCode` used to
+  // be reached through a `|| ""`, so this keeps the same "never throw on a
+  // surprise value" behaviour now that the coercion is gone.
+  if (typeof countryName !== "string" || !countryName) return undefined;
+  return COUNTRY_NAME_TO_CODE_MAP[countryName.toLowerCase().trim()];
 };
 
 /**

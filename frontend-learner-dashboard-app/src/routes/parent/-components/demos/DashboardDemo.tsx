@@ -1,5 +1,6 @@
 // Dashboard demo — props-driven (no API)
 import { motion } from "framer-motion";
+import { useTranslation } from "react-i18next";
 import type { ChildProfile, AdmissionOverview } from "@/types/parent-portal";
 import {
   Card,
@@ -20,6 +21,7 @@ import {
   ArrowRight,
   Info,
 } from "@phosphor-icons/react";
+import { formatDate } from "@/lib/formatters";
 
 type TabId =
   | "dashboard"
@@ -36,6 +38,7 @@ interface Props {
 }
 
 export function ParentDashboardDemo({ child, overview, onNavigate }: Props) {
+  const { t } = useTranslation("parent");
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-5xl mx-auto w-full space-y-6 pb-20 lg:pb-8">
       <motion.div
@@ -45,17 +48,19 @@ export function ParentDashboardDemo({ child, overview, onNavigate }: Props) {
       >
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-foreground">
-            {child.full_name}&apos;s Admission
+            {t("admissionPortal.dashboard.title", { name: child.full_name })}
           </h1>
           <p className="text-sm text-muted-foreground mt-0.5">
             {child.grade_applying
-              ? `Applying for ${child.grade_applying}`
-              : "Admission in progress"}
+              ? t("admissionPortal.dashboard.applyingFor", {
+                  grade: child.grade_applying,
+                })
+              : t("admissionPortal.dashboard.inProgress")}
             {child.academic_year ? ` • ${child.academic_year}` : ""}
           </p>
         </div>
         <Badge className="bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300 self-start text-xs font-medium px-3 py-1">
-          Registration In Progress
+          {t("admissionPortal.demo.registrationInProgress")}
         </Badge>
       </motion.div>
 
@@ -65,25 +70,26 @@ export function ParentDashboardDemo({ child, overview, onNavigate }: Props) {
         transition={{ delay: 0.05 }}
       >
         <Card className="border-s-4 border-s-yellow-500 shadow-sm">
-          <CardContent className="p-4 sm:p-5">
+          <CardContent className="p-card sm:p-5">
             <div className="flex items-start gap-3">
               <div className="p-2 rounded-lg bg-yellow-100 dark:bg-yellow-900/30 shrink-0 mt-0.5">
                 <ClipboardText size={20} className="text-yellow-600" />
               </div>
               <div className="flex-1 min-w-0">
                 <h3 className="text-sm font-semibold text-foreground">
-                  Continue Registration
+                  {t("admissionPortal.dashboard.statusInfo.application.bannerTitle")}
                 </h3>
                 <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
-                  You have a draft registration. Continue filling the form and
-                  submit when ready.
+                  {t(
+                    "admissionPortal.dashboard.statusInfo.application.bannerDescription",
+                  )}
                 </p>
                 <Button
                   size="sm"
                   onClick={() => onNavigate("registration")}
                   className="mt-3 h-8 text-xs rounded-lg gap-1.5"
                 >
-                  Continue
+                  {t("admissionPortal.dashboard.statusInfo.application.actionLabel")}
                   <ArrowRight size={12} />
                 </Button>
               </div>
@@ -99,9 +105,11 @@ export function ParentDashboardDemo({ child, overview, onNavigate }: Props) {
       >
         <Card className="shadow-sm">
           <CardHeader className="pb-3">
-            <CardTitle className="text-base">Admission Progress</CardTitle>
+            <CardTitle className="text-base">
+              {t("admissionPortal.dashboard.progressTitle")}
+            </CardTitle>
             <CardDescription className="text-xs">
-              Track each step of the journey
+              {t("admissionPortal.demo.trackEachStep")}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -115,8 +123,8 @@ export function ParentDashboardDemo({ child, overview, onNavigate }: Props) {
           {
             id: "registration" as TabId,
             icon: ClipboardText,
-            label: "Registration",
-            desc: "Form & payment",
+            label: t("admissionPortal.demo.nav.registration"),
+            desc: t("admissionPortal.demo.tiles.registrationDesc"),
             color: "text-blue-600 dark:text-blue-400",
             bg: "bg-blue-50 dark:bg-blue-950/30",
             d: 0.15,
@@ -124,8 +132,8 @@ export function ParentDashboardDemo({ child, overview, onNavigate }: Props) {
           {
             id: "schedule" as TabId,
             icon: CalendarCheck,
-            label: "Interviews & Tests",
-            desc: "Schedule & results",
+            label: t("admissionPortal.nav.interviewAndTests"),
+            desc: t("admissionPortal.demo.tiles.scheduleDesc"),
             color: "text-violet-600 dark:text-violet-400",
             bg: "bg-violet-50 dark:bg-violet-950/30",
             d: 0.2,
@@ -133,8 +141,8 @@ export function ParentDashboardDemo({ child, overview, onNavigate }: Props) {
           {
             id: "admission" as TabId,
             icon: FileText,
-            label: "Admission Form",
-            desc: "Admission details",
+            label: t("admissionPortal.demo.tiles.admissionForm"),
+            desc: t("admissionPortal.demo.tiles.admissionFormDesc"),
             color: "text-indigo-600 dark:text-indigo-400",
             bg: "bg-indigo-50 dark:bg-indigo-950/30",
             d: 0.25,
@@ -142,8 +150,8 @@ export function ParentDashboardDemo({ child, overview, onNavigate }: Props) {
           {
             id: "documents" as TabId,
             icon: ClipboardText,
-            label: "Verification",
-            desc: "Upload & verify",
+            label: t("admissionPortal.nav.verification"),
+            desc: t("admissionPortal.demo.tiles.verificationDesc"),
             color: "text-amber-600 dark:text-amber-400",
             bg: "bg-amber-50 dark:bg-amber-950/30",
             d: 0.3,
@@ -151,8 +159,8 @@ export function ParentDashboardDemo({ child, overview, onNavigate }: Props) {
           {
             id: "payments" as TabId,
             icon: CurrencyDollar,
-            label: "Fee Payment",
-            desc: "Fees & receipts",
+            label: t("admissionPortal.demo.tiles.feePayment"),
+            desc: t("admissionPortal.demo.tiles.feePaymentDesc"),
             color: "text-emerald-600 dark:text-emerald-400",
             bg: "bg-emerald-50 dark:bg-emerald-950/30",
             d: 0.35,
@@ -168,7 +176,7 @@ export function ParentDashboardDemo({ child, overview, onNavigate }: Props) {
               className="shadow-sm hover:shadow-md transition-all cursor-pointer group active:scale-[0.98]"
               onClick={() => onNavigate(c.id)}
             >
-              <CardContent className="p-4 flex flex-col items-start gap-2.5">
+              <CardContent className="p-card flex flex-col items-start gap-2.5">
                 <div className={`p-2 rounded-lg ${c.bg}`}>
                   <c.icon size={20} className={c.color} />
                 </div>
@@ -193,9 +201,11 @@ export function ParentDashboardDemo({ child, overview, onNavigate }: Props) {
           <Card className="shadow-sm">
             <CardHeader className="pb-3 flex flex-row items-center justify-between">
               <div>
-                <CardTitle className="text-base">Recent Activity</CardTitle>
+                <CardTitle className="text-base">
+                  {t("admissionPortal.demo.recentActivity")}
+                </CardTitle>
                 <CardDescription className="text-xs">
-                  Latest updates
+                  {t("admissionPortal.demo.latestUpdates")}
                 </CardDescription>
               </div>
               <Button
@@ -204,7 +214,7 @@ export function ParentDashboardDemo({ child, overview, onNavigate }: Props) {
                 className="text-xs h-7"
                 onClick={() => onNavigate("tracker")}
               >
-                View All
+                {t("admissionPortal.demo.viewAll")}
                 <ArrowRight size={12} className="ms-1" />
               </Button>
             </CardHeader>
@@ -225,7 +235,7 @@ export function ParentDashboardDemo({ child, overview, onNavigate }: Props) {
                     )}
                     {e.timestamp && (
                       <p className="text-caption text-muted-foreground/60 mt-1">
-                        {new Date(e.timestamp).toLocaleDateString("en-US", {
+                        {formatDate(e.timestamp, {
                           month: "short",
                           day: "numeric",
                           hour: "2-digit",
@@ -244,15 +254,18 @@ export function ParentDashboardDemo({ child, overview, onNavigate }: Props) {
   );
 }
 
-const STEPS = [
-  { key: "ENQUIRY", label: "Enquiry Submittied" },
-  { key: "APPLICATION", label: "Application Form Filled" },
-  { key: "INTERVIEW_COMPLETED", label: "Interview & Assessment" },
-  { key: "ADMISSION_ACCEPTED", label: "Admission Form" },
-  { key: "DOCUMENTS_VERIFIED", label: "Documents Verification" },
-  { key: "PAYMENT_COMPLETED", label: "Fee Payment" },
-  { key: "ENROLLED", label: "Enrolled" },
-];
+function useDemoSteps() {
+  const { t } = useTranslation("parent");
+  return [
+    { key: "ENQUIRY", label: t("admissionPortal.demo.steps.enquirySubmitted") },
+    { key: "APPLICATION", label: t("admissionPortal.demo.steps.applicationFormFilled") },
+    { key: "INTERVIEW_COMPLETED", label: t("admissionPortal.interview.heading") },
+    { key: "ADMISSION_ACCEPTED", label: t("admissionPortal.demo.tiles.admissionForm") },
+    { key: "DOCUMENTS_VERIFIED", label: t("admissionPortal.demo.steps.documentsVerification") },
+    { key: "PAYMENT_COMPLETED", label: t("admissionPortal.demo.tiles.feePayment") },
+    { key: "ENROLLED", label: t("admissionPortal.status.enrolled") },
+  ];
+}
 const ORDER = [
   "INQUIRY_SUBMITTED",
   "INQUIRY_REVIEWED",
@@ -275,6 +288,8 @@ const ORDER = [
 ];
 
 function ProgressSteps({ currentStatus }: { currentStatus: string }) {
+  const { t } = useTranslation("parent");
+  const STEPS = useDemoSteps();
   const ci = ORDER.indexOf(currentStatus);
   return (
     <div className="space-y-0">
@@ -312,7 +327,7 @@ function ProgressSteps({ currentStatus }: { currentStatus: string }) {
               </p>
               {cur && (
                 <p className="text-caption text-primary/70 mt-0.5">
-                  In progress
+                  {t("admissionPortal.dashboard.stepInProgress")}
                 </p>
               )}
             </div>

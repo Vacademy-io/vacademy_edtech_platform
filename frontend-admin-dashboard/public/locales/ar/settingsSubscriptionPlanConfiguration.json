@@ -1,0 +1,26 @@
+{
+    "title": "تكوين خطة الاشتراك",
+    "durationUnit": {
+        "label": "وحدة المدة",
+        "days": "أيام",
+        "months": "أشهر",
+        "hint": "سيتم استخدام هذه الوحدة لجميع فترات التسعير أدناه"
+    },
+    "pricingIntervals": {
+        "heading": "فترات التسعير",
+        "addButton": "إضافة فترة",
+        "interval": {
+            "titleLabel": "العنوان",
+            "titlePlaceholder": "مثال: الخطة الأساسية",
+            "durationLabel": "المدة ({{unit}})",
+            "priceLabel": "السعر",
+            "pricePlaceholder": "0",
+            "featuresHeading": "الميزات",
+            "addFeaturePlaceholder": "أضف ميزة",
+            "addFeatureButton": "إضافة",
+            "removeButton": "إزالة الفترة",
+            "planChangeLabel": "Members can switch to this plan",
+            "planChangeHint": "(turn on plan switching for this option first)"
+        }
+    }
+}

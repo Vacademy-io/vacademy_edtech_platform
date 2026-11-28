@@ -4,6 +4,7 @@ import { Check, X } from "@phosphor-icons/react";
 import { PaymentPlan } from "../-utils/helper";
 import { cn } from "@/lib/utils";
 import { SelectedPayment } from "./types";
+import { useTranslation } from "react-i18next";
 
 export const SubscriptionPlanSection = ({
   payment_options,
@@ -20,6 +21,7 @@ export const SubscriptionPlanSection = ({
   selectedPayment: SelectedPayment | null;
   onSelect: (payment: SelectedPayment) => void;
 }) => {
+  const { t } = useTranslation("enrollmentB");
   const getDiscountForInterval = (
     intervalIndex: number
   ): { type: string; amount: string } | null => {
@@ -50,9 +52,9 @@ export const SubscriptionPlanSection = ({
     if (!discount) return null;
 
     if (discount.type === "percentage") {
-      return `${discount.amount}% off`;
+      return t("subscriptionPlan.discount.percentageOff", { amount: discount.amount });
     } else if (discount.type === "fixed") {
-      return `${currency}${discount.amount} off`;
+      return t("subscriptionPlan.discount.fixedOff", { currency, amount: discount.amount });
     }
     return null;
   };
@@ -105,7 +107,7 @@ export const SubscriptionPlanSection = ({
               onSelect(paymentPlan);
             }}
           >
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-stack">
               {/* Title */}
               <h4 className="text-xl font-bold text-gray-900">
                 {payment.name}
@@ -129,8 +131,8 @@ export const SubscriptionPlanSection = ({
                             ? payment.validity_in_days / 30
                             : payment.validity_in_days}{" "}
                           {payment.validity_in_days % 30 === 0
-                            ? "month"
-                            : "days"}
+                            ? t("subscriptionPlan.unit.month")
+                            : t("subscriptionPlan.unit.days")}
                         </span>
                       )}
                       {discount && (
@@ -150,7 +152,7 @@ export const SubscriptionPlanSection = ({
                         {payment.validity_in_days % 30 === 0
                           ? payment.validity_in_days / 30
                           : payment.validity_in_days}{" "}
-                        {payment.validity_in_days % 30 === 0 ? "month" : "days"}
+                        {payment.validity_in_days % 30 === 0 ? t("subscriptionPlan.unit.month") : t("subscriptionPlan.unit.days")}
                       </span>
                     )}
                   </div>

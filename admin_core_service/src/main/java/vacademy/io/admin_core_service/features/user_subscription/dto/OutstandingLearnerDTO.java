@@ -32,11 +32,21 @@ public class OutstandingLearnerDTO {
 
     private Double billed;
     private Double paid;
+    /** Overdue right now — what puts the learner on this list. */
     private Double due;
+    /** Falling due within the upcoming horizon. */
+    private Double upcoming;
 
     private Long planCount;
     private Long pendingInstallments;
     private LocalDate nextDueDate;
+
+    /** Outstanding list only: everything still to collect, whatever its due date. */
+    private Double outstanding;
+    /** Outstanding list only: what falls due on {@link #nextDueDate}. */
+    private Double nextDueAmount;
+    /** Month-filtered Upcoming list only: what falls due inside the selected month. */
+    private Double monthAmount;
 
     private String currency;
 }

@@ -1,0 +1,29 @@
+{
+    "heading": "Régularisations",
+    "description": "Corrections que des employés ont demandées sur leur propre présence — un pointage manqué, un jour marqué absent à tort. Approuver une demande réécrit le relevé de présence de ce jour-là, et c'est ce jour corrigé que la paie utilise pour le paiement.",
+    "statusFilterLabel": "Statut",
+    "requestsCount_one": "{{count}} demande {{status}}",
+    "requestsCount_many": "{{count}} demande {{status}}",
+    "requestsCount_other": "{{count}} demandes {{status}}",
+    "columns": {
+        "employee": "Employé",
+        "date": "Date",
+        "requestedChange": "Changement demandé",
+        "times": "Horaires",
+        "reason": "Motif",
+        "outcome": "Résultat",
+        "decision": "Décision"
+    },
+    "defaultEmployeeName": "Employé",
+    "timesWas": "était {{from}}–{{to}}",
+    "timesAsks": "demande {{from}}–{{to}}",
+    "defaultOutcome": "En attente",
+    "approve": "Approuver",
+    "reject": "Rejeter",
+    "loadError": "Impossible de charger les demandes de régularisation.",
+    "emptyPendingTitle": "Rien n'attend de décision",
+    "emptyOtherTitle": "Aucune demande {{status}}",
+    "emptyPendingDescription": "Les demandes apparaissent ici lorsqu'un employé demande une correction de sa présence.",
+    "emptyOtherDescription": "Changez le filtre de statut pour voir les autres demandes.",
+    "reviewOnlyNote": "Vous pouvez consulter les demandes mais pas en décider — approuver ou rejeter nécessite le rôle Admin RH dans cet établissement."
+}

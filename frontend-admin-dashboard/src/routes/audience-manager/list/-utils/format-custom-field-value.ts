@@ -14,11 +14,18 @@
  * — we normalize to lowercase for the comparison.
  */
 
+import type { TFunction } from 'i18next';
+
 export const formatCustomFieldValue = (
     rawValue: string | null | undefined,
-    fieldType: string | null | undefined
+    fieldType: string | null | undefined,
+    t: TFunction
 ): string => {
     if (rawValue === null || rawValue === undefined || rawValue === '') {
+        // Sentinel for "no value" — several call sites do an identity
+        // comparison (`display === '-'`) against this exact literal to
+        // decide whether to show a "not provided" placeholder instead, so
+        // it must stay a stable, non-translated string.
         return '-';
     }
     const value = String(rawValue);
@@ -42,8 +49,8 @@ export const formatCustomFieldValue = (
     if (type === 'checkbox') {
         // Single boolean checkbox.
         const v = value.toLowerCase().trim();
-        if (v === 'true' || v === '1' || v === 'yes') return 'Yes';
-        if (v === 'false' || v === '0' || v === 'no') return 'No';
+        if (v === 'true' || v === '1' || v === 'yes') return t('checkbox.yes');
+        if (v === 'false' || v === '0' || v === 'no') return t('checkbox.no');
         return value;
     }
 

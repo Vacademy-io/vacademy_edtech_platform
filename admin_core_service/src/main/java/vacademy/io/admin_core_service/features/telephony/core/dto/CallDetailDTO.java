@@ -60,6 +60,20 @@ public class CallDetailDTO {
     /** Fired fault codes, e.g. ["DEAD_AIR","TTS_WEDGE"]. Closed, append-only vocabulary of 12. */
     private List<String> diagFaults;
 
+    // ── AI-voice follow-up gist (V510) ───────────────────────────────────────
+    // The counsellor's one-sentence answer to "do I call this lead myself?" — the
+    // recommendation and the concrete reason from the call. Not a grade of the
+    // assistant, not the disposition restated. NULL = NOT ASSESSED, never CALL.
+
+    /** CALL / CALL_LATER / SKIP — colours the gist and feeds a filter; never shown alone. */
+    private String followUp;
+
+    /** One sentence, e.g. "Worth a call — runs a 50-member hybrid studio, asked about pricing." */
+    private String followUpGist;
+
+    /** Words the caller actually said (measured). Null = not measured, NOT zero. */
+    private Integer callerWordCount;
+
     /** Highest-priority fired code — what to headline when several fired. */
     /**
      * Was the TTS speech cache actually running on this call?

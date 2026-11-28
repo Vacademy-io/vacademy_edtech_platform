@@ -19,6 +19,11 @@ public class LearnerUpdateStatusResponse {
     private List<BasicLevelAnnouncementDto> announcements;
     private List<DurationResponse> duration = new ArrayList<>();
     private List<String> control = new ArrayList<>();
+    /**
+     * The attempt's current max_time in minutes. It grows when an admin approves a "more time"
+     * request, and the open exam extends its clock by the difference. Null when not known.
+     */
+    private Integer maxTimeMinutes;
 
 
     @Getter

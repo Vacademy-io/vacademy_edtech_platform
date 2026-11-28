@@ -1,0 +1,87 @@
+{
+    "header": {
+        "title": "كيف يتم تقييم المستشارين",
+        "subtitle": "هذا التقييم هو ما يظهر في بطاقة كل مستشار وفي القائمة المنسدلة. اختر إعدادًا مسبقًا، أو استخدم الوضع المتقدم لضبطه بنفسك."
+    },
+    "loading": "جارٍ التحميل…",
+    "actions": {
+        "refreshScores": "تحديث التقييمات",
+        "refreshing": "جارٍ التحديث…",
+        "save": "حفظ",
+        "saving": "جارٍ الحفظ…",
+        "showAdvanced": "إظهار الأرقام المتقدمة",
+        "hideAdvanced": "إخفاء الأرقام المتقدمة"
+    },
+    "toasts": {
+        "saved": "تم الحفظ",
+        "saveFailed": "فشل الحفظ",
+        "recomputed_zero": "تم تحديث تقييمات {{count}} مستشار",
+        "recomputed_one": "تم تحديث تقييم {{count}} مستشار",
+        "recomputed_two": "تم تحديث تقييم {{count}} مستشارَين",
+        "recomputed_few": "تم تحديث تقييمات {{count}} مستشارين",
+        "recomputed_many": "تم تحديث تقييمات {{count}} مستشارًا",
+        "recomputed_other": "تم تحديث تقييمات {{count}} مستشار",
+        "recomputeFailed": "فشل إعادة الحساب"
+    },
+    "strategy": {
+        "automatic": {
+            "title": "تقييمهم تلقائيًا بناءً على الأداء",
+            "description": "يحلل النظام عدد العملاء المحتملين الذين يُغلقونهم ومدى سرعة ذلك، ويمنحهم تقييمًا من 0 إلى 100. تتم إعادة الحساب كل ليلة وبعد كل عملية تحويل."
+        },
+        "manual": {
+            "title": "سأحدد تقييم كل مستشار يدويًا",
+            "description": "لا يوجد حساب تلقائي. استخدم الحقول في الإعدادات ← فريق منضدة العمل لتحديد التقييمات أو تحديثها يدويًا."
+        }
+    },
+    "presets": {
+        "heading": "إعدادات مسبقة سريعة",
+        "balanced": {
+            "label": "متوازن",
+            "description": "معدل الإغلاق والسرعة موزونان بالتساوي."
+        },
+        "closers": {
+            "label": "مكافأة الأكثر إغلاقًا",
+            "description": "معدل الإغلاق أهم من السرعة."
+        },
+        "fast": {
+            "label": "مكافأة الأسرع استجابة",
+            "description": "سرعة الإغلاق أهم من معدل الإغلاق."
+        }
+    },
+    "fields": {
+        "startingScore": {
+            "label": "يبدأ الجميع بالتقييم"
+        },
+        "windowDays": {
+            "label": "النظر إلى آخر",
+            "suffix": "أيام من العمل"
+        },
+        "minSample": {
+            "label": "يحتاج المستشار إلى ما لا يقل عن",
+            "suffix": "عملاء محتملين مُسندين قبل الحصول على تقييم حقيقي"
+        },
+        "fastHeading": "ما الذي يُعد «سريعًا» في فريقك؟",
+        "idealVelocity": {
+            "label": "يُغلق خلال",
+            "suffix": "ساعات = رصيد سرعة كامل"
+        },
+        "worstVelocity": {
+            "label": "أبطأ من",
+            "suffix": "أيام = بلا رصيد سرعة"
+        }
+    },
+    "balance": {
+        "heading": "ما الأكثر أهمية لفريقك؟",
+        "closing": "الإغلاق",
+        "speed": "السرعة",
+        "ariaLabel": "توازن الإغلاق مقابل السرعة",
+        "closingLower": "إغلاق",
+        "speedLower": "سرعة"
+    },
+    "advanced": {
+        "wConversion": "w_conversion (0–1)",
+        "wVelocity": "w_velocity (0–1)",
+        "idealVelocityHours": "ideal_velocity_hours",
+        "worstVelocityHours": "worst_velocity_hours"
+    }
+}

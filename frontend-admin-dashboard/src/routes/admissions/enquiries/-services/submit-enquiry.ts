@@ -1,4 +1,5 @@
 import { BULK_SUBMIT_ENQUIRY_WITH_LEAD, SUBMIT_ENQUIRY_WITH_LEAD } from '@/constants/urls';
+import type { TFunction } from 'i18next';
 
 // User DTO interface (simplified - excluding id, username, password, profile_pic)
 interface UserDTO {
@@ -107,9 +108,15 @@ export interface BulkSubmitEnquiryResponse {
 /**
  * Submit a lead with enquiry details
  * This is a public endpoint and does not require authentication
+ *
+ * `t`, when supplied, must be bound to the `admissionsSubmitEnquiry` namespace —
+ * it only supplies the fallback wording used when the server response carries
+ * no JSON body of its own (callers render the thrown `error.message` directly,
+ * e.g. in a toast description).
  */
 export const submitEnquiryWithLead = async (
-    payload: SubmitEnquiryRequest
+    payload: SubmitEnquiryRequest,
+    t?: TFunction
 ): Promise<SubmitEnquiryResponse> => {
     try {
         const response = await fetch(SUBMIT_ENQUIRY_WITH_LEAD, {
@@ -122,7 +129,7 @@ export const submitEnquiryWithLead = async (
 
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({
-                message: 'Failed to submit enquiry',
+                message: t ? t('errors.submitFailed') : 'Failed to submit enquiry',
             }));
             throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
         }
@@ -134,8 +141,13 @@ export const submitEnquiryWithLead = async (
     }
 };
 
+/**
+ * `t`, when supplied, must be bound to the `admissionsSubmitEnquiry` namespace —
+ * see {@link submitEnquiryWithLead} for why it's only used as a fallback.
+ */
 export const submitEnquiryBulkWithLead = async (
-    payload: BulkSubmitEnquiryRequest
+    payload: BulkSubmitEnquiryRequest,
+    t?: TFunction
 ): Promise<BulkSubmitEnquiryResponse> => {
     const response = await fetch(BULK_SUBMIT_ENQUIRY_WITH_LEAD, {
         method: 'POST',
@@ -147,7 +159,7 @@ export const submitEnquiryBulkWithLead = async (
 
     if (!response.ok) {
         const errorData = await response.json().catch(() => ({
-            message: 'Failed to submit enquiry bulk import',
+            message: t ? t('errors.bulkSubmitFailed') : 'Failed to submit enquiry bulk import',
         }));
         throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
     }

@@ -1,0 +1,14 @@
+{
+    "heading": "تقييمات الجلسات — {{mentorName}}",
+    "mentorFallback": "المرشد",
+    "outOfFive": "{{count}} من 5",
+    "ratedSessions_zero": "من {{count}} جلسة مقيَّمة",
+    "ratedSessions_one": "من جلسة واحدة مقيَّمة",
+    "ratedSessions_two": "من جلستين مقيَّمتين",
+    "ratedSessions_few": "من {{count}} جلسات مقيَّمة",
+    "ratedSessions_many": "من {{count}} جلسة مقيَّمة",
+    "ratedSessions_other": "من {{count}} جلسة مقيَّمة",
+    "noSessionsRated": "لم يتم تقييم أي جلسة بعد. يُطلب من المتعلمين تقييم الجلسة بعد انعقادها.",
+    "couldNotLoadFeedback": "تعذّر تحميل التقييمات.",
+    "noFeedbackYet": "لا يوجد شيء لعرضه بعد — تظهر التقييمات هنا عندما يقدّمها المتعلمون."
+}

@@ -1,0 +1,53 @@
+{
+    "cards": {
+        "newPaper": {
+            "title": "Créer un nouveau sujet d'examen",
+            "description": "Partez d'un thème, d'un document ou d'un enregistrement. Modifiez avant de publier.",
+            "features": {
+                "assessment": {
+                    "heading": "Créer un sujet d'examen",
+                    "subheading": "Déposez un PDF, collez un thème ou importez un audio. Obtenez un brouillon modifiable avant l'envoi.",
+                    "tags": ["PDF, audio ou thème", "Prêt en ~30 s", "Brouillon modifiable"]
+                }
+            }
+        },
+        "existingPaper": {
+            "title": "Numériser un sujet existant",
+            "description": "Transformez des sujets imprimés ou scannés en séries de questions modifiables.",
+            "features": {
+                "question": {
+                    "heading": "Réutiliser des questions existantes",
+                    "subheading": "Importez un sujet imprimé — photo, scan ou PDF — et obtenez une série de questions numérique et modifiable.",
+                    "tags": ["Photo, scan ou PDF", "OCR géré automatiquement", "Enregistrer dans la banque de questions"]
+                }
+            }
+        },
+        "questionBank": {
+            "title": "Organiser votre banque de questions",
+            "description": "Regroupez les questions par thème pour les réutiliser au prochain trimestre.",
+            "features": {
+                "sortSplitPdf": {
+                    "heading": "Organiser ma banque de questions",
+                    "subheading": "Regroupez automatiquement les questions par thème, ou choisissez vos propres répartitions. Affinez le résultat par glisser-déposer.",
+                    "tags": ["Regroupement automatique par thème", "Par chapitre", "Glisser pour affiner"]
+                }
+            }
+        },
+        "lecturePlanning": {
+            "title": "Planifiez et améliorez vos cours",
+            "description": "Rédigez une leçon avant le cours. Recevez un retour bienveillant et précis après.",
+            "features": {
+                "planLecture": {
+                    "heading": "Planificateur de leçon",
+                    "subheading": "Décrivez ce que vous enseignez et le temps dont vous disposez. Obtenez un plan à affiner.",
+                    "tags": ["Chronologie minutée", "Modifiable directement", "Devoirs facultatifs"]
+                },
+                "evaluateLecture": {
+                    "heading": "Coach de cours",
+                    "subheading": "Déposez l'enregistrement d'un cours que vous avez donné. Obtenez une évaluation claire et constructive.",
+                    "tags": ["Rythme et engagement", "Points forts", "Suggestions concrètes"]
+                }
+            }
+        }
+    }
+}

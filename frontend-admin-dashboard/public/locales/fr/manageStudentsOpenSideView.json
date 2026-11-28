@@ -1,0 +1,25 @@
+{
+    "header": {
+        "subtitle": "Détails de l'inscription",
+        "close": "Fermer"
+    },
+    "states": {
+        "loadError": "Échec du chargement des détails de l'inscription.",
+        "noParticipantSelected": "Sélectionnez un participant pour afficher les détails de son inscription."
+    },
+    "contact": {
+        "sectionTitle": "Coordonnées",
+        "email": "E-mail",
+        "mobileNumber": "Numéro de mobile",
+        "registeredOn": "Inscrit le"
+    },
+    "formResponses": {
+        "sectionTitle": "Réponses au formulaire",
+        "fieldFallback": "Champ",
+        "empty": "Aucun champ de formulaire supplémentaire soumis."
+    },
+    "common": {
+        "notProvided": "Non fourni",
+        "participantFallback": "Participant"
+    }
+}

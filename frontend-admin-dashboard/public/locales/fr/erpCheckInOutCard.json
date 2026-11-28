@@ -1,0 +1,21 @@
+{
+    "today": "Aujourd'hui",
+    "intro": "Votre présence pour aujourd'hui. Pointer votre arrivée horodate votre relevé — votre équipe RH voit le même relevé.",
+    "checkedIn": "Arrivée pointée",
+    "checkedOut": "Départ pointé",
+    "hours": "Heures",
+    "checkIn": "Pointer l'arrivée",
+    "checkOut": "Pointer le départ",
+    "checkingYouIn": "Pointage de votre arrivée…",
+    "checkingYouOut": "Pointage de votre départ…",
+    "locationNotice": "Si votre navigateur propose de partager votre position, l'autoriser permet à votre établissement de confirmer que vous avez pointé sur place. Vous pouvez refuser — nous envoyons le pointage dans tous les cas, et vous serez informé ici si votre établissement a besoin de la position.",
+    "closedDaySummary": "Départ pointé à {{time}}. Votre journée est enregistrée — rien de plus à faire.",
+    "toasts": {
+        "checkedIn": "Arrivée pointée",
+        "checkedOut": "Départ pointé"
+    },
+    "errors": {
+        "checkInFailed": "Impossible de pointer votre arrivée.",
+        "checkOutFailed": "Impossible de pointer votre départ."
+    }
+}

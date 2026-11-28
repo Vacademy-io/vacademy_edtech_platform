@@ -1,0 +1,10 @@
+{
+    "tabs": {
+        "internalParticipants": "आंतरिक प्रतिभागी",
+        "externalParticipants": "बाहरी प्रतिभागी"
+    },
+    "toasts": {
+        "pdfExportSuccess": "छात्र प्रतिवादी सूची डेटा PDF के लिए सफलतापूर्वक निर्यात किया गया",
+        "csvExportSuccess": "छात्र प्रतिवादी सूची डेटा CSV के लिए सफलतापूर्वक निर्यात किया गया"
+    }
+}

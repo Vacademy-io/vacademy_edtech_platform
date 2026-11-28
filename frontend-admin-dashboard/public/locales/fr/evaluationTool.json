@@ -1,0 +1,19 @@
+{
+    "totalAwarded": "Total attribué",
+    "marksAwarded": "Points attribués",
+    "viewTask": "Voir la tâche",
+    "outOf": "sur {{max}}",
+    "enterOverallScoreHint": "Saisissez le score global de cette soumission. 0 est un score valide — saisissez-le pour attribuer un zéro.",
+    "sectionNumber": "Section {{number}}",
+    "questionNo": "N° de question",
+    "scoredMarks": "Points obtenus",
+    "maxMarks": "Points maximum",
+    "remarks": "Remarques",
+    "addRemarksPlaceholder": "Ajouter une remarque…",
+    "pagesReviewed": "Pages examinées",
+    "notVisited": "Non consultées",
+    "timeOnEvaluation": "Temps sur l'évaluation",
+    "timeFormat": "{{mins}} min {{secs}} s",
+    "previewQuestionHeading": "Aperçu de la question",
+    "questionLabel": "Question :"
+}

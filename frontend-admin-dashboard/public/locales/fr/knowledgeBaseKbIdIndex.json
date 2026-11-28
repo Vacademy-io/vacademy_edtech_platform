@@ -1,0 +1,53 @@
+{
+    "backToAll": "Toutes les bases de connaissances",
+    "suggestions": {
+        "whatTopics": "Quels sujets couvre {{title}} ?",
+        "mainFormulas": "Listez les principales formules de ce contenu.",
+        "suggestExamQuestions": "Proposez cinq questions d'examen à partir de ce contenu."
+    },
+    "pageTitleWithName": "{{name}} — Base de connaissances",
+    "pageTitleDefault": "Base de connaissances",
+    "navHeadingDefault": "Base de connaissances",
+    "loadError": "Impossible de charger cette base de connaissances.",
+    "tryAgainButton": "Réessayer",
+    "sharedLibraryBadge": "Bibliothèque partagée — lecture seule",
+    "whatItCoversButton": "Ce qu'elle couvre",
+    "createQuestionPaperButton": "Créer un sujet d'examen",
+    "createCourseButton": "Créer un cours",
+    "addMaterialButton": "Ajouter du contenu",
+    "stats": {
+        "sources": "Sources",
+        "pages": "Pages",
+        "searchablePassages": "Passages consultables",
+        "diagramsAndTables": "Schémas et tableaux"
+    },
+    "processingSources_one": "Lecture de {{count}} source — vous pouvez quitter cette page, cela continue.",
+    "processingSources_many": "Lecture de {{count}} de sources — vous pouvez quitter cette page, cela continue.",
+    "processingSources_other": "Lecture de {{count}} sources — vous pouvez quitter cette page, cela continue.",
+    "reviewPagesWarning_one": "{{formatted}} page peut être imprécise",
+    "reviewPagesWarning_many": "{{formatted}} de pages peuvent être imprécises",
+    "reviewPagesWarning_other": "{{formatted}} pages peuvent être imprécises",
+    "materialHeading": "Contenu",
+    "checkItWorksHeading": "Vérifier que ça fonctionne",
+    "madeFromHeading": "Créé à partir de cette base de connaissances",
+    "purpose": {
+        "instituteInfo": "Informations sur l'établissement",
+        "generalReference": "Référence générale"
+    },
+    "reviewDialog": {
+        "heading": "Pages potentiellement imprécises",
+        "description": "Ces pages ont été scannées plutôt que numériques, et se sont révélées peu fiables à la lecture. Tout le reste de cette base de connaissances n'est pas affecté. La solution habituelle consiste à réimporter un scan plus net de ces seules pages en tant que document séparé.",
+        "empty": "Rien à vérifier pour le moment.",
+        "pageLabel": "Page {{number}}",
+        "noTextRead": "aucun texte n'a pu être lu",
+        "charsRead": "seulement {{formatted}} caractères lus",
+        "confidence": "{{percent}}% de fiabilité"
+    },
+    "outlineDialog": {
+        "heading": "Ce que couvre cette base de connaissances",
+        "description": "Construit pendant la lecture de votre contenu. C'est ce que l'IA utilisera pour planifier des cours et des sujets d'examen, cela vaut donc la peine d'y jeter un œil — si un chapitre manque ici, il manquera aussi dans tout ce qui sera généré ensuite.",
+        "empty": "Pas encore de résumé. Il est construit dès qu'un document a fini d'être traité.",
+        "untitled": "Sans titre",
+        "pagePrefix": "p. {{start}}"
+    }
+}

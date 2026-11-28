@@ -1,0 +1,18 @@
+{
+    "running": "Exécution...",
+    "run": "Exécuter",
+    "view": "Afficher",
+    "edit": "Modifier",
+    "loadingEditor": "Chargement de l'éditeur...",
+    "loadingEditorLower": "Chargement de l'éditeur...",
+    "outputLabel": "Sortie :",
+    "previewLabel": "Aperçu :",
+    "previewTitle": "Aperçu",
+    "cssPreviewArea": "Zone d'aperçu CSS",
+    "failedToLoadCodeEditor": "Échec du chargement de l'éditeur de code",
+    "compileErrorPrefix": "Erreur de compilation : ",
+    "noOutputProduced": "Aucune sortie produite",
+    "noOutput": "Aucune sortie",
+    "errorPrefix": "Erreur : ",
+    "errorRunningCodePrefix": "Erreur lors de l'exécution du code : "
+}

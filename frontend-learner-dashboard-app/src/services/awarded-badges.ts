@@ -3,10 +3,10 @@ import { BASE_URL } from "@/constants/urls";
 import { getInstituteId } from "@/constants/helper";
 
 /**
- * Badges manually awarded to this learner by an admin/institute. These are
- * server-persisted recognitions (distinct from the client-computed auto-unlock
- * badges) and are merged into the badge display as unlocked + "Awarded by your
- * institute".
+ * Badges persisted server-side for this learner: staff awards (source MANUAL)
+ * plus auto-unlocks the client synced earlier (source AUTO). They are merged
+ * into the badge display as unlocked; only MANUAL rows render as "Awarded by
+ * your institute".
  */
 export interface AwardedBadge {
   id: string;
@@ -18,6 +18,11 @@ export interface AwardedBadge {
   badgeDescription?: string | null;
   reason?: string | null;
   status: string;
+  /**
+   * "MANUAL" (staff award) or "AUTO" (a synced auto-unlock). Absent on older
+   * servers — treat missing as MANUAL (the old behaviour).
+   */
+  source?: string | null;
   awardedAt?: string | null;
 }
 

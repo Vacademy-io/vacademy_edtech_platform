@@ -17,31 +17,15 @@
  *
  * Every tab is read-only; this page never writes anything.
  */
-import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
+import { LABEL_KEY, ReportsRail } from './ReportsRail';
+import { DatePickerButton } from '@/components/shared/crm-enhance/date-picker-button';
+import { ReportScope } from './ReportScope';
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useSearch } from '@tanstack/react-router';
-import {
-    AddressBook,
-    ArrowsClockwise,
-    ArrowsLeftRight,
-    CalendarCheck,
-    ChartLineUp,
-    CurrencyCircleDollar,
-    Funnel,
-    ListChecks,
-    Megaphone,
-    Phone,
-    Stack,
-    Table,
-    TrendUp,
-    User,
-    Users,
-    UsersThree,
-    Sparkle,
-} from '@phosphor-icons/react';
+import { ArrowsClockwise, Megaphone, User } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import {
     Select,
     SelectContent,
@@ -49,29 +33,31 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsContent } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 import { useInstituteDetailsStore } from '@/stores/students/students-list/useInstituteDetailsStore';
 import { useNavHeadingStore } from '@/stores/layout-container/useNavHeadingStore';
 import { TeamPicker } from '@/components/shared/crm/TeamPicker';
-import {
-    fetchCounsellors,
-} from '@/routes/counsellors/-services/counsellor-workbench-services';
+import { fetchCounsellors } from '@/routes/counsellors/-services/counsellor-workbench-services';
 import { handleFetchCampaignsList } from '@/routes/audience-manager/list/-services/get-campaigns-list';
 import type { ReportTab } from '../index';
 import { OverviewTab } from './overview-tab';
 import { SourcesTab } from './sources-tab';
+import { UtmTab } from './utm-tab';
 import { FunnelTab } from './funnel-tab';
 import { DispositionsTab } from './dispositions-tab';
 import { ManagerTab } from './manager-tab';
 import { ActivityTab } from './activity-tab';
 import { FollowupsTab } from './followups-tab';
 import { CounsellorsTab } from './counsellors-tab';
+import { ConversionsTab } from './conversions-tab';
 import { RevenueTab } from './revenue-tab';
+import { AdmissionsTab } from './admissions-tab';
 import { CohortTab } from './cohort-tab';
 import { ForecastTab } from './forecast-tab';
 import { CustomReportTab } from './custom-report-tab';
 import { ReportTabSkeleton, type ReportTabProps } from './report-shared';
+import { ReportLeadSheetProvider } from './report-lead-sheet';
 import { useCallIntelligenceEnabled } from '@/components/shared/leads';
 
 // Inter-agent contract: the Calling tab module lives at exactly this path and
@@ -96,11 +82,12 @@ const computeRange = (days: number) => {
     return { from: toDateInput(start), to: toDateInput(now) };
 };
 
-/** Quick presets — last N days (inclusive of today). */
+/** Quick presets — last N days (inclusive of today). Display label is built at
+ *  render time via t('filters.presetLabel', { days }). */
 const PRESETS = [
-    { key: '7', label: '7d', days: 7 },
-    { key: '30', label: '30d', days: 30 },
-    { key: '90', label: '90d', days: 90 },
+    { key: '7', days: 7 },
+    { key: '30', days: 30 },
+    { key: '90', days: 90 },
 ] as const;
 
 // Sentinel for "no counsellor filter" — the backend keeps its default RBAC scoping.
@@ -127,10 +114,11 @@ const CAMPAIGN_FILTERABLE_TABS = new Set<string>([
 // ── Main page ──────────────────────────────────────────────────────────
 
 export function LeadReportsPage() {
+    const { t } = useTranslation('audienceManagerLeadReportsPage');
     const setNavHeading = useNavHeadingStore((s) => s.setNavHeading);
     useEffect(() => {
-        setNavHeading(<h1 className="text-lg">Reports Center</h1>);
-    }, [setNavHeading]);
+        setNavHeading(<h1 className="text-lg">{t('header.navTitle')}</h1>);
+    }, [setNavHeading, t]);
 
     const { instituteDetails } = useInstituteDetailsStore();
     const instituteId = instituteDetails?.id ?? '';
@@ -154,6 +142,10 @@ export function LeadReportsPage() {
     const [applied, setApplied] = useState(defaults);
     const [teamId, setTeamId] = useState<string | undefined>(undefined);
     const [counsellorUserId, setCounsellorUserId] = useState<string | undefined>(undefined);
+    // Name of a counsellor picked by drilling from a report row — lets the picker show it
+    // even when that person is not in the caller's roster list.
+    const [counsellorName, setCounsellorName] = useState<string | undefined>(undefined);
+    const pageTopRef = useRef<HTMLDivElement>(null);
     const [audienceId, setAudienceId] = useState<string | undefined>(undefined);
 
     const activePreset = PRESETS.find((p) => {
@@ -174,6 +166,7 @@ export function LeadReportsPage() {
         setApplied(defaults);
         setTeamId(undefined);
         setCounsellorUserId(undefined);
+        setCounsellorName(undefined);
         setAudienceId(undefined);
     };
 
@@ -182,6 +175,7 @@ export function LeadReportsPage() {
     const handleTeamChange = (next: string | undefined) => {
         setTeamId(next);
         setCounsellorUserId(undefined);
+        setCounsellorName(undefined);
     };
 
     const [isRefreshing, setIsRefreshing] = useState(false);
@@ -208,6 +202,17 @@ export function LeadReportsPage() {
     // Only forward the campaign scope to tabs that can filter by it — keeps the
     // excluded tabs' query keys stable when a campaign is selected elsewhere.
     const campaignApplies = CAMPAIGN_FILTERABLE_TABS.has(activeTab);
+    // Drill from a report row to one counsellor. The team filter is cleared so a team
+    // that counsellor is not in cannot zero the numbers; the page scrolls back up so the
+    // filter bar shows who is selected.
+    const handleCounsellorFilter = (userId: string | undefined, name?: string, tab?: string) => {
+        setTeamId(undefined);
+        setCounsellorUserId(userId);
+        setCounsellorName(userId ? name : undefined);
+        if (tab && tab !== activeTab) setActiveTab(tab);
+        pageTopRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    };
+
     const tabProps: ReportTabProps = {
         instituteId,
         fromDate: applied.from,
@@ -215,232 +220,184 @@ export function LeadReportsPage() {
         teamId,
         counsellorUserId,
         audienceId: campaignApplies ? audienceId : undefined,
+        onCounsellorFilter: handleCounsellorFilter,
     };
 
     // The CRM Intelligence report tab only exists when the feature is on.
     const callIntelligenceEnabled = useCallIntelligenceEnabled();
 
     return (
-        <div className="flex min-h-full flex-col gap-6 bg-neutral-50 p-6">
-            {/* Page header */}
-            <header className="flex flex-wrap items-start justify-between gap-3">
-                <div className="flex flex-col gap-1">
-                    <h1 className="text-2xl font-bold tracking-tight text-neutral-900">
-                        Reports Center
-                    </h1>
-                    <p className="text-sm text-neutral-600">
-                        Pipeline health, sources, calling activity, funnel velocity and follow-up
-                        hygiene — one place.
-                    </p>
-                </div>
-                <Button
-                    onClick={refresh}
-                    size="sm"
-                    variant="outline"
-                    disabled={!instituteId || isRefreshing}
-                    className="gap-2"
-                >
-                    <ArrowsClockwise size={14} className={cn(isRefreshing && 'animate-spin')} />
-                    Refresh
-                </Button>
-            </header>
+        <div ref={pageTopRef} className="flex min-h-full flex-col gap-4 bg-neutral-50 p-4 lg:p-6">
+            {/* Which report — full-width nav so the report below gets the whole width.
+                The page title already sits in the top bar, so no second header here. */}
+            <ReportsRail
+                active={activeTab}
+                onSelect={setActiveTab}
+                showIntelligence={!!callIntelligenceEnabled}
+                actions={
+                    <Button
+                        onClick={refresh}
+                        size="sm"
+                        variant="outline"
+                        disabled={!instituteId || isRefreshing}
+                        className="shrink-0 gap-2"
+                    >
+                        <ArrowsClockwise size={14} className={cn(isRefreshing && 'animate-spin')} />
+                        {t('header.refresh')}
+                    </Button>
+                }
+            />
 
-            {/* Shared filter bar — feeds every tab */}
-            <div className="flex flex-wrap items-end gap-x-3 gap-y-4 rounded-xl border border-neutral-200 bg-white p-4 shadow-sm">
-                <div className="flex h-9 items-center gap-1 self-end rounded-md border border-neutral-200 bg-white p-1">
-                    {PRESETS.map((p) => (
-                        <button
-                            key={p.key}
-                            type="button"
-                            onClick={() => applyPreset(p.days)}
-                            className={cn(
-                                'rounded px-2.5 py-1 text-xs transition-colors',
-                                activePreset === p.key
-                                    ? 'bg-primary-500 text-white'
-                                    : 'text-neutral-600 hover:bg-neutral-50'
-                            )}
-                        >
-                            {p.label}
-                        </button>
-                    ))}
-                </div>
-                <div className="flex flex-col gap-1">
-                    <Label htmlFor="rep-from" className="text-xs text-neutral-600">
-                        From
-                    </Label>
-                    <Input
-                        id="rep-from"
-                        type="date"
-                        value={fromDate}
-                        onChange={(e) => setFromDate(e.target.value)}
-                        className="h-9 w-40"
-                    />
-                </div>
-                <div className="flex flex-col gap-1">
-                    <Label htmlFor="rep-to" className="text-xs text-neutral-600">
-                        To
-                    </Label>
-                    <Input
-                        id="rep-to"
-                        type="date"
-                        value={toDate}
-                        onChange={(e) => setToDate(e.target.value)}
-                        className="h-9 w-40"
-                    />
-                </div>
-                <Button onClick={apply} size="sm" className="h-9 self-end" disabled={!instituteId}>
-                    Apply
-                </Button>
-                <Button onClick={reset} size="sm" variant="ghost" className="h-9 self-end">
-                    Reset
-                </Button>
-                {/* Scope filters — flow inline as equal-height items so they share the
-                    date controls' baseline, and wrap together (left-aligned) when the
-                    bar runs out of width instead of detaching to a right-pushed row. */}
-                {campaignApplies && (
-                    <>
-                        <div className="hidden h-9 w-px self-end bg-neutral-200 sm:block" />
-                        <CampaignScopePicker
-                            instituteId={instituteId}
-                            value={audienceId}
-                            onChange={setAudienceId}
+            {/* Shared filter bar — feeds every tab. Dates on the left, scope on the right. */}
+            <div className="flex flex-col gap-3 rounded-xl border border-neutral-200 bg-white p-4 shadow-sm">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex flex-wrap items-center gap-2">
+                        <div className="flex h-9 items-center gap-1 rounded-md border border-neutral-200 bg-white p-1">
+                            {PRESETS.map((p) => (
+                                <button
+                                    key={p.key}
+                                    type="button"
+                                    onClick={() => applyPreset(p.days)}
+                                    className={cn(
+                                        'rounded px-3 py-1 text-sm transition-colors',
+                                        activePreset === p.key
+                                            ? 'bg-primary-500 text-white'
+                                            : 'text-neutral-600 hover:bg-neutral-50'
+                                    )}
+                                >
+                                    {t('filters.presetLabel', { days: p.days })}
+                                </button>
+                            ))}
+                        </div>
+                        <DatePickerButton
+                            label={t('filters.from')}
+                            value={fromDate}
+                            onChange={setFromDate}
+                            max={toDate || undefined}
                         />
-                    </>
-                )}
-                <TeamPicker instituteId={instituteId} value={teamId} onChange={handleTeamChange} />
-                <CounsellorScopePicker
-                    instituteId={instituteId}
-                    value={counsellorUserId}
-                    onChange={setCounsellorUserId}
-                />
+                        <DatePickerButton
+                            label={t('filters.to')}
+                            value={toDate}
+                            onChange={setToDate}
+                            min={fromDate || undefined}
+                        />
+                        <Button onClick={apply} size="sm" className="h-9" disabled={!instituteId}>
+                            {t('filters.apply')}
+                        </Button>
+                        <Button onClick={reset} size="sm" variant="ghost" className="h-9">
+                            {t('filters.reset')}
+                        </Button>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                        {campaignApplies && (
+                            <CampaignScopePicker
+                                instituteId={instituteId}
+                                value={audienceId}
+                                onChange={setAudienceId}
+                            />
+                        )}
+                        <TeamPicker
+                            instituteId={instituteId}
+                            value={teamId}
+                            onChange={handleTeamChange}
+                        />
+                        <CounsellorScopePicker
+                            instituteId={instituteId}
+                            value={counsellorUserId}
+                            selectedName={counsellorName}
+                            onChange={(next) => {
+                                setCounsellorUserId(next);
+                                setCounsellorName(undefined);
+                            }}
+                        />
+                    </div>
+                </div>
+                {/* What this report shows + which filters it reads. */}
+                <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2 border-t border-neutral-100 pt-3">
+                    <p className="min-w-0 text-sm text-neutral-600">
+                        <span className="font-semibold text-neutral-900">
+                            {t(`tabs.${LABEL_KEY[activeTab] ?? 'overview'}`)}
+                        </span>
+                        <span className="text-neutral-400"> · </span>
+                        {t(`descriptions.${LABEL_KEY[activeTab] ?? 'overview'}`)}
+                    </p>
+                    <ReportScope tab={activeTab} listApplies={campaignApplies} />
+                </div>
             </div>
 
             {!instituteId && (
                 <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
-                    Pick an institute to view reports.
+                    {t('filters.noInstitute')}
                 </div>
             )}
 
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col gap-6">
-                <TabsList className="grid h-auto w-full max-w-6xl grid-cols-3 sm:grid-cols-5 lg:grid-cols-7">
-                    <TabsTrigger value="overview" className="gap-1.5">
-                        <ChartLineUp size={14} weight="bold" />
-                        Overview
-                    </TabsTrigger>
-                    <TabsTrigger value="sources" className="gap-1.5">
-                        <Megaphone size={14} weight="bold" />
-                        Sources
-                    </TabsTrigger>
-                    <TabsTrigger value="funnel" className="gap-1.5">
-                        <Funnel size={14} weight="bold" />
-                        Funnel
-                    </TabsTrigger>
-                    <TabsTrigger value="dispositions" className="gap-1.5">
-                        <ArrowsLeftRight size={14} weight="bold" />
-                        Dispositions
-                    </TabsTrigger>
-                    <TabsTrigger value="calling" className="gap-1.5">
-                        <Phone size={14} weight="bold" />
-                        Calling
-                    </TabsTrigger>
-                    <TabsTrigger value="lead-calls" className="gap-1.5">
-                        <AddressBook size={14} weight="bold" />
-                        Lead Calls
-                    </TabsTrigger>
-                    {callIntelligenceEnabled && (
-                        <TabsTrigger value="call-intelligence" className="gap-1.5">
-                            <Sparkle size={14} weight="bold" />
-                            CRM Intelligence
-                        </TabsTrigger>
-                    )}
-                    <TabsTrigger value="activity" className="gap-1.5">
-                        <ListChecks size={14} weight="bold" />
-                        Activity
-                    </TabsTrigger>
-                    <TabsTrigger value="followups" className="gap-1.5">
-                        <CalendarCheck size={14} weight="bold" />
-                        Follow-ups
-                    </TabsTrigger>
-                    <TabsTrigger value="counsellors" className="gap-1.5">
-                        <Users size={14} weight="bold" />
-                        Counsellors
-                    </TabsTrigger>
-                    <TabsTrigger value="manager" className="gap-1.5">
-                        <UsersThree size={14} weight="bold" />
-                        Manager
-                    </TabsTrigger>
-                    <TabsTrigger value="revenue" className="gap-1.5">
-                        <CurrencyCircleDollar size={14} weight="bold" />
-                        Revenue
-                    </TabsTrigger>
-                    <TabsTrigger value="cohort" className="gap-1.5">
-                        <Stack size={14} weight="bold" />
-                        Cohort
-                    </TabsTrigger>
-                    <TabsTrigger value="forecast" className="gap-1.5">
-                        <TrendUp size={14} weight="bold" />
-                        Forecast
-                    </TabsTrigger>
-                    <TabsTrigger value="custom" className="gap-1.5">
-                        <Table size={14} weight="bold" />
-                        Builder
-                    </TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="overview">
-                    <OverviewTab {...tabProps} />
-                </TabsContent>
-                <TabsContent value="sources">
-                    <SourcesTab {...tabProps} />
-                </TabsContent>
-                <TabsContent value="calling">
-                    <Suspense fallback={<ReportTabSkeleton />}>
-                        <CallingTab {...tabProps} />
-                    </Suspense>
-                </TabsContent>
-                <TabsContent value="lead-calls">
-                    <Suspense fallback={<ReportTabSkeleton />}>
-                        <LeadCallsTab {...tabProps} />
-                    </Suspense>
-                </TabsContent>
-                {callIntelligenceEnabled && (
-                    <TabsContent value="call-intelligence">
+            {/* Student names in report lists open the lead side sheet. */}
+            <ReportLeadSheetProvider>
+                <Tabs value={activeTab} onValueChange={setActiveTab} className="min-w-0">
+                    <TabsContent value="overview">
+                        <OverviewTab {...tabProps} />
+                    </TabsContent>
+                    <TabsContent value="sources">
+                        <SourcesTab {...tabProps} />
+                    </TabsContent>
+                    <TabsContent value="utm">
+                        <UtmTab {...tabProps} />
+                    </TabsContent>
+                    <TabsContent value="calling">
                         <Suspense fallback={<ReportTabSkeleton />}>
-                            <CrmIntelligenceReportTab {...tabProps} />
+                            <CallingTab {...tabProps} />
                         </Suspense>
                     </TabsContent>
-                )}
-                <TabsContent value="funnel">
-                    <FunnelTab {...tabProps} />
-                </TabsContent>
-                <TabsContent value="dispositions">
-                    <DispositionsTab {...tabProps} />
-                </TabsContent>
-                <TabsContent value="activity">
-                    <ActivityTab {...tabProps} />
-                </TabsContent>
-                <TabsContent value="followups">
-                    <FollowupsTab {...tabProps} />
-                </TabsContent>
-                <TabsContent value="counsellors">
-                    <CounsellorsTab {...tabProps} />
-                </TabsContent>
-                <TabsContent value="manager">
-                    <ManagerTab {...tabProps} />
-                </TabsContent>
-                <TabsContent value="revenue">
-                    <RevenueTab {...tabProps} />
-                </TabsContent>
-                <TabsContent value="cohort">
-                    <CohortTab {...tabProps} />
-                </TabsContent>
-                <TabsContent value="forecast">
-                    <ForecastTab {...tabProps} />
-                </TabsContent>
-                <TabsContent value="custom">
-                    <CustomReportTab {...tabProps} />
-                </TabsContent>
-            </Tabs>
+                    <TabsContent value="lead-calls">
+                        <Suspense fallback={<ReportTabSkeleton />}>
+                            <LeadCallsTab {...tabProps} />
+                        </Suspense>
+                    </TabsContent>
+                    {callIntelligenceEnabled && (
+                        <TabsContent value="call-intelligence">
+                            <Suspense fallback={<ReportTabSkeleton />}>
+                                <CrmIntelligenceReportTab {...tabProps} />
+                            </Suspense>
+                        </TabsContent>
+                    )}
+                    <TabsContent value="funnel">
+                        <FunnelTab {...tabProps} />
+                    </TabsContent>
+                    <TabsContent value="dispositions">
+                        <DispositionsTab {...tabProps} />
+                    </TabsContent>
+                    <TabsContent value="activity">
+                        <ActivityTab {...tabProps} />
+                    </TabsContent>
+                    <TabsContent value="followups">
+                        <FollowupsTab {...tabProps} />
+                    </TabsContent>
+                    <TabsContent value="counsellors">
+                        <CounsellorsTab {...tabProps} />
+                    </TabsContent>
+                    <TabsContent value="conversions">
+                        <ConversionsTab {...tabProps} />
+                    </TabsContent>
+                    <TabsContent value="manager">
+                        <ManagerTab {...tabProps} />
+                    </TabsContent>
+                    <TabsContent value="revenue">
+                        <RevenueTab {...tabProps} />
+                    </TabsContent>
+                    <TabsContent value="admissions">
+                        <AdmissionsTab {...tabProps} />
+                    </TabsContent>
+                    <TabsContent value="cohort">
+                        <CohortTab {...tabProps} />
+                    </TabsContent>
+                    <TabsContent value="forecast">
+                        <ForecastTab {...tabProps} />
+                    </TabsContent>
+                    <TabsContent value="custom">
+                        <CustomReportTab {...tabProps} />
+                    </TabsContent>
+                </Tabs>
+            </ReportLeadSheetProvider>
         </div>
     );
 }
@@ -460,12 +417,16 @@ export function LeadReportsPage() {
 function CounsellorScopePicker({
     instituteId,
     value,
+    selectedName,
     onChange,
 }: {
     instituteId: string;
     value: string | undefined;
+    /** Shown for `value` when it is not in the roster (picked from a report row). */
+    selectedName?: string;
     onChange: (userId: string | undefined) => void;
 }) {
+    const { t } = useTranslation('audienceManagerLeadReportsPage');
     // Role-based roster: every COUNSELLOR-role user the caller may see —
     // hierarchy scope for scoped callers, institute-wide for pure admins.
     const rosterQuery = useQuery({
@@ -476,28 +437,37 @@ function CounsellorScopePicker({
         queryFn: () => fetchCounsellors(instituteId, { size: 500 }),
     });
 
-    const options = useMemo(
-        () =>
-            (rosterQuery.data?.content ?? [])
-                .map((c) => ({ id: c.user_id, name: c.full_name ?? c.email ?? c.user_id }))
-                .sort((a, b) => a.name.localeCompare(b.name)),
-        [rosterQuery.data]
-    );
+    const options = useMemo(() => {
+        const list = (rosterQuery.data?.content ?? [])
+            .map((c) => ({ id: c.user_id, name: c.full_name ?? c.email ?? c.user_id }))
+            .sort((a, b) => a.name.localeCompare(b.name));
+        // A counsellor picked from a report row may be outside the roster (e.g. an admin
+        // who enrolled students) — keep them selectable so the picker never shows blank.
+        if (value && !list.some((o) => o.id === value)) {
+            list.unshift({ id: value, name: selectedName ?? value });
+        }
+        return list;
+    }, [rosterQuery.data, value, selectedName]);
 
-    // No roster visibility → no picker (reports stay scoped to the caller).
-    if (rosterQuery.isError || options.length === 0) return null;
+    // No roster visibility and nothing picked → no picker (reports stay scoped to the caller).
+    if (!value && (rosterQuery.isError || options.length === 0)) return null;
 
     return (
         <Select
             value={value ?? ALL_COUNSELLORS_VALUE}
             onValueChange={(v) => onChange(v === ALL_COUNSELLORS_VALUE ? undefined : v)}
         >
-            <SelectTrigger className="h-9 w-48 bg-white" aria-label="Filter by counsellor">
+            <SelectTrigger
+                className="h-9 w-48 bg-white"
+                aria-label={t('counsellorPicker.ariaLabel')}
+            >
                 <User className="mr-1.5 size-4 shrink-0 text-neutral-400" />
-                <SelectValue placeholder="All counsellors" />
+                <SelectValue placeholder={t('counsellorPicker.allCounsellors')} />
             </SelectTrigger>
             <SelectContent>
-                <SelectItem value={ALL_COUNSELLORS_VALUE}>All counsellors</SelectItem>
+                <SelectItem value={ALL_COUNSELLORS_VALUE}>
+                    {t('counsellorPicker.allCounsellors')}
+                </SelectItem>
                 {options.map((o) => (
                     <SelectItem key={o.id} value={o.id}>
                         {o.name}
@@ -526,6 +496,7 @@ function CampaignScopePicker({
     value: string | undefined;
     onChange: (audienceId: string | undefined) => void;
 }) {
+    const { t } = useTranslation('audienceManagerLeadReportsPage');
     const campaignsQuery = useQuery({
         ...handleFetchCampaignsList({ institute_id: instituteId, page: 0, size: 200 }),
         enabled: !!instituteId,
@@ -537,10 +508,10 @@ function CampaignScopePicker({
             (campaignsQuery.data?.content ?? [])
                 .map((c) => ({
                     id: c.id || c.campaign_id || c.audience_id || '',
-                    name: c.campaign_name || 'Untitled campaign',
+                    name: c.campaign_name || t('campaignPicker.untitledCampaign'),
                 }))
                 .filter((o) => o.id !== ''),
-        [campaignsQuery.data]
+        [campaignsQuery.data, t]
     );
 
     return (
@@ -548,12 +519,14 @@ function CampaignScopePicker({
             value={value ?? ALL_AUDIENCES_VALUE}
             onValueChange={(v) => onChange(v === ALL_AUDIENCES_VALUE ? undefined : v)}
         >
-            <SelectTrigger className="h-9 w-48 bg-white" aria-label="Filter by campaign">
+            <SelectTrigger className="h-9 w-48 bg-white" aria-label={t('campaignPicker.ariaLabel')}>
                 <Megaphone className="mr-1.5 size-4 shrink-0 text-neutral-400" />
-                <SelectValue placeholder="All campaigns" />
+                <SelectValue placeholder={t('campaignPicker.allCampaigns')} />
             </SelectTrigger>
             <SelectContent>
-                <SelectItem value={ALL_AUDIENCES_VALUE}>All campaigns</SelectItem>
+                <SelectItem value={ALL_AUDIENCES_VALUE}>
+                    {t('campaignPicker.allCampaigns')}
+                </SelectItem>
                 {options.map((o) => (
                     <SelectItem key={o.id} value={o.id}>
                         {o.name}

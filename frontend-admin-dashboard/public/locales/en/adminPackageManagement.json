@@ -1,0 +1,17 @@
+{
+    "title": "{{package}} Management",
+    "badge_one": "{{count}} {{packages}}",
+    "badge_other": "{{count}} {{packages}}",
+    "subtitle": "Every {{batch}} you sell — pricing, offers, invites, content and faculty in one table.",
+    "actions": {
+        "offers": "Apply Offer Price",
+        "bulkCreate": "Bulk Create"
+    },
+    "empty": {
+        "title": "No {{packages}} found",
+        "text": "No {{packages}} match your current filters. Try adjusting your search criteria.",
+        "clear": "Clear filters"
+    },
+    "loading": "Loading {{packages}}…",
+    "showing": "Showing {{from}} – {{to}} of {{total}} {{packages}}"
+}

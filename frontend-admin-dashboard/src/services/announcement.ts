@@ -1,4 +1,4 @@
-import axios from 'axios';
+import authenticatedAxiosInstance from '@/lib/auth/axiosInstance';
 import { getInstituteId } from '@/constants/helper';
 import { NOTIFICATION_SERVICE_BASE } from '@/constants/urls';
 
@@ -69,11 +69,24 @@ export interface AnnouncementRecipientRow {
     userId: string;
     userName: string | null;
     modeType: ModeType;
+    /** EMAIL / WHATSAPP / PUSH_NOTIFICATION; null for in-app delivery. */
+    mediumType: string | null;
     status: string;
+    /** Why the delivery failed (unsubscribed, no address, provider error). */
+    errorMessage: string | null;
     deliveredAt: string | null;
     readAt: string | null;
     dismissedAt: string | null;
+    // Email rows only
+    email: string | null;
+    /** FAILED, BOUNCED, REJECTED, COMPLAINED, CLICKED, OPENED, DELIVERED or SENT. */
+    emailStatus: string | null;
+    emailOpenedAt: string | null;
+    emailClickedAt: string | null;
 }
+
+/** Report filters: a channel from stats.channels, and DELIVERED / FAILED / PENDING. */
+export type RecipientOutcome = 'DELIVERED' | 'FAILED' | 'PENDING';
 
 // Spring Page envelope returned by the /recipients endpoint.
 export interface AnnouncementRecipientsPage {
@@ -82,6 +95,40 @@ export interface AnnouncementRecipientsPage {
     totalElements: number;
     number: number;
     size: number;
+}
+
+// POST /announcements/recipients/preview and GET /announcements/{id}/recipients/preview —
+// who an announcement resolves to before anything is sent.
+export interface RecipientPreviewUser {
+    userId: string;
+    fullName: string | null;
+    email: string | null;
+    mobileNumber: string | null;
+}
+
+export interface RecipientPreviewPage {
+    totalCount: number;
+    page: number;
+    size: number;
+    totalPages: number;
+    users: RecipientPreviewUser[];
+}
+
+export interface TestSendRequest {
+    title: string;
+    content: CreateAnnouncementRequest['content'];
+    /** The EMAIL medium the announcement would go out with (subject, sender, preview text). */
+    emailMedium?: CreateAnnouncementRequest['mediums'][number];
+    createdByName?: string;
+    emails: string[];
+}
+
+export interface TestSendResult {
+    email: string;
+    sent: boolean;
+    /** The address belongs to a user, so name placeholders were filled with that user's values. */
+    matchedUser: boolean;
+    error: string | null;
 }
 
 export const AnnouncementService = {
@@ -94,12 +141,14 @@ export const AnnouncementService = {
             ...payload,
             instituteId,
         } as CreateAnnouncementRequest;
-        const { data } = await axios.post(`${BASE}/announcements`, body);
+        const { data } = await authenticatedAxiosInstance.post(`${BASE}/announcements`, body);
         return data;
     },
 
     getById: async (announcementId: string) => {
-        const { data } = await axios.get(`${BASE}/announcements/${announcementId}`);
+        const { data } = await authenticatedAxiosInstance.get(
+            `${BASE}/announcements/${announcementId}`
+        );
         return data;
     },
 
@@ -113,7 +162,10 @@ export const AnnouncementService = {
             ...payload,
             instituteId,
         } as CreateAnnouncementRequest;
-        const { data } = await axios.put(`${BASE}/announcements/${announcementId}`, body);
+        const { data } = await authenticatedAxiosInstance.put(
+            `${BASE}/announcements/${announcementId}`,
+            body
+        );
         return data;
     },
 
@@ -124,7 +176,7 @@ export const AnnouncementService = {
         if (params?.page !== undefined) search.set('page', String(params.page));
         if (params?.size !== undefined) search.set('size', String(params.size));
         if (params?.status) search.set('status', params.status);
-        const { data } = await axios.get(
+        const { data } = await authenticatedAxiosInstance.get(
             `${BASE}/announcements/institute/${instituteId}?${search.toString()}`
         );
         return data;
@@ -138,7 +190,7 @@ export const AnnouncementService = {
         if (params?.size !== undefined) search.set('size', String(params.size));
         if (params?.from) search.set('from', params.from);
         if (params?.to) search.set('to', params.to);
-        const { data } = await axios.get(
+        const { data } = await authenticatedAxiosInstance.get(
             `${BASE}/announcements/institute/${instituteId}/planned?${search.toString()}`
         );
         return data;
@@ -152,50 +204,102 @@ export const AnnouncementService = {
         if (params?.size !== undefined) search.set('size', String(params.size));
         if (params?.from) search.set('from', params.from);
         if (params?.to) search.set('to', params.to);
-        const { data } = await axios.get(
+        const { data } = await authenticatedAxiosInstance.get(
             `${BASE}/announcements/institute/${instituteId}/past?${search.toString()}`
         );
         return data;
     },
 
     updateStatus: async (announcementId: string, status: string) => {
-        const { data } = await axios.put(`${BASE}/announcements/${announcementId}/status`, {
-            status,
-        });
+        const { data } = await authenticatedAxiosInstance.put(
+            `${BASE}/announcements/${announcementId}/status`,
+            {
+                status,
+            }
+        );
         return data;
     },
 
     remove: async (announcementId: string) => {
-        const { data } = await axios.delete(`${BASE}/announcements/${announcementId}`);
+        const { data } = await authenticatedAxiosInstance.delete(
+            `${BASE}/announcements/${announcementId}`
+        );
         return data;
     },
 
     deliver: async (announcementId: string) => {
-        const { data } = await axios.post(`${BASE}/announcements/${announcementId}/deliver`);
+        const { data } = await authenticatedAxiosInstance.post(
+            `${BASE}/announcements/${announcementId}/deliver`
+        );
         return data;
     },
 
     stats: async (announcementId: string) => {
-        const { data } = await axios.get(`${BASE}/announcements/${announcementId}/stats`);
+        const { data } = await authenticatedAxiosInstance.get(
+            `${BASE}/announcements/${announcementId}/stats`
+        );
         return data;
     },
 
     recipients: async (
         announcementId: string,
-        params: { modeType?: ModeType; page?: number; size?: number }
+        params: {
+            modeType?: ModeType;
+            channel?: string;
+            status?: RecipientOutcome;
+            page?: number;
+            size?: number;
+        }
     ): Promise<AnnouncementRecipientsPage> => {
         const search = new URLSearchParams();
         if (params.modeType) search.set('modeType', params.modeType);
+        if (params.channel) search.set('channel', params.channel);
+        if (params.status) search.set('status', params.status);
         if (params.page !== undefined) search.set('page', String(params.page));
         if (params.size !== undefined) search.set('size', String(params.size));
-        const { data } = await axios.get(
+        const { data } = await authenticatedAxiosInstance.get(
             `${BASE}/announcements/${announcementId}/recipients?${search.toString()}`
         );
         return data;
     },
 
+    previewRecipients: async (params: {
+        recipients: CreateAnnouncementRequest['recipients'];
+        exclusions?: CreateAnnouncementRequest['recipients'];
+        page: number;
+        size: number;
+    }): Promise<RecipientPreviewPage> => {
+        const instituteId = getInstituteId();
+        if (!instituteId) throw new Error('Missing instituteId');
+        const { data } = await authenticatedAxiosInstance.post(
+            `${BASE}/announcements/recipients/preview`,
+            { ...params, instituteId }
+        );
+        return data;
+    },
+
+    previewAnnouncementRecipients: async (
+        announcementId: string,
+        params: { page: number; size: number }
+    ): Promise<RecipientPreviewPage> => {
+        const { data } = await authenticatedAxiosInstance.get(
+            `${BASE}/announcements/${announcementId}/recipients/preview?page=${params.page}&size=${params.size}`
+        );
+        return data;
+    },
+
+    testSend: async (payload: TestSendRequest): Promise<{ results: TestSendResult[] }> => {
+        const instituteId = getInstituteId();
+        if (!instituteId) throw new Error('Missing instituteId');
+        const { data } = await authenticatedAxiosInstance.post(`${BASE}/announcements/test-send`, {
+            ...payload,
+            instituteId,
+        });
+        return data;
+    },
+
     submitForApproval: async (announcementId: string, submittedByRole: string) => {
-        const { data } = await axios.post(
+        const { data } = await authenticatedAxiosInstance.post(
             `${BASE}/announcements/${announcementId}/submit-approval?submittedByRole=${encodeURIComponent(
                 submittedByRole
             )}`
@@ -204,7 +308,7 @@ export const AnnouncementService = {
     },
 
     approve: async (announcementId: string, approvedByRole: string) => {
-        const { data } = await axios.post(
+        const { data } = await authenticatedAxiosInstance.post(
             `${BASE}/announcements/${announcementId}/approve?approvedByRole=${encodeURIComponent(
                 approvedByRole
             )}`
@@ -213,7 +317,7 @@ export const AnnouncementService = {
     },
 
     reject: async (announcementId: string, rejectedByRole: string, reason: string) => {
-        const { data } = await axios.post(
+        const { data } = await authenticatedAxiosInstance.post(
             `${BASE}/announcements/${announcementId}/reject?rejectedByRole=${encodeURIComponent(
                 rejectedByRole
             )}&reason=${encodeURIComponent(reason)}`
@@ -226,7 +330,9 @@ export const InstituteAnnouncementSettingsService = {
     get: async () => {
         const instituteId = getInstituteId();
         if (!instituteId) throw new Error('Missing instituteId');
-        const { data } = await axios.get(`${BASE}/institute-settings/institute/${instituteId}`);
+        const { data } = await authenticatedAxiosInstance.get(
+            `${BASE}/institute-settings/institute/${instituteId}`
+        );
         return data;
     },
     checkPermissions: async (params: { userRole: string; action: string; modeType: ModeType }) => {
@@ -236,7 +342,7 @@ export const InstituteAnnouncementSettingsService = {
         search.set('userRole', params.userRole);
         search.set('action', params.action);
         search.set('modeType', params.modeType);
-        const { data } = await axios.get(
+        const { data } = await authenticatedAxiosInstance.get(
             `${BASE}/institute-settings/institute/${instituteId}/permissions?${search.toString()}`
         );
         return data;

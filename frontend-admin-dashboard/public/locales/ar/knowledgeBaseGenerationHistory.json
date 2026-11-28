@@ -1,0 +1,63 @@
+{
+    "artifactType": {
+        "questionPaper": "ورقة أسئلة",
+        "course": "دورة",
+        "presentation": "عرض تقديمي",
+        "quiz": "اختبار قصير",
+        "assessment": "تقييم",
+        "notes": "ملاحظات",
+        "summary": "ملخص",
+        "lessonPlan": "خطة درس",
+        "worksheet": "ورقة عمل"
+    },
+    "status": {
+        "draft": "مسودة",
+        "generating": "جارٍ الإنشاء",
+        "notSavedYet": "لم تُحفظ بعد",
+        "saved": "محفوظة",
+        "failed": "فشلت"
+    },
+    "time": {
+        "justNow": "الآن",
+        "minutesAgo_zero": "قبل {{count}} دقيقة",
+        "minutesAgo_one": "قبل دقيقة",
+        "minutesAgo_two": "قبل دقيقتين",
+        "minutesAgo_few": "قبل {{count}} دقائق",
+        "minutesAgo_many": "قبل {{count}} دقيقة",
+        "minutesAgo_other": "قبل {{count}} دقيقة",
+        "hoursAgo_zero": "قبل {{count}} ساعة",
+        "hoursAgo_one": "قبل ساعة",
+        "hoursAgo_two": "قبل ساعتين",
+        "hoursAgo_few": "قبل {{count}} ساعات",
+        "hoursAgo_many": "قبل {{count}} ساعة",
+        "hoursAgo_other": "قبل {{count}} ساعة"
+    },
+    "progress": {
+        "questions_zero": "{{delivered}} من {{planned}} سؤال",
+        "questions_one": "{{delivered}} من سؤال واحد",
+        "questions_two": "{{delivered}} من سؤالين",
+        "questions_few": "{{delivered}} من {{planned}} أسئلة",
+        "questions_many": "{{delivered}} من {{planned}} سؤالًا",
+        "questions_other": "{{delivered}} من {{planned}} سؤال",
+        "credits_zero": "{{count}} رصيد",
+        "credits_one": "رصيد واحد",
+        "credits_two": "رصيدان",
+        "credits_few": "{{count}} أرصدة",
+        "credits_many": "{{count}} رصيدًا",
+        "credits_other": "{{count}} رصيد"
+    },
+    "emptyState": {
+        "title": "لم يُنشأ أي شيء من قاعدة المعرفة هذه بعد.",
+        "description": "ستُعرض هنا الأوراق والدورات التي تنشئها لتتمكن من العودة إليها."
+    },
+    "actions": {
+        "tryAgain": "حاول مرة أخرى",
+        "open": "فتح",
+        "inQuestionBank": "في بنك الأسئلة",
+        "remove": "إزالة"
+    },
+    "toast": {
+        "removed": "أُزيلت من السجل",
+        "removeFailed": "تعذّرت إزالة هذا العنصر"
+    }
+}

@@ -157,7 +157,7 @@ JOIN level l ON l.id = ps.level_id
 
 WHERE
     (:instituteId IS NULL OR p_log.parent_id = :instituteId)
-    AND (:name IS NULL OR LOWER(CAST(p_log.json_data AS jsonb)->>'packageName') LIKE LOWER(CONCAT('%', CAST(:name AS TEXT), '%')))
+    AND (CAST(:name AS text) IS NULL OR LOWER(CAST(p_log.json_data AS jsonb)->>'packageName') LIKE LOWER(CONCAT('%', CAST(:name AS TEXT), '%')))
     AND (:#{#logStatuses == null || #logStatuses.isEmpty()} = true OR p_log.status IN (:logStatuses))
     AND (:#{#levelStatus == null || #levelStatus.isEmpty()} = true OR l.status IN (:levelStatus))
     AND (:#{#userIds == null || #userIds.isEmpty()} = true OR inst.user_id IN (:userIds))
@@ -177,7 +177,7 @@ JOIN package_session ps ON ps.package_id = p_log.source_id
 JOIN level l ON l.id = ps.level_id
 WHERE p_log.source_type = 'PACKAGE'
     AND (:instituteId IS NULL OR p_log.parent_id = :instituteId)
-    AND (:name IS NULL OR LOWER(CAST(p_log.json_data AS jsonb)->>'packageName') LIKE LOWER(CONCAT('%', CAST(:name AS TEXT), '%')))
+    AND (CAST(:name AS text) IS NULL OR LOWER(CAST(p_log.json_data AS jsonb)->>'packageName') LIKE LOWER(CONCAT('%', CAST(:name AS TEXT), '%')))
     AND (:#{#logStatuses == null || #logStatuses.isEmpty()} = true OR p_log.status IN (:logStatuses))
     AND (:#{#levelStatus == null || #levelStatus.isEmpty()} = true OR l.status IN (:levelStatus))
     AND (:#{#packageSessionStatus == null || #packageSessionStatus.isEmpty()} = true OR ps.status IN (:packageSessionStatus))

@@ -1,0 +1,23 @@
+{
+    "heading": "Create HR profile",
+    "cancel": "Cancel",
+    "createProfile": "Create profile",
+    "creating": "Creating…",
+    "noDepartment": "No department",
+    "noDesignation": "No designation",
+    "thisPerson": "this person",
+    "fields": {
+        "employeeCodeLabel": "Employee code",
+        "employeeCodePlaceholder": "Leave blank to let HR assign one",
+        "joinDateLabel": "Join date",
+        "departmentLabel": "Department",
+        "designationLabel": "Designation"
+    },
+    "toasts": {
+        "created": "HR profile created for {{name}}"
+    },
+    "errors": {
+        "joinDateRequired": "Pick the joining date",
+        "createFailed": "Could not create an HR profile for {{name}}"
+    }
+}

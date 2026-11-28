@@ -46,7 +46,7 @@ public interface FacultySubjectPackageSessionMappingRepository
             (fm.package_session_id IN (:batchesIds))
         ))
         AND (CAST(:hasStatusList AS boolean) = false OR fm.status IN (:statusList))
-        AND (:name IS NULL OR CAST(:name AS text) = '' OR LOWER(fm.name) LIKE LOWER(CONCAT('%', CAST(:name AS text), '%')))
+        AND (CAST(:name AS text) IS NULL OR CAST(:name AS text) = '' OR LOWER(fm.name) LIKE LOWER(CONCAT('%', CAST(:name AS text), '%')))
       ORDER BY fm.user_id, fm.updated_at DESC
       """, countQuery = """
       SELECT COUNT(DISTINCT fm.user_id)
@@ -64,7 +64,7 @@ public interface FacultySubjectPackageSessionMappingRepository
             (fm.package_session_id IN (:batchesIds))
         ))
         AND (CAST(:hasStatusList AS boolean) = false OR fm.status IN (:statusList))
-        AND (:name IS NULL OR CAST(:name AS text) = '' OR LOWER(fm.name) LIKE LOWER(CONCAT('%', CAST(:name AS text), '%')))
+        AND (CAST(:name AS text) IS NULL OR CAST(:name AS text) = '' OR LOWER(fm.name) LIKE LOWER(CONCAT('%', CAST(:name AS text), '%')))
       """, nativeQuery = true)
   Page<FacultySubjectPackageSessionMapping> findByFilters(
       @Param("instituteId") String instituteId,
@@ -96,7 +96,7 @@ public interface FacultySubjectPackageSessionMappingRepository
             (fm.package_session_id IN (:batchesIds))
         ))
         AND (CAST(:hasStatusList AS boolean) = false OR fm.status IN (:statusList))
-        AND (:name IS NULL OR CAST(:name AS text) = '' OR LOWER(fm.name) LIKE LOWER(CONCAT('%', CAST(:name AS text), '%')))
+        AND (CAST(:name AS text) IS NULL OR CAST(:name AS text) = '' OR LOWER(fm.name) LIKE LOWER(CONCAT('%', CAST(:name AS text), '%')))
       ORDER BY fm.user_id, fm.updated_at DESC
       """, countQuery = """
       SELECT COUNT(DISTINCT fm.user_id)
@@ -114,7 +114,7 @@ public interface FacultySubjectPackageSessionMappingRepository
             (fm.package_session_id IN (:batchesIds))
         ))
         AND (CAST(:hasStatusList AS boolean) = false OR fm.status IN (:statusList))
-        AND (:name IS NULL OR CAST(:name AS text) = '' OR LOWER(fm.name) LIKE LOWER(CONCAT('%', CAST(:name AS text), '%')))
+        AND (CAST(:name AS text) IS NULL OR CAST(:name AS text) = '' OR LOWER(fm.name) LIKE LOWER(CONCAT('%', CAST(:name AS text), '%')))
       """, nativeQuery = true)
   Page<FacultySubjectPackageSessionMapping> findByFiltersScopedToSubOrgs(
       @Param("instituteId") String instituteId,
@@ -130,6 +130,11 @@ public interface FacultySubjectPackageSessionMappingRepository
 
   Optional<FacultySubjectPackageSessionMapping> findByUserIdAndPackageSessionIdAndSubjectIdAndStatusIn(String userId,
       String packageSessionId, String subjectId, List<String> status);
+
+  // Course-level instructor rows (Add Course -> Authors) are stored with subject_id NULL.
+  // List, not Optional: addFacultyToBatch never de-duplicates, so more than one can exist.
+  List<FacultySubjectPackageSessionMapping> findAllByUserIdAndPackageSessionIdAndSubjectIdIsNullAndStatusIn(
+      String userId, String packageSessionId, List<String> status);
 
   @Query(value = """
       SELECT
@@ -411,6 +416,23 @@ public interface FacultySubjectPackageSessionMappingRepository
   List<UserSubOrgLinkRow> findUserSubOrgLinks(
       @Param("subOrgIds") List<String> subOrgIds,
       @Param("statuses") List<String> statuses);
+
+  /**
+   * Display role of each author per course. Every ACTIVE row of a user in the course
+   * carries the same label, so MAX only collapses the duplicates.
+   */
+  @Query(value = """
+      SELECT ps.package_id AS packageId, f.user_id AS userId, MAX(f.role_label) AS roleLabel
+      FROM faculty_subject_package_session_mapping f
+      JOIN package_session ps ON ps.id = f.package_session_id
+      WHERE ps.package_id IN (:packageIds)
+        AND f.status = 'ACTIVE'
+        AND f.role_label IS NOT NULL
+        AND f.role_label <> ''
+      GROUP BY ps.package_id, f.user_id
+      """, nativeQuery = true)
+  List<vacademy.io.admin_core_service.features.faculty.dto.FacultyRoleLabelRow> findRoleLabelsByPackageIds(
+      @Param("packageIds") java.util.Collection<String> packageIds);
 
   /**
    * Deactivate SOFT-removed sub-org members whose "last access date" has passed.

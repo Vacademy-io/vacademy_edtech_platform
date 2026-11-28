@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useFieldArray, UseFormReturn } from 'react-hook-form';
 import { InviteLinkFormValues } from '../GenerateInviteLinkSchema';
 import { Sortable, SortableDragHandle, SortableItem } from '@/components/ui/sortable';
@@ -55,6 +56,7 @@ const CustomInviteFormCard = ({
     handleCloseDialog,
     handleEditFieldAt,
 }: CustomInviteFormCardProps) => {
+    const { t } = useTranslation('manageStudentsCustomInviteFormCard');
     const [editingIndex, setEditingIndex] = useState<number | null>(null);
     const { control, getValues } = form;
     const { fields: customFieldsArray, move: moveCustomField } = useFieldArray({
@@ -70,10 +72,8 @@ const CustomInviteFormCard = ({
         <Card className="mb-4">
             <CardHeader>
                 <CardTitle className="flex flex-col text-lg font-semibold">
-                    <span className="text-2xl font-bold">Customize Invite Form</span>
-                    <span className="text-sm text-gray-600">
-                        Configure the fields students will fill out
-                    </span>
+                    <span className="text-2xl font-bold">{t('header.title')}</span>
+                    <span className="text-sm text-gray-600">{t('header.subtitle')}</span>
                 </CardTitle>
             </CardHeader>
             <CardContent>
@@ -99,7 +99,6 @@ const CustomInviteFormCard = ({
                                                     name={field.name}
                                                     type={field.type}
                                                     isRequired={field.isRequired}
-                                                    locked={field.oldKey}
                                                     isEditing={isEditing}
                                                     onToggleRequired={() =>
                                                         toggleIsRequired(index)
@@ -173,7 +172,7 @@ const CustomInviteFormCard = ({
                                     handleAddGender('dropdown', 'Gender', false);
                                 }}
                             >
-                                <Plus size={32} /> Add Gender
+                                <Plus size={32} /> {t('quickAddButtons.gender')}
                             </MyButton>
                         )}
                         {!customFields?.some((field) => field.name === 'State') && (
@@ -187,7 +186,7 @@ const CustomInviteFormCard = ({
                                     handleAddOpenFieldValues('textfield', 'State', false);
                                 }}
                             >
-                                <Plus size={32} /> Add State
+                                <Plus size={32} /> {t('quickAddButtons.state')}
                             </MyButton>
                         )}
                         {!customFields?.some((field) => field.name === 'City') && (
@@ -201,7 +200,7 @@ const CustomInviteFormCard = ({
                                     handleAddOpenFieldValues('textfield', 'City', false);
                                 }}
                             >
-                                <Plus size={32} /> Add City
+                                <Plus size={32} /> {t('quickAddButtons.city')}
                             </MyButton>
                         )}
                         {!customFields?.some((field) => field.name === 'School/College') && (
@@ -215,7 +214,7 @@ const CustomInviteFormCard = ({
                                     handleAddOpenFieldValues('textfield', 'School/College', false);
                                 }}
                             >
-                                <Plus size={32} /> Add School/College
+                                <Plus size={32} /> {t('quickAddButtons.schoolCollege')}
                             </MyButton>
                         )}
                         <Dialog
@@ -229,15 +228,15 @@ const CustomInviteFormCard = ({
                                     buttonType="secondary"
                                     onClick={() => form.setValue('isDialogOpen', true)}
                                 >
-                                    <Plus size={32} /> Add Custom Field
+                                    <Plus size={32} /> {t('customFieldDialog.triggerButton')}
                                 </MyButton>
                             </DialogTrigger>
-                            <DialogContent className="flex max-h-[80vh] !w-[500px] flex-col p-0">
+                            <DialogContent className="flex max-h-dialog-tall !w-dialog-md flex-col p-0">
                                 <h1 className="shrink-0 rounded-lg bg-primary-50 p-4 text-primary-500">
-                                    Add Custom Field
+                                    {t('customFieldDialog.title')}
                                 </h1>
                                 <div className="flex-1 flex-col gap-4 overflow-y-auto px-4">
-                                    <h1>Select the type of custom field you want to add:</h1>
+                                    <h1>{t('customFieldDialog.typePrompt')}</h1>
                                     <RadioGroup
                                         defaultValue={form.watch('selectedOptionValue')}
                                         onValueChange={(value) =>
@@ -247,24 +246,28 @@ const CustomInviteFormCard = ({
                                     >
                                         <div className="flex items-center space-x-2">
                                             <RadioGroupItem value="textfield" id="option-one" />
-                                            <Label htmlFor="option-one">Text Field</Label>
+                                            <Label htmlFor="option-one">
+                                                {t('customFieldDialog.fieldTypeOptions.textField')}
+                                            </Label>
                                         </div>
                                         <div className="flex items-center space-x-2">
                                             <RadioGroupItem value="dropdown" id="option-two" />
-                                            <Label htmlFor="option-two">Dropdown</Label>
+                                            <Label htmlFor="option-two">
+                                                {t('customFieldDialog.fieldTypeOptions.dropdown')}
+                                            </Label>
                                         </div>
                                     </RadioGroup>
                                     {form.watch('selectedOptionValue') === 'textfield' ? (
                                         <div className="flex flex-col gap-1">
                                             <h1>
-                                                Text Field Name
+                                                {t('customFieldDialog.textFieldNameLabel')}
                                                 <span className="text-subtitle text-danger-600">
                                                     *
                                                 </span>
                                             </h1>
                                             <MyInput
                                                 inputType="text"
-                                                inputPlaceholder="Type Here"
+                                                inputPlaceholder={t('placeholders.typeHere')}
                                                 input={form.watch('textFieldValue')}
                                                 onChangeFunction={(e) =>
                                                     form.setValue('textFieldValue', e.target.value)
@@ -276,14 +279,14 @@ const CustomInviteFormCard = ({
                                     ) : (
                                         <div className="flex flex-col gap-1">
                                             <h1>
-                                                Dropdown Name
+                                                {t('customFieldDialog.dropdownNameLabel')}
                                                 <span className="text-subtitle text-danger-600">
                                                     *
                                                 </span>
                                             </h1>
                                             <MyInput
                                                 inputType="text"
-                                                inputPlaceholder="Type Here"
+                                                inputPlaceholder={t('placeholders.typeHere')}
                                                 input={form.watch('textFieldValue')}
                                                 onChangeFunction={(e) =>
                                                     form.setValue('textFieldValue', e.target.value)
@@ -291,7 +294,9 @@ const CustomInviteFormCard = ({
                                                 size="large"
                                                 className="w-full"
                                             />
-                                            <h1 className="mt-4">Dropdown Options</h1>
+                                            <h1 className="mt-4">
+                                                {t('customFieldDialog.dropdownOptionsLabel')}
+                                            </h1>
                                             <div className="flex flex-col gap-4">
                                                 {form
                                                     .watch('dropdownOptions')
@@ -356,7 +361,7 @@ const CustomInviteFormCard = ({
                                                 onClick={handleAddDropdownOptions}
                                             >
                                                 <Plus size={18} />
-                                                Add
+                                                {t('customFieldDialog.addOptionButton')}
                                             </MyButton>
                                         </div>
                                     )}
@@ -374,7 +379,7 @@ const CustomInviteFormCard = ({
                                                 )
                                             }
                                         >
-                                            Done
+                                            {t('customFieldDialog.doneButton')}
                                         </MyButton>
                                     </div>
                                 </div>
@@ -389,12 +394,12 @@ const CustomInviteFormCard = ({
                                 buttonType="secondary"
                                 className="mt-4 w-fit"
                             >
-                                Preview Registration Form
+                                {t('previewDialog.triggerButton')}
                             </MyButton>
                         </DialogTrigger>
-                        <DialogContent className="flex max-h-[80vh] flex-col p-0">
+                        <DialogContent className="flex max-h-dialog-tall flex-col p-0">
                             <h1 className="shrink-0 rounded-md bg-primary-50 p-4 font-semibold text-primary-500">
-                                Preview Registration Form
+                                {t('previewDialog.title')}
                             </h1>
                             <div className="flex-1 flex-col gap-4 overflow-y-auto px-4 py-2">
                                 {customFields?.map((testInputFields, idx) => {
@@ -421,7 +426,7 @@ const CustomInviteFormCard = ({
                                                     }
                                                 />
                                             ) : (
-                                                <div className="flex w-full flex-col gap-[0.4rem]">
+                                                <div className="flex w-full flex-col gap-1.5">
                                                     <h1 className="mt-3 text-sm">
                                                         {testInputFields.name}
                                                         {testInputFields.isRequired && (

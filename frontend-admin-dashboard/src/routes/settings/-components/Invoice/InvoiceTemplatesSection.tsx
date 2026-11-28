@@ -1,8 +1,24 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
-import { Loader2, Plus, Trash2, Edit, Eye, FileText, Mail, ChevronLeft, ChevronRight, Sparkles } from 'lucide-react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
+import {
+    CircleNotch,
+    Plus,
+    Trash,
+    PencilSimple,
+    Eye,
+    FileText,
+    EnvelopeSimple,
+    CaretLeft,
+    CaretRight,
+    Sparkle,
+    Star,
+} from '@phosphor-icons/react';
 import { MyButton } from '@/components/design-system/button';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import {
@@ -22,33 +38,42 @@ import {
 } from '@/services/message-template-service';
 import { TemplatePreview } from '@/components/templates/shared/TemplatePreview';
 import { toast } from 'sonner';
+import { extractVariables, toPreviewHtml } from '@/components/templates/html/html-template-utils';
+import {
+    fetchBuiltInInvoiceTemplate,
+    fetchDefaultInvoiceTemplateIds,
+    setDefaultInvoiceTemplate,
+} from './invoice-settings-service';
+
+/** Separate from the settings form's ['invoice-settings'] query so refreshing it never resets unsaved form edits. */
+const DEFAULT_TEMPLATES_QUERY_KEY = ['invoice-default-template-ids'];
 
 interface InvoiceTemplatesSectionProps {
     /** DB template type: INVOICE = PDF layout, INVOICE_EMAIL = email body. */
     type: 'INVOICE' | 'INVOICE_EMAIL';
 }
 
-const TYPE_META: Record<
-    InvoiceTemplatesSectionProps['type'],
-    { title: string; description: string; icon: typeof FileText }
-> = {
+const buildTypeMeta = (
+    t: TFunction
+): Record<InvoiceTemplatesSectionProps['type'], { title: string; description: string; icon: typeof FileText }> => ({
     INVOICE: {
-        title: 'Invoice PDF Templates',
-        description: 'Layout used to render the invoice PDF — branding, line items table and totals.',
+        title: t('types.invoice.title'),
+        description: t('types.invoice.description'),
         icon: FileText,
     },
     INVOICE_EMAIL: {
-        title: 'Invoice Email Templates',
-        description: 'Email body sent to the learner with the invoice PDF attached.',
-        icon: Mail,
+        title: t('types.invoiceEmail.title'),
+        description: t('types.invoiceEmail.description'),
+        icon: EnvelopeSimple,
     },
-};
+});
 
 const PAGE_SIZE = 5;
 
 export const InvoiceTemplatesSection: React.FC<InvoiceTemplatesSectionProps> = ({ type }) => {
+    const { t } = useTranslation('settingsInvoiceTemplates');
     const navigate = useNavigate();
-    const meta = TYPE_META[type];
+    const meta = buildTypeMeta(t)[type];
     const Icon = meta.icon;
 
     const [allTemplates, setAllTemplates] = useState<MessageTemplate[]>([]);
@@ -60,6 +85,24 @@ export const InvoiceTemplatesSection: React.FC<InvoiceTemplatesSectionProps> = (
     const [deleteId, setDeleteId] = useState<string | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
     const [isGenerating, setIsGenerating] = useState(false);
+    const [isBuiltInBusy, setIsBuiltInBusy] = useState(false);
+    // Shown in a sandboxed iframe: the layout's own <style> (body, *, @page rules) would
+    // otherwise apply to the whole admin page while the preview is open.
+    const [builtInPreviewHtml, setBuiltInPreviewHtml] = useState<string | null>(null);
+
+    const queryClient = useQueryClient();
+    const { data: defaultIds } = useQuery({
+        queryKey: DEFAULT_TEMPLATES_QUERY_KEY,
+        queryFn: fetchDefaultInvoiceTemplateIds,
+    });
+    const { mutate: makeDefault, isPending: isSettingDefault } = useMutation({
+        mutationFn: (templateId: string) => setDefaultInvoiceTemplate(type, templateId),
+        onSuccess: () => {
+            toast.success(t('toasts.defaultSet'));
+            queryClient.invalidateQueries({ queryKey: DEFAULT_TEMPLATES_QUERY_KEY });
+        },
+        onError: () => toast.error(t('toasts.defaultSetFailed')),
+    });
 
     const loadTemplates = async () => {
         setIsLoading(true);
@@ -71,7 +114,7 @@ export const InvoiceTemplatesSection: React.FC<InvoiceTemplatesSectionProps> = (
             setPage(0);
         } catch (error) {
             console.error(`Error loading ${type} templates:`, error);
-            toast.error('Failed to load templates. Please try again.');
+            toast.error(t('toasts.loadFailed'));
         } finally {
             setIsLoading(false);
         }
@@ -85,6 +128,15 @@ export const InvoiceTemplatesSection: React.FC<InvoiceTemplatesSectionProps> = (
     const totalElements = allTemplates.length;
     const totalPages = Math.max(1, Math.ceil(totalElements / PAGE_SIZE));
     const templates = allTemplates.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE);
+
+    // Mirrors the backend (InvoiceDefaultTemplatePicker): the chosen default while it
+    // still exists, otherwise the newest template — the list arrives newest first.
+    const storedDefaultId = defaultIds?.[type] ?? null;
+    const inUseId =
+        storedDefaultId &&
+        allTemplates.some((tpl) => tpl.id === storedDefaultId && !!tpl.content?.trim())
+            ? storedDefaultId
+            : allTemplates[0]?.id;
 
     const handleCreate = () => {
         navigate({ to: '/templates/create', search: { type } });
@@ -107,13 +159,53 @@ export const InvoiceTemplatesSection: React.FC<InvoiceTemplatesSectionProps> = (
                 mjml: sample.mjml,
                 previewText: sample.previewText,
             });
-            toast.success('Sample template created — opening editor…');
+            toast.success(t('toasts.sampleCreated'));
             navigate({ to: '/templates/edit/$templateId', params: { templateId: created.id } });
         } catch (error) {
             console.error(`Error generating sample ${type} template:`, error);
-            toast.error('Failed to generate sample template. Please try again.');
+            toast.error(t('toasts.generateSampleFailed'));
         } finally {
             setIsGenerating(false);
+        }
+    };
+
+    // With no INVOICE template of its own the institute prints the built-in layout. It lives in
+    // the backend, not in the templates list, so it is shown here and can be saved as an
+    // editable copy (identical, so invoices look the same until the copy is changed).
+    const handlePreviewBuiltIn = async () => {
+        setIsBuiltInBusy(true);
+        try {
+            const html = await fetchBuiltInInvoiceTemplate();
+            if (!html.trim()) throw new Error('Built-in invoice layout is empty');
+            setBuiltInPreviewHtml(toPreviewHtml(html));
+        } catch (error) {
+            console.error('Error loading built-in invoice layout:', error);
+            toast.error(t('builtIn.loadFailed'));
+        } finally {
+            setIsBuiltInBusy(false);
+        }
+    };
+
+    const handleCustomizeBuiltIn = async () => {
+        setIsBuiltInBusy(true);
+        try {
+            const html = await fetchBuiltInInvoiceTemplate();
+            if (!html.trim()) throw new Error('Built-in invoice layout is empty');
+            const created = await createMessageTemplate({
+                name: t('builtIn.copyName'),
+                type: 'INVOICE',
+                subject: 'Invoice {{invoice_number}}',
+                content: html,
+                variables: extractVariables(html),
+                templateType: 'INVOICE',
+            });
+            toast.success(t('builtIn.customized'));
+            navigate({ to: '/templates/edit/$templateId', params: { templateId: created.id } });
+        } catch (error) {
+            console.error('Error copying built-in invoice layout:', error);
+            toast.error(t('builtIn.loadFailed'));
+        } finally {
+            setIsBuiltInBusy(false);
         }
     };
 
@@ -136,12 +228,12 @@ export const InvoiceTemplatesSection: React.FC<InvoiceTemplatesSectionProps> = (
         setIsDeleting(true);
         try {
             await deleteMessageTemplate(templateId);
-            toast.success('Template deleted successfully!');
+            toast.success(t('toasts.deleteSuccess'));
             setDeleteId(null);
             await loadTemplates();
         } catch (error) {
             console.error('Error deleting template:', error);
-            toast.error('Failed to delete template. Please try again.');
+            toast.error(t('toasts.deleteFailed'));
         } finally {
             setIsDeleting(false);
         }
@@ -177,18 +269,18 @@ export const InvoiceTemplatesSection: React.FC<InvoiceTemplatesSectionProps> = (
                             size="sm"
                             onClick={handleGenerateSample}
                             disabled={isGenerating}
-                            title="Generate a sample template with all invoice variables pre-filled"
+                            title={t('actions.generateSampleTitle')}
                         >
                             {isGenerating ? (
-                                <Loader2 className="mr-2 size-4 animate-spin" />
+                                <CircleNotch className="me-2 size-4 animate-spin" />
                             ) : (
-                                <Sparkles className="mr-2 size-4 text-amber-500" />
+                                <Sparkle className="me-2 size-4 text-amber-500" />
                             )}
-                            {isGenerating ? 'Generating…' : 'Generate sample'}
+                            {isGenerating ? t('actions.generating') : t('actions.generateSample')}
                         </Button>
                         <MyButton buttonType="primary" scale="medium" onClick={handleCreate}>
                             <Plus className="mr-2 size-4" />
-                            Create Template
+                            {t('actions.createTemplate')}
                         </MyButton>
                     </div>
                 </div>
@@ -196,46 +288,95 @@ export const InvoiceTemplatesSection: React.FC<InvoiceTemplatesSectionProps> = (
             <CardContent>
                 {isLoading ? (
                     <div className="flex items-center justify-center py-8">
-                        <Loader2 className="size-5 animate-spin" />
-                        <span className="ml-2 text-sm">Loading templates…</span>
+                        <CircleNotch className="size-5 animate-spin" />
+                        <span className="ms-2 text-sm">{t('loading')}</span>
+                    </div>
+                ) : templates.length === 0 && type === 'INVOICE' ? (
+                    <div className="flex flex-col gap-3 rounded-lg border p-4 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="space-y-1">
+                            <div className="flex flex-wrap items-center gap-2">
+                                <span className="text-subtitle font-semibold">{t('builtIn.name')}</span>
+                                <Badge variant="secondary" title={t('table.defaultBadgeTitle')}>
+                                    {t('table.defaultBadge')}
+                                </Badge>
+                            </div>
+                            <p className="text-caption text-muted-foreground">{t('builtIn.description')}</p>
+                        </div>
+                        <div className="flex shrink-0 items-center gap-2">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={handlePreviewBuiltIn}
+                                disabled={isBuiltInBusy}
+                            >
+                                <Eye className="me-2 size-4" />
+                                {t('table.actions.preview')}
+                            </Button>
+                            <MyButton
+                                buttonType="primary"
+                                scale="medium"
+                                onClick={handleCustomizeBuiltIn}
+                                disable={isBuiltInBusy}
+                            >
+                                {isBuiltInBusy ? (
+                                    <CircleNotch className="mr-2 size-4 animate-spin" />
+                                ) : (
+                                    <PencilSimple className="mr-2 size-4" />
+                                )}
+                                {t('builtIn.customize')}
+                            </MyButton>
+                        </div>
                     </div>
                 ) : templates.length === 0 ? (
                     <div className="rounded-lg border border-dashed py-8 text-center">
                         <Icon className="mx-auto mb-3 size-8 text-muted-foreground" />
                         <p className="mb-3 text-sm text-muted-foreground">
-                            No {type === 'INVOICE' ? 'invoice PDF' : 'invoice email'} templates yet.
-                            The built-in default will be used until you create one.
+                            {type === 'INVOICE'
+                                ? t('emptyState.messagePdf')
+                                : t('emptyState.messageEmail')}
                         </p>
                         <MyButton buttonType="secondary" scale="medium" onClick={handleCreate}>
                             <Plus className="mr-2 size-4" />
-                            Create your first template
+                            {t('emptyState.createFirst')}
                         </MyButton>
                     </div>
                 ) : (
                     <div className="overflow-x-auto rounded-lg border">
-                        <Table className="min-w-[480px]">
+                        <Table className="min-w-96">
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead className="text-xs sm:text-sm">Name</TableHead>
+                                    <TableHead className="text-xs sm:text-sm">{t('table.columns.name')}</TableHead>
                                     <TableHead className="hidden text-xs sm:table-cell sm:text-sm">
-                                        Subject
+                                        {t('table.columns.subject')}
                                     </TableHead>
                                     <TableHead className="hidden text-xs md:table-cell sm:text-sm">
-                                        Created
+                                        {t('table.columns.created')}
                                     </TableHead>
-                                    <TableHead className="text-right text-xs sm:text-sm">Actions</TableHead>
+                                    <TableHead className="text-end text-xs sm:text-sm">
+                                        {t('table.columns.actions')}
+                                    </TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
                                 {templates.map((template) => (
                                     <TableRow key={template.id}>
                                         <TableCell className="font-medium text-xs sm:text-sm">
-                                            {template.name}
+                                            <div className="flex flex-wrap items-center gap-2">
+                                                <span>{template.name}</span>
+                                                {template.id === inUseId && (
+                                                    <Badge
+                                                        variant="secondary"
+                                                        title={t('table.defaultBadgeTitle')}
+                                                    >
+                                                        {t('table.defaultBadge')}
+                                                    </Badge>
+                                                )}
+                                            </div>
                                         </TableCell>
                                         <TableCell className="hidden sm:table-cell">
                                             <div className="max-w-xs truncate text-xs sm:text-sm text-muted-foreground">
                                                 {template.subject || (
-                                                    <span className="italic">No subject</span>
+                                                    <span className="italic">{t('table.noSubject')}</span>
                                                 )}
                                             </div>
                                         </TableCell>
@@ -244,12 +385,24 @@ export const InvoiceTemplatesSection: React.FC<InvoiceTemplatesSectionProps> = (
                                         </TableCell>
                                         <TableCell className="text-right">
                                             <div className="flex items-center justify-end gap-1">
+                                                {template.id !== inUseId && (
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        onClick={() => makeDefault(template.id)}
+                                                        disabled={isSettingDefault}
+                                                        className="p-1 sm:p-2"
+                                                        title={t('table.actions.setDefault')}
+                                                    >
+                                                        <Star className="size-4" />
+                                                    </Button>
+                                                )}
                                                 <Button
                                                     variant="ghost"
                                                     size="sm"
                                                     onClick={() => handlePreview(template)}
                                                     className="p-1 sm:p-2"
-                                                    title="Preview"
+                                                    title={t('table.actions.preview')}
                                                 >
                                                     <Eye className="size-4" />
                                                 </Button>
@@ -258,18 +411,18 @@ export const InvoiceTemplatesSection: React.FC<InvoiceTemplatesSectionProps> = (
                                                     size="sm"
                                                     onClick={() => handleEdit(template)}
                                                     className="p-1 sm:p-2"
-                                                    title="Edit"
+                                                    title={t('table.actions.edit')}
                                                 >
-                                                    <Edit className="size-4" />
+                                                    <PencilSimple className="size-4" />
                                                 </Button>
                                                 <Button
                                                     variant="ghost"
                                                     size="sm"
                                                     onClick={() => setDeleteId(template.id)}
                                                     className="p-1 text-destructive hover:text-destructive sm:p-2"
-                                                    title="Delete"
+                                                    title={t('table.actions.delete')}
                                                 >
-                                                    <Trash2 className="size-4" />
+                                                    <Trash className="size-4" />
                                                 </Button>
                                             </div>
                                         </TableCell>
@@ -283,7 +436,7 @@ export const InvoiceTemplatesSection: React.FC<InvoiceTemplatesSectionProps> = (
                 {!isLoading && totalPages > 1 && (
                     <div className="mt-4 flex items-center justify-between">
                         <span className="text-xs text-muted-foreground">
-                            {totalElements} template{totalElements === 1 ? '' : 's'}
+                            {t('pagination.templateCount', { count: totalElements })}
                         </span>
                         <div className="flex items-center gap-2">
                             <Button
@@ -293,10 +446,10 @@ export const InvoiceTemplatesSection: React.FC<InvoiceTemplatesSectionProps> = (
                                 disabled={page === 0}
                                 onClick={() => goToPage(page - 1)}
                             >
-                                <ChevronLeft className="size-4" />
+                                <CaretLeft className="size-4" />
                             </Button>
                             <span className="text-xs">
-                                Page {page + 1} of {totalPages}
+                                {t('pagination.pageOf', { page: page + 1, total: totalPages })}
                             </span>
                             <Button
                                 variant="outline"
@@ -305,7 +458,7 @@ export const InvoiceTemplatesSection: React.FC<InvoiceTemplatesSectionProps> = (
                                 disabled={page >= totalPages - 1}
                                 onClick={() => goToPage(page + 1)}
                             >
-                                <ChevronRight className="size-4" />
+                                <CaretRight className="size-4" />
                             </Button>
                         </div>
                     </div>
@@ -323,14 +476,29 @@ export const InvoiceTemplatesSection: React.FC<InvoiceTemplatesSectionProps> = (
                 />
             )}
 
+            <Dialog
+                open={builtInPreviewHtml !== null}
+                onOpenChange={(open) => !open && setBuiltInPreviewHtml(null)}
+            >
+                <DialogContent className="flex h-dialog-tall w-dialog-xl flex-col">
+                    <DialogHeader>
+                        <DialogTitle>{t('builtIn.name')}</DialogTitle>
+                        <DialogDescription>{t('builtIn.description')}</DialogDescription>
+                    </DialogHeader>
+                    <iframe
+                        title={t('builtIn.name')}
+                        srcDoc={builtInPreviewHtml ?? ''}
+                        sandbox=""
+                        className="w-full flex-1 rounded-md border bg-white"
+                    />
+                </DialogContent>
+            </Dialog>
+
             <Dialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
                 <DialogContent className="max-w-md">
                     <DialogHeader>
-                        <DialogTitle>Delete Template</DialogTitle>
-                        <DialogDescription>
-                            Are you sure you want to delete this template? This action cannot be
-                            undone.
-                        </DialogDescription>
+                        <DialogTitle>{t('deleteDialog.title')}</DialogTitle>
+                        <DialogDescription>{t('deleteDialog.description')}</DialogDescription>
                     </DialogHeader>
                     <DialogFooter className="gap-2">
                         <Button
@@ -338,7 +506,7 @@ export const InvoiceTemplatesSection: React.FC<InvoiceTemplatesSectionProps> = (
                             onClick={() => setDeleteId(null)}
                             disabled={isDeleting}
                         >
-                            Cancel
+                            {t('deleteDialog.cancel')}
                         </Button>
                         <Button
                             variant="destructive"
@@ -347,11 +515,11 @@ export const InvoiceTemplatesSection: React.FC<InvoiceTemplatesSectionProps> = (
                         >
                             {isDeleting ? (
                                 <>
-                                    <Loader2 className="mr-2 size-4 animate-spin" />
-                                    Deleting…
+                                    <CircleNotch className="me-2 size-4 animate-spin" />
+                                    {t('deleteDialog.deleting')}
                                 </>
                             ) : (
-                                'Delete'
+                                t('deleteDialog.delete')
                             )}
                         </Button>
                     </DialogFooter>

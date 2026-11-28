@@ -1,0 +1,42 @@
+{
+    "header": {
+        "credits_one": "{{value}} crédit",
+        "credits_many": "{{value}} de crédits",
+        "credits_other": "{{value}} crédits",
+        "requests_one": "{{count}} requête",
+        "requests_many": "{{count}} de requêtes",
+        "requests_other": "{{count}} requêtes"
+    },
+    "toolLabel": {
+        "usedTool": "Outil utilisé : {{name}}",
+        "usedToolGeneric": "L'IA a utilisé un outil",
+        "toolResult": "Résultat de {{name}}",
+        "toolResultGeneric": "Résultat de l'outil"
+    },
+    "transcript": {
+        "selectConversation": "Sélectionnez une conversation pour lire la transcription complète.",
+        "loading": "Chargement de la transcription…",
+        "loadError": "Impossible de charger cette transcription.",
+        "empty": "Cette conversation ne contient aucun message."
+    },
+    "conversations": {
+        "loading": "Chargement des conversations…",
+        "emptyTitle": "Aucune conversation avec l'IA pour le moment",
+        "emptyDescription": "{{name}} n'a pas discuté avec le tuteur IA des apprenants sur la période sélectionnée. Essayez d'élargir la période pour en voir davantage.",
+        "thisMember": "Ce membre",
+        "noMessagePreview": "Aucun message de l'apprenant"
+    },
+    "activity": {
+        "columns": {
+            "when": "Quand",
+            "tool": "Outil",
+            "model": "Modèle",
+            "credits": "Crédits"
+        },
+        "description": "Chaque déduction de crédits sur tous les outils d'IA pour la période sélectionnée."
+    },
+    "tabs": {
+        "conversations": "Conversations",
+        "creditActivity": "Activité des crédits"
+    }
+}

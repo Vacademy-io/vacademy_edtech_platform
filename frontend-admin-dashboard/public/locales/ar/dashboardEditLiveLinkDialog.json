@@ -1,0 +1,10 @@
+{
+    "heading": "تعديل رابط الحصة المباشرة",
+    "currentLinkLabel": "الرابط الحالي",
+    "newLinkLabel": "الرابط الجديد",
+    "newLinkPlaceholder": "أدخل الرابط الجديد",
+    "actions": {
+        "cancel": "إلغاء",
+        "update": "تحديث"
+    }
+}

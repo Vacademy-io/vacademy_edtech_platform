@@ -1,0 +1,78 @@
+{
+    "validation": {
+        "joinDateRequired": "Choisissez la date d'embauche",
+        "noticePeriodWholeNumber": "Utilisez un nombre entier de jours",
+        "userIdRequired": "Un identifiant utilisateur est requis pour lier ce profil à une personne"
+    },
+    "noDepartment": "Aucun département",
+    "noDesignation": "Aucun poste",
+    "noReportingManager": "Aucun responsable hiérarchique",
+    "notSet": "Non défini",
+    "toast": {
+        "updated": "Profil employé mis à jour",
+        "added": "Employé ajouté"
+    },
+    "errors": {
+        "updateFailed": "Impossible de mettre à jour ce profil employé",
+        "createFailed": "Impossible d'ajouter cet employé"
+    },
+    "editEmployee": "Modifier l'employé",
+    "addEmployee": "Ajouter un employé",
+    "cancel": "Annuler",
+    "saving": "Enregistrement…",
+    "adding": "Ajout…",
+    "saveChanges": "Enregistrer les modifications",
+    "sections": {
+        "whoThisIsFor": "Pour qui est ce profil",
+        "roleInOrganisation": "Rôle dans l'organisation",
+        "emergencyContact": "Contact d'urgence",
+        "statutoryIdentifiers": "Identifiants légaux"
+    },
+    "fields": {
+        "userId": {
+            "label": "Identifiant utilisateur",
+            "placeholder": "Identifiant utilisateur de la plateforme",
+            "description": "Voie plus simple : ouvrez Staff Coverage et créez le profil RH directement à partir d'une personne déjà dans votre équipe — l'identifiant utilisateur est rempli automatiquement."
+        },
+        "employeeCode": {
+            "label": "Code employé",
+            "placeholder": "ex. EMP-014"
+        },
+        "joinDate": {
+            "label": "Date d'embauche"
+        },
+        "department": "Département",
+        "designation": "Poste",
+        "reportingManager": "Responsable hiérarchique",
+        "employmentType": "Type d'emploi",
+        "noticePeriod": {
+            "label": "Préavis (jours)",
+            "placeholder": "ex. 30"
+        },
+        "nationality": {
+            "label": "Nationalité",
+            "placeholder": "ex. Indienne"
+        },
+        "contactName": {
+            "label": "Nom",
+            "placeholder": "Nom du contact"
+        },
+        "contactPhone": {
+            "label": "Téléphone",
+            "placeholder": "Numéro du contact"
+        },
+        "contactRelation": {
+            "label": "Lien",
+            "placeholder": "ex. Conjoint(e)"
+        },
+        "pan": {
+            "label": "PAN",
+            "placeholder": "ex. ABCDE1234F"
+        },
+        "uan": {
+            "label": "UAN",
+            "placeholder": "UAN du fonds de prévoyance"
+        }
+    },
+    "maskedHint": "Le numéro enregistré est masqué. Laissez ce champ vide pour le conserver."
+}

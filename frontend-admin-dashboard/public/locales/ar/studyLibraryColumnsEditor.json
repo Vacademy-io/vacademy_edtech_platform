@@ -1,0 +1,18 @@
+{
+    "columnsLayout": "تخطيط الأعمدة",
+    "columnsCount_zero": "{{count}} عمود",
+    "columnsCount_one": "عمود واحد",
+    "columnsCount_two": "عمودان",
+    "columnsCount_few": "{{count}} أعمدة",
+    "columnsCount_many": "{{count}} عمودًا",
+    "columnsCount_other": "{{count}} عمود",
+    "gapTight": "ضيق",
+    "gapNormal": "عادي",
+    "gapWide": "واسع",
+    "gapExtraWide": "واسع جدًا",
+    "preview": "معاينة",
+    "edit": "تحرير",
+    "columnLabel": "العمود {{number}}",
+    "columnPlaceholder": "العمود {{number}} — نص و/أو صورة…",
+    "emptyColumn": "العمود فارغ"
+}

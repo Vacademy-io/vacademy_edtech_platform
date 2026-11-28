@@ -75,6 +75,13 @@ public class TimelineEvent {
         @Builder.Default
         private TimelineCategory category = TimelineCategory.ACTIVITY;
 
+        /**
+         * Institute the event belongs to. Reads made for an institute skip other institutes'
+         * events; null (rows from before this column, or no institute known) shows everywhere.
+         */
+        @Column(name = "institute_id")
+        private String instituteId;
+
         @Column(name = "created_at", insertable = false, updatable = false)
         private Timestamp createdAt;
 }

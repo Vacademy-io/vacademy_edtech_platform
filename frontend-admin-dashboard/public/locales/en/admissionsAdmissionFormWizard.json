@@ -1,0 +1,36 @@
+{
+    "pageTitle": "Admission Form",
+    "backToAdmissionList": "Back to Admission List",
+    "downloadPdf": "Download PDF",
+    "downloadingPdf": "Generating...",
+    "print": "Print",
+    "previous": "Previous",
+    "saveNext": "Save & Next",
+    "submitAdmission": "Submit Admission",
+    "submitting": "Submitting...",
+    "printDocumentTitle": "Admission Form - {{studentName}}",
+    "steps": {
+        "studentDetails": "{{learnerLabel}} Details",
+        "previousSchoolPersonalDetails": "Previous School & Personal Details",
+        "parentDetails": "{{learnerLabel}} Parent Details",
+        "addressDetails": "Address Details",
+        "finish": "Finish",
+        "feeAssignment": "Fee Assignment"
+    },
+    "trackingLabel": {
+        "application": "Application Tracking ID",
+        "enquiry": "Enquiry Tracking ID",
+        "admission": "Admission Tracking ID"
+    },
+    "toast": {
+        "pdfTemplateNotReady": "PDF template not ready. Please try again.",
+        "generatingPdf": "Generating PDF...",
+        "pdfDownloaded": "PDF downloaded!",
+        "pdfGenerationFailed": "Failed to generate PDF. Please try again.",
+        "popupBlocked": "Pop-up blocked. Please allow pop-ups to print.",
+        "instituteDetailsUnavailable": "Institute details not available. Please try again.",
+        "admissionSubmitted": "Admission submitted successfully! ID: {{admissionId}}",
+        "admissionSubmitFailed": "Failed to submit admission form. Please try again.",
+        "submissionError": "An error occurred. Please check your network and try again."
+    }
+}

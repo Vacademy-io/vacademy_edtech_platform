@@ -1,0 +1,30 @@
+{
+    "header": {
+        "title": "استخدام الأجهزة",
+        "subtitle": "توزيع المنصات بين المستخدمين"
+    },
+    "error": {
+        "message": "فشل تحميل بيانات الأجهزة"
+    },
+    "empty": {
+        "message": "لا تتوفر بيانات عن الأجهزة"
+    },
+    "device": {
+        "desktop": "سطح المكتب",
+        "mobile": "الجوال",
+        "tablet": "الجهاز اللوحي"
+    },
+    "tooltip": {
+        "usage": "الاستخدام: {{value}}",
+        "users": "المستخدمون: {{value}}",
+        "percentOfTotal": "{{percentage}}٪ من الإجمالي"
+    },
+    "stats": {
+        "users_zero": "{{count}} مستخدم",
+        "users_one": "{{count}} مستخدم واحد",
+        "users_two": "{{count}} مستخدمان",
+        "users_few": "{{count}} مستخدمين",
+        "users_many": "{{count}} مستخدمًا",
+        "users_other": "{{count}} مستخدم"
+    }
+}

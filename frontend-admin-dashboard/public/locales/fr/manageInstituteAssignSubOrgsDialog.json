@@ -1,0 +1,31 @@
+{
+    "title": "{{subOrgPlural}} pour {{name}}",
+    "defaultMemberLabel": "ce membre",
+    "defaultMemberName": "Membre",
+    "noneExist": "Aucun {{subOrgPlural}} n'existe encore dans cet institut.",
+    "grantsAccessDescription": "Accorde l'accès à tous les cours couverts par les invitations actives du {{subOrg}}. Ceci est indépendant de ce que son rôle accorde déjà.",
+    "selectLabel": "Sélectionner {{subOrgPlural}}",
+    "searchPlaceholder": "Rechercher {{subOrgPlural}}…",
+    "noneSelected": "Aucun sélectionné — ce membre ne conserve aucun accès {{subOrg}} individuel.",
+    "adding_one": "Ajout de {{count}}.",
+    "adding_many": "Ajout de {{count}}.",
+    "adding_other": "Ajout de {{count}}.",
+    "removing_one": "Suppression de {{count}}.",
+    "removing_many": "Suppression de {{count}}.",
+    "removing_other": "Suppression de {{count}}.",
+    "toast": {
+        "assigned_one": "{{count}} assigné",
+        "assigned_many": "{{count}} assignés",
+        "assigned_other": "{{count}} assignés",
+        "removed_one": "{{count}} retiré",
+        "removed_many": "{{count}} retirés",
+        "removed_other": "{{count}} retirés",
+        "summary": "{{name}} — {{parts}} {{subOrgPlural}}",
+        "updateFailed": "Impossible de mettre à jour {{subOrgPlural}}"
+    },
+    "actions": {
+        "cancel": "Annuler",
+        "save": "Enregistrer",
+        "saving": "Enregistrement…"
+    }
+}

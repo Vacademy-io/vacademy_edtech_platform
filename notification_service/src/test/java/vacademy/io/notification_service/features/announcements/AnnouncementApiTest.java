@@ -6,14 +6,18 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import vacademy.io.common.auth.dto.UserServiceDTO;
+import vacademy.io.common.auth.model.CustomUserDetails;
 import vacademy.io.notification_service.features.announcements.dto.CreateAnnouncementRequest;
 
 import java.util.List;
 import java.util.Map;
 
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -24,6 +28,17 @@ class AnnouncementApiTest {
 
     @Autowired private MockMvc mockMvc;
     @Autowired private ObjectMapper objectMapper;
+    // Postgres-only email-stats SQL in the create response rolls the create back on H2.
+    @MockBean private vacademy.io.notification_service.features.notification_log.repository.NotificationLogRepository notificationLogRepository;
+
+    private static CustomUserDetails principal(String userId, String role) {
+        UserServiceDTO dto = new UserServiceDTO();
+        dto.setUserId(userId);
+        dto.setUsername(userId + "@example.com");
+        dto.setFullName(userId);
+        dto.setAuthorities(List.of(role));
+        return new CustomUserDetails(dto);
+    }
 
     private CreateAnnouncementRequest sampleRequest() {
         CreateAnnouncementRequest req = new CreateAnnouncementRequest();
@@ -71,7 +86,7 @@ class AnnouncementApiTest {
     void createAndFetchAnnouncement() throws Exception {
         var body = objectMapper.writeValueAsString(sampleRequest());
 
-        var postResult = mockMvc.perform(post("/notification-service/v1/announcements")
+        var postResult = mockMvc.perform(post("/notification-service/v1/announcements").with(AnnouncementTestAuth.admin("INST_TEST"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
                 .andExpect(status().isOk())
@@ -80,7 +95,7 @@ class AnnouncementApiTest {
 
         String id = objectMapper.readTree(postResult.getResponse().getContentAsString()).get("id").asText();
 
-        mockMvc.perform(get("/notification-service/v1/announcements/" + id))
+        mockMvc.perform(get("/notification-service/v1/announcements/" + id).header("clientId", "INST_TEST").with(user(principal("admin-1", "ADMIN"))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.title").value("Test Announcement"));
     }

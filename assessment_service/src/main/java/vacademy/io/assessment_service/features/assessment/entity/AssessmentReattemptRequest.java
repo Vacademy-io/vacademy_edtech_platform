@@ -35,10 +35,14 @@ public class AssessmentReattemptRequest {
 
     public static final String TYPE_REATTEMPT = "REATTEMPT";
     public static final String TYPE_TIME_INCREASE = "TIME_INCREASE";
+    /** A learner reporting a problem with a question (or the exam) from inside the live test. */
+    public static final String TYPE_PROBLEM_REPORT = "PROBLEM_REPORT";
 
     public static final String STATUS_PENDING = "PENDING";
     public static final String STATUS_APPROVED = "APPROVED";
     public static final String STATUS_REJECTED = "REJECTED";
+    /** How an admin closes a {@link #TYPE_PROBLEM_REPORT}; nothing is granted. */
+    public static final String STATUS_RESOLVED = "RESOLVED";
 
     @Id
     @UuidGenerator
@@ -60,20 +64,34 @@ public class AssessmentReattemptRequest {
     @Column(name = "attempt_id")
     private String attemptId;
 
-    /** {@link #TYPE_REATTEMPT} or {@link #TYPE_TIME_INCREASE}. */
+    /** {@link #TYPE_REATTEMPT}, {@link #TYPE_TIME_INCREASE} or {@link #TYPE_PROBLEM_REPORT}. */
     @Column(name = "request_type", nullable = false)
     private String requestType;
 
     @Column(name = "reason")
     private String reason;
 
-    /** {@link #STATUS_PENDING}, {@link #STATUS_APPROVED} or {@link #STATUS_REJECTED}. */
+    /**
+     * The question a {@link #TYPE_PROBLEM_REPORT} is about. Null for the other types, and for a
+     * report whose question could not be matched to this assessment.
+     */
+    @Column(name = "question_id")
+    private String questionId;
+
+    /**
+     * {@link #STATUS_PENDING}, {@link #STATUS_APPROVED}, {@link #STATUS_REJECTED} or
+     * {@link #STATUS_RESOLVED} (problem reports only).
+     */
     @Column(name = "status", nullable = false)
     private String status;
 
     /** Attempts actually granted on approval — an admin may give fewer than were asked for. */
     @Column(name = "granted_count")
     private Integer grantedCount;
+
+    /** Minutes added to the learner's live attempt when a TIME_INCREASE request is approved. */
+    @Column(name = "granted_minutes")
+    private Integer grantedMinutes;
 
     @Column(name = "reviewed_by")
     private String reviewedBy;

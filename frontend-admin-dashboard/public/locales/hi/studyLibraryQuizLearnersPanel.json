@@ -1,0 +1,70 @@
+{
+    "filters": {
+        "everyone": "सभी",
+        "attempted": "प्रयास किया",
+        "notAttempted": "प्रयास नहीं किया",
+        "passed": "उत्तीर्ण",
+        "failed": "अनुत्तीर्ण"
+    },
+    "sorts": {
+        "highestScore": "सबसे अधिक स्कोर",
+        "lowestScore": "सबसे कम स्कोर",
+        "nameAz": "नाम (A–Z)",
+        "mostRecentAttempt": "सबसे हालिया प्रयास",
+        "mostAttempts": "सबसे अधिक प्रयास"
+    },
+    "csv": {
+        "name": "नाम",
+        "email": "ईमेल",
+        "mobile": "मोबाइल",
+        "status": "स्थिति",
+        "attempts": "प्रयास",
+        "marksObtained": "प्राप्त अंक",
+        "totalMarks": "कुल अंक",
+        "scorePercent": "स्कोर %",
+        "correct": "सही",
+        "wrong": "गलत",
+        "skipped": "छोड़े गए",
+        "unanswered": "अनुत्तरित",
+        "timeSpentSeconds": "व्यतीत समय (सेकंड)",
+        "lastAttempt": "अंतिम प्रयास"
+    },
+    "table": {
+        "learner": "शिक्षार्थी",
+        "status": "स्थिति",
+        "score": "स्कोर",
+        "responses": "उत्तर",
+        "attempts": "प्रयास",
+        "timeSpent": "व्यतीत समय",
+        "lastAttempt": "अंतिम प्रयास"
+    },
+    "breakdown": {
+        "correct_one": "{{count}} सही",
+        "correct_other": "{{count}} सही",
+        "wrong_one": "{{count}} गलत",
+        "wrong_other": "{{count}} गलत",
+        "skipped_one": "{{count}} छोड़ा गया",
+        "skipped_other": "{{count}} छोड़े गए",
+        "unanswered_one": "{{count}} अनुत्तरित",
+        "unanswered_other": "{{count}} अनुत्तरित"
+    },
+    "searchPlaceholder": "शिक्षार्थी खोजें",
+    "filterLearnersAriaLabel": "शिक्षार्थियों को फ़िल्टर करें",
+    "actions": {
+        "exportCsv": "CSV निर्यात करें",
+        "clearFilters": "फ़िल्टर हटाएं"
+    },
+    "truncatedNotice": "इस बैच में रिपोर्ट द्वारा एक बार में लौटाए जाने से अधिक शिक्षार्थी हैं — नीचे दी गई सूची सीमित है, इसलिए कुल योग अधूरा हो सकता है।",
+    "empty": {
+        "noMatchTitle": "कोई भी शिक्षार्थी इन फ़िल्टर से मेल नहीं खाता",
+        "noMatchSubtitle": "एक अलग खोज शब्द आज़माएं, या वापस 'सभी' पर स्विच करें।"
+    },
+    "toast": {
+        "nothingToExport": "इन फ़िल्टर के साथ निर्यात करने के लिए कुछ नहीं है।",
+        "exported_one": "{{count}} पंक्ति निर्यात की गई",
+        "exported_other": "{{count}} पंक्तियां निर्यात की गईं"
+    },
+    "footer": {
+        "summary": "{{total}} नामांकित शिक्षार्थियों में से {{visible}} दिखाए जा रहे हैं · बैच के {{percent}} ने इस क्विज़ का प्रयास किया है।"
+    }
+}

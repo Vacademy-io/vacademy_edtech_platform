@@ -1,0 +1,22 @@
+{
+    "status": {
+        "success": "Success",
+        "failed": "Failed",
+        "created": "Created",
+        "unknownError": "Unknown error"
+    },
+    "errors": {
+        "missingColumns": "Missing required column(s): {{columns}}. Use the downloaded template header row.",
+        "titleRequired": "Title is required",
+        "startDateRequired": "start_date is required",
+        "invalidStartDate": "Invalid start_date (use YYYY-MM-DD)",
+        "startTimeRequired": "start_time is required",
+        "invalidStartTime": "Invalid start_time (use 24h HH:mm)",
+        "durationRequired": "Duration must be greater than zero",
+        "unknownPlatform": "Unknown or disabled platform \"{{platform}}\". Allowed: {{allowed}}",
+        "linkRequired": "Link is required for platform \"{{platform}}\"",
+        "invalidLink": "Invalid link URL",
+        "unknownBatchId": "Unknown batch id: {{id}}",
+        "failedToReadCsv": "Failed to read CSV"
+    }
+}

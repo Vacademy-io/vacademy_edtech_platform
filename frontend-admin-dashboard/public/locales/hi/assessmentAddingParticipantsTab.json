@@ -1,0 +1,19 @@
+{
+    "header": {
+        "title": "प्रतिभागी चयन",
+        "description": "पूरे बैच चुनें या व्यक्तिगत शिक्षार्थियों को हाथ से चुनें।"
+    },
+    "tabs": {
+        "selectBatch": "बैच चुनें",
+        "selectIndividually": "व्यक्तिगत रूप से चुनें"
+    },
+    "batchList": {
+        "sectionPlaceholder": "सेक्शन चुनें",
+        "searchPlaceholder": "कोर्स या लेवल से खोजें",
+        "clearSearchAriaLabel": "खोज साफ़ करें",
+        "emptyState": {
+            "message": "\"{{query}}\" से मेल खाने वाला कोई कोर्स या लेवल नहीं मिला",
+            "clearSearch": "खोज साफ़ करें"
+        }
+    }
+}

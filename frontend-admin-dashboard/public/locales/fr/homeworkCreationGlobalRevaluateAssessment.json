@@ -1,0 +1,14 @@
+{
+    "trigger": {
+        "entireAssessment": "Évaluation entière"
+    },
+    "dialog": {
+        "title": "Réévaluer tous les {{term}}",
+        "attention": "Attention",
+        "confirmText": "Êtes-vous sûr de vouloir réévaluer pour tous les {{term}} ?",
+        "confirmButton": "Oui"
+    },
+    "toasts": {
+        "revaluateSuccess": "La tentative pour cette évaluation a été réévaluée pour tous les étudiants. Les participants doivent vérifier leur e-mail !"
+    }
+}

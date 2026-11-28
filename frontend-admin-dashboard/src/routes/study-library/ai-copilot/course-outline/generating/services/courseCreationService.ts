@@ -1,3 +1,4 @@
+import type { TFunction } from 'i18next';
 import authenticatedAxiosInstance from '@/lib/auth/axiosInstance';
 import { getInstituteId } from '@/constants/helper';
 import { getCurrentInstituteId } from '@/lib/auth/instituteUtils';
@@ -57,12 +58,26 @@ function findIdByPackageId(data: BatchForSessionType[], packageId: string): stri
         .join(',');
 }
 
+// This is a plain service function (not a component/hook), so it cannot call
+// useTranslation() itself — the guide's convention is to thread the caller's
+// `t` in as a parameter. `t` is optional here because this service is also
+// invoked from a sibling file (useCourseCreation.ts) that is wired for i18n
+// in a separate batch of this rollout; until that caller passes its own
+// `t`, this fallback resolves each call's defaultValue string so behavior
+// (and the English copy) stays exactly as before.
+const fallbackT: TFunction = ((
+    _key: string,
+    defaultValue?: unknown,
+    _options?: unknown
+) => (typeof defaultValue === 'string' ? defaultValue : String(_key))) as unknown as TFunction;
+
 /**
  * Creates a course with all its content
  * Flow: Create Course -> Get PackageSessionIds -> Create Subject -> Module -> Chapters -> Slides
  */
 export async function createCourseWithContent(
-    params: CreateCourseParams
+    params: CreateCourseParams,
+    t: TFunction = fallbackT
 ): Promise<CreateCourseResult> {
     const { courseName, sessions, courseMetadata, levelId } = params;
 
@@ -81,12 +96,16 @@ export async function createCourseWithContent(
     // Get token data for user info and institute ID
     const accessToken = getTokenFromCookie(TokenKey.accessToken);
     if (!accessToken) {
-        throw new Error('Access token not found. Please log in again.');
+        throw new Error(
+            t('courseCreation.errors.accessTokenNotFound', 'Access token not found. Please log in again.')
+        );
     }
 
     const tokenData = getTokenDecodedData(accessToken);
     if (!tokenData) {
-        throw new Error('Failed to decode token data. Please log in again.');
+        throw new Error(
+            t('courseCreation.errors.tokenDecodeFailed', 'Failed to decode token data. Please log in again.')
+        );
     }
 
     // If INSTITUTE_ID not found yet, try to get from token
@@ -96,7 +115,10 @@ export async function createCourseWithContent(
 
     if (!INSTITUTE_ID) {
         throw new Error(
-            'Institute ID not found. Please ensure you are logged in and have selected an institute.'
+            t(
+                'courseCreation.errors.instituteIdNotFound',
+                'Institute ID not found. Please ensure you are logged in and have selected an institute.'
+            )
         );
     }
 
@@ -217,7 +239,7 @@ export async function createCourseWithContent(
     };
 
     if (setCreationProgress) {
-        setCreationProgress('Creating course...');
+        setCreationProgress(t('courseCreation.progress.creatingCourse', 'Creating course...'));
     }
 
     // Debug logging
@@ -255,19 +277,31 @@ export async function createCourseWithContent(
                         responseData.ex || responseData.responseCode || responseData.message;
                     console.error('[Course Creation] Backend error (511):', backendError);
                     // Don't logout on backend errors - just throw the error
-                    throw new Error(`Backend Error: ${backendError}`);
+                    throw new Error(
+                        t('courseCreation.errors.backendError', 'Backend Error: {{message}}', {
+                            message: backendError,
+                        })
+                    );
                 }
 
                 // If it's a real 511, check if INSTITUTE_ID is valid
                 if (!INSTITUTE_ID || INSTITUTE_ID === 'undefined' || INSTITUTE_ID === 'null') {
                     throw new Error(
-                        `Invalid Institute ID: ${INSTITUTE_ID}. Please ensure you are logged in and have selected an institute.`
+                        t(
+                            'courseCreation.errors.invalidInstituteId',
+                            'Invalid Institute ID: {{instituteId}}. Please ensure you are logged in and have selected an institute.',
+                            { instituteId: INSTITUTE_ID }
+                        )
                     );
                 }
 
                 // If it's a real 511 with valid INSTITUTE_ID, provide more context
                 throw new Error(
-                    `Network authentication required. Please check your connection or contact support. INSTITUTE_ID: ${INSTITUTE_ID}`
+                    t(
+                        'courseCreation.errors.networkAuthRequired',
+                        'Network authentication required. Please check your connection or contact support. INSTITUTE_ID: {{instituteId}}',
+                        { instituteId: INSTITUTE_ID }
+                    )
                 );
             }
 
@@ -276,8 +310,12 @@ export async function createCourseWithContent(
                 error?.response?.data?.ex ||
                 error?.response?.data?.message ||
                 error?.message ||
-                'Unknown error';
-            throw new Error(`Failed to create course: ${errorMessage}`);
+                t('courseCreation.errors.unknownError', 'Unknown error');
+            throw new Error(
+                t('courseCreation.errors.createCourseFailed', 'Failed to create course: {{message}}', {
+                    message: errorMessage,
+                })
+            );
         }
 
         const courseId =
@@ -285,12 +323,14 @@ export async function createCourseWithContent(
         console.log('[Course Creation] Course created successfully, courseId:', courseId);
         console.log('[Course Creation] Full response data:', courseResponse.data);
         if (!courseId) {
-            throw new Error('Failed to create course: No course ID returned');
+            throw new Error(
+                t('courseCreation.errors.noCourseIdReturned', 'Failed to create course: No course ID returned')
+            );
         }
 
         // Step 2: Get Package Session IDs for the created course
         if (setCreationProgress) {
-            setCreationProgress('Fetching course details...');
+            setCreationProgress(t('courseCreation.progress.fetchingCourseDetails', 'Fetching course details...'));
         }
 
         let packageSessionIds = '';
@@ -333,7 +373,12 @@ export async function createCourseWithContent(
             }
 
             if (!batchesForSessions || batchesForSessions.length === 0) {
-                throw new Error('Institute details not loaded. Please refresh the page and try again.');
+                throw new Error(
+                    t(
+                        'courseCreation.errors.instituteDetailsNotLoaded',
+                        'Institute details not loaded. Please refresh the page and try again.'
+                    )
+                );
             }
 
             // Step 3: Find Package Session IDs for the created course
@@ -342,7 +387,9 @@ export async function createCourseWithContent(
             if (!packageSessionIds) {
                 // If not found immediately, wait a bit and retry (course might need a moment to be fully created)
                 if (setCreationProgress) {
-                    setCreationProgress('Waiting for course to be fully created...');
+                    setCreationProgress(
+                        t('courseCreation.progress.waitingForCourse', 'Waiting for course to be fully created...')
+                    );
                 }
                 await new Promise((resolve) => setTimeout(resolve, 2000));
 
@@ -357,7 +404,10 @@ export async function createCourseWithContent(
 
                 if (!packageSessionIds) {
                     throw new Error(
-                        'Package session IDs not found for the created course. The course may need a moment to be fully created. Please try again in a few seconds.'
+                        t(
+                            'courseCreation.errors.packageSessionIdsNotFound',
+                            'Package session IDs not found for the created course. The course may need a moment to be fully created. Please try again in a few seconds.'
+                        )
                     );
                 }
             }
@@ -365,7 +415,7 @@ export async function createCourseWithContent(
 
         // Step 4: Create Subject
         if (setCreationProgress) {
-            setCreationProgress('Creating subject...');
+            setCreationProgress(t('courseCreation.progress.creatingSubject', 'Creating subject...'));
         }
         console.log('[Course Creation] Creating subject:', courseName);
         const subjectPayload = {
@@ -386,13 +436,15 @@ export async function createCourseWithContent(
         const subjectId = subjectResponse.data?.id || subjectResponse.data?.data?.id;
         console.log('[Course Creation] Subject response:', subjectResponse.data);
         if (!subjectId) {
-            throw new Error('Failed to create subject: No subject ID returned');
+            throw new Error(
+                t('courseCreation.errors.noSubjectIdReturned', 'Failed to create subject: No subject ID returned')
+            );
         }
         console.log('[Course Creation] Subject created successfully:', subjectId);
 
         // Step 5: Create Module
         if (setCreationProgress) {
-            setCreationProgress('Creating module...');
+            setCreationProgress(t('courseCreation.progress.creatingModule', 'Creating module...'));
         }
         console.log('[Course Creation] Creating module...');
         const modulePayload = {
@@ -411,7 +463,9 @@ export async function createCourseWithContent(
         const moduleId = moduleResponse.data?.id || moduleResponse.data?.data?.id;
         console.log('[Course Creation] Module response:', moduleResponse.data);
         if (!moduleId) {
-            throw new Error('Failed to create module: No module ID returned');
+            throw new Error(
+                t('courseCreation.errors.noModuleIdReturned', 'Failed to create module: No module ID returned')
+            );
         }
         console.log('[Course Creation] Module created successfully:', moduleId);
 
@@ -419,7 +473,9 @@ export async function createCourseWithContent(
         // Chapters are created sequentially (need ordered IDs), but slides within
         // each chapter are created in parallel for ~4× speedup.
         if (setCreationProgress) {
-            setCreationProgress('Creating chapters and slides...');
+            setCreationProgress(
+                t('courseCreation.progress.creatingChaptersAndSlides', 'Creating chapters and slides...')
+            );
         }
         const chapterIds: string[] = [];
 
@@ -482,7 +538,11 @@ export async function createCourseWithContent(
                 );
                 if (setCreationProgress) {
                     setCreationProgress(
-                        `Creating ${realSlides.length} slides in "${session.sessionTitle}"...`
+                        t(
+                            'courseCreation.progress.creatingSlidesInChapter',
+                            'Creating {{count}} slides in "{{chapter}}"...',
+                            { count: realSlides.length, chapter: session.sessionTitle }
+                        )
                     );
                 }
 
@@ -500,7 +560,7 @@ export async function createCourseWithContent(
                             packageSessionIds,
                             instituteId: INSTITUTE_ID || '',
                             slideOrder: slideIndex,
-                            topicTag: `${session.sessionTitle} > ${slide.slideTitle} > ${slideKindLabel(slide.slideType)}`,
+                            topicTag: `${session.sessionTitle} > ${slide.slideTitle} > ${slideKindLabel(slide.slideType, t)}`,
                         })
                             .then(() => {
                                 console.log(
@@ -574,23 +634,23 @@ interface CreateSlideParams {
 }
 
 // Human label for the asset kind, for the topic-tag breadcrumb.
-function slideKindLabel(slideType: string): string {
+function slideKindLabel(slideType: string, t: TFunction): string {
     switch (slideType) {
         case 'quiz':
         case 'assessment':
-            return 'Quiz';
+            return t('courseCreation.slideKind.quiz', 'Quiz');
         case 'video':
         case 'video-code':
-            return 'Video';
+            return t('courseCreation.slideKind.video', 'Video');
         case 'ai-video':
         case 'ai-video-code':
-            return 'AI Video';
+            return t('courseCreation.slideKind.aiVideo', 'AI Video');
         case 'ai-slides':
-            return 'AI Slides';
+            return t('courseCreation.slideKind.aiSlides', 'AI Slides');
         case 'ai-storybook':
-            return 'Storybook';
+            return t('courseCreation.slideKind.storybook', 'Storybook');
         default:
-            return 'Notes';
+            return t('courseCreation.slideKind.notes', 'Notes');
     }
 }
 

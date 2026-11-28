@@ -2,11 +2,13 @@ package vacademy.io.admin_core_service.features.telephony.core;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import vacademy.io.admin_core_service.features.audience.entity.AudienceResponse;
 import vacademy.io.admin_core_service.features.audience.repository.AudienceResponseRepository;
+import vacademy.io.admin_core_service.features.institute_learner.repository.StudentSessionInstituteGroupMappingRepository;
 import vacademy.io.admin_core_service.features.telephony.core.dto.ConnectCallRequestDTO;
 import vacademy.io.admin_core_service.features.telephony.enums.CallDirection;
 import vacademy.io.admin_core_service.features.telephony.enums.CallStatus;
@@ -49,6 +51,7 @@ public class CallLifecycleTxOps {
 
     @Autowired private TelephonyCallLogRepository callLogRepo;
     @Autowired private AudienceResponseRepository audienceResponseRepo;
+    @Autowired private StudentSessionInstituteGroupMappingRepository studentMappingRepo;
     @Autowired private TelephonyProviderRegistry registry;
     @Autowired private UserMobileResolver userMobileResolver;
     @Autowired private TelephonyConfigCache configCache;
@@ -60,18 +63,60 @@ public class CallLifecycleTxOps {
     public CallOrchestrator.Prepared prepareAndPersist(String instituteId,
                                                        ConnectCallRequestDTO req,
                                                        CustomUserDetails actor) {
-        TelephonyConfigCache.Resolved resolved = configCache.get(instituteId)
+        TelephonyConfigCache.Resolved resolved = requireEnabledConfig(instituteId);
+
+        // Two entry points converge here: a CRM lead (responseId) and an enrolled
+        // learner called from the LMS side-view (userId only). Resolve both onto the
+        // same (responseId, subjectUserId, phone) triple so everything downstream —
+        // the call row, the CDR matcher, call history, the timeline — is identical.
+        Subject subject = resolveSubject(instituteId, req);
+        return persist(instituteId, resolved, subject.responseId(), subject.userId(), subject.phone(),
+                actor.getUserId(), req.getPreferredNumberId(), null, null);
+    }
+
+    /**
+     * Who a call placed WITHOUT a signed-in counsellor is for — the public API's
+     * POST /v1/human-calls. The caller has already resolved and authorised every part:
+     * the counsellor is a member of {@code instituteId}, {@code responseId} (when set) is
+     * a lead of that institute, and {@code phone} is the E.164 number to dial.
+     * {@code subjectType}/{@code subjectId} are null for a lead (as on the dashboard path)
+     * and API_CONTACT / the public call id otherwise.
+     */
+    public record DialTarget(String responseId, String userId, String phone,
+                             String subjectType, String subjectId) {}
+
+    /**
+     * The public API's entry point: the same validation, origination and INSERT as
+     * {@link #prepareAndPersist(String, ConnectCallRequestDTO, CustomUserDetails)}, for a
+     * counsellor named by id instead of the request's principal.
+     */
+    @Transactional
+    public CallOrchestrator.Prepared prepareAndPersistForCounsellor(String instituteId,
+                                                                    String counsellorUserId,
+                                                                    DialTarget target) {
+        TelephonyConfigCache.Resolved resolved = requireEnabledConfig(instituteId);
+        return persist(instituteId, resolved, target.responseId(), target.userId(), target.phone(),
+                counsellorUserId, null, target.subjectType(), target.subjectId());
+    }
+
+    private TelephonyConfigCache.Resolved requireEnabledConfig(String instituteId) {
+        return configCache.get(instituteId)
                 .filter(r -> Boolean.TRUE.equals(r.getConfig().getEnabled()))
                 .orElseThrow(() -> new VacademyException("Calling is not configured for this institute"));
+    }
 
-        AudienceResponse lead = audienceResponseRepo.findById(req.getResponseId())
-                .orElseThrow(() -> new VacademyException("Lead not found"));
-
-        String leadPhone = firstNonBlank(lead.getParentMobile(),
-                userMobileResolver.findMobile(lead.getUserId()).orElse(null));
-        if (leadPhone == null) throw new VacademyException("Lead has no phone on file");
+    /**
+     * Shared body of both entry points, moved verbatim out of prepareAndPersist: phone
+     * checks, provider origination, the INITIATED row, the bridge request. The dashboard
+     * path passes null subject type/id, which is exactly what it stored before.
+     */
+    private CallOrchestrator.Prepared persist(String instituteId, TelephonyConfigCache.Resolved resolved,
+                                              String responseId, String subjectUserId, String leadPhone,
+                                              String counsellorUserId, String preferredNumberId,
+                                              String subjectType, String subjectId) {
+        if (leadPhone == null) throw new VacademyException("This contact has no phone on file");
         if (!leadPhone.matches("^\\+?[0-9]{8,15}$")) {
-            throw new VacademyException("Lead phone number format not supported");
+            throw new VacademyException("Phone number format not supported");
         }
 
         String providerType = resolved.getConfig().getProviderType();
@@ -85,10 +130,10 @@ public class CallLifecycleTxOps {
                 OriginationContext.builder()
                         .instituteId(instituteId)
                         .providerType(providerType)
-                        .counsellorUserId(actor.getUserId())
-                        .leadUserId(lead.getUserId())
+                        .counsellorUserId(counsellorUserId)
+                        .leadUserId(subjectUserId)
                         .leadPhone(leadPhone)
-                        .preferredNumberId(req.getPreferredNumberId())
+                        .preferredNumberId(preferredNumberId)
                         .selectorKey(resolved.getConfig().getDefaultSelectorKey())
                         .available(views)
                         .build());
@@ -99,9 +144,11 @@ public class CallLifecycleTxOps {
                 .instituteId(instituteId)
                 .providerType(providerType)
                 .providerNumberId(plan.getProviderNumberId())
-                .responseId(lead.getId())
-                .userId(lead.getUserId())
-                .counsellorUserId(actor.getUserId())
+                .responseId(responseId)
+                .userId(subjectUserId)
+                .counsellorUserId(counsellorUserId)
+                .subjectType(subjectType)
+                .subjectId(subjectId)
                 .direction(CallDirection.OUTBOUND.name())
                 .fromNumber(plan.getFrom())
                 .toNumber(leadPhone)
@@ -126,7 +173,69 @@ public class CallLifecycleTxOps {
                 .build();
 
         return new CallOrchestrator.Prepared(callLogId, providerType,
-                plan.getCallerId(), bridge, resolved);
+                plan.getCallerId(), responseId, bridge, resolved);
+    }
+
+    /** Who the call is for: the lead row it files under (may be null), the person's
+     *  user id, and the number to dial. */
+    private record Subject(String responseId, String userId, String phone) {}
+
+    /**
+     * Resolve the call subject from whichever identifier the caller sent.
+     *
+     * <p>CRM path (responseId): unchanged — the lead's own mobile wins, falling
+     * back to the auth record.
+     *
+     * <p>LMS path (userId only): the learner must be enrolled in THIS institute,
+     * checked against student_session_institute_group_mapping. Without that check a
+     * user id alone would let anyone with a calling-enabled institute dial any user
+     * in the platform, since the phone lookup is a global auth_service call. We then
+     * best-effort attach the learner's newest lead row so a learner who also came
+     * through a form keeps one unified call history + timeline.
+     */
+    private Subject resolveSubject(String instituteId, ConnectCallRequestDTO req) {
+        if (req.getResponseId() != null && !req.getResponseId().isBlank()) {
+            AudienceResponse lead = audienceResponseRepo.findById(req.getResponseId())
+                    .orElseThrow(() -> new VacademyException("Lead not found"));
+            // The lead must be one of THIS institute's: the id comes from the browser, and
+            // the caller is only proven to belong to {@code instituteId}. Same message as a
+            // missing lead, so a foreign id reveals nothing about whether it exists.
+            if (!leadBelongsTo(lead, instituteId)) {
+                throw new VacademyException("Lead not found");
+            }
+            String phone = firstNonBlank(lead.getParentMobile(),
+                    userMobileResolver.findMobile(lead.getUserId()).orElse(null));
+            return new Subject(lead.getId(), lead.getUserId(), phone);
+        }
+
+        String userId = req.getUserId();
+        if (userId == null || userId.isBlank()) {
+            throw new VacademyException("responseId or userId is required");
+        }
+        boolean enrolledHere = studentMappingRepo
+                .findLatestPackageSessionIdByUserIdAndInstituteId(userId, instituteId)
+                .isPresent();
+        if (!enrolledHere) {
+            throw new VacademyException("This learner is not enrolled in this institute");
+        }
+        String responseId = audienceResponseRepo
+                .findLatestResponseIdForUserInInstitute(instituteId, userId, PageRequest.of(0, 1))
+                .stream().findFirst().orElse(null);
+        return new Subject(responseId, userId, userMobileResolver.findMobile(userId).orElse(null));
+    }
+
+    /**
+     * A campaign lead belongs to its campaign's institute; an admission / application lead
+     * (no campaign, audience_id NULL) to the institute of its application stage. Anything
+     * else — another institute's lead, or a campaign-less lead with no application — is not
+     * this institute's.
+     */
+    private boolean leadBelongsTo(AudienceResponse lead, String instituteId) {
+        if (lead.getAudienceId() != null) {
+            return audienceResponseRepo.isLeadInInstitute(lead.getId(), instituteId);
+        }
+        return lead.getApplicantId() != null
+                && audienceResponseRepo.isApplicantLeadInInstitute(lead.getId(), instituteId);
     }
 
     /**
@@ -154,6 +263,21 @@ public class CallLifecycleTxOps {
     public void markFailedAfterDispatch(String callLogId, String reason) {
         TelephonyCallLog row = callLogRepo.findById(callLogId).orElse(null);
         if (row == null) return;
+        row.setStatus(CallStatus.FAILED.name());
+        row.setTerminationReason(reason);
+        callLogRepo.save(row);
+    }
+
+    /**
+     * FAILED only if the provider was never reached (still INITIATED): for a dispatch that
+     * stopped before the HTTP call (circuit breaker open), whose row would otherwise look
+     * live for the public API's busy / in-progress checks. A row the initiate failure
+     * already marked, or a webhook already moved, is left alone.
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void markFailedIfNotDispatched(String callLogId, String reason) {
+        TelephonyCallLog row = callLogRepo.findById(callLogId).orElse(null);
+        if (row == null || !CallStatus.INITIATED.name().equals(row.getStatus())) return;
         row.setStatus(CallStatus.FAILED.name());
         row.setTerminationReason(reason);
         callLogRepo.save(row);

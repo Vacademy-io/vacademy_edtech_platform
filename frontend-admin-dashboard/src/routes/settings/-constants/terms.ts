@@ -26,6 +26,8 @@ export const OTHER_TERMS = [
     'Invite',
     'Inventory',
     'SubOrg',
+    'SubOrgMember',
+    'SubOrgAdmin',
 ] as const;
 
 /**
@@ -85,6 +87,20 @@ export const defaultNamingSettings: NamingSettingsType[] = [
     { key: 'Invite', systemValue: 'Invite', customValue: 'Invite', systemPluralValue: 'Invites', customPluralValue: 'Invites' },
     { key: 'Inventory', systemValue: 'Inventory', customValue: 'Inventory', systemPluralValue: 'Inventory', customPluralValue: 'Inventory' },
     { key: 'SubOrg', systemValue: 'Sub-Org', customValue: 'Sub-Org', systemPluralValue: 'Sub-Orgs', customPluralValue: 'Sub-Orgs' },
+    {
+        key: 'SubOrgMember',
+        systemValue: 'Sub-Org Member',
+        customValue: 'Sub-Org Member',
+        systemPluralValue: 'Sub-Org Members',
+        customPluralValue: 'Sub-Org Members',
+    },
+    {
+        key: 'SubOrgAdmin',
+        systemValue: 'Sub-Org Admin',
+        customValue: 'Sub-Org Admin',
+        systemPluralValue: 'Sub-Org Admins',
+        customPluralValue: 'Sub-Org Admins',
+    },
 ];
 
 export const systemValueDescription = {
@@ -116,6 +132,10 @@ export const systemValueDescription = {
     Invite: 'An Invite is a link or form sent to users to enroll them into courses or the platform. For eg: Invite, Enrollment Link',
     Inventory: 'Inventory refers to physical or digital items managed by the institute. For eg: Books, Uniforms, Equipment',
     SubOrg: 'A Sub-Org is a child organization managed under your institute — e.g. a branch, franchise, chapter, or partner. Rename it to match how you refer to these units. For eg: Branch, Franchise, Chapter, Partner',
+    SubOrgMember:
+        'The role label shown on a learner who belongs to a Sub-Org, in the learner list and the learner profile. For eg: Member, Staff, Practice Staff',
+    SubOrgAdmin:
+        'The role label shown on the admin of a Sub-Org, in the learner list and the learner profile. For eg: Branch Admin, Partner Admin, Practice Admin',
 };
 
 export const enum SettingsTabs {
@@ -135,15 +155,26 @@ export const enum SettingsTabs {
     Templates = 'templates',
     AiSettings = 'aiSettings',
     ScheduledReports = 'scheduledReports',
+    BatchReports = 'batchReports',
     SchoolSettings = 'schoolSettings',
     WhiteLabel = 'whiteLabel',
+    AppStatus = 'appStatus',
+    StorageUsage = 'storageUsage',
+    EmailUsage = 'emailUsage',
     WhatsApp = 'whatsapp',
     LeadSettings = 'leadSettings',
     GuardianSettings = 'guardianSettings',
+    EnrolmentBreaks = 'enrolmentBreaks',
+    OneOffDues = 'oneOffDues',
+    JourneyStatus = 'journeyStatus',
+    SyllabusProgress = 'syllabusProgress',
+    PaymentReminders = 'paymentReminders',
     LearnerCredentials = 'learnerCredentials',
     GtmSettings = 'gtmSettings',
+    UtmSettings = 'utmSettings',
     Tnc = 'tnc',
     Integrations = 'integrations',
+    Security = 'security',
     DoubtManagement = 'doubtManagement',
     LiveSession = 'liveSession',
     Youtube = 'youtube',
@@ -154,13 +185,16 @@ export const enum SettingsTabs {
     Lms = 'lms',
     AiCalling = 'aiCalling',
     CrmIntelligence = 'crmIntelligence',
-    AssistantTools = 'assistantTools',
+    /** The in-product assistant and AI apps (MCP) in one screen. */
+    AiAccess = 'aiAccess',
     BadgesRewards = 'badgesRewards',
+    Engagement = 'engagement',
     Language = 'language',
     OnboardingSettings = 'onboardingSettings',
     Appearance = 'appearance',
     LearnerActivity = 'learnerActivity',
     Mentorship = 'mentorship',
+    ClassroomPanels = 'classroomPanels',
 }
 
 export const DAYS_IN_MONTH = 30;

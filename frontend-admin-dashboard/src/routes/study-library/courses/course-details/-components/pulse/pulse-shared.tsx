@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
     ClipboardText,
     Code,
@@ -69,13 +70,14 @@ export function LiveStatusLine({
     secondsSinceFetch: number;
     isFetching: boolean;
 }) {
+    const { t } = useTranslation('studyLibraryPulseShared');
     return (
         <div className="flex items-center gap-2 text-xs text-neutral-400">
             <span className="relative flex size-2">
                 <span className="absolute inline-flex size-full animate-ping rounded-full bg-primary-400 opacity-60" />
                 <span className="relative inline-flex size-2 rounded-full bg-primary-500" />
             </span>
-            Live{isFetching ? ' · refreshing…' : ` · updated ${secondsSinceFetch}s ago`}
+            {isFetching ? t('liveRefreshing') : t('liveUpdatedAgo', { count: secondsSinceFetch })}
         </div>
     );
 }

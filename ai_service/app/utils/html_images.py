@@ -59,3 +59,61 @@ def convert_base64_to_urls(html: Optional[str]) -> str:
         except Exception as exc:  # noqa: BLE001
             logger.warning("base64→S3 upload failed: %s", exc)
     return soup.decode_contents() if soup.body is None else soup.body.decode_contents()
+
+
+# Figures MathPix crops out of a page are served from its own CDN and purged
+# after a while; a question that keeps the vendor URL loses its figure later.
+_VENDOR_IMG_RE = re.compile(
+    r"""(<img\b[^>]*?\bsrc\s*=\s*)(["'])(https?://cdn\.mathpix\.com/[^"']+)\2""", re.I
+)
+_MAX_REHOST = 200
+_REHOST_BUDGET_SECONDS = 90
+
+
+def _rehost_one(raw_url: str) -> Optional[str]:
+    import httpx
+
+    url = raw_url.replace("&amp;", "&")
+    try:
+        with httpx.Client(timeout=15.0, follow_redirects=True) as client:
+            resp = client.get(url)
+            resp.raise_for_status()
+        mime = (resp.headers.get("content-type") or "").split(";")[0].strip().lower()
+        if not mime.startswith("image/") or not resp.content:
+            return None
+        ext = _EXT.get(mime, "jpg")
+        return S3Service().upload_file_content(resp.content, f"ai-doc-image.{ext}", None, mime) or None
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("vendor image re-host failed for %s: %s", url[:80], exc)
+        return None
+
+
+def rehost_vendor_images(html: Optional[str]) -> str:
+    """Copy every MathPix-hosted <img> to our S3 and point the HTML at the
+    copy. Best-effort: an image that fails keeps its original URL."""
+    if not html or "cdn.mathpix.com" not in html:
+        return html or ""
+    urls = list(dict.fromkeys(m.group(3) for m in _VENDOR_IMG_RE.finditer(html)))[:_MAX_REHOST]
+    if not urls:
+        return html
+    from concurrent.futures import ThreadPoolExecutor, wait
+
+    # One overall budget: a slow or hung CDN must not hold the extraction up —
+    # whatever is not copied in time keeps its URL.
+    pool = ThreadPoolExecutor(max_workers=4)
+    futures = {pool.submit(_rehost_one, raw): raw for raw in urls}
+    done, _pending = wait(futures, timeout=_REHOST_BUDGET_SECONDS)
+    pool.shutdown(wait=False, cancel_futures=True)
+    mapping = {}
+    for fut in done:
+        try:
+            new = fut.result()
+        except Exception:  # noqa: BLE001
+            new = None
+        if new:
+            mapping[futures[fut]] = new
+    if not mapping:
+        return html
+    return _VENDOR_IMG_RE.sub(
+        lambda m: m.group(1) + m.group(2) + mapping.get(m.group(3), m.group(3)) + m.group(2), html
+    )

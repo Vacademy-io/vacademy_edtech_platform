@@ -1,0 +1,75 @@
+{
+    "dialog": {
+        "titleCreate": "Ajouter un compte Zoom",
+        "titleEdit": "Modifier le compte Zoom",
+        "description": "Collez les identifiants de votre application OAuth Server-to-Server depuis le Zoom Marketplace. Une application Meeting SDK par compte est facultative (voir ci-dessous). Les applications doivent appartenir au même compte Zoom.",
+        "editWarning": "Laissez les champs secrets vides pour conserver les valeurs existantes."
+    },
+    "sections": {
+        "s2sCredentials": {
+            "title": "Identifiants OAuth S2S"
+        },
+        "sdkCredentials": {
+            "title": "Identifiants Meeting SDK (facultatif)",
+            "description": "Laissez vide pour utiliser une application Meeting SDK partagée fournie par la plateforme. Pour les connexions d'apprenants anonymes, l'application Meeting SDK doit appartenir à ce même compte Zoom — ajoutez votre propre application SDK ici, sauf si votre plateforme dispose d'une application partagée configurée."
+        },
+        "webhook": {
+            "title": "Webhook (facultatif — requis plus tard pour la présence/les enregistrements)"
+        }
+    },
+    "fields": {
+        "label": {
+            "label": "Libellé",
+            "placeholder": "p. ex. Compte académie principal"
+        },
+        "zoomAccountId": {
+            "label": "ID de compte Zoom"
+        },
+        "s2sClientId": {
+            "label": "ID client S2S"
+        },
+        "s2sClientSecret": {
+            "label": "Secret client S2S"
+        },
+        "sdkClientKey": {
+            "label": "Clé client SDK"
+        },
+        "sdkClientSecret": {
+            "label": "Secret client SDK"
+        },
+        "webhookToken": {
+            "label": "Jeton de vérification du webhook",
+            "placeholder": "Copiez depuis Zoom Marketplace → votre application S2S → Feature → Event Subscriptions"
+        },
+        "common": {
+            "leaveBlankToKeepExisting": "Laissez vide pour conserver la valeur existante"
+        }
+    },
+    "setDefault": {
+        "title": "Définir comme compte par défaut",
+        "description": "Le compte par défaut est présélectionné lorsque les administrateurs créent une nouvelle réunion Zoom."
+    },
+    "footer": {
+        "testConnection": "Tester la connexion",
+        "cancel": "Annuler",
+        "addAccount": "Ajouter le compte",
+        "saveChanges": "Enregistrer les modifications"
+    },
+    "common": {
+        "show": "Afficher",
+        "hide": "Masquer"
+    },
+    "validation": {
+        "required": "Champ requis"
+    },
+    "toasts": {
+        "accountAdded": "Compte Zoom ajouté",
+        "accountUpdated": "Compte Zoom mis à jour",
+        "saveFailed": "Échec de l'enregistrement du compte Zoom",
+        "connected": "Connecté en tant que {{email}}",
+        "connectedWithPlan": "Connecté en tant que {{email}} ({{planType}})",
+        "unknownAccount": "inconnu",
+        "connectionFailed": "Échec de la connexion",
+        "connectionTestFailed": "Échec du test de connexion"
+    }
+}

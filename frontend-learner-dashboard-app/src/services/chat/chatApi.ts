@@ -24,6 +24,9 @@ export interface ChatConversationResponse {
   memberRole?: string;
   rulesVersion?: number;
   canPost: boolean;
+  /** Institute setting (students only): may the caller edit/delete a message THEY sent? */
+  canEditOwnMessages?: boolean;
+  canDeleteOwnMessages?: boolean;
 }
 
 export interface ChatMessageResponse {
@@ -164,6 +167,23 @@ export interface ChatAnnouncementEvent {
 
 // ── Endpoints ────────────────────────────────────────────────────────────────
 
+/**
+ * React Query key for the conversation list. Shared by ChatScreen (which patches it live from the
+ * SSE stream) and the sidebar unread badge, so both read the same cached list.
+ */
+export const CONVERSATIONS_KEY = ["chat", "conversations"] as const;
+
+/** React Query key for the unread total behind the sidebar badge (see getUnreadCount). */
+export const UNREAD_COUNT_KEY = ["chat", "unread-count"] as const;
+
+/** GET /conversations/unread-count — total unread for the badge; a cheap aggregate, safe to poll. */
+export async function getUnreadCount(): Promise<number> {
+  const res = await authenticatedAxiosInstance.get<{ count?: number }>(
+    `${CHAT_BASE}/conversations/unread-count`,
+  );
+  return res.data?.count ?? 0;
+}
+
 /** GET /conversations — full list (DMs + batch groups + community), sorted desc. */
 export async function listConversations(
   type?: ChatConversationType,
@@ -212,6 +232,23 @@ export async function sendMessage(
 }
 
 /** DELETE /conversations/{id}/messages/{messageId} — soft-delete (tombstone) a message. */
+export interface EditChatMessageRequest {
+  text: string;
+}
+
+/** Rewrite the body of a message you sent. Sender-only server-side. */
+export async function editMessage(
+  conversationId: string,
+  messageId: string,
+  body: EditChatMessageRequest,
+): Promise<ChatMessageResponse> {
+  const res = await authenticatedAxiosInstance.patch<ChatMessageResponse>(
+    `${CHAT_BASE}/conversations/${conversationId}/messages/${messageId}`,
+    body,
+  );
+  return res.data;
+}
+
 export async function deleteMessage(
   conversationId: string,
   messageId: string,

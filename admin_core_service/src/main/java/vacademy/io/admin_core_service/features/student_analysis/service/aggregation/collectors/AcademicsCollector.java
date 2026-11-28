@@ -25,10 +25,16 @@ public class AcademicsCollector {
     private final SubjectResolver subjectResolver;
 
     public AcademicsSection collect(String userId, String instituteId, LocalDate startDate, LocalDate endDate) {
+        return collect(userId, instituteId, null, startDate, endDate);
+    }
+
+    /** As above, limited to the assessments assigned to {@code batchId} when it is given. */
+    public AcademicsSection collect(String userId, String instituteId, String batchId,
+                                    LocalDate startDate, LocalDate endDate) {
         try {
             AssessmentServiceClient.AssessmentHistoryResponse response =
                     assessmentServiceClient.fetchStudentAssessmentHistory(
-                            userId, instituteId, startDate.toString(), endDate.toString());
+                            userId, instituteId, startDate.toString(), endDate.toString(), batchId);
 
             if (response == null) {
                 log.warn("[AcademicsCollector] Assessment service returned null for userId={}", userId);
@@ -37,63 +43,81 @@ public class AcademicsCollector {
 
             List<AcademicsSection.AssessmentItem> rawAssessments = response.getAssessments();
             // Enrich each assessment item with derived fields (name/date/grade/status)
-            List<AcademicsSection.AssessmentItem> assessments = enrich(rawAssessments);
-
-            Double avgPct = null;
-            Double classAvgPct = null;
-            String bestSubject = null;
-            String weakestSubject = null;
-            List<AcademicsSection.SubjectPerformance> subjectPerformance = null;
-
-            if (assessments != null && !assessments.isEmpty()) {
-                // Compute overall averages
-                OptionalDouble avgOpt = assessments.stream()
-                        .filter(a -> a.getPercentage() != null)
-                        .mapToDouble(AcademicsSection.AssessmentItem::getPercentage)
-                        .average();
-                if (avgOpt.isPresent()) {
-                    avgPct = Math.round(avgOpt.getAsDouble() * 10.0) / 10.0;
-                }
-
-                OptionalDouble classOpt = assessments.stream()
-                        .filter(a -> a.getClassAverage() != null && a.getTotalMarks() != null && a.getTotalMarks() > 0)
-                        .mapToDouble(a -> a.getClassAverage() / a.getTotalMarks() * 100.0)
-                        .average();
-                if (classOpt.isPresent()) {
-                    classAvgPct = Math.round(classOpt.getAsDouble() * 10.0) / 10.0;
-                }
-
-                // Group by subject
-                subjectPerformance = buildSubjectPerformance(assessments);
-
-                if (subjectPerformance != null && !subjectPerformance.isEmpty()) {
-                    AcademicsSection.SubjectPerformance best = subjectPerformance.stream()
-                            .filter(s -> s.getScorePercentage() != null)
-                            .max(Comparator.comparingDouble(AcademicsSection.SubjectPerformance::getScorePercentage))
-                            .orElse(null);
-                    AcademicsSection.SubjectPerformance weakest = subjectPerformance.stream()
-                            .filter(s -> s.getScorePercentage() != null)
-                            .min(Comparator.comparingDouble(AcademicsSection.SubjectPerformance::getScorePercentage))
-                            .orElse(null);
-                    if (best != null) bestSubject = best.getSubject();
-                    if (weakest != null) weakestSubject = weakest.getSubject();
-                }
-            }
-
-            return AcademicsSection.builder()
-                    .available(true)
-                    .averagePercentage(avgPct)
-                    .classAveragePercentage(classAvgPct)
-                    .bestSubject(bestSubject)
-                    .weakestSubject(weakestSubject)
-                    .assessments(assessments)
-                    .subjectPerformance(subjectPerformance)
-                    .build();
+            return summarize(enrich(rawAssessments));
 
         } catch (Exception e) {
             log.error("[AcademicsCollector] Failed for userId={}: {}", userId, e.getMessage());
             return AcademicsSection.builder().available(false).build();
         }
+    }
+
+    /**
+     * The section limited to the given assessments, with its averages and subjects worked out
+     * again from them. Used by the Reports tab assessment filter.
+     */
+    public AcademicsSection onlyAssessments(AcademicsSection academics, Collection<String> assessmentIds) {
+        if (academics == null || !academics.isAvailable() || assessmentIds == null) return academics;
+        Set<String> wanted = new HashSet<>(assessmentIds);
+        List<AcademicsSection.AssessmentItem> kept = academics.getAssessments() == null
+                ? List.of()
+                : academics.getAssessments().stream()
+                        .filter(a -> a.getAssessmentId() != null && wanted.contains(a.getAssessmentId()))
+                        .collect(Collectors.toList());
+        return summarize(kept);
+    }
+
+    /** Averages, subject roll-up and best and weakest subject for already enriched assessments. */
+    private AcademicsSection summarize(List<AcademicsSection.AssessmentItem> assessments) {
+        Double avgPct = null;
+        Double classAvgPct = null;
+        String bestSubject = null;
+        String weakestSubject = null;
+        List<AcademicsSection.SubjectPerformance> subjectPerformance = null;
+
+        if (assessments != null && !assessments.isEmpty()) {
+            // Compute overall averages
+            OptionalDouble avgOpt = assessments.stream()
+                    .filter(a -> a.getPercentage() != null)
+                    .mapToDouble(AcademicsSection.AssessmentItem::getPercentage)
+                    .average();
+            if (avgOpt.isPresent()) {
+                avgPct = Math.round(avgOpt.getAsDouble() * 10.0) / 10.0;
+            }
+
+            OptionalDouble classOpt = assessments.stream()
+                    .filter(a -> a.getClassAverage() != null && a.getTotalMarks() != null && a.getTotalMarks() > 0)
+                    .mapToDouble(a -> a.getClassAverage() / a.getTotalMarks() * 100.0)
+                    .average();
+            if (classOpt.isPresent()) {
+                classAvgPct = Math.round(classOpt.getAsDouble() * 10.0) / 10.0;
+            }
+
+            // Group by subject
+            subjectPerformance = buildSubjectPerformance(assessments);
+
+            if (subjectPerformance != null && !subjectPerformance.isEmpty()) {
+                AcademicsSection.SubjectPerformance best = subjectPerformance.stream()
+                        .filter(s -> s.getScorePercentage() != null)
+                        .max(Comparator.comparingDouble(AcademicsSection.SubjectPerformance::getScorePercentage))
+                        .orElse(null);
+                AcademicsSection.SubjectPerformance weakest = subjectPerformance.stream()
+                        .filter(s -> s.getScorePercentage() != null)
+                        .min(Comparator.comparingDouble(AcademicsSection.SubjectPerformance::getScorePercentage))
+                        .orElse(null);
+                if (best != null) bestSubject = best.getSubject();
+                if (weakest != null) weakestSubject = weakest.getSubject();
+            }
+        }
+
+        return AcademicsSection.builder()
+                .available(true)
+                .averagePercentage(avgPct)
+                .classAveragePercentage(classAvgPct)
+                .bestSubject(bestSubject)
+                .weakestSubject(weakestSubject)
+                .assessments(assessments)
+                .subjectPerformance(subjectPerformance)
+                .build();
     }
 
     /**
@@ -107,10 +131,14 @@ public class AcademicsCollector {
             // whenever the assessment service didn't provide it, so grade/status/averages
             // are never blank just because the "percentage" field was absent.
             Double pct = derivePercentage(a.getPercentage(), a.getMarks(), a.getTotalMarks());
-            // Resolve subject from DB hint → keyword inference on the name, so the assessment
-            // list, subject-performance rollup, and marks-by-subject all agree. Stays null when
-            // genuinely unresolvable (callers omit it rather than showing "Unknown").
-            String resolvedSubject = subjectResolver.resolve(a.getSubject(), a.getName());
+            // Resolve subject from DB hint → keyword inference on the name → the paper's single
+            // section name, so the assessment list, subject-performance rollup, and
+            // marks-by-subject all agree. Stays null when genuinely unresolvable (callers omit it
+            // rather than showing "Unknown").
+            List<String> sectionNames = a.getSections() == null ? null : a.getSections().stream()
+                    .map(AcademicsSection.SectionItem::getSectionName)
+                    .collect(Collectors.toList());
+            String resolvedSubject = subjectResolver.resolve(a.getSubject(), a.getName(), sectionNames);
             return AcademicsSection.AssessmentItem.builder()
                 .assessmentId(a.getAssessmentId())
                 .name(a.getName() != null ? a.getName() : a.getAssessmentId())
@@ -130,7 +158,12 @@ public class AcademicsCollector {
                 .durationSeconds(a.getDurationSeconds())
                 .sections(a.getSections())
                 .build();
-        }).collect(Collectors.toList());
+        })
+        // Chronological (oldest first) — the natural order for a progress report. The service
+        // returns newest-first, and ties on the date otherwise leave the order arbitrary.
+        .sorted(Comparator.comparing(AcademicsSection.AssessmentItem::getDate,
+                Comparator.nullsLast(Comparator.naturalOrder())))
+        .collect(Collectors.toList());
     }
 
     /** Uses the given percentage, else derives it from marks/totalMarks (marks are the source of truth). */

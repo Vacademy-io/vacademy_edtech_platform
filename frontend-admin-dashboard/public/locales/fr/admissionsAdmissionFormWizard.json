@@ -1,0 +1,36 @@
+{
+    "pageTitle": "Formulaire d'admission",
+    "backToAdmissionList": "Retour à la liste des admissions",
+    "downloadPdf": "Télécharger le PDF",
+    "downloadingPdf": "Génération...",
+    "print": "Imprimer",
+    "previous": "Précédent",
+    "saveNext": "Enregistrer et continuer",
+    "submitAdmission": "Soumettre l'admission",
+    "submitting": "Envoi en cours...",
+    "printDocumentTitle": "Formulaire d'admission - {{studentName}}",
+    "steps": {
+        "studentDetails": "Détails de l'{{learnerLabel}}",
+        "previousSchoolPersonalDetails": "École précédente et détails personnels",
+        "parentDetails": "Détails des parents de l'{{learnerLabel}}",
+        "addressDetails": "Détails de l'adresse",
+        "finish": "Terminer",
+        "feeAssignment": "Attribution des frais"
+    },
+    "trackingLabel": {
+        "application": "ID de suivi de la candidature",
+        "enquiry": "ID de suivi de la demande",
+        "admission": "ID de suivi de l'admission"
+    },
+    "toast": {
+        "pdfTemplateNotReady": "Le modèle PDF n'est pas prêt. Veuillez réessayer.",
+        "generatingPdf": "Génération du PDF...",
+        "pdfDownloaded": "PDF téléchargé !",
+        "pdfGenerationFailed": "Échec de la génération du PDF. Veuillez réessayer.",
+        "popupBlocked": "Fenêtre pop-up bloquée. Veuillez autoriser les pop-ups pour imprimer.",
+        "instituteDetailsUnavailable": "Détails de l'établissement indisponibles. Veuillez réessayer.",
+        "admissionSubmitted": "Admission soumise avec succès ! ID : {{admissionId}}",
+        "admissionSubmitFailed": "Échec de la soumission du formulaire d'admission. Veuillez réessayer.",
+        "submissionError": "Une erreur s'est produite. Veuillez vérifier votre connexion réseau et réessayer."
+    }
+}

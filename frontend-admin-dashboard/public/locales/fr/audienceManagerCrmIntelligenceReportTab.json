@@ -1,0 +1,20 @@
+{
+    "coachingDrillIn": {
+        "loading": "Chargement du coaching…",
+        "noAnalyzedCalls": "Aucun appel analysé pour l'instant — pas de coaching pour ce commercial.",
+        "weakestLabel": "Points faibles :",
+        "scoreOutOfTen": "{{score}}/10"
+    },
+    "workPatterns": {
+        "sectionTitle": "Habitudes de travail des conseillers",
+        "emptyMessage": "Aucune activité de conseiller sur cette période.",
+        "columns": {
+            "counsellor": "Conseiller",
+            "leadsDispositioned": "Prospects traités",
+            "calls": "Appels",
+            "connected": "Connectés",
+            "reach": "Portée"
+        },
+        "improveHeading": "Ce qu'ils peuvent améliorer"
+    }
+}

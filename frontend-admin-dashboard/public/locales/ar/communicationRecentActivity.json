@@ -1,0 +1,29 @@
+{
+    "title": "نشاط المتعلمين الأخير",
+    "subtitle": "أحدث رسائل واتساب وردود البريد الإلكتروني من جمهورك",
+    "emptyState": "لا يوجد نشاط وارد من المتعلمين بعد.",
+    "loadingMore": "جارٍ التحميل…",
+    "loadMore": "تحميل المزيد",
+    "noMoreActivity": "لا مزيد من النشاط",
+    "time": {
+        "now": "الآن",
+        "minutes_zero": "أقل من دقيقة",
+        "minutes_one": "دقيقة",
+        "minutes_two": "دقيقتان",
+        "minutes_few": "{{count}} دقائق",
+        "minutes_many": "{{count}} دقيقة",
+        "minutes_other": "{{count}} د",
+        "hours_zero": "أقل من ساعة",
+        "hours_one": "ساعة",
+        "hours_two": "ساعتان",
+        "hours_few": "{{count}} ساعات",
+        "hours_many": "{{count}} ساعة",
+        "hours_other": "{{count}} س",
+        "days_zero": "أقل من يوم",
+        "days_one": "يوم",
+        "days_two": "يومان",
+        "days_few": "{{count}} أيام",
+        "days_many": "{{count}} يومًا",
+        "days_other": "{{count}} ي"
+    }
+}

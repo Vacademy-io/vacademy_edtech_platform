@@ -1,0 +1,53 @@
+{
+    "header": {
+        "title": "Response Parsing Demo",
+        "subtitle": "Before vs After: How responses are now displayed"
+    },
+    "card": {
+        "title": "Q{{number}}. Survey Question {{number}}",
+        "beforeLabel": "❌ Before (Raw JSON):",
+        "afterLabel": "✅ After (Parsed):",
+        "visited": "Visited",
+        "markedForReview": "Marked for Review",
+        "timeTaken": "Time Taken: {{seconds}}s",
+        "durationLeft": "Duration Left: {{seconds}}s",
+        "questionId": "Question ID: {{id}}"
+    },
+    "improvements": {
+        "title": "✨ Key Improvements:",
+        "humanReadable": {
+            "bold": "Human-readable responses",
+            "text": "instead of raw JSON"
+        },
+        "questionTypeBadges": {
+            "bold": "Question type badges",
+            "text": "for easy identification"
+        },
+        "statusIndicators": {
+            "bold": "Response status indicators",
+            "text": "(Visited, Marked for Review)"
+        },
+        "timeTracking": {
+            "bold": "Time tracking",
+            "text": "(Time Taken, Duration Left)"
+        },
+        "questionIdReference": {
+            "bold": "Question ID reference",
+            "text": "for debugging"
+        },
+        "surveySpecific": {
+            "bold": "Survey-specific handling",
+            "text": "(no correct answers needed)"
+        }
+    },
+    "response": {
+        "unknown": "Unknown",
+        "unknownType": "Unknown response type",
+        "parseError": "Error parsing response data",
+        "selectedOptions": "Selected options: {{options}}",
+        "noOptionsSelected": "No options selected",
+        "answerValue": "Answer: {{value}}",
+        "noNumericAnswer": "No numeric answer provided",
+        "noTextAnswer": "No text answer provided"
+    }
+}

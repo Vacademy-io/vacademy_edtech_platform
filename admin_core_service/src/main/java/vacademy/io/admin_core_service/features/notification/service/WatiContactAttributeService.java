@@ -1,5 +1,6 @@
 package vacademy.io.admin_core_service.features.notification.service;
 
+import vacademy.io.admin_core_service.core.external.ExternalCallLog;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -20,7 +21,7 @@ import java.util.List;
 public class WatiContactAttributeService {
 
     private final ObjectMapper objectMapper;
-    private final RestTemplate restTemplate = new RestTemplate();
+    private final RestTemplate restTemplate = ExternalCallLog.attach(new RestTemplate());
 
     /**
      * Extract WATI configuration from institute settings

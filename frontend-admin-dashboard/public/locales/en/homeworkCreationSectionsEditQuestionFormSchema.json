@@ -1,0 +1,14 @@
+{
+    "questionNameRequired": "Question name is required",
+    "optionRequired": "Option {{number}} is required",
+    "mcqs": {
+        "optionsRequired": "MCQS questions must have singleChoiceOptions",
+        "atLeastTwoOptions": "MCQS must have at least 2 options",
+        "exactlyOneSelected": "MCQS must have exactly one option selected"
+    },
+    "mcqm": {
+        "optionsRequired": "MCQM questions must have multipleChoiceOptions",
+        "atLeastTwoOptions": "MCQM must have at least 2 options",
+        "atLeastOneSelected": "MCQM must have at least one option selected"
+    }
+}

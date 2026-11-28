@@ -1,5 +1,6 @@
 package vacademy.io.admin_core_service.features.admission.service;
 
+import vacademy.io.admin_core_service.features.payments.util.GatewayCustomerContact;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.transaction.Transactional;
@@ -225,7 +226,8 @@ public class SchoolEnrollService {
                 // Step 8: Handle payment (if provided)
                 PaymentResponseDTO paymentResponseDTO = null;
                 if (request.getSchoolPayment() != null) {
-                        paymentResponseDTO = handlePayment(request.getSchoolPayment(), createdUser, userPlan,
+                        paymentResponseDTO = handlePayment(request.getSchoolPayment(),
+                                        GatewayCustomerContact.withCheckoutPhone(createdUser, request.getUser()), userPlan,
                                         enrollInvite,
                                         request.getInstituteId());
                 }
@@ -362,6 +364,8 @@ public class SchoolEnrollService {
                                 PaymentLogStatusEnum.SUCCESS.name(),
                                 PaymentStatusEnum.PAID.name(),
                                 JsonUtil.toJson(paymentSpecificData));
+
+                paymentLogService.recordOfflinePaymentLiveActivity(paymentLogId, enrollInvite.getInstituteId());
 
                 log.info("Created payment log {} for offline payment of {} {}", paymentLogId, payment.getAmount(),
                                 currency);

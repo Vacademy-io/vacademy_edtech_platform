@@ -2,6 +2,7 @@ import { useMemo, useCallback } from 'react';
 import ReactFlow, { Background, Controls, MiniMap, Node, Edge } from 'reactflow';
 import 'reactflow/dist/style.css';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { getExecutionLogsQuery, getWorkflowForEditing } from '@/services/workflow-service';
 import { ExecutionFlowNode } from './execution-flow-node';
 import { ExecutionTimeline } from './execution-timeline';
@@ -91,6 +92,7 @@ interface Props {
 }
 
 export function ExecutionFlowViewer({ workflowId, executionId }: Props) {
+    const { t } = useTranslation('workflowExecutionFlowViewer');
     const { executionLogs, nodeStatusMap, selectedNodeId, setExecution, selectNode } =
         useExecutionViewerStore();
 
@@ -163,7 +165,7 @@ export function ExecutionFlowViewer({ workflowId, executionId }: Props) {
     const selectedLog = selectedNodeId ? nodeStatusMap[selectedNodeId] ?? null : null;
 
     if (!workflowData) {
-        return <div className="flex items-center justify-center h-64 text-muted-foreground">Loading workflow...</div>;
+        return <div className="flex items-center justify-center h-64 text-muted-foreground">{t('loadingWorkflow')}</div>;
     }
 
     return (

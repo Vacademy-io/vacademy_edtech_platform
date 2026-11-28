@@ -1,0 +1,88 @@
+{
+    "trigger": {
+        "label": "تصدير التقارير (ZIP)"
+    },
+    "dialog": {
+        "heading": "تصدير التقارير (ZIP)"
+    },
+    "description": {
+        "bulk_zero": "ينشئ ملف ZIP يحتوي على تقارير PDF لـ {{count}} تقديم محدد.",
+        "bulk_one": "ينشئ ملف ZIP يحتوي على تقارير PDF لـ {{count}} تقديم محدد.",
+        "bulk_two": "ينشئ ملف ZIP يحتوي على تقارير PDF لـ {{count}} تقديمين محددين.",
+        "bulk_few": "ينشئ ملف ZIP يحتوي على تقارير PDF لـ {{count}} تقديمات محددة.",
+        "bulk_many": "ينشئ ملف ZIP يحتوي على تقارير PDF لـ {{count}} تقديمًا محددًا.",
+        "bulk_other": "ينشئ ملف ZIP يحتوي على تقارير PDF لـ {{count}} تقديم محدد.",
+        "all": "ينشئ ملف ZIP يحتوي على تقارير PDF لجميع التقديمات المطابقة للمرشح الحالي."
+    },
+    "regenerateLabel": "إعادة إنشاء التقارير حتى إذا كانت موجودة بالفعل لأحد الطلاب",
+    "startButton": "بدء التصدير",
+    "starting": "جارٍ البدء…",
+    "toasts": {
+        "alreadyRunning": "يوجد بالفعل تصدير قيد التشغيل لهذا الاختبار — يتم عرض تقدمه.",
+        "exportStarted_zero": "تم بدء التصدير لـ {{count}} تقديم.",
+        "exportStarted_one": "تم بدء التصدير لـ {{count}} تقديم.",
+        "exportStarted_two": "تم بدء التصدير لـ {{count}} تقديمين.",
+        "exportStarted_few": "تم بدء التصدير لـ {{count}} تقديمات.",
+        "exportStarted_many": "تم بدء التصدير لـ {{count}} تقديمًا.",
+        "exportStarted_other": "تم بدء التصدير لـ {{count}} تقديم.",
+        "startFailed": "فشل بدء التصدير. يرجى المحاولة مرة أخرى.",
+        "resuming": "جارٍ استئناف التصدير…",
+        "resumeFailed": "فشل استئناف التصدير.",
+        "cancelled": "تم إلغاء التصدير.",
+        "cancelFailed": "فشل إلغاء التصدير.",
+        "downloadNotReady": "رابط التنزيل غير جاهز بعد. يرجى المحاولة مرة أخرى بعد قليل.",
+        "downloadFailed": "فشل تجهيز التنزيل."
+    },
+    "defaultFileName": "تقارير الاختبار",
+    "progress": {
+        "summary": "{{completed}} من {{total}} مكتمل",
+        "failedCount": "{{count}} فشل",
+        "skippedCount": "{{count}} تم تخطيه"
+    },
+    "warnings": {
+        "contextDrift": "تمت إعادة حساب إحصاءات الفصل أثناء هذا التصدير — قد تعرض بعض التقارير أرقامًا مختلفة قليلًا عن غيرها في هذا الملف.",
+        "staleItems_zero": "تم إنشاء {{count}} تقرير قبل تحديث محاولة الطالب (مثل إعادة التقييم). أعد إنشاء التصدير لتحديثها.",
+        "staleItems_one": "تم إنشاء {{count}} تقرير قبل تحديث محاولة الطالب (مثل إعادة التقييم). أعد إنشاء التصدير لتحديثه.",
+        "staleItems_two": "تم إنشاء {{count}} تقريرين قبل تحديث محاولة الطالب (مثل إعادة التقييم). أعد إنشاء التصدير لتحديثهما.",
+        "staleItems_few": "تم إنشاء {{count}} تقارير قبل تحديث محاولة الطالب (مثل إعادة التقييم). أعد إنشاء التصدير لتحديثها.",
+        "staleItems_many": "تم إنشاء {{count}} تقريرًا قبل تحديث محاولة الطالب (مثل إعادة التقييم). أعد إنشاء التصدير لتحديثها.",
+        "staleItems_other": "تم إنشاء {{count}} تقرير قبل تحديث محاولة الطالب (مثل إعادة التقييم). أعد إنشاء التصدير لتحديثها."
+    },
+    "failures": {
+        "count_zero": "{{count}} حالة فشل",
+        "count_one": "{{count}} حالة فشل",
+        "count_two": "{{count}} حالتا فشل",
+        "count_few": "{{count}} حالات فشل",
+        "count_many": "{{count}} حالة فشل",
+        "count_other": "{{count}} حالة فشل",
+        "detail_zero": "{{reason}} ({{count}} محاولة إعادة)",
+        "detail_one": "{{reason}} ({{count}} محاولة إعادة)",
+        "detail_two": "{{reason}} ({{count}} محاولتا إعادة)",
+        "detail_few": "{{reason}} ({{count}} محاولات إعادة)",
+        "detail_many": "{{reason}} ({{count}} محاولة إعادة)",
+        "detail_other": "{{reason}} ({{count}} محاولة إعادة)"
+    },
+    "downloadZip": "تنزيل ملف ZIP",
+    "continueButton": "متابعة ({{count}} متبقٍ)",
+    "downloadCompleted": "تنزيل {{count}} مكتمل",
+    "cancelButton": "إلغاء",
+    "startNewExport": "بدء تصدير جديد",
+    "zipContentsNote": {
+        "prefix": "بعد استخراج ملف ZIP، افتح",
+        "suffix": "لعرض وفتح تقرير كل طالب.",
+        "csvNote": "(يحتوي index.csv على نفس القائمة كبيانات جدول بيانات.)"
+    },
+    "recentExports": {
+        "title": "التصديرات الأخيرة",
+        "completedCount": "{{completed}}/{{total}} مكتمل",
+        "view": "عرض"
+    },
+    "statusChips": {
+        "completed": "مكتمل",
+        "partial": "جزئي",
+        "failed": "فشل",
+        "cancelled": "ملغى",
+        "inProgress": "قيد التنفيذ",
+        "queued": "في الانتظار"
+    }
+}

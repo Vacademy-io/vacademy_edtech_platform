@@ -1,14 +1,16 @@
 import { Helmet } from "react-helmet";
+import { useTranslation } from "react-i18next";
 import { DashboardLoader } from "./dashboard-loader";
 
 function RootPendingComponent() {
+    const { t } = useTranslation("courseComponentsExtra");
     return (
         <>
             <Helmet>
-                <title>{document?.title || "Page Loading..."}</title>
+                <title>{document?.title || t("defaultPending.pageTitle")}</title>
                 <meta
                     name="description"
-                    content="Please wait a moment while we prepare the page. Your experience is just around the corner!"
+                    content={t("defaultPending.metaDescription")}
                 />
             </Helmet>
             <div className="flex h-screen w-full items-center justify-center">

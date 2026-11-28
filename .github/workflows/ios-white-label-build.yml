@@ -1,0 +1,269 @@
+name: iOS white-label build
+
+# Builds one white-label learner iOS app on a macOS runner and uploads it to App Store Connect.
+# Started from the health dashboard (App Stores → app → Builds → iOS build), never by hand-typed
+# inputs in normal use: community_service fills every input from the app registry record.
+#
+# What it does:
+#   1. Finds the Xcode target that builds the bundle id. If none exists (a brand-new app), it runs
+#      scripts/ios-brand/register-ios-app.sh `repo` (target, icon, splash, plist, flavor entry,
+#      auth_service Apple audience), pushes branch ios-brand/<bundle id> and opens a PR. The build
+#      continues from that branch so the upload does not wait for the merge — but the PR must be
+#      merged (and auth_service deployed) before the app goes to App Review.
+#   2. Ensures the bundle id and the "<target> App Store" provisioning profile (ASC API).
+#   3. Builds the web bundle, archives with the Apple Distribution certificate, validates and
+#      uploads the .ipa. The dashboard reads the result back from App Store Connect.
+#
+# THIS REPO IS PUBLIC: run names, inputs and logs are visible to everyone. Inputs carry only facts
+# that ship inside the app anyway (bundle id, host, Firebase client config). Nothing secret may be
+# added as an input or echoed — secrets come from repository secrets only:
+#   ASC_API_KEY_ID, ASC_API_ISSUER_ID, ASC_API_KEY_P8      App Store Connect API key (.p8 text)
+#   IOS_DIST_CERT_P12_BASE64, IOS_DIST_CERT_PASSWORD       Apple Distribution certificate + key
+# Opening the PR needs Settings → Actions → "Allow GitHub Actions to create and approve pull requests".
+
+run-name: "ios-build app:${{ inputs.registry_app_id }} ${{ inputs.bundle_id }} ${{ inputs.version }} (${{ inputs.build_number }}) req:${{ inputs.request_id }}"
+
+on:
+  workflow_dispatch:
+    inputs:
+      request_id:
+        description: "Dashboard request id (matches this run back to the dashboard)"
+        required: true
+      registry_app_id:
+        description: "App registry record id"
+        required: true
+      bundle_id:
+        description: "iOS bundle id, e.g. io.elevateeducation.app"
+        required: true
+      display_name:
+        description: "Name under the icon"
+        required: true
+      app_host:
+        description: "Learner host the app points at, e.g. student.elevateeducation.in"
+        required: true
+      version:
+        description: "Marketing version, e.g. 1.0.0"
+        required: true
+      build_number:
+        description: "Build number (must be higher than every build already uploaded)"
+        required: true
+      new_target_name:
+        description: "Xcode target name to create when the app has no target yet"
+        required: false
+        default: ""
+      logo_url:
+        description: "Square logo / 1024 icon URL (only used when creating a new target)"
+        required: false
+        default: ""
+      firebase_plist_b64:
+        description: "Base64 GoogleService-Info.plist from Firebase (only used when creating a new target)"
+        required: false
+        default: ""
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: ios-build-${{ inputs.bundle_id }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: macos-15
+    timeout-minutes: 90
+    defaults:
+      run:
+        shell: bash
+        working-directory: ./frontend-learner-dashboard-app
+    env:
+      BUNDLE_ID: ${{ inputs.bundle_id }}
+      DISPLAY_NAME: ${{ inputs.display_name }}
+      APP_HOST: ${{ inputs.app_host }}
+      VERSION: ${{ inputs.version }}
+      BUILD_NUMBER: ${{ inputs.build_number }}
+      NEW_TARGET_NAME: ${{ inputs.new_target_name }}
+      LOGO_URL: ${{ inputs.logo_url }}
+      FIREBASE_PLIST_B64: ${{ inputs.firebase_plist_b64 }}
+      ASC_KEY_ID: ${{ secrets.ASC_API_KEY_ID }}
+      ASC_ISSUER_ID: ${{ secrets.ASC_API_ISSUER_ID }}
+      APPLE_TEAM_ID: 35NLZB49QN
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Check inputs
+        run: |
+          [[ "$BUNDLE_ID" =~ ^[A-Za-z0-9.-]+$ ]] || { echo "::error::bad bundle id"; exit 1; }
+          [[ "$APP_HOST" =~ ^[a-z0-9-]+\.[a-z0-9.-]+$ ]] || { echo "::error::app host must look like sub.domain.tld"; exit 1; }
+          [[ "$VERSION" =~ ^[0-9]+(\.[0-9]+){0,2}$ ]] || { echo "::error::version must look like 1.0.0"; exit 1; }
+          [[ "$BUILD_NUMBER" =~ ^[0-9]+$ ]] || { echo "::error::build number must be a whole number"; exit 1; }
+          [ -n "$ASC_KEY_ID" ] && [ -n "$ASC_ISSUER_ID" ] || { echo "::error::ASC_API_KEY_ID / ASC_API_ISSUER_ID secrets are not set"; exit 1; }
+
+      # Apple has required the iOS 26 SDK for uploads since April 2026.
+      - name: Select Xcode 26
+        run: |
+          XC=$(ls -d /Applications/Xcode_26*.app 2>/dev/null | grep -vi beta | sort -V | tail -1)
+          [ -n "$XC" ] || { echo "::error::no Xcode 26 on this runner image"; ls -d /Applications/Xcode*.app; exit 1; }
+          sudo xcode-select -s "$XC"
+          xcodebuild -version
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@10.17.0 --activate
+
+      - name: Install tools (Pillow, xcodeproj)
+        run: |
+          python3 -m pip install --quiet --break-system-packages pillow || python3 -m pip install --quiet pillow
+          gem install --no-document xcodeproj >/dev/null
+
+      - name: Install App Store Connect key
+        env:
+          ASC_P8: ${{ secrets.ASC_API_KEY_P8 }}
+        run: |
+          [ -n "$ASC_P8" ] || { echo "::error::ASC_API_KEY_P8 secret is not set"; exit 1; }
+          mkdir -p ~/.appstoreconnect/private_keys
+          printf '%s\n' "$ASC_P8" > ~/.appstoreconnect/private_keys/AuthKey_${ASC_KEY_ID}.p8
+          chmod 600 ~/.appstoreconnect/private_keys/AuthKey_${ASC_KEY_ID}.p8
+
+      - name: Resolve brand
+        id: brand
+        run: |
+          FOUND=$(ruby scripts/ios-brand/lib/ci_target.rb find ios/App "$BUNDLE_ID")
+          if [ -n "$FOUND" ]; then
+            TARGET=${FOUND%%$'\t'*}; CONFIG_DIR=${FOUND#*$'\t'}; NEW=0
+            echo "Existing target: $TARGET ($CONFIG_DIR)"
+          else
+            [ -n "$NEW_TARGET_NAME" ] || { echo "::error::no Xcode target builds $BUNDLE_ID and new_target_name is empty"; exit 1; }
+            [[ "$NEW_TARGET_NAME" =~ ^[A-Za-z0-9\ ]+$ ]] || { echo "::error::target name may only hold letters, digits and spaces"; exit 1; }
+            # the repo step pastes the display name into flavor.config.ts and plist XML as-is
+            case "$DISPLAY_NAME" in *[\"\\\<\>\&]*) echo "::error::display name may not contain \" \\ < > &"; exit 1;; esac
+            TARGET=$NEW_TARGET_NAME; CONFIG_DIR=${NEW_TARGET_NAME// /-}; NEW=1
+            echo "No target builds $BUNDLE_ID — creating \"$TARGET\""
+          fi
+          KEY=$(printf '%s' "$TARGET" | tr -cd 'A-Za-z0-9')
+          SUB=${APP_HOST%%.*}; DOMAIN=${APP_HOST#*.}
+          mkdir -p "$RUNNER_TEMP/brand"
+          LOGO=""
+          if [ "$NEW" = 1 ]; then
+            [ -n "$LOGO_URL" ] || { echo "::error::a new app needs logo_url (upload the 1024 icon in Images & Assets)"; exit 1; }
+            [ -n "$FIREBASE_PLIST_B64" ] || { echo "::error::a new app needs its Firebase plist (create the Firebase iOS app from the dashboard)"; exit 1; }
+            curl -sfL --max-time 60 "$LOGO_URL" -o "$RUNNER_TEMP/brand/logo.png"
+            printf '%s' "$FIREBASE_PLIST_B64" | base64 --decode > "$RUNNER_TEMP/brand/GoogleService-Info.plist"
+            plutil -lint "$RUNNER_TEMP/brand/GoogleService-Info.plist"
+            [ "$(plutil -extract BUNDLE_ID raw "$RUNNER_TEMP/brand/GoogleService-Info.plist")" = "$BUNDLE_ID" ] || { echo "::error::Firebase plist is for a different bundle id"; exit 1; }
+            LOGO="$RUNNER_TEMP/brand/logo.png"
+          fi
+          # values reach Python through the environment, never pasted into its source
+          KEY="$KEY" TARGET="$TARGET" CONFIG_DIR="$CONFIG_DIR" DOMAIN="$DOMAIN" SUB="$SUB" LOGO="$LOGO" NEW="$NEW" \
+          python3 - "$RUNNER_TEMP/brand/brand.json" <<'EOF'
+          import json, os, sys
+          e = os.environ
+          json.dump({
+              "key": e["KEY"], "targetName": e["TARGET"], "displayName": e["DISPLAY_NAME"],
+              "bundleId": e["BUNDLE_ID"], "configDir": e["CONFIG_DIR"],
+              "domain": e["DOMAIN"], "subdomain": e["SUB"],
+              "logo": e["LOGO"], "logoMode": "auto",
+              "firebasePlist": os.path.join(e["RUNNER_TEMP"], "brand/GoogleService-Info.plist") if e["NEW"] == "1" else "",
+              "marketingVersion": e["VERSION"], "buildNumber": e["BUILD_NUMBER"],
+          }, open(sys.argv[1], "w"), indent=2)
+          EOF
+          echo "new=$NEW" >> "$GITHUB_OUTPUT"
+          echo "target=$TARGET" >> "$GITHUB_OUTPUT"
+          echo "cfg=$RUNNER_TEMP/brand/brand.json" >> "$GITHUB_OUTPUT"
+
+      - name: Bundle id + capabilities (new app)
+        if: steps.brand.outputs.new == '1'
+        run: node scripts/ios-brand/lib/asc.mjs bundle-id "${{ steps.brand.outputs.cfg }}"
+
+      - name: Create Xcode target (new app)
+        if: steps.brand.outputs.new == '1'
+        run: scripts/ios-brand/register-ios-app.sh "${{ steps.brand.outputs.cfg }}" repo
+
+      - name: Open PR with the new target (new app)
+        if: steps.brand.outputs.new == '1'
+        working-directory: ${{ github.workspace }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TARGET: ${{ steps.brand.outputs.target }}
+        run: |
+          BRANCH="ios-brand/$BUNDLE_ID"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$BRANCH"
+          git add frontend-learner-dashboard-app/flavor.config.ts frontend-learner-dashboard-app/ios \
+                  auth_service/src/main/resources
+          git commit -q -m "feat(ios): add $TARGET white-label target ($BUNDLE_ID)"
+          git push -q -f origin "HEAD:refs/heads/$BRANCH"
+          if ! gh pr view "$BRANCH" --json url -q .url >/dev/null 2>&1; then
+            printf '%s\n' \
+              "Adds the iOS white-label target **$TARGET** (\`$BUNDLE_ID\` → \`$APP_HOST\`)." "" \
+              "Opened by the iOS build started from the health dashboard (run ${{ github.run_id }})." \
+              "That run has already uploaded a build made from this branch." "" \
+              "Before App Review: merge this PR and deploy **auth_service** (Sign in with Apple audience)." \
+              > "$RUNNER_TEMP/pr.md"
+            gh pr create --base main --head "$BRANCH" --title "feat(ios): add $TARGET white-label target" --body-file "$RUNNER_TEMP/pr.md"
+          fi
+          echo "PR: $(gh pr view "$BRANCH" --json url -q .url)" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Provisioning profile
+        run: |
+          node scripts/ios-brand/lib/asc.mjs profile "${{ steps.brand.outputs.cfg }}"
+          # asc.mjs installs into the classic folder; Xcode 16+ also reads UserData — keep a copy in both.
+          mkdir -p ~/Library/Developer/Xcode/UserData/Provisioning\ Profiles
+          cp ~/Library/MobileDevice/Provisioning\ Profiles/*.mobileprovision ~/Library/Developer/Xcode/UserData/Provisioning\ Profiles/
+
+      - name: Install web deps
+        run: pnpm install --frozen-lockfile || pnpm install
+
+      - name: Build web bundle
+        run: |
+          node --max-old-space-size=6144 node_modules/vite/bin/vite.js build
+          grep -rlq "$BUNDLE_ID" dist/assets || { echo "::error::web bundle does not contain $BUNDLE_ID (flavor.config.ts entry missing)"; exit 1; }
+          npx cap copy ios
+
+      - name: Install pods
+        if: steps.brand.outputs.new != '1'
+        working-directory: ./frontend-learner-dashboard-app/ios/App
+        run: LANG=en_US.UTF-8 pod install
+
+      - name: Import signing certificate
+        env:
+          P12_B64: ${{ secrets.IOS_DIST_CERT_P12_BASE64 }}
+          P12_PASSWORD: ${{ secrets.IOS_DIST_CERT_PASSWORD }}
+        run: |
+          [ -n "$P12_B64" ] || { echo "::error::IOS_DIST_CERT_P12_BASE64 secret is not set"; exit 1; }
+          KC="$RUNNER_TEMP/build.keychain-db"; KCPW=$(uuidgen)
+          printf '%s' "$P12_B64" | base64 --decode > "$RUNNER_TEMP/dist.p12"
+          security create-keychain -p "$KCPW" "$KC"
+          security set-keychain-settings -lut 21600 "$KC"
+          security unlock-keychain -p "$KCPW" "$KC"
+          security import "$RUNNER_TEMP/dist.p12" -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k "$KC" >/dev/null
+          security set-key-partition-list -S apple-tool:,apple: -k "$KCPW" "$KC" >/dev/null
+          security list-keychains -d user -s "$KC" $(security list-keychains -d user | tr -d '"')
+          rm -f "$RUNNER_TEMP/dist.p12"
+          security find-identity -v -p codesigning "$KC" | grep -q "Apple Distribution" || { echo "::error::the p12 holds no Apple Distribution identity"; exit 1; }
+
+      - name: Archive, export, validate
+        env:
+          CI_MANUAL_SIGNING: "1"
+        run: scripts/ios-brand/register-ios-app.sh "${{ steps.brand.outputs.cfg }}" archive
+
+      - name: Upload to App Store Connect
+        run: |
+          IPA=$(ls scripts/ios-brand/.out/*/ipa/*.ipa | head -1)
+          xcrun altool --upload-app -f "$IPA" -t ios --apiKey "$ASC_KEY_ID" --apiIssuer "$ASC_ISSUER_ID" 2>&1 | tee "$RUNNER_TEMP/upload.log" | grep -E "SUCCEEDED|UUID|rror"
+          grep -q "UPLOAD SUCCEEDED" "$RUNNER_TEMP/upload.log" || { echo "::error::upload failed"; exit 1; }
+          echo "Uploaded $BUNDLE_ID $VERSION ($BUILD_NUMBER). $(grep -m1 'UUID' "$RUNNER_TEMP/upload.log")" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Clean up secrets
+        if: always()
+        run: |
+          security delete-keychain "$RUNNER_TEMP/build.keychain-db" 2>/dev/null || true
+          rm -rf ~/.appstoreconnect/private_keys "$RUNNER_TEMP/dist.p12"

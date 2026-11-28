@@ -1,0 +1,36 @@
+{
+    "dialog": {
+        "heading": "Choisissez un modèle existant ou créez-en un nouveau pour votre e-mail",
+        "cancel": "Annuler"
+    },
+    "search": {
+        "placeholder": "Rechercher des modèles..."
+    },
+    "actions": {
+        "createNewTemplate": "Créer un nouveau modèle"
+    },
+    "loading": {
+        "templates": "Chargement des modèles..."
+    },
+    "empty": {
+        "noSearchResults": "Aucun modèle trouvé correspondant à votre recherche.",
+        "noTemplates": "Aucun modèle d'e-mail trouvé.",
+        "getStarted": "Créez votre premier modèle pour commencer."
+    },
+    "table": {
+        "templateName": "Nom du modèle",
+        "subject": "Objet",
+        "contentPreview": "Aperçu du contenu",
+        "noSubject": "Aucun objet",
+        "noContent": "Aucun contenu"
+    },
+    "pagination": {
+        "showingRange": "Affichage de {{start}} à {{end}} sur {{total}} modèles",
+        "rowsPerPage": "Lignes par page :",
+        "pageOf": "Page {{current}} sur {{total}}"
+    },
+    "errors": {
+        "loadTemplatesFailed": "Échec du chargement des modèles d'e-mail",
+        "loadTemplateContentFailed": "Échec du chargement du contenu du modèle. Utilisation de la version en cache."
+    }
+}

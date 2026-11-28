@@ -11,6 +11,8 @@ import {
     StarFour,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { getTerminology } from '@/components/common/layout-container/sidebar/utils';
+import { ContentTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
 
 export const Route = createLazyFileRoute('/explore-ai')({
     component: ExploreAIPage,
@@ -33,7 +35,7 @@ function ExploreAIPage() {
             accentColor: 'bg-blue-500',
         },
         {
-            title: 'Create End to End Course',
+            title: `Create End to End ${getTerminology(ContentTerms.Course, SystemTerms.Course)}`,
             description: 'PPT, Diagrams, Videos, Quizzes, Assignments',
             path: '/study-library/ai-copilot',
             icon: GraduationCap,

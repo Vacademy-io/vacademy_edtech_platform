@@ -1,0 +1,63 @@
+{
+    "errors": {
+        "build": "यह फाइलिंग तैयार नहीं की जा सकी।"
+    },
+    "empty": {
+        "nothingToFile": "दाखिल करने के लिए कुछ नहीं है"
+    },
+    "ecr": {
+        "emptyText": "इस महीने कोई PF योगदान दर्ज नहीं हुआ।"
+    },
+    "esi": {
+        "emptyText": "इस महीने कोई कर्मचारी ESI वेतन सीमा के भीतर नहीं था।"
+    },
+    "pt": {
+        "emptyText": "इस महीने कोई व्यावसायिक कर नहीं काटा गया।",
+        "slabSummary": "स्लैब सारांश"
+    },
+    "wps": {
+        "emptyText": "इस महीने कोई स्वीकृत पेरोल प्रविष्टि नहीं है।"
+    },
+    "stats": {
+        "members": "सदस्य",
+        "epfWages": "EPF वेतन",
+        "epfContribution": "EPF योगदान",
+        "epsContribution": "EPS योगदान",
+        "insuredPersons": "बीमित व्यक्ति",
+        "totalWages": "कुल वेतन",
+        "ipContribution": "बीमित योगदान",
+        "employerContribution": "नियोक्ता योगदान",
+        "state": "राज्य",
+        "employees": "कर्मचारी",
+        "totalPt": "कुल व्यावसायिक कर",
+        "totalNetPay": "कुल शुद्ध वेतन",
+        "establishment": "प्रतिष्ठान"
+    },
+    "table": {
+        "member": "सदस्य",
+        "uan": "UAN",
+        "epfWages": "EPF वेतन",
+        "employeeShare": "कर्मचारी",
+        "eps": "EPS",
+        "diff": "अंतर",
+        "ncp": "NCP",
+        "employee": "कर्मचारी",
+        "ipNumber": "बीमा संख्या",
+        "days": "दिन",
+        "wage": "वेतन",
+        "ip": "बीमित हिस्सा",
+        "employer": "नियोक्ता",
+        "slabAmount": "स्लैब राशि",
+        "employees": "कर्मचारी",
+        "total": "कुल",
+        "gross": "सकल",
+        "pt": "व्यावसायिक कर",
+        "iban": "IBAN",
+        "basic": "मूल",
+        "other": "अन्य",
+        "deductions": "कटौती",
+        "net": "शुद्ध",
+        "fixed": "स्थिर",
+        "variable": "परिवर्तनशील"
+    }
+}

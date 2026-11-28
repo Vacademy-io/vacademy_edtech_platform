@@ -1,0 +1,32 @@
+{
+    "title": "Modifier la numérotation des factures ?",
+    "description": "Les nouvelles factures utiliseront désormais le nouveau format.",
+    "before": {
+        "label": "Dernière facture utilisée"
+    },
+    "after": {
+        "label": "La prochaine facture sera"
+    },
+    "impact": {
+        "prefix": "La",
+        "suffix_one": "facture déjà émise conserve son numéro actuel — aucune facture n'est renumérotée, et aucun numéro n'est jamais réutilisé.",
+        "suffix_many": "factures déjà émises conservent leurs numéros actuels — aucune facture n'est renumérotée, et aucun numéro n'est jamais réutilisé.",
+        "suffix_other": "factures déjà émises conservent leurs numéros actuels — aucune facture n'est renumérotée, et aucun numéro n'est jamais réutilisé.",
+        "none": "Cet établissement n'a émis aucune facture pour le moment, donc ce changement n'a aucun effet."
+    },
+    "warning": {
+        "text": "Ce format produit des numéros qui ne sont pas strictement séquentiels. De nombreuses administrations fiscales exigent que les numéros de facture suivent une séquence ininterrompue — vérifiez auprès de votre comptable avant d'enregistrer."
+    },
+    "confirm": {
+        "instructionPrefix": "Tapez",
+        "instructionSuffix": "pour confirmer"
+    },
+    "checkbox": {
+        "label": "Je comprends que les factures créées à partir de maintenant utiliseront le nouveau format."
+    },
+    "footer": {
+        "cancel": "Annuler",
+        "save": "Enregistrer la numérotation",
+        "saving": "Enregistrement…"
+    }
+}

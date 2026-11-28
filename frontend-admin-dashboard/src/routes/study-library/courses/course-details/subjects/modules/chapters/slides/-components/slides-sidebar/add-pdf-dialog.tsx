@@ -3,6 +3,7 @@ import { DialogFooter } from '@/components/ui/dialog';
 import { Progress } from '@/components/ui/progress';
 import { useFileUpload } from '@/hooks/use-file-upload';
 import { useState, useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { useForm } from 'react-hook-form';
 import { FileUploadComponent } from '@/components/design-system/file-upload';
@@ -33,6 +34,7 @@ export const AddPdfDialog = ({
 }: {
     openState?: ((open: boolean) => void) | undefined;
 }) => {
+    const { t } = useTranslation('studyLibraryAddPdfDialog');
     const accessToken = getTokenFromCookie(TokenKey.accessToken);
     const data = getTokenDecodedData(accessToken);
     const INSTITUTE_ID = data && Object.keys(data.authorities)[0];
@@ -85,13 +87,13 @@ export const AddPdfDialog = ({
             }, 500);
         } catch (error) {
             console.error('Error reordering slides:', error);
-            toast.error('Slide created but reordering failed');
+            toast.error(t('reorderFailed'));
         }
     };
 
     const handleFileSubmit = async (selectedFile: File) => {
         if (!selectedFile.type.includes('pdf')) {
-            setError('Please upload only PDF files');
+            setError(t('invalidFileType'));
             return;
         }
 
@@ -106,17 +108,17 @@ export const AddPdfDialog = ({
             const arrayBuffer = await selectedFile.arrayBuffer();
             const pdf = await pdfjs.getDocument({ data: arrayBuffer }).promise;
             setPdfPageCount(pdf.numPages);
-            toast.success(`PDF selected: ${pdf.numPages} page(s) detected.`);
+            toast.success(t('pdfSelectedWithPages', { count: pdf.numPages }));
         } catch (err) {
             console.error('Error reading PDF:', err);
             setPdfPageCount(null);
-            toast.success('PDF selected successfully');
+            toast.success(t('pdfSelected'));
         }
     };
 
     const handleUpload = async () => {
         if (!file) {
-            toast.error('Please select a file first');
+            toast.error(t('selectFileFirst'));
             return;
         }
 
@@ -170,7 +172,7 @@ export const AddPdfDialog = ({
                 if (response) {
                     await reorderSlidesAfterNewSlide(response);
                     openState?.(false);
-                    toast.success('PDF uploaded successfully!');
+                    toast.success(t('pdfUploaded'));
                 }
             }
 
@@ -180,9 +182,7 @@ export const AddPdfDialog = ({
         } catch (err) {
             const apiMessage = (err as { response?: { data?: { message?: string } } })?.response
                 ?.data?.message;
-            const errorMessage =
-                apiMessage ||
-                (err instanceof Error ? err.message : 'Upload failed. Please try again.');
+            const errorMessage = apiMessage || (err instanceof Error ? err.message : t('uploadFailed'));
             setError(errorMessage);
             toast.error(errorMessage);
         } finally {
@@ -237,10 +237,7 @@ export const AddPdfDialog = ({
                                             {pdfPageCount && (
                                                 <>
                                                     <span>•</span>
-                                                    <span>
-                                                        {pdfPageCount} page
-                                                        {pdfPageCount > 1 ? 's' : ''}
-                                                    </span>
+                                                    <span>{t('pageCount', { count: pdfPageCount })}</span>
                                                 </>
                                             )}
                                         </div>
@@ -253,11 +250,9 @@ export const AddPdfDialog = ({
                                     </div>
                                     <div>
                                         <p className="mb-1 font-medium text-neutral-700">
-                                            Drop your PDF here, or click to browse
+                                            {t('dropzoneHint')}
                                         </p>
-                                        <p className="text-sm text-neutral-500">
-                                            Supports PDF files up to 10MB
-                                        </p>
+                                        <p className="text-sm text-neutral-500">{t('dropzoneFormats')}</p>
                                     </div>
                                 </div>
                             )}
@@ -281,7 +276,7 @@ export const AddPdfDialog = ({
                             className="[&>div]:to-primary-600 h-2 bg-neutral-200 [&>div]:bg-gradient-to-r [&>div]:from-primary-500"
                         />
                         <div className="flex items-center justify-between text-sm">
-                            <span className="text-neutral-600">Uploading PDF...</span>
+                            <span className="text-neutral-600">{t('uploadingPdf')}</span>
                             <span className="text-primary-600 font-medium">{uploadProgress}%</span>
                         </div>
                     </div>
@@ -315,10 +310,10 @@ export const AddPdfDialog = ({
                         {isUploading ? (
                             <div className="flex items-center justify-center gap-2">
                                 <div className="size-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                                Uploading...
+                                {t('uploadingEllipsis')}
                             </div>
                         ) : (
-                            'Upload PDF'
+                            t('uploadPdf')
                         )}
                     </MyButton>
                 </DialogFooter>

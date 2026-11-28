@@ -1,0 +1,30 @@
+{
+    "summary": {
+        "prefix": "Destination par défaut :",
+        "fallback": "Destination sélectionnée"
+    },
+    "button": {
+        "change": "Modifier"
+    },
+    "cascadeField": {
+        "labels": {
+            "course": "Cours",
+            "session": "Session",
+            "level": "Niveau",
+            "subject": "Matière",
+            "module": "Module",
+            "chapter": "Chapitre"
+        },
+        "placeholders": {
+            "course": "Sélectionner un cours",
+            "session": "Sélectionner une session",
+            "level": "Sélectionner un niveau",
+            "subject": "Sélectionner une matière",
+            "module": "Sélectionner un module",
+            "chapter": "Sélectionner un chapitre"
+        },
+        "searchPlaceholder": "Rechercher {{label}}…",
+        "emptyText": "Aucun résultat"
+    },
+    "noDefaultSet": "Aucune destination par défaut définie — seules les sessions ayant leur propre destination seront téléchargées automatiquement."
+}

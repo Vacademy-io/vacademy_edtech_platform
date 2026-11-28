@@ -1,0 +1,72 @@
+{
+    "dialogHeading": "Transcription",
+    "statusPill": {
+        "transcriptReady": "Transcription prête",
+        "wordCount_one": "{{formattedCount}} mot",
+        "wordCount_many": "{{formattedCount}} mots",
+        "wordCount_other": "{{formattedCount}} mots"
+    },
+    "languages": {
+        "en": "Anglais",
+        "hi": "Hindi",
+        "bn": "Bengali",
+        "ta": "Tamoul",
+        "te": "Télougou",
+        "mr": "Marathi",
+        "gu": "Gujarati",
+        "kn": "Kannada",
+        "ml": "Malayalam",
+        "pa": "Pendjabi",
+        "ur": "Ourdou",
+        "source": "Source"
+    },
+    "reader": {
+        "transcriptLabel": "Transcription en {{language}}",
+        "emptyTranscript": "La transcription est vide pour cet enregistrement.",
+        "loadingTranscript": "Chargement de la transcription…"
+    },
+    "buttons": {
+        "copy": "Copier",
+        "back": "Retour",
+        "retry": "Réessayer"
+    },
+    "actions": {
+        "createAssessment": {
+            "title": "Créer une évaluation",
+            "description": "Générez automatiquement une évaluation à choix multiples à partir de ce cours et publiez-la pour vos groupes.",
+            "cta": "Créer une évaluation"
+        },
+        "generateNotes": {
+            "title": "Générer des notes de cours",
+            "description": "Transformez cette transcription en notes d'étude claires et structurées à partager avec les apprenants.",
+            "cta": "Générer des notes"
+        }
+    },
+    "loading": {
+        "generatingNotes": "Génération des notes de cours…",
+        "usuallyTakes": "Prend généralement 5 à 15 secondes."
+    },
+    "errors": {
+        "couldNotGenerateNotes": "Impossible de générer les notes.",
+        "transcriptTooShort": "La transcription est vide ou trop courte pour générer des notes",
+        "cachingFailed": "Notes générées, mais la mise en cache a échoué — régénérez pour réessayer.",
+        "generateFailed": "Échec de la génération des notes",
+        "pdfGenerationFailed": "Impossible de générer le PDF",
+        "notesNotReady": "Les notes ne sont pas encore prêtes à être exportées."
+    },
+    "toasts": {
+        "copied": "{{label}} copié",
+        "clipboardError": "Impossible d'accéder au presse-papiers",
+        "notesGenerated": "Notes de cours générées",
+        "pdfDownloaded": "PDF téléchargé"
+    },
+    "loaded": {
+        "backToActions": "← Retour aux actions",
+        "generated": "Généré {{timeAgo}}",
+        "addToCourse": "Ajouter au cours",
+        "lectureNotes": "Notes de cours",
+        "preparing": "Préparation…",
+        "downloadPdf": "Télécharger le PDF",
+        "regenerate": "Régénérer"
+    }
+}

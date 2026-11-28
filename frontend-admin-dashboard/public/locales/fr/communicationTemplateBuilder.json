@@ -1,0 +1,128 @@
+{
+    "languages": {
+        "en": "Anglais",
+        "en_US": "Anglais (US)",
+        "hi": "Hindi",
+        "es": "Espagnol",
+        "pt_BR": "Portugais (BR)",
+        "ar": "Arabe",
+        "fr": "Français",
+        "de": "Allemand",
+        "id": "Indonésien",
+        "it": "Italien",
+        "ja": "Japonais",
+        "ko": "Coréen",
+        "zh_CN": "Chinois (simplifié)"
+    },
+    "toast": {
+        "maxButtons": "Maximum 3 boutons",
+        "multipleProblems_one": "{{count}} élément doit être corrigé avant l'enregistrement — voir la liste ci-dessus.",
+        "multipleProblems_many": "{{count}} d'éléments doivent être corrigés avant l'enregistrement — voir la liste ci-dessus.",
+        "multipleProblems_other": "{{count}} éléments doivent être corrigés avant l'enregistrement — voir la liste ci-dessus.",
+        "draftSaved": "Brouillon enregistré",
+        "saveDraftFailed": "Impossible d'enregistrer le brouillon.",
+        "saveTemplateFailed": "Impossible d'enregistrer le modèle.",
+        "approvedByMeta": "Modèle approuvé par Meta et prêt à l'emploi.",
+        "submittedToMeta": "Modèle soumis à Meta pour approbation.",
+        "metaRejected": "Meta a rejeté le modèle. Votre brouillon a été enregistré.",
+        "draftSavedRetry": "Votre brouillon est enregistré — corrigez le problème ci-dessus et soumettez à nouveau.",
+        "sampleUploaded": "Exemple {{kind}} téléversé — l'URL publique a été renseignée.",
+        "sampleUploadFailed": "Impossible de téléverser l'exemple {{kind}}.",
+        "sampleWrongType": "Ce fichier n'est pas un {{kind}} pris en charge. Utilisez {{formats}}.",
+        "sampleTooLarge": "Ce fichier est trop volumineux. Utilisez {{formats}}."
+    },
+    "problemsBanner": {
+        "single": "Ce modèle nécessite une correction",
+        "multiple_one": "{{count}} élément à corriger",
+        "multiple_many": "{{count}} d'éléments à corriger",
+        "multiple_other": "{{count}} éléments à corriger"
+    },
+    "header": {
+        "edit": "Modifier le modèle",
+        "create": "Créer un modèle",
+        "saveDraft": "Enregistrer le brouillon",
+        "submitting": "Envoi en cours...",
+        "submitForApproval": "Soumettre pour approbation",
+        "back": "Retour aux modèles",
+        "subtitleCreate": "Créez un modèle et soumettez-le à Meta. L'approbation prend généralement quelques minutes, 24 heures au maximum.",
+        "subtitleEdit": "{{name}} · corrigez les points signalés et soumettez à nouveau."
+    },
+    "fields": {
+        "templateName": "Nom du modèle",
+        "templateNameHint": "Minuscules et underscores uniquement",
+        "category": "Catégorie",
+        "categoryMarketing": "Marketing",
+        "categoryUtility": "Utilitaire",
+        "categoryAuthentication": "Authentification",
+        "language": "Langue",
+        "header": "En-tête",
+        "headerNone": "Aucun",
+        "headerText": "Texte",
+        "headerImage": "Image",
+        "headerVideo": "Vidéo",
+        "headerDocument": "Document",
+        "headerTextPlaceholder": "Texte d'en-tête (60 caractères max)",
+        "headerSampleValuePlaceholder": "Valeur d'exemple pour la variable d'en-tête (ex. octobre)",
+        "headerSampleUrlPlaceholder": "URL d'exemple {{kind}} (pour l'approbation Meta)",
+        "bodyText": "Texte du corps",
+        "addVariable": "Ajouter une variable",
+        "charCount": "{{count}}/1024 caractères",
+        "variableConfiguration": "Configuration des variables :",
+        "variableNamePlaceholder": "Nom de la variable (ex. nom, cours)",
+        "sampleValuePlaceholder": "Valeur d'exemple (ex. Jean)",
+        "apiNamedParamsHint": "Les noms de variables permettent d'utiliser des paramètres nommés dans l'API : {\"name\": \"John\"} au lieu de {\"1\": \"John\"}",
+        "footer": "Pied de page (optionnel)",
+        "footerPlaceholder": "Merci pour votre confiance !",
+        "buttons": "Boutons (3 max)",
+        "buttonTextPlaceholder": "Texte du bouton",
+        "buttonUrlSamplePlaceholder": "URL complète d'exemple (ex. https://example.com/track/A123)",
+        "buttonPhonePlaceholder": "+919876543210",
+        "addQuickReply": "+ Réponse rapide",
+        "addUrlButton": "+ Bouton URL",
+        "addPhone": "+ Téléphone",
+        "headerSampleUpload": "Téléverser",
+        "headerSampleUploading": "Téléversement…",
+        "headerSampleUrlHint": "Téléversez un fichier ou collez une URL publique — Meta la télécharge pour la révision. {{formats}}.",
+        "headerSampleFormats": {
+            "image": "JPG ou PNG, jusqu’à 5 Mo",
+            "video": "MP4, jusqu’à 16 Mo",
+            "document": "PDF, jusqu’à 100 Mo"
+        }
+    },
+    "headerKind": {
+        "image": "image",
+        "video": "vidéo",
+        "document": "document"
+    },
+    "preview": {
+        "title": "Aperçu WhatsApp",
+        "headerTextFallback": "Texte d'en-tête",
+        "imageFallback": "📷 Image",
+        "videoFallback": "🎬 Vidéo",
+        "documentFallback": "📄 Document",
+        "bodyFallback": "Le corps de votre message apparaîtra ici...",
+        "buttonFallback": "Bouton {{n}}",
+        "category": "Catégorie :",
+        "language": "Langue :",
+        "placeholders": "Variables :",
+        "buttonsCount": "Boutons :"
+    },
+    "sections": {
+        "basics": {
+            "title": "Informations de base",
+            "description": "Le nom, la catégorie et la langue déterminent comment Meta examine et facture le modèle."
+        },
+        "header": {
+            "description": "Facultatif. Une ligne en gras, ou une image, une vidéo ou un document affiché au-dessus du message."
+        },
+        "body": {
+            "description": "Ce que lit le destinataire. Les variables sont numérotées {{first}}, {{second}} et ainsi de suite, dans l'ordre."
+        },
+        "footer": {
+            "description": "Petite ligne grise facultative sous le message. Sans variables."
+        },
+        "buttons": {
+            "description": "Facultatif, jusqu'à 3. {{used}}/3 utilisés."
+        }
+    }
+}

@@ -17,6 +17,9 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import vacademy.io.auth_service.feature.auth.constants.AuthConstants;
+import vacademy.io.auth_service.feature.auth.repository.PortalUserLookupRepository;
+import vacademy.io.auth_service.feature.auth.service.LearnerPortalAccessGuard;
+import vacademy.io.auth_service.feature.auth.service.TrustedLoginEligibility;
 import vacademy.io.auth_service.feature.auth.dto.ActiveSessionDTO;
 import vacademy.io.auth_service.feature.auth.dto.AuthRequestDto;
 import vacademy.io.auth_service.feature.auth.dto.JwtResponseDto;
@@ -32,6 +35,7 @@ import vacademy.io.auth_service.feature.notification.service.NotificationService
 import vacademy.io.auth_service.feature.util.UsernameGenerator;
 import vacademy.io.auth_service.feature.admin_core_service.dto.InstituteSignupPolicy;
 import vacademy.io.auth_service.feature.admin_core_service.service.InstitutePolicyService;
+import vacademy.io.auth_service.feature.login_link.service.LoginCodeService;
 import vacademy.io.common.auth.dto.RefreshTokenRequestDTO;
 import vacademy.io.common.auth.dto.UserDTO;
 import vacademy.io.common.institute.InstituteChoice;
@@ -48,11 +52,13 @@ import vacademy.io.common.auth.repository.UserRoleRepository;
 import vacademy.io.common.auth.service.JwtService;
 import vacademy.io.common.auth.service.RefreshTokenService;
 import vacademy.io.common.auth.service.OAuth2VendorToUserDetailService;
+import vacademy.io.common.auth.util.SuperAdminAuthUtil;
 import vacademy.io.common.exceptions.VacademyException;
 import vacademy.io.common.notification.dto.GenericEmailRequest;
 import vacademy.io.common.notification.dto.EmailOTPRequest;
 import vacademy.io.common.exceptions.ExpiredTokenException;
 import vacademy.io.common.core.internal_api_wrapper.InternalClientUtils;
+import vacademy.io.common.common.dto.CustomFieldValueDTO;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.*;
@@ -95,6 +101,9 @@ public class LearnerAuthManager {
         @Autowired
         private InstitutePolicyService institutePolicyService;
 
+        @Autowired
+        private LoginCodeService loginCodeService;
+
         @Value("${admin.core.service.base_url}")
         private String adminCoreServiceBaseUrl;
 
@@ -119,6 +128,15 @@ public class LearnerAuthManager {
         @Autowired
         private InstituteSettingsService instituteSettingsService;
 
+        @Autowired
+        private LearnerPortalAccessGuard learnerPortalAccessGuard;
+
+        @Autowired
+        private PortalUserLookupRepository portalUserLookupRepository;
+
+        @Autowired
+        private TrustedLoginEligibility trustedLoginEligibility;
+
         public JwtResponseDto registerLearner(LearnerEnrollRequestDTO learnerEnrollRequestDTO) {
                 if (learnerEnrollRequestDTO == null) {
                         throw new VacademyException("Invalid Request");
@@ -136,7 +154,12 @@ public class LearnerAuthManager {
                                 learnerEnrollRequestDTO.getVendorId(),
                                 learnerEnrollRequestDTO.getLearnerPackageSessionEnroll() != null,
                                 userDTO.getEmail() != null);
-                User user;
+                AuthService.AccountResult account;
+                // Custom field values sent with the enrollment, for the username strategy.
+                if (learnerEnrollRequestDTO.getLearnerPackageSessionEnroll() != null) {
+                        userDTO.setUsernameFieldValues(CustomFieldValueDTO.toValueMap(
+                                        learnerEnrollRequestDTO.getLearnerPackageSessionEnroll().getCustomFieldValues()));
+                }
 
                 // Check institute policy if instituteId is provided
                 if (instituteId != null && !instituteId.isBlank()) {
@@ -163,19 +186,20 @@ public class LearnerAuthManager {
                                         isOauth2Signup);
 
                         // user = authService.createUser(userDTO, instituteId, deliverPassword);
-                        user = authService.createUserForLearnerEnrollment(userDTO, instituteId, deliverPassword);
+                        account = authService.createOrGetLearnerForSelfSignup(userDTO, instituteId, deliverPassword);
                         log.debug("User createUser completed: userId={}, username={} (may be null if creation failed)",
-                                        user != null ? user.getId() : null,
-                                        user != null ? user.getUsername() : null);
+                                        account != null && account.user() != null ? account.user().getId() : null,
+                                        account != null && account.user() != null ? account.user().getUsername() : null);
                 } else {
                         log.debug("No instituteId provided. Creating user with notifications enabled by default");
                         // user = authService.createUser(userDTO, null, true);
-                        user = authService.createUserForLearnerEnrollment(userDTO, instituteId, true);
+                        account = authService.createOrGetLearnerForSelfSignup(userDTO, instituteId, true);
                         log.debug("User createUser (no institute) completed: userId={}, username={}",
-                                        user != null ? user.getId() : null,
-                                        user != null ? user.getUsername() : null);
+                                        account != null && account.user() != null ? account.user().getId() : null,
+                                        account != null && account.user() != null ? account.user().getUsername() : null);
                 }
 
+                User user = account != null ? account.user() : null;
                 if (user != null) {
                         userDTO.setId(user.getId());
                         userDTO.setUsername(user.getUsername());
@@ -233,8 +257,31 @@ public class LearnerAuthManager {
                         }
                 }
 
+                // An account that already existed and holds staff/admin access (or is a
+                // super-admin) is enrolled above as usual, but is not signed in from this public
+                // form, and its OAuth link is left as it is: it signs in with its own password or
+                // OTP. Checked after the enrollment so a paid enrollment is never lost to it.
+                boolean withholdSession = false;
+                if (account != null && !account.created() && user != null) {
+                        List<String> nonLearnerAccess;
+                        try {
+                                nonLearnerAccess = trustedLoginEligibility.nonLearnerAccess(user);
+                        } catch (Exception e) {
+                                // Fail open: an infrastructure error must never cost an ordinary
+                                // learner the sign-in this form has always given.
+                                log.error("REGISTER_EXISTING_ACCOUNT_CHECK_FAILED: user={} (signed in as before): {}",
+                                                user.getId(), e.getMessage());
+                                nonLearnerAccess = List.of();
+                        }
+                        if (!nonLearnerAccess.isEmpty()) {
+                                withholdSession = true;
+                                log.info("REGISTER_EXISTING_ACCOUNT_NO_SESSION: user={} roles={}", user.getId(),
+                                                nonLearnerAccess);
+                        }
+                }
+
                 // Verify email if data is available
-                if (learnerEnrollRequestDTO.getSubjectId() != null &&
+                if (!withholdSession && learnerEnrollRequestDTO.getSubjectId() != null &&
                                 learnerEnrollRequestDTO.getVendorId() != null &&
                                 user != null && user.getEmail() != null) {
                         log.debug("Verifying vendor email mapping for subjectId={}, vendorId={}, emailPresent=true",
@@ -244,6 +291,10 @@ public class LearnerAuthManager {
                                         learnerEnrollRequestDTO.getSubjectId(),
                                         learnerEnrollRequestDTO.getVendorId(),
                                         user.getEmail());
+                }
+
+                if (withholdSession) {
+                        return JwtResponseDto.builder().accountExists(true).build();
                 }
 
                 RefreshToken refreshToken = refreshTokenService.createRefreshToken(
@@ -291,7 +342,7 @@ public class LearnerAuthManager {
                 String instituteId = InstituteChoice.forUser(originInstituteResolver, user);
                 InstituteInfoDTO instituteInfoDTO = null;
                 String instituteName = "Vacademy"; // Default fallback
-                String theme = "#E67E22";
+                String theme = "#333333"; // neutral when the institute has no theme code
                 String learnerLoginUrl = "https://dash.vacademy.io";
                 if (StringUtils.hasText(instituteId)) {
                         instituteInfoDTO = instituteInternalService.getInstituteByInstituteId(instituteId);
@@ -369,6 +420,11 @@ public class LearnerAuthManager {
 
                 User user = userRepository.findByUsername(userName)
                                 .orElseThrow(() -> new UsernameNotFoundException("Invalid user request!"));
+
+                // Checked before the old refresh tokens are wiped: a refused login must not log the
+                // real owner out.
+                learnerPortalAccessGuard.assertUserBelongsToPortal(authRequestDTO.getPortalInstituteId(),
+                                user.getId(), List.of(UserRoleStatus.ACTIVE.name()));
 
                 refreshTokenService.deleteAllRefreshToken(user);
 
@@ -472,6 +528,24 @@ public class LearnerAuthManager {
                 return "OTP sent to " + authRequestDTO.getEmail();
         }
 
+        /**
+         * An email can front several accounts, one per institute, and the lookups above take the
+         * newest of them across all institutes. On a white-label portal the learner's own account
+         * is the one in that institute, so prefer it; otherwise keep what the caller found.
+         */
+        private User preferPortalAccount(AuthRequestDto authRequestDTO, User found, String userIdentifier) {
+                String portalInstituteId = authRequestDTO.getPortalInstituteId();
+                if ("PHONE".equalsIgnoreCase(userIdentifier)
+                                || !learnerPortalAccessGuard.appliesTo(portalInstituteId)) {
+                        return found;
+                }
+                return portalUserLookupRepository
+                                .findMostRecentByEmailInInstitute(authRequestDTO.getEmail(), portalInstituteId,
+                                                List.of(UserRoleStatus.ACTIVE.name(), UserRoleStatus.INVITED.name()),
+                                                AuthConstants.VALID_ROLES_FOR_STUDENT_PORTAL)
+                                .orElse(found);
+        }
+
         public JwtResponseDto loginViaOtp(AuthRequestDto authRequestDTO) {
                 if (authRequestDTO.getOtp() == null)
                         throw new UsernameNotFoundException("Invalid OTP!");
@@ -501,6 +575,10 @@ public class LearnerAuthManager {
                                                         AuthConstants.VALID_ROLES_FOR_STUDENT_PORTAL)
                                         .orElseThrow(() -> new VacademyException("User not found!!!"));
                 }
+
+                user = preferPortalAccount(authRequestDTO, user, userIdentifier);
+                learnerPortalAccessGuard.assertUserBelongsToPortal(authRequestDTO.getPortalInstituteId(),
+                                user.getId(), List.of(UserRoleStatus.ACTIVE.name(), UserRoleStatus.INVITED.name()));
 
                 refreshTokenService.deleteAllRefreshToken(user);
 
@@ -548,9 +626,12 @@ public class LearnerAuthManager {
                                         List<String> permissions = userPermissionRepository.findByUserId(user.getId())
                                                         .stream()
                                                         .map(UserPermission::getPermissionId).toList();
+                                        // Echo the (still valid) refresh token: the learner app stores
+                                        // response.refreshToken, and a missing one would wipe its copy.
                                         return JwtResponseDto.builder()
                                                         .accessToken(jwtService.generateToken(user,
                                                                         user.getRoles().stream().toList(), permissions))
+                                                        .refreshToken(refreshTokenRequestDTO.getToken())
                                                         .build();
                                 })
                                 .orElseThrow(() -> new ExpiredTokenException(
@@ -613,6 +694,10 @@ public class LearnerAuthManager {
                                         .orElseThrow(() -> new VacademyException("User not found!!!"));
                 }
 
+                user = preferPortalAccount(authRequestDTO, user, userIdentifier);
+                learnerPortalAccessGuard.assertUserBelongsToPortal(authRequestDTO.getPortalInstituteId(),
+                                user.getId(), List.of(UserRoleStatus.ACTIVE.name(), UserRoleStatus.INVITED.name()));
+
                 refreshTokenService.deleteAllRefreshToken(user);
 
                 // Resolve instituteId from request or user's roles
@@ -655,6 +740,14 @@ public class LearnerAuthManager {
                 User user = userRepository.findById(userId)
                                 .orElseThrow(() -> new UsernameNotFoundException("User not found!"));
 
+                // The minted token carries ALL of the user's roles and passes the super-admin
+                // allowlist, so a platform staff account enrolled as a learner somewhere must
+                // never get one from this path.
+                if (SuperAdminAuthUtil.isSuperAdminUserId(user.getId())) {
+                        throw new VacademyException(HttpStatus.FORBIDDEN,
+                                        "Cannot generate a learner token for a platform staff account");
+                }
+
                 Optional<UserRole> userRole = userRoleRepository.findFirstByUserIdAndInstituteIdAndRoleNamesAndStatuses(
                                 userId,
                                 instituteId,
@@ -690,6 +783,11 @@ public class LearnerAuthManager {
         @Value("${security.trusted-login.enabled:false}")
         private boolean trustedLoginEnabled;
 
+        // Username-only join links: refuse accounts with staff/admin access or super-admins.
+        // Off by default; either way TRUSTED_LOGIN_WOULD_BLOCK is logged for such accounts.
+        @Value("${security.trusted-login.block-staff-accounts:false}")
+        private boolean trustedLoginBlockStaffAccounts;
+
         /**
          * Emergency login by username without OTP verification.
          * 
@@ -703,16 +801,52 @@ public class LearnerAuthManager {
          * - Only works for users with STUDENT role in the specified institute (if
          * provided)
          * 
-         * @param username    The user's username (required)
+         * <p>Login codes ({@code ?lc=} on the link, see LoginCodeService) are used only for an
+         * institute that has switched on "require login code" (institute_login_link_policy,
+         * off by default). There the code alone decides: valid = signed in, anything else =
+         * 401, and the emergency flag is not consulted. The username and institute, when sent,
+         * must match the code's.
+         *
+         * <p>Everywhere else (the default) a code is ignored and the original username-only
+         * behaviour applies. Without a code, a user who belongs to an institute with the switch
+         * on gets 401.
+         *
+         * @param username    The user's username (required unless a code is sent)
          * @param instituteId The institute ID (optional - if null, looks up by username
          *                    only)
+         * @param code        Login code from the link (optional)
          * @param requestIP   The request IP address for logging
          * @return JwtResponseDto with access and refresh tokens
          */
-        public JwtResponseDto loginByUsernameTrusted(String username, String instituteId, String requestIP) {
+        public JwtResponseDto loginByUsernameTrusted(String username, String instituteId, String code,
+                        String requestIP) {
+                return loginByUsernameTrusted(username, instituteId, code, null, requestIP);
+        }
+
+        /**
+         * @param route the landing route the learner app reports (LoginLinkRoute name, optional).
+         *              An institute requiring codes may exempt it; see institute_login_link_policy.
+         */
+        public JwtResponseDto loginByUsernameTrusted(String username, String instituteId, String code,
+                        String route, String requestIP) {
                 // Log all attempts for security audit
-                log.warn("TRUSTED_LOGIN_ATTEMPT: username={}, instituteId={}, IP={}",
-                                username, instituteId, requestIP);
+                log.warn("TRUSTED_LOGIN_ATTEMPT: username={}, instituteId={}, withCode={}, route={}, IP={}",
+                                username, instituteId, code != null && !code.isBlank(), route, requestIP);
+
+                boolean codeEnforced = code != null && !code.isBlank()
+                                && loginCodeService.instituteOf(code).map(loginCodeService::requiresCode).orElse(false);
+                if (codeEnforced) {
+                        User codeUser = loginCodeService.redeem(code, username, instituteId, requestIP)
+                                        .orElseThrow(() -> {
+                                                log.warn("TRUSTED_LOGIN_DENIED: invalid login code. username={}, instituteId={}, IP={}",
+                                                                username, instituteId, requestIP);
+                                                return new VacademyException(HttpStatus.UNAUTHORIZED,
+                                                                "This login link is invalid or has expired.");
+                                        });
+                        log.warn("TRUSTED_LOGIN_SUCCESS: User {} (id={}) logged in via login code from IP {}",
+                                        codeUser.getUsername(), codeUser.getId(), requestIP);
+                        return issueTrustedLoginTokens(codeUser);
+                }
 
                 // Check if feature is enabled
                 if (!trustedLoginEnabled) {
@@ -748,10 +882,50 @@ public class LearnerAuthManager {
                                         });
                 }
 
+                if (loginCodeService.anyInstituteRequiresCode(user.getId(), instituteId,
+                                vacademy.io.auth_service.feature.login_link.enums.LoginLinkRoute.parse(route).orElse(null))) {
+                        log.warn("TRUSTED_LOGIN_DENIED: login code required. username={}, instituteId={}, route={}, IP={}",
+                                        username, instituteId, route, requestIP);
+                        throw new VacademyException(HttpStatus.UNAUTHORIZED,
+                                        "This login link is invalid or has expired.");
+                }
+
+                if (refuseNonLearnerOnTrustedLogin(user)) {
+                        throw new VacademyException(HttpStatus.UNAUTHORIZED,
+                                        "This login link is invalid or has expired.");
+                }
+
                 // Log successful login for audit
                 log.warn("TRUSTED_LOGIN_SUCCESS: User {} (id={}) logged in via trusted endpoint from IP {}",
                                 username, user.getId(), requestIP);
 
+                return issueTrustedLoginTokens(user);
+        }
+
+        /**
+         * True when the username-only path must refuse this account: it has staff/admin access
+         * or is a super-admin, and the block is switched on. Such accounts are logged in both
+         * modes, so the effect can be measured before the switch is turned on. A failed lookup
+         * never refuses (logged at ERROR), with the switch on or off.
+         */
+        private boolean refuseNonLearnerOnTrustedLogin(User user) {
+                List<String> nonLearnerAccess;
+                try {
+                        nonLearnerAccess = trustedLoginEligibility.nonLearnerAccess(user);
+                } catch (Exception e) {
+                        log.error("TRUSTED_LOGIN_ELIGIBILITY_CHECK_FAILED: user={} enforced={} (allowed): {}",
+                                        user.getId(), trustedLoginBlockStaffAccounts, e.getMessage());
+                        return false;
+                }
+                if (nonLearnerAccess.isEmpty()) {
+                        return false;
+                }
+                log.info("TRUSTED_LOGIN_WOULD_BLOCK: user={} roles={} enforced={}", user.getId(), nonLearnerAccess,
+                                trustedLoginBlockStaffAccounts);
+                return trustedLoginBlockStaffAccounts;
+        }
+
+        private JwtResponseDto issueTrustedLoginTokens(User user) {
                 // Delete existing refresh tokens (same as regular login)
                 refreshTokenService.deleteAllRefreshToken(user);
 

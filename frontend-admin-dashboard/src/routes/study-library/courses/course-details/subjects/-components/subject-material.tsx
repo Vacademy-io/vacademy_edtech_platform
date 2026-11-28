@@ -1,11 +1,13 @@
 import { getActiveRoleDisplaySettingsKey } from '@/lib/auth/instituteUtils';
 import { getInstituteId } from '@/constants/helper';
 import { hasFacultyAssignedPermission } from '@/lib/auth/facultyAccessUtils';
+import { EngagementTab } from '../../-components/engagement/EngagementTab';
 // class-study-material.tsx
 import { useRouter } from '@tanstack/react-router';
 import { useMutation } from '@tanstack/react-query';
 import { AddSubjectButton } from './add-subject.tsx/add-subject-button';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { SubjectType, useStudyLibraryStore } from '@/stores/study-library/use-study-library-store';
 import { useAddSubject } from '@/routes/study-library/courses/course-details/subjects/-services/addSubject';
 import { useUpdateSubject } from '@/routes/study-library/courses/course-details/subjects/-services/updateSubject';
@@ -19,7 +21,7 @@ import { useUpdateSubjectOrder } from '@/routes/study-library/courses/course-det
 // import { StudyLibraryIntroKey } from '@/constants/storage/introKey';
 // import { studyLibrarySteps } from '@/constants/intro/steps';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { tabs, TabType, DEFAULT_HIDDEN_COURSE_DETAILS_TABS } from '../-constants/constant';
+import { buildTabs, TabType, DEFAULT_HIDDEN_COURSE_DETAILS_TABS } from '../-constants/constant';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { fetchModulesWithChapters } from '../../../-services/getModulesWithChapters';
 import {
@@ -49,6 +51,7 @@ import {
 } from '@phosphor-icons/react';
 import Students from './student-list';
 import Assessments from './assessment-list';
+import QuizResultsTab from '../../-components/quiz-results/QuizResultsTab';
 import LiveSessions from './live-sessions-list';
 import BatchReports from '@/routes/study-library/reports/-components/batch/batchReports';
 import { CertificatesTab } from '../../-components/certificates/CertificatesTab';
@@ -56,6 +59,9 @@ import Planning from './planning';
 import Activity from './activity';
 import PulseTab from '../../-components/pulse/PulseTab';
 import { PackageSettingsPanel } from '../../-components/package-settings/PackageSettingsPanel';
+import { TutorModeTab } from '../../-components/tutor-mode/TutorModeTab';
+import { AiKnowledgeTab } from '../../-components/ai-knowledge/AiKnowledgeTab';
+import { useCourseKnowledgeStatus } from '@/services/course-knowledge-settings';
 import { getIcon } from '../modules/chapters/slides/-components/slides-sidebar/slides-sidebar-slides';
 import { MyButton } from '@/components/design-system/button';
 import { useContentStore } from '../modules/chapters/slides/-stores/chapter-sidebar-store';
@@ -99,6 +105,11 @@ export interface ModuleWithChapters {
 export type SubjectModulesMap = { [subjectId: string]: ModuleWithChapters[] };
 
 export const SubjectMaterial = () => {
+    const { t } = useTranslation('subjectMaterial');
+    // The AI knowledge tab shows only when course knowledge is available to the
+    // institute; loading or failed counts as not available.
+    const { data: courseKnowledgeStatus } = useCourseKnowledgeStatus();
+    const isAiKnowledgeAvailable = courseKnowledgeStatus?.available === true;
     // role display for numbering toggle
     const accessToken = document?.cookie || '';
     // Simple check from existing stores would be better; fallback to ADMIN=false
@@ -466,7 +477,7 @@ export const SubjectMaterial = () => {
                         <MyDropdown
                             currentValue={currentSession ?? undefined}
                             dropdownList={sessionList}
-                            placeholder={`Select ${getTerminology(ContentTerms.Session, SystemTerms.Session)}`}
+                            placeholder={t('selectTerm', { term: getTerminology(ContentTerms.Session, SystemTerms.Session) })}
                             handleChange={handleSessionChange}
                         />
                     </div>
@@ -477,7 +488,7 @@ export const SubjectMaterial = () => {
                             className="flex items-center gap-1.5"
                         >
                             <CornersOut size={16} />
-                            <span>Expand All</span>
+                            <span>{t('expandAll')}</span>
                         </MyButton>
                         <MyButton
                             buttonType="secondary"
@@ -485,7 +496,7 @@ export const SubjectMaterial = () => {
                             className="flex items-center gap-1.5"
                         >
                             <CornersIn size={16} />
-                            <span>Collapse All</span>
+                            <span>{t('collapseAll')}</span>
                         </MyButton>
                     </div>
                 </div>
@@ -723,8 +734,7 @@ export const SubjectMaterial = () => {
                                                                                                 className="text-primary-400 group-hover:text-primary-500"
                                                                                             />
                                                                                             <span className="font-medium">
-                                                                                                Add
-                                                                                                Slide
+                                                                                                {t('addSlide')}
                                                                                             </span>
                                                                                         </MyButton>
 
@@ -737,11 +747,7 @@ export const SubjectMaterial = () => {
                                                                                         ).length ===
                                                                                         0 ? (
                                                                                             <div className="px-2 py-1 text-xs text-gray-400">
-                                                                                                No
-                                                                                                slides
-                                                                                                in
-                                                                                                this
-                                                                                                chapter.
+                                                                                                {t('noSlidesInChapter')}
                                                                                             </div>
                                                                                         ) : (
                                                                                             (
@@ -822,7 +828,7 @@ export const SubjectMaterial = () => {
                     })}
                     {subjects.length === 0 && (
                         <div className="rounded-md border border-dashed border-gray-200 bg-gray-50 py-6 text-center text-sm text-gray-500">
-                            No subjects available. Start by adding a new subject.
+                            {t('noSubjectsAvailable')}
                         </div>
                     )}
                 </div>
@@ -842,9 +848,9 @@ export const SubjectMaterial = () => {
             <div className="space-y-3">
                 <div className="flex flex-col items-start justify-between gap-2 md:flex-row md:items-center">
                     <div className="flex-1">
-                        <h2 className="text-base font-semibold text-gray-800">Manage Teachers</h2>
+                        <h2 className="text-base font-semibold text-gray-800">{t('manageTeachers')}</h2>
                         <p className="mt-0.5 text-xs text-gray-500">
-                            View and manage teachers assigned to this batch.
+                            {t('viewAndManageTeachers')}
                         </p>
                     </div>
                     <AddTeachers packageSessionId={packageSessionIds} />
@@ -857,13 +863,18 @@ export const SubjectMaterial = () => {
                 <Assessments packageSessionId={packageSessionIds ?? ''} />
             </div>
         ),
+        [TabType.QUIZ_RESULTS]: (
+            <div className="rounded-md bg-white p-3 shadow-sm">
+                <QuizResultsTab packageSessionId={packageSessionIds ?? ''} />
+            </div>
+        ),
         [TabType.LIVE_SESSION]: packageSessionIds ? (
             <div className="rounded-md bg-white text-sm text-gray-600 shadow-sm">
                 <LiveSessions packageSessionId={packageSessionIds} />
             </div>
         ) : (
             <div className="rounded-md bg-white p-6 text-center text-sm text-neutral-500 shadow-sm">
-                Select a batch to view its live sessions.
+                {t('selectBatchLiveSessions')}
             </div>
         ),
         [TabType.REPORTS]: packageSessionIds ? (
@@ -872,7 +883,7 @@ export const SubjectMaterial = () => {
             </div>
         ) : (
             <div className="rounded-md bg-white p-6 text-center text-sm text-neutral-500 shadow-sm">
-                Select a batch to view its reports.
+                {t('selectBatchReports')}
             </div>
         ),
         [TabType.CERTIFICATES]: (
@@ -881,14 +892,14 @@ export const SubjectMaterial = () => {
         [TabType.CONTENT_STRUCTURE]: (
             <div className="p-6 py-2">
                 <div className="mb-4">
-                    <h3 className="mb-2 text-lg font-semibold text-gray-800">Content Structure</h3>
+                    <h3 className="mb-2 text-lg font-semibold text-gray-800">{t('contentStructureHeading')}</h3>
                     <p className="text-sm text-gray-600">
-                        Navigate through your course content structure
+                        {t('navigateContentStructure')}
                     </p>
                 </div>
                 <div className="rounded-md bg-gray-50 p-6 text-center">
                     <p className="text-sm text-gray-500">
-                        Content structure view is available in the main course details page.
+                        {t('contentStructureAvailableElsewhere')}
                     </p>
                 </div>
             </div>
@@ -903,6 +914,11 @@ export const SubjectMaterial = () => {
                 <Activity packageSessionId={packageSessionIds ?? ''} />
             </div>
         ),
+        [TabType.ENGAGEMENT]: (
+            <div className="rounded-md bg-white p-3 shadow-sm">
+                <EngagementTab packageSessionId={packageSessionIds ?? ''} />
+            </div>
+        ),
         [TabType.PULSE]: (
             <div className="rounded-md bg-white p-3 shadow-sm">
                 <PulseTab packageSessionId={packageSessionIds ?? ''} />
@@ -913,6 +929,16 @@ export const SubjectMaterial = () => {
                 <PackageSettingsPanel packageId={courseId} />
             </div>
         ),
+        [TabType.TUTOR_MODE]: (
+            <div className="rounded-md bg-white p-3 shadow-sm">
+                <TutorModeTab key={courseId} packageId={courseId} />
+            </div>
+        ),
+        [TabType.AI_KNOWLEDGE]: isAiKnowledgeAvailable ? (
+            <div className="rounded-md bg-white p-3 shadow-sm">
+                <AiKnowledgeTab key={courseId} packageId={courseId} />
+            </div>
+        ) : null,
         // The Discussion (batch chat) and Downloads (offline telemetry) tabs are
         // rendered only from course-details — Downloads needs the institute
         // OFFLINE_ACCESS_SETTING gate that lives there, so surfacing it here would
@@ -930,12 +956,13 @@ export const SubjectMaterial = () => {
             <div className="flex h-full items-center justify-center p-4">
                 <div className="max-w-md rounded-lg bg-white p-6 text-center shadow-lg">
                     <h2 className="mb-1.5 text-lg font-semibold text-red-600">
-                        Missing Information
+                        {t('missingInformation')}
                     </h2>
                     <p className="text-sm text-gray-600">
-                        {getTerminology(ContentTerms.Course, SystemTerms.Course)} ID or{' '}
-                        {getTerminology(ContentTerms.Level, SystemTerms.Level)} ID is missing.
-                        Please ensure these are provided to proceed.
+                        {t('missingIdsBody', {
+                            course: getTerminology(ContentTerms.Course, SystemTerms.Course),
+                            level: getTerminology(ContentTerms.Level, SystemTerms.Level),
+                        })}
                     </p>
                 </div>
             </div>
@@ -958,11 +985,12 @@ export const SubjectMaterial = () => {
                         className="h-auto min-w-max flex-nowrap bg-transparent p-0"
                         style={{ display: 'flex', justifyContent: 'left' }}
                     >
-                        {tabs
+                        {buildTabs(t)
                             .filter(
                                 (tab) =>
                                     tab.value !== TabType.DISCUSSION &&
-                                    tab.value !== TabType.DOWNLOADS
+                                    tab.value !== TabType.DOWNLOADS &&
+                                    (tab.value !== TabType.AI_KNOWLEDGE || isAiKnowledgeAvailable)
                             )
                             // Hidden-by-default tabs (e.g. Live Session) only show
                             // when a role's display settings explicitly enable them.

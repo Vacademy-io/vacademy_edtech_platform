@@ -106,6 +106,25 @@ public class CopyCheckCallbackDto {
         // logs. Admin-facing only; the student-visible text stays in `feedback`.
         @JsonProperty("error_detail")
         private String errorDetail;
+
+        // Machine reason of a FAILED question (budget_exhausted, max_marks_missing,
+        // ai_timeout, ai_unparseable, ai_rate_limited, ai_error; spec 8.3). Null from
+        // older ai_service builds.
+        @JsonProperty("error_code")
+        private String errorCode;
+
+        // False when a choice group (internal choice) leaves this answer out of the
+        // total (contract C4). Null from older builds = counted.
+        @JsonProperty("counted")
+        private Boolean counted;
+
+        // Why the engine wants a human to look (enforcement changed the marks, duplicate
+        // answer, unmapped region; spec 7.8). Read back from evaluation_result_json by the
+        // partner API's needs_review rule. Omitted when absent, so the stored JSON of older
+        // builds' callbacks is unchanged.
+        @JsonProperty("review_reasons")
+        @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
+        private List<String> reviewReasons;
     }
 
     @Data
@@ -148,5 +167,10 @@ public class CopyCheckCallbackDto {
 
         @JsonProperty("error_message")
         private String errorMessage;
+
+        // Machine reason (spec 8.3: copy_unreadable, language_not_supported, ...). Null
+        // from older ai_service builds.
+        @JsonProperty("error_code")
+        private String errorCode;
     }
 }

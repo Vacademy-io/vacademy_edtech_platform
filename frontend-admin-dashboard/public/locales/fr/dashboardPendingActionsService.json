@@ -1,0 +1,14 @@
+{
+    "overdueSummary": {
+        "title": "{{amount}} de frais en retard",
+        "subtitle": "Échus et impayés dans tout l'établissement"
+    },
+    "pendingApproval": {
+        "title": "Approuver l'ajustement pour {{name}}",
+        "subtitle": "{{type}} · {{amount}}",
+        "defaultType": "Ajustement"
+    },
+    "unreadAlert": {
+        "defaultTitle": "Notification"
+    }
+}

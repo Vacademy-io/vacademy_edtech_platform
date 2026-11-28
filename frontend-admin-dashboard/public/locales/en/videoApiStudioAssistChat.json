@@ -1,0 +1,30 @@
+{
+    "statusBubble": {
+        "workingOnIt": "Working on it…",
+        "shotProgress": "Shot {{completed}} / {{total}}"
+    },
+    "genericDecision": {
+        "letAiDecide": "Let AI decide",
+        "approve": "Approve"
+    },
+    "completion": {
+        "videoReady": "Your video is ready.",
+        "preparingPreview": "Preparing preview…",
+        "editVideo": "Edit video",
+        "detailsAndDownload": "Details & download",
+        "saveCast": "Save cast"
+    },
+    "header": {
+        "title": "Assist",
+        "stop": "Stop",
+        "showProgress": "Show progress"
+    },
+    "postEdit": {
+        "updating": "Updating the shot…"
+    },
+    "input": {
+        "placeholderEdit": "Edit the video — e.g. “redo shot 3 — bigger headline, real screenshot”",
+        "placeholderSteer": "Steer it — e.g. “make shot 3 funnier and shorter”",
+        "placeholderWorking": "Working…"
+    }
+}

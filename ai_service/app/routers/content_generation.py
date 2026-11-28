@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import StreamingResponse
 import uuid
 import json
@@ -24,6 +24,7 @@ router = APIRouter(prefix="/course", tags=["content-generation"])
 )
 async def generate_content_from_coursetree(
     payload: ContentGenerationRequest,
+    request: Request,
     service: CourseOutlineGenerationService = Depends(get_course_outline_service),
     db: Session = Depends(db_dependency),
 ) -> StreamingResponse:
@@ -97,6 +98,17 @@ async def generate_content_from_coursetree(
     # Client-minted run id (stable across transport retries) keys idempotent
     # per-slide charges; fall back to a per-request UUID for older clients.
     request_id = payload.generation_run_id or str(uuid.uuid4())
+
+    # Usage-event attribution from the caller's VERIFIED JWT, when there is one
+    # (without it the body user id is kept only as an unverified claim).
+    try:
+        from ..services.ai_billing import metering_from_request
+
+        _meter_ctx = metering_from_request(request, billing_institute_id)
+        if _meter_ctx is not None and getattr(_meter_ctx, "actor_user_id", None):
+            service._metering = _meter_ctx
+    except Exception:  # noqa: BLE001 - attribution never affects the request
+        pass
 
     # Heartbeat interval: AI-video SCRIPT stages can go minutes between SSE
     # events; without a keepalive the gateway/proxy idles the connection out

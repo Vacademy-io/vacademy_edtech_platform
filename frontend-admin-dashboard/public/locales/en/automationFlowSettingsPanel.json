@@ -1,0 +1,51 @@
+{
+    "title": "Flow Settings",
+    "close": "Close",
+    "description": "Who to tell when the chatbot can’t answer and hands a conversation to a human. The same conversations show as <0>Unanswered</0> in the WhatsApp Inbox until someone replies.",
+    "email": {
+        "sectionLabel": "Email Recipients",
+        "placeholder": "admin@yourinstitute.com",
+        "emptyText": "No addresses yet.",
+        "invalidError": "That doesn’t look like an email address",
+        "template": {
+            "label": "Email template",
+            "emptyOption": "Built-in layout (no template)",
+            "hint": "Leave on the built-in layout and we’ll compose the email for you."
+        }
+    },
+    "whatsapp": {
+        "sectionLabel": "WhatsApp Recipients",
+        "placeholder": "919812345678",
+        "emptyText": "No numbers yet.",
+        "invalidError": "Enter a full number with country code",
+        "template": {
+            "label": "WhatsApp template",
+            "emptyOption": "— Select an approved template —",
+            "hint": "Only APPROVED templates are listed."
+        },
+        "warning": "Pick a WhatsApp template — without one these numbers won’t be messaged. WhatsApp only allows business-initiated messages from an approved template."
+    },
+    "variables": {
+        "title": "Available placeholders",
+        "hint": "Name your template’s variables to match these and they’ll be filled in automatically."
+    },
+    "delivery": {
+        "sendAlerts": "Send these alerts on hand-over",
+        "renotifyLabel": "Don’t re-alert the same conversation for (minutes)",
+        "renotifyHint": "A learner who keeps asking while nobody has answered still produces one reminder, not a flood."
+    },
+    "done": "Done",
+    "recipient": {
+        "remove": "Remove {{value}}",
+        "add": "Add",
+        "alreadyOnList": "Already on the list"
+    },
+    "template": {
+        "loading": "Loading templates…",
+        "orphanOption": "{{value}} (not found)",
+        "orphanHint": "“{{value}}” isn’t in this institute’s templates any more."
+    },
+    "toast": {
+        "loadTemplatesError": "Could not load notification templates"
+    }
+}

@@ -10,6 +10,8 @@ import {
   Trash,
   SpinnerGap,
 } from "@phosphor-icons/react";
+import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 import { Form, FormControl, FormField, FormItem } from "@/components/ui/form";
 import { Separator } from "@/components/ui/separator";
 import { ModernCard } from "@/components/design-system/modern-card";
@@ -20,36 +22,58 @@ import { useFileUpload } from "@/hooks/use-file-upload";
 import { getPublicUrlWithoutLogin } from "@/services/upload_file";
 import { isBlankPhone, isValidPhoneValue } from "@/lib/phone-validation";
 import { cn } from "@/lib/utils";
+import { getTerminology } from "@/components/common/layout-container/sidebar/utils";
+import { RoleTerms, SystemTerms } from "@/types/naming-settings";
 
-const detailsSchema = z.object({
-  orgName: z.string().trim().min(1, "Organization name is required"),
-  adminName: z.string().trim().min(1, "Admin name is required"),
-  adminEmail: z
-    .string()
-    .trim()
-    .min(1, "Admin email is required")
-    .email("Enter a valid email address"),
-  adminPhone: z
-    .string()
-    .optional()
-    .refine(
-      (v) => !v || isBlankPhone(v) || isValidPhoneValue(v),
-      "Enter a valid phone number for the selected country"
-    ),
-  // Address is only collected (and required) when the template asks for it —
-  // the conditional requirements live in a superRefine so the output type is
-  // identical either way.
-  addressLine1: z.string().optional(),
-  addressLine2: z.string().optional(),
-  city: z.string().optional(),
-  state: z.string().optional(),
-  pincode: z
-    .string()
-    .optional()
-    .refine((v) => !v || v.trim().length <= 20, "Pincode is too long"),
-});
+const buildDetailsSchema = (t: TFunction, admin: string) =>
+  z.object({
+    orgName: z
+      .string()
+      .trim()
+      .min(1, t("subOrgRegistration.details.validation.orgNameRequired")),
+    adminName: z
+      .string()
+      .trim()
+      .min(
+        1,
+        t("subOrgRegistration.details.validation.adminNameRequired", {
+          admin,
+        })
+      ),
+    adminEmail: z
+      .string()
+      .trim()
+      .min(
+        1,
+        t("subOrgRegistration.details.validation.adminEmailRequired", {
+          admin,
+        })
+      )
+      .email(t("subOrgRegistration.details.validation.adminEmailInvalid")),
+    adminPhone: z
+      .string()
+      .optional()
+      .refine(
+        (v) => !v || isBlankPhone(v) || isValidPhoneValue(v),
+        t("subOrgRegistration.details.validation.phoneInvalid")
+      ),
+    // Address is only collected (and required) when the template asks for it —
+    // the conditional requirements live in a superRefine so the output type is
+    // identical either way.
+    addressLine1: z.string().optional(),
+    addressLine2: z.string().optional(),
+    city: z.string().optional(),
+    state: z.string().optional(),
+    pincode: z
+      .string()
+      .optional()
+      .refine(
+        (v) => !v || v.trim().length <= 20,
+        t("subOrgRegistration.details.validation.pincodeTooLong")
+      ),
+  });
 
-export type DetailsFormValues = z.infer<typeof detailsSchema>;
+export type DetailsFormValues = z.infer<ReturnType<typeof buildDetailsSchema>>;
 
 export interface DetailsStepValues extends DetailsFormValues {
   orgLogoFileId: string | null;
@@ -94,6 +118,8 @@ const DetailsStep = ({
   isResuming = false,
   resumeError = null,
 }: DetailsStepProps) => {
+  const { t } = useTranslation("registrationB");
+  const admin = getTerminology(RoleTerms.Admin, SystemTerms.Admin);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { uploadFilePublic, isUploading } = useFileUpload();
   const [logoFileId, setLogoFileId] = useState<string | null>(
@@ -101,30 +127,41 @@ const DetailsStep = ({
   );
   const [logoPreviewUrl, setLogoPreviewUrl] = useState<string | null>(null);
 
-  const schema = useMemo(
-    () =>
-      collectAddress
-        ? detailsSchema.superRefine((values, ctx) => {
-            const requireField = (
-              key: "addressLine1" | "city" | "state" | "pincode",
-              message: string
-            ) => {
-              if (!values[key]?.trim()) {
-                ctx.addIssue({
-                  code: z.ZodIssueCode.custom,
-                  path: [key],
-                  message,
-                });
-              }
-            };
-            requireField("addressLine1", "Address line 1 is required");
-            requireField("city", "City is required");
-            requireField("state", "State is required");
-            requireField("pincode", "Pincode is required");
-          })
-        : detailsSchema,
-    [collectAddress]
-  );
+  const schema = useMemo(() => {
+    const base = buildDetailsSchema(t, admin);
+    return collectAddress
+      ? base.superRefine((values, ctx) => {
+          const requireField = (
+            key: "addressLine1" | "city" | "state" | "pincode",
+            message: string
+          ) => {
+            if (!values[key]?.trim()) {
+              ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: [key],
+                message,
+              });
+            }
+          };
+          requireField(
+            "addressLine1",
+            t("subOrgRegistration.details.validation.addressLine1Required")
+          );
+          requireField(
+            "city",
+            t("subOrgRegistration.details.validation.cityRequired")
+          );
+          requireField(
+            "state",
+            t("subOrgRegistration.details.validation.stateRequired")
+          );
+          requireField(
+            "pincode",
+            t("subOrgRegistration.details.validation.pincodeRequired")
+          );
+        })
+      : base;
+  }, [collectAddress, t, admin]);
 
   const form = useForm<DetailsFormValues>({
     resolver: zodResolver(schema),
@@ -168,7 +205,7 @@ const DetailsStep = ({
     if (!file) return;
 
     if (!file.type.startsWith("image/")) {
-      toast.error("Please select an image file for the logo");
+      toast.error(t("subOrgRegistration.details.toast.logoInvalidType"));
       e.target.value = "";
       return;
     }
@@ -183,11 +220,11 @@ const DetailsStep = ({
         setLogoFileId(fileId);
         setLogoPreviewUrl(URL.createObjectURL(file));
       } else {
-        toast.error("Logo upload failed. Please try again");
+        toast.error(t("subOrgRegistration.details.toast.logoUploadFailed"));
       }
     } catch (error) {
       console.error("Logo upload error:", error);
-      toast.error("Logo upload failed. Please try again");
+      toast.error(t("subOrgRegistration.details.toast.logoUploadFailed"));
     } finally {
       e.target.value = "";
     }
@@ -215,10 +252,10 @@ const DetailsStep = ({
         </div>
         <div>
           <h2 className="text-lg font-semibold leading-tight text-neutral-700">
-            Organization Details
+            {t("subOrgRegistration.details.title")}
           </h2>
           <p className="mt-0.5 text-sm text-neutral-500">
-            Tell us about your organization and its admin
+            {t("subOrgRegistration.details.subtitle", { admin })}
           </p>
         </div>
       </div>
@@ -237,9 +274,11 @@ const DetailsStep = ({
               <FormItem>
                 <FormControl>
                   <MyInput
-                    label="Organization Name"
+                    label={t("subOrgRegistration.details.orgName.label")}
                     inputType="text"
-                    inputPlaceholder="e.g. Acme Coaching Center"
+                    inputPlaceholder={t(
+                      "subOrgRegistration.details.orgName.placeholder"
+                    )}
                     input={field.value}
                     onChangeFunction={field.onChange}
                     onBlur={field.onBlur}
@@ -259,12 +298,14 @@ const DetailsStep = ({
 
           {/* Organization logo (optional) */}
           <div className="flex flex-col gap-1">
-            <span className="text-subtitle font-regular">Organization Logo</span>
+            <span className="text-subtitle font-regular">
+              {t("subOrgRegistration.details.logo.label")}
+            </span>
             <div className="flex items-center gap-3">
               {logoPreviewUrl ? (
                 <img
                   src={logoPreviewUrl}
-                  alt="Organization logo preview"
+                  alt={t("subOrgRegistration.details.logo.previewAlt")}
                   className="size-16 rounded-lg border border-neutral-200 bg-white object-contain"
                 />
               ) : (
@@ -292,10 +333,10 @@ const DetailsStep = ({
                     disable={isUploading || isSubmitting}
                   >
                     {isUploading
-                      ? "Uploading..."
+                      ? t("subOrgRegistration.details.logo.uploading")
                       : logoFileId
-                        ? "Change Logo"
-                        : "Upload Logo"}
+                        ? t("subOrgRegistration.details.logo.change")
+                        : t("subOrgRegistration.details.logo.upload")}
                   </MyButton>
                   {logoFileId && !isUploading && (
                     <MyButton
@@ -307,12 +348,12 @@ const DetailsStep = ({
                       className="!text-danger-600"
                     >
                       <Trash className="me-1 size-4" />
-                      Remove
+                      {t("subOrgRegistration.details.logo.remove")}
                     </MyButton>
                   )}
                 </div>
                 <p className="text-caption text-neutral-400">
-                  Optional — PNG or JPG works best
+                  {t("subOrgRegistration.details.logo.hint")}
                 </p>
               </div>
             </div>
@@ -334,9 +375,14 @@ const DetailsStep = ({
               <FormItem>
                 <FormControl>
                   <MyInput
-                    label="Admin Full Name"
+                    label={t("subOrgRegistration.details.adminName.label", {
+                      admin,
+                    })}
                     inputType="text"
-                    inputPlaceholder="Full name of the org admin"
+                    inputPlaceholder={t(
+                      "subOrgRegistration.details.adminName.placeholder",
+                      { admin }
+                    )}
                     input={field.value}
                     onChangeFunction={field.onChange}
                     onBlur={field.onBlur}
@@ -356,9 +402,13 @@ const DetailsStep = ({
               <FormItem>
                 <FormControl>
                   <MyInput
-                    label="Admin Email"
+                    label={t("subOrgRegistration.details.adminEmail.label", {
+                      admin,
+                    })}
                     inputType="email"
-                    inputPlaceholder="admin@yourorg.com"
+                    inputPlaceholder={t(
+                      "subOrgRegistration.details.adminEmail.placeholder"
+                    )}
                     input={field.value}
                     onChangeFunction={field.onChange}
                     onBlur={field.onBlur}
@@ -371,12 +421,16 @@ const DetailsStep = ({
             )}
           />
           <p className="-mt-4 text-caption text-neutral-400">
-            We&apos;ll send a verification code to this email
+            {t("subOrgRegistration.details.adminEmail.hint")}
           </p>
 
           <PhoneInputField
-            label="Admin Phone"
-            placeholder="123 456 7890"
+            label={t("subOrgRegistration.details.adminPhone.label", {
+              admin,
+            })}
+            placeholder={t(
+              "subOrgRegistration.details.adminPhone.placeholder"
+            )}
             name="adminPhone"
             control={form.control}
             required={false}
@@ -393,9 +447,13 @@ const DetailsStep = ({
                   <FormItem>
                     <FormControl>
                       <MyInput
-                        label="Address Line 1"
+                        label={t(
+                          "subOrgRegistration.details.address.line1.label"
+                        )}
                         inputType="text"
-                        inputPlaceholder="Building, street"
+                        inputPlaceholder={t(
+                          "subOrgRegistration.details.address.line1.placeholder"
+                        )}
                         input={field.value ?? ""}
                         onChangeFunction={field.onChange}
                         onBlur={field.onBlur}
@@ -415,9 +473,13 @@ const DetailsStep = ({
                   <FormItem>
                     <FormControl>
                       <MyInput
-                        label="Address Line 2"
+                        label={t(
+                          "subOrgRegistration.details.address.line2.label"
+                        )}
                         inputType="text"
-                        inputPlaceholder="Area, landmark (optional)"
+                        inputPlaceholder={t(
+                          "subOrgRegistration.details.address.line2.placeholder"
+                        )}
                         input={field.value ?? ""}
                         onChangeFunction={field.onChange}
                         onBlur={field.onBlur}
@@ -437,9 +499,13 @@ const DetailsStep = ({
                     <FormItem>
                       <FormControl>
                         <MyInput
-                          label="City"
+                          label={t(
+                            "subOrgRegistration.details.address.city.label"
+                          )}
                           inputType="text"
-                          inputPlaceholder="City"
+                          inputPlaceholder={t(
+                            "subOrgRegistration.details.address.city.placeholder"
+                          )}
                           input={field.value ?? ""}
                           onChangeFunction={field.onChange}
                           onBlur={field.onBlur}
@@ -458,9 +524,13 @@ const DetailsStep = ({
                     <FormItem>
                       <FormControl>
                         <MyInput
-                          label="State"
+                          label={t(
+                            "subOrgRegistration.details.address.state.label"
+                          )}
                           inputType="text"
-                          inputPlaceholder="State"
+                          inputPlaceholder={t(
+                            "subOrgRegistration.details.address.state.placeholder"
+                          )}
                           input={field.value ?? ""}
                           onChangeFunction={field.onChange}
                           onBlur={field.onBlur}
@@ -481,9 +551,13 @@ const DetailsStep = ({
                   <FormItem>
                     <FormControl>
                       <MyInput
-                        label="Pincode"
+                        label={t(
+                          "subOrgRegistration.details.address.pincode.label"
+                        )}
                         inputType="text"
-                        inputPlaceholder="e.g. 110001"
+                        inputPlaceholder={t(
+                          "subOrgRegistration.details.address.pincode.placeholder"
+                        )}
                         input={field.value ?? ""}
                         onChangeFunction={field.onChange}
                         onBlur={field.onBlur}
@@ -510,10 +584,12 @@ const DetailsStep = ({
               {isSubmitting ? (
                 <>
                   <SpinnerGap className="me-2 size-4 animate-spin" />
-                  {isEditingAfterVerification ? "Saving..." : "Sending code..."}
+                  {isEditingAfterVerification
+                    ? t("subOrgRegistration.details.submit.saving")
+                    : t("subOrgRegistration.details.submit.sendingCode")}
                 </>
               ) : (
-                "Continue"
+                t("common.continue")
               )}
             </MyButton>
           </div>
@@ -528,15 +604,14 @@ const DetailsStep = ({
             <Info className="mt-0.5 size-5 flex-shrink-0 text-primary-500" />
             <div>
               <p className="text-sm font-medium text-neutral-700">
-                A registration with this email is already in progress.
+                {t("subOrgRegistration.details.resume.inProgress")}
               </p>
               <p className="mt-1 text-sm text-neutral-500">
-                Resume it to pick up where you left off — we&apos;ll send a
-                verification code to{" "}
+                {t("subOrgRegistration.details.resume.descriptionPrefix")}{" "}
                 <span className="font-medium text-neutral-700">
                   {resumeEmail}
                 </span>
-                .
+                {t("subOrgRegistration.details.resume.descriptionSuffix")}
               </p>
             </div>
           </div>
@@ -556,10 +631,10 @@ const DetailsStep = ({
               {isResuming ? (
                 <>
                   <SpinnerGap className="me-2 size-4 animate-spin" />
-                  Sending code...
+                  {t("subOrgRegistration.details.submit.sendingCode")}
                 </>
               ) : (
-                "Resume registration"
+                t("subOrgRegistration.details.resume.button")
               )}
             </MyButton>
           </div>

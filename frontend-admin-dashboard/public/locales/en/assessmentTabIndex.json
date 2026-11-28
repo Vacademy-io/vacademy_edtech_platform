@@ -1,0 +1,34 @@
+{
+    "heading": {
+        "title": "Assessment Details"
+    },
+    "status": {
+        "live": "Live",
+        "upcoming": "Upcoming",
+        "ended": "Ended",
+        "setupIncomplete": "Setup incomplete"
+    },
+    "helmet": {
+        "title": "Assessment Details",
+        "description": "This page shows all details related to an assessment."
+    },
+    "actions": {
+        "previewAssessment": "Preview Assessment",
+        "exportOffline": "Export Offline",
+        "noSectionsError": "No sections have been added for this assessment.",
+        "preview": "Preview",
+        "editAssessment": "Edit this assessment"
+    },
+    "tabs": {
+        "overview": "Overview",
+        "submissions": "Submissions",
+        "individualRespondents": "Individual Respondents",
+        "basicInfo": "Basic Info",
+        "questions": "Questions",
+        "participants": "Participants",
+        "accessControl": "Access Control",
+        "reattemptRequests": "Learner Requests",
+        "omr": "OMR & Sets",
+        "settings": "Settings"
+    }
+}

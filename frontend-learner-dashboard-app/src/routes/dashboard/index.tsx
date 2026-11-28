@@ -1,18 +1,22 @@
-import { useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 import { openInBrowser } from "@/lib/open-in-browser";
+import { formatDate } from "@/lib/formatters";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { LayoutContainer } from "@/components/common/layout-container/layout-container";
 import { useNavHeadingStore } from "@/stores/layout-container/useNavHeadingStore";
 import { fetchStaticData } from "./-lib/utils";
+import { learnerHasStarted } from "./-lib/learner-has-started";
+import { fetchEnrolledHasProgress } from "@/services/enrolled-courses";
 import { Helmet } from "react-helmet";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import {
   getPackageSessionId,
-  getAllPackageSessionIds,
+  loadPackageSessionIds,
 } from "@/utils/study-library/get-list-from-stores/getPackageSessionId";
 import { getStudyLibraryQuery } from "@/services/study-library/getStudyLibraryDetails";
 import { useStudyLibraryStore } from "@/stores/study-library/use-study-library-store";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   DashbaordResponse,
   DashboardSlide,
@@ -55,11 +59,21 @@ import { isBbbSession, openBbbJoinForLearner } from "@/lib/live-class/bbb-join";
 import { useMarkAttendance } from "../study-library/live-class/-hooks/useMarkAttendance";
 import { SessionStreamingServiceType } from "../register/live-class/-types/enum";
 import { toast } from "sonner";
-import { getTerminology, getTerminologyPlural } from "@/components/common/layout-container/sidebar/utils";
+import {
+  getTerminology,
+  getTerminologyPlural,
+  readEngagementPlanFlag,
+  writeEngagementPlanFlag,
+} from "@/components/common/layout-container/sidebar/utils";
 import { ContentTerms, SystemTerms } from "@/types/naming-settings";
-import { getStudentDisplaySettings } from "@/services/student-display-settings";
+import {
+  customWidgetLinkAction,
+  getStudentDisplaySettings,
+  visibleCustomWidgets,
+} from "@/services/student-display-settings";
 import { useWeeklyAttendanceQuery } from "@/services/attendance/getWeeklyAttendance";
 import type { StudentDashboardWidgetConfig } from "@/types/student-display-settings";
+import { DEFAULT_STUDENT_DISPLAY_SETTINGS } from "@/constants/display-settings/student-defaults";
 import { DashboardPinsPanel } from "@/components/announcements";
 import { RaiseQueryCard } from "./-components/RaiseQueryCard";
 import { useServerTime } from "@/hooks/use-server-time";
@@ -70,12 +84,15 @@ import {
 import { StatCard } from "./-components/DashboardStatCard";
 import type { StatCardLayout } from "./-components/DashboardStatCard";
 import { ContinueLearningCard } from "./-components/DashboardContinueLearningCard";
+import { RESUME_WAIT_MS, useDashboardResume } from "./-hooks/use-dashboard-resume";
 import { DashboardHero } from "./-components/DashboardHero";
+import { NotebookReviewLine } from "@/components/notebook/NotebookReviewLine";
 import { PlayDashboardHero } from "./-components/play/PlayDashboardHero";
 import { CleanerPlayDashboardHero } from "./-components/play/CleanerPlayDashboardHero";
 import { cn } from "@/lib/utils";
 import { getChatbotSettings } from "@/services/chatbot-settings";
 import { MyMembershipWidget } from "./-components/MyMembershipWidget";
+import { OneOffDuesCard } from "./-components/OneOffDuesCard";
 import { MyBooksWidget } from "./-components/MyBooksWidget";
 import { MyOrdersWidget } from "./-components/MyOrdersWidget";
 import { shouldHidePaidPurchaseUI } from "@/utils/ios-iap-compliance";
@@ -83,13 +100,33 @@ import { UpcomingLiveClassesWidget } from "./-components/UpcomingLiveClassesWidg
 import { Preferences } from "@capacitor/preferences";
 import { AttendanceWidget } from "./-components/AttendanceWidget";
 import { MyMentorsWidget } from "./-components/MyMentorsWidget";
+import { SyllabusProgressWidget } from "@/routes/syllabus-progress/-components/SyllabusProgressWidget";
+import { hasSyllabus, useMySyllabus } from "@/routes/syllabus-progress/-services/syllabus-progress-service";
+import { GetAppWidget } from "./-components/GetAppWidget";
 import cleanerIconCourses from "@/assets/cleaner-play/icon-courses.webp";
 import cleanerIconAssessments from "@/assets/cleaner-play/icon-assessments.webp";
 import cleanerIconLive from "@/assets/cleaner-play/icon-live-sessions.webp";
 import { usePlayTheme } from "@/hooks/use-play-theme";
 import { useCleanerPlayTheme } from "@/hooks/use-cleaner-play-theme";
+import { useFunTheme } from "@/hooks/use-fun-theme";
+import { FunHomeTop } from "./-components/fun/FunHomeTop";
+import { FunTodayCards, type FunTodayInput } from "./-components/fun/FunTodayCards";
+import { CustomWidgetCard } from "./-components/CustomWidgetCard";
+import { FunPinsCard } from "./-components/fun/FunPinsCard";
+import { funHomeKeeps } from "./-components/fun/home-widgets";
 import { usePlayGamificationStore } from "@/stores/play-gamification-store";
-import { computeGamificationData } from "@/services/play-gamification";
+import {
+  applyServerPoints,
+  computeGamificationData,
+  findNewlyUnlockedSince,
+  readCelebrationBaseline,
+  setCachedGamification,
+  shouldCelebrateBadge,
+  writeCelebrationBaseline,
+} from "@/services/play-gamification";
+import { getUserId } from "@/constants/getUserId";
+import { celebrateMilestone } from "@/lib/play-celebration";
+import { BadgeVisual } from "./-components/badge-icons";
 import { syncBadgeUnlocks } from "@/services/badge-sync";
 import {
   getBadgeConfig,
@@ -101,10 +138,21 @@ import { fetchBestAssessmentScorePct } from "@/services/assessment-score";
 import { fetchLiveAttendanceStats } from "@/services/live-attendance-stats";
 import { fetchAwardedBadges } from "@/services/awarded-badges";
 import { fetchLast7DaysProgress } from "./-lib/utils";
+import { EnrolledCoursesWidget } from "./-components/EnrolledCoursesWidget";
 import { StreakCounterWidget } from "./-components/play/StreakCounterWidget";
 import { XpDisplayWidget } from "./-components/play/XpDisplayWidget";
 import { AchievementBadgesWidget } from "./-components/play/AchievementBadgesWidget";
 import { DashboardGamificationPanel } from "./-components/DashboardGamificationPanel";
+import { EngagementTaskHostProvider } from "./-components/engagement/EngagementTaskHost";
+import { TodayModule } from "./-components/engagement/TodayModule";
+import { useEngagementFeed } from "./-components/engagement/use-engagement-feed";
+import type { DailyTaskProgress } from "./-components/play/useDashboardHeroData";
+import { useMediaQuery } from "@/hooks/use-media-query";
+import { fetchPointsSummary, pointsMeKey, useCurrentInstituteId } from "@/services/points";
+import { StudyCompanionsShelf } from "./-components/StudyCompanionsShelf";
+import { FunCompanionsShelf } from "./-components/fun/FunCompanionsShelf";
+import { FunQueryRow } from "./-components/fun/FunQueryRow";
+import { FunButton } from "@/components/design-system/fun/FunButton";
 import { TncModal } from "@/components/Dashboards/LearnerDashboard/TncModal";
 import type { BatchForSessionType } from "@/stores/study-library/institute-schema";
 import {
@@ -118,6 +166,22 @@ import {
   type OnboardingInstanceDTO,
 } from "../profile/onboarding/-services/onboarding-services";
 import { getInstituteId } from "@/constants/helper";
+import { isBuilderHome, type BuiltinWidget, type HomePlacement } from "@/types/learner-home";
+import { useLearnerHome } from "@/services/learner-home";
+import { LearnerHomeRenderer } from "./-components/home-builder/LearnerHomeRenderer";
+import { builtinForLegacyWidget, builtinsOnScreen, prepareBlocks } from "./-components/home-builder/visibility";
+import type { FollowDeps, LinkContext } from "./-components/home-builder/link-target";
+import { useFeatureAvailability } from "./-components/home-builder/use-feature-availability";
+import {
+  VIEWPORT_LOCKED,
+  VIEWPORT_ZOOMABLE,
+  pagePaddingClass,
+  phoneLayoutFixApplies,
+} from "./-components/home-builder/phone-layout";
+import { useQueryDialogStore } from "@/stores/useQueryDialogStore";
+import { useLearnerHomeSummary } from "@/services/learner-home-summary";
+import { ClassFirstHome } from "./-components/class-first/ClassFirstHome";
+import { hasStoreSite } from "./-components/home-builder/use-feature-availability";
 
 export const Route = createFileRoute("/dashboard/")({
   component: () => {
@@ -139,6 +203,7 @@ export const Route = createFileRoute("/dashboard/")({
  * learner doesn't pay for dashboard queries they can't see yet.
  */
 function DashboardOnboardingGate() {
+  const { t } = useTranslation("dashboard");
   // Resolved the same way as the standalone /onboarding page (getInstituteId(), not the
   // domain-routing store): that store only gets populated once useDomainRouting's async
   // resolution completes, which can still be in flight on a fresh page load, and starts
@@ -194,21 +259,21 @@ function DashboardOnboardingGate() {
 
   if (pending) {
     return (
-      <div className="mx-auto flex w-full max-w-2xl flex-col gap-6 px-1 py-6">
+      <div className="mx-auto flex w-full max-w-2xl flex-col gap-section px-1 py-6">
         <div>
           <h1 className="text-h3 font-semibold text-neutral-700">
             {pending.instance.subject_full_name
-              ? `Finish setting up ${pending.instance.subject_full_name}'s account`
-              : "Finish setting up your account"}
+              ? t("onboardingGate.finishSetupWithName", { name: pending.instance.subject_full_name })
+              : t("onboardingGate.finishSetupGeneric")}
           </h1>
           <p className="mt-1 text-sm text-neutral-500">
-            Complete the steps below to continue to your dashboard.
+            {t("onboardingGate.completeStepsPrompt")}
           </p>
         </div>
         <OnboardingStepForm stepInstance={pending.current.step} onSubmitted={() => {}} />
-        <ModernCard variant="outlined" padding="md" rounded="lg">
-          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-neutral-400">
-            Progress
+        <ModernCard className="space-y-2" variant="outlined" padding="md" rounded="lg">
+          <p className="text-xs font-semibold uppercase tracking-wide text-neutral-400">
+            {t("onboardingGate.progressLabel")}
           </p>
           <OnboardingProgressList stepInstances={pending.instance.step_instances} />
         </ModernCard>
@@ -222,8 +287,8 @@ function DashboardOnboardingGate() {
         <div className="flex items-center justify-center gap-2 border-b border-warning-200 bg-warning-50 px-4 py-2.5 text-center text-sm text-warning-700">
           <Hourglass size={16} weight="fill" />
           <span>
-            <strong>&ldquo;{waitingOnAdmin.current.step.step_name}&rdquo;</strong> is being
-            handled by your school admin — you don&apos;t need to do anything here.
+            <strong>&ldquo;{waitingOnAdmin.current.step.step_name}&rdquo;</strong>{" "}
+            {t("onboardingGate.waitingOnAdminSuffix")}
           </span>
         </div>
       )}
@@ -232,7 +297,49 @@ function DashboardOnboardingGate() {
   );
 }
 
+const ENROLLED_PROGRESS_MAX_WAIT_MS = 8000;
+
+const EMPTY_BLOCKS: never[] = [];
+
+/** Whether the in-app join flow would act now: the class is live or its waiting room is open. */
+function sessionJoinOpen(session: SessionDetails, nowMs = Date.now()): boolean {
+  try {
+    const start = session.timezone
+      ? convertSessionTimeToUserTimezone(session.meeting_date, session.start_time, session.timezone)
+      : new Date(`${session.meeting_date}T${session.start_time}`);
+    const opensAt = start.getTime() - (session.waiting_room_time || 0) * 60_000;
+    return Number.isFinite(opensAt) && nowMs >= opensAt;
+  } catch {
+    return false;
+  }
+}
+
+// The Explore Memberships / Explore Books buttons: the classic pill, or under Fun the
+// skin's own outline lip button (FunButton, styles/fun/base.css) with none of the
+// classic button's classes, so the classic look is unchanged.
+const CLASSIC_EXPLORE_BUTTON =
+  "rounded-full bg-primary text-primary-foreground hover:bg-primary/90 transition-all shadow-sm flex items-center gap-2 py-2 px-6 h-9 text-xs font-bold";
+
+function ExploreButton({ fun, onClick, children }: { fun: boolean; onClick: () => void; children: ReactNode }) {
+  if (fun) {
+    return (
+      <FunButton variant="outline" compact className="fun-explore__button" onClick={onClick}>
+        {children}
+        <CaretRight weight="bold" />
+      </FunButton>
+    );
+  }
+  return (
+    <Button className={CLASSIC_EXPLORE_BUTTON} onClick={onClick}>
+      {children}
+      <CaretRight size={14} />
+    </Button>
+  );
+}
+
 export function DashboardComponent() {
+  const { t } = useTranslation("dashboard");
+  const { t: tEngagement } = useTranslation("dashboardEngagement");
   const [username, setUsername] = useState<string | null>(null);
   const [testAssignedCount, setTestAssignedCount] = useState<number>(0);
   // Count kept in state only because fetchStaticData's signature requires the setter.
@@ -250,11 +357,96 @@ export function DashboardComponent() {
   const { getUserTimezone } = useServerTime();
   const isPlayTheme = usePlayTheme();
   const isCleanerPlayTheme = useCleanerPlayTheme();
+  // The Fun skin draws its own home (FunHomeTop and the Fun branches of the widgets).
+  const isFunTheme = useFunTheme();
+  // Where the Fun greeting row is drawn (full width above the columns).
+  const [funHeaderSlot, setFunHeaderSlot] = useState<HTMLDivElement | null>(null);
   const { setData: setGamificationData } = usePlayGamificationStore();
   const { instituteId } = useInstituteFeatureStore();
+  const queryClient = useQueryClient();
+  // Today module slot (D3/D4): lg and up = the rail, chosen from the screen
+  // width and a remembered "has a plan" flag, never from the async feed, so
+  // the main column does not reflow when the feed lands. `use-mobile` breaks
+  // at 768, which is the wrong line here.
+  const isLgScreen = useMediaQuery("(min-width: 1024px)");
+
+  // ── Learner home builder ────────────────────────────────────────────────────
+  // An institute that published a home gets mode BUILDER and the block list;
+  // every other institute (and the Holistic one, which keeps its own layout)
+  // gets LEGACY and the classic dashboard below, unchanged.
+  const isHolisticInstitute = showForInstitutes([HOLISTIC_INSTITUTE_ID]);
+  const { home: learnerHome, preview: homePreview } = useLearnerHome(!isHolisticInstitute);
+  const builderHome = !isHolisticInstitute && isBuilderHome(learnerHome) ? learnerHome : null;
+  // Block targeting: PHONE below 768 px (layout still switches at 1024).
+  const isPhoneDevice = useMediaQuery("(max-width: 767px)");
+  // The built-ins placed for this device; they also gate their data loads.
+  // Fun leave-outs are NOT applied here: the Fun cards still honour the
+  // widgets they stand for (gamification → streak pill, live classes → class
+  // card), exactly as the classic Fun home reads the institute's switches. The
+  // renderer leaves the classic widgets themselves out.
+  const builderBuiltins = useMemo(
+    () =>
+      builtinsOnScreen(
+        builderHome
+          ? prepareBlocks(
+              builderHome.blocks.filter((b) => b.type === "BUILTIN"),
+              { readerMode: false, playSkin: false, isPhone: isPhoneDevice, nowMs: Date.now(), funSkin: false }
+            )
+          : []
+      ),
+    [builderHome, isPhoneDevice]
+  );
+  const phoneLayoutFixed = phoneLayoutFixApplies(builderHome !== null);
+
+  // ── Class-first home ────────────────────────────────────────────────────────
+  // Learners whose courses are live classes and not lessons (the server decides:
+  // a class in their batches within 14 days and no published content) get the
+  // next class, syllabus, attendance and recordings first. Classic layout only,
+  // default-family and Fun skins; everyone else keeps this page exactly as is.
+  const classFirstEligible =
+    !isHolisticInstitute && builderHome === null && !isPlayTheme && !isCleanerPlayTheme;
+  const {
+    summary: homeSummary,
+    classFirst,
+    isLoading: homeSummaryLoading,
+  } = useLearnerHomeSummary(classFirstEligible);
+  // The Explore buttons open the institute's store page; a class-first learner
+  // sees them only when that page exists.
+  const { data: storeSiteExists } = useQuery({
+    queryKey: ["LEARNER_HOME_STORE_SITE"],
+    queryFn: hasStoreSite,
+    enabled: classFirst,
+    staleTime: 10 * 60 * 1000,
+    retry: false,
+  });
+  const [rememberedPlan, setRememberedPlan] = useState<boolean>(() =>
+    readEngagementPlanFlag(instituteId)
+  );
 
   // Fetch study library data with React Query (5-minute cache)
-  const { data: studyLibraryData } = useQuery(getStudyLibraryQuery(batchId));
+  const { data: studyLibraryData, fetchStatus: studyLibraryFetchStatus } = useQuery(
+    getStudyLibraryQuery(batchId)
+  );
+  // Other batches are asked about only once this batch and the recent slides have
+  // answered and show nothing, so a learner they already place sends no search.
+  const { data: enrolledHasProgress, isPending: enrolledProgressPending } = useQuery({
+    queryKey: ["ENROLLED_COURSES_HAS_PROGRESS"],
+    queryFn: async () => {
+      const id = await getInstituteId();
+      if (!id) throw new Error("no institute");
+      // Reads the setting the course widget reads, so both ask for the same page.
+      const settings = await getStudentDisplaySettings(false).catch(() => null);
+      return fetchEnrolledHasProgress(id, {
+        all: settings?.allCourses?.showAllEnrolledOnDashboard === true,
+      });
+    },
+    enabled:
+      !isLoading &&
+      studyLibraryFetchStatus !== "fetching" &&
+      !learnerHasStarted({ subjects: studyLibraryData, recentSlides: data?.slides }),
+    staleTime: 60 * 1000,
+    retry: false,
+  });
 
   // Add weekly attendance query
   const { data: weeklyAttendance, isLoading: isLoadingAttendance } =
@@ -262,6 +454,7 @@ export function DashboardComponent() {
   const {
     data: liveSessions,
     isLoading: isLoadingLiveSessions,
+    isError: liveSessionsError,
     refetch: refetchLiveSessions,
   } = useLiveSessions(allBatchIds, { size: 10 });
 
@@ -270,6 +463,13 @@ export function DashboardComponent() {
   const [widgetConfigs, setWidgetConfigs] = useState<
     StudentDashboardWidgetConfig[] | null
   >(null);
+  const settingsPending = widgetConfigs === null;
+  const [settingsWaitOver, setSettingsWaitOver] = useState(false);
+  useEffect(() => {
+    if (!settingsPending) return;
+    const id = window.setTimeout(() => setSettingsWaitOver(true), RESUME_WAIT_MS);
+    return () => window.clearTimeout(id);
+  }, [settingsPending]);
 
   // ── Derived view-model for the hero band and header ────────────────────────
 
@@ -307,30 +507,34 @@ export function DashboardComponent() {
     }).length;
   }, [mergedLiveSessions]);
 
-  // Consecutive attended class days this week, walking back from the most
-  // recent day. PENDING / NO_CLASS days neither extend nor break the streak.
-  const attendanceStreak = useMemo(() => {
-    const days = weeklyAttendance?.days ?? [];
-    let streak = 0;
-    for (let i = days.length - 1; i >= 0; i--) {
-      const status = days[i]?.status;
-      if (status === "PRESENT") streak += 1;
-      else if (status === "ABSENT" || status === "UNMARKED") break;
-    }
-    return streak;
-  }, [weeklyAttendance]);
-
-  // Any course with progress > 0 — splits first-run from returning learners.
+  // Splits first-run from returning learners, across every enrolled batch.
   const hasAnyProgress = useMemo(
     () =>
-      (studyLibraryData ?? []).some(
-        (subject) => (subject.percentage_completed ?? 0) > 0
-      ),
-    [studyLibraryData]
+      learnerHasStarted({
+        subjects: studyLibraryData,
+        recentSlides: data?.slides,
+        enrolledHasProgress,
+      }),
+    [studyLibraryData, data?.slides, enrolledHasProgress]
   );
-  // Loaded when the query resolved OR when the page settled without a batch
+  // That answer only matters when nothing else has shown progress yet, and a
+  // slow one must not hold the hero back for long.
+  const [enrolledProgressWaitOver, setEnrolledProgressWaitOver] = useState(false);
+  useEffect(() => {
+    const timer = setTimeout(
+      () => setEnrolledProgressWaitOver(true),
+      ENROLLED_PROGRESS_MAX_WAIT_MS
+    );
+    return () => clearTimeout(timer);
+  }, []);
+  // Loaded when the queries resolved OR when the page settled without a batch
   // (zero-enrollment learners must reach the first-run hero, not a forever-skeleton).
-  const studyLibraryLoaded = Boolean(studyLibraryData) || !isLoading;
+  const stillAskingOtherBatches =
+    enrolledProgressPending && !hasAnyProgress && !enrolledProgressWaitOver;
+  const studyLibraryLoaded =
+    (Boolean(studyLibraryData) || !isLoading) &&
+    (Boolean(data) || !isLoading) &&
+    !stillAskingOtherBatches;
 
   const userInitials = useMemo(() => {
     const words = (username ?? "").trim().split(/\s+/).filter(Boolean);
@@ -343,11 +547,12 @@ export function DashboardComponent() {
 
   const greetingText = useMemo(() => {
     const firstName = (username ?? "").trim().split(/\s+/)[0] ?? "";
-    if (!firstName) return "Welcome back";
+    if (!firstName) return t("hero.greeting.welcomeBackFallback");
     const hour = new Date().getHours();
     const period = hour < 12 ? "morning" : hour < 17 ? "afternoon" : "evening";
-    return `Good ${period}, ${firstName.charAt(0).toUpperCase()}${firstName.slice(1)}`;
-  }, [username]);
+    const capitalizedName = `${firstName.charAt(0).toUpperCase()}${firstName.slice(1)}`;
+    return t(`hero.greeting.${period}WithName`, { name: capitalizedName });
+  }, [username, t]);
 
   // Update Zustand store when React Query data changes
   useEffect(() => {
@@ -424,6 +629,14 @@ export function DashboardComponent() {
     });
   };
 
+  // Fun's error card: ask for the dashboard again, as the first load did.
+  const retryDashboard = () => {
+    setIsLoading(true);
+    fetchStaticData(setUsername, setTestAssignedCount, setHomeworkAssignedCount, setData)
+      .catch((error) => console.error("Error reloading dashboard:", error))
+      .finally(() => setIsLoading(false));
+  };
+
   useEffect(() => {
     // Student Display Settings: paint from cache, then correct from the server.
     //
@@ -452,8 +665,7 @@ export function DashboardComponent() {
         const id = await getPackageSessionId();
         setBatchId(id);
 
-        const ids = await getAllPackageSessionIds();
-        setAllBatchIds(ids);
+        await loadPackageSessionIds(setAllBatchIds);
       } catch (error) {
         console.error("Error fetching IDs:", error);
       }
@@ -461,9 +673,37 @@ export function DashboardComponent() {
     fetchIds();
   }, [trackPageView, setNavHeading]);
 
+  // Syllabus progress card: on only for learners whose institute tracks a
+  // syllabus and who have one (shares its query with the sidebar and page).
+  const syllabusOn = hasSyllabus(useMySyllabus({ retry: false }).data);
+
   const OPT_IN_WIDGETS: Set<StudentDashboardWidgetConfig["id"]> = new Set(["myOrders"]);
 
   const isWidgetVisible = (id: StudentDashboardWidgetConfig["id"]) => {
+    // Builder: a widget is on when its block is in this device's list. The
+    // stat cards, Explore buttons and Getting started are options of theirs.
+    if (builderHome) {
+      const widget = builtinForLegacyWidget(id);
+      const block = widget ? builderBuiltins.get(widget) : undefined;
+      if (!block || block.type !== "BUILTIN") return false;
+      const options = block.config?.options ?? {};
+      switch (id) {
+        case "coursesStat":
+          return !options.cards || options.cards.includes("COURSES");
+        case "liveClasses":
+          return !options.cards || options.cards.includes("LIVE_CLASSES");
+        case "evaluationStat":
+          return !options.cards || options.cards.includes("EVALUATIONS");
+        case "exploreMemberships":
+          return options.memberships !== false;
+        case "exploreBooks":
+          return options.books !== false;
+        case "gettingStarted":
+          return options.getting_started !== false;
+        default:
+          return true;
+      }
+    }
     const cfg = widgetConfigs?.find((w) => w.id === id);
     if (!cfg) return !OPT_IN_WIDGETS.has(id);
     return cfg.visible !== false;
@@ -471,16 +711,92 @@ export function DashboardComponent() {
 
   const getWidgetOrder = (id: StudentDashboardWidgetConfig["id"]) => {
     const cfg = widgetConfigs?.find((w) => w.id === id);
-    return cfg?.order ?? Number.MAX_SAFE_INTEGER;
+    // An id missing from a saved config takes its code default (todayTasks
+    // leads its column), not "last".
+    return (
+      cfg?.order ??
+      DEFAULT_STUDENT_DISPLAY_SETTINGS.dashboard.widgets.find((w) => w.id === id)?.order ??
+      Number.MAX_SAFE_INTEGER
+    );
   };
 
   // Hoisted to a stable boolean because the gamification EFFECT below depends
   // on it (isWidgetVisible is re-created every render and can't go in deps).
   const showGamification = isWidgetVisible("gamification");
 
-  const customWidget = widgetConfigs?.find(
-    (w) => w.id === "custom" && w.visible !== false
-  );
+  // Every visible institute-authored card, in order (each has its own id).
+  const customWidgets = visibleCustomWidgets(widgetConfigs);
+  const openCustomWidgetLink = (link: string | undefined) => {
+    const action = customWidgetLinkAction(link);
+    if (!action) return;
+    if (action.kind === "external") void openInBrowser(action.url);
+    else if (action.kind === "assign") window.location.assign(action.url);
+    else if (action.kind === "href") navigate({ href: action.href });
+    else navigate({ to: action.to as never });
+  };
+
+  // ── Today's daily tasks (engagement plan) ──────────────────────────────────
+  const showTodayTasks =
+    isWidgetVisible("todayTasks") && !showForInstitutes([HOLISTIC_INSTITUTE_ID]);
+  // Same query (and key) the Today module reads, so this costs no extra call.
+  const { feed: engagementFeed, status: engagementStatus } = useEngagementFeed({
+    enabled: showTodayTasks,
+  });
+  const engagementInstituteId = useCurrentInstituteId();
+  // Remember whether a plan runs (for the next visit's slot and the sidebar's
+  // "Daily tasks" entry). A confirmed "no plan" also releases a rail that was
+  // held only for the module.
+  useEffect(() => {
+    if (engagementFeed === undefined || !engagementInstituteId) return;
+    writeEngagementPlanFlag(engagementInstituteId, engagementFeed !== null);
+    if (engagementFeed === null) setRememberedPlan(false);
+  }, [engagementFeed, engagementInstituteId]);
+  // Hero daily goal = today's tasks done / scheduled while a plan runs.
+  const dailyTaskProgress: DailyTaskProgress | null =
+    engagementFeed && engagementFeed.scheduledToday > 0
+      ? { done: engagementFeed.completedToday, scheduled: engagementFeed.scheduledToday }
+      : null;
+  // Rail slot when the rail exists anyway, or when a plan is remembered.
+  // (These ids must match railWidgets below.)
+  const railHasOtherWidgets = (
+    ["upcomingLiveClasses", "thisWeekAttendance", "myMentors", "getApp"] as const
+  ).some((id) => isWidgetVisible(id));
+  const todayInRail = showTodayTasks && isLgScreen && (railHasOtherWidgets || rememberedPlan);
+  // Mount the module (and so its skeleton / error card) only for a learner who
+  // has, or last had, a plan. Most institutes run none: without this gate every
+  // dashboard load flashed a skeleton that then collapsed, which below lg
+  // shifted Continue Learning up (a main-column reflow). A first-ever plan
+  // appears once when the feed lands; from then on the flag holds its slot.
+  const todayMounted =
+    showTodayTasks && (engagementFeed != null || (engagementStatus !== "ready" && rememberedPlan));
+
+  const continueLearningOn = isWidgetVisible("continueLearning");
+  // The one resume point every hero offers. The play heroes offer it whatever
+  // the widget says; otherwise the band and Keep going are the places it shows.
+  const {
+    target: resumeTarget,
+    resolving: resumeResolving,
+    unanswered: resumeUnanswered,
+  } = useDashboardResume({
+    serverSlides: data?.slides,
+    // The search for other batches shares the one wait: the hero's first-run
+    // question and its resume answer settle together.
+    serverLoading: (isLoading && !data) || stillAskingOtherBatches,
+    openServerSlide: handleResumeClick,
+    track,
+    enabled: isPlayTheme || isCleanerPlayTheme || isFunTheme || continueLearningOn || todayMounted,
+  });
+  // With Continue Learning off the hero has no band, so a finished day keeps
+  // this smaller way back in. With it on, the band is the page's one offer.
+  const keepGoing = !settingsPending && !continueLearningOn ? resumeTarget : null;
+  // Settings that outlast the wait cost this visit its band: arriving now, it
+  // would push the page down under a finger.
+  const bandPossible = continueLearningOn && !settingsWaitOver;
+  const bandTarget = bandPossible ? resumeTarget : null;
+  // A slot held for a band that did not come keeps its height, with a way in, so
+  // nothing moves under a finger. Institutes without the widget hold no such slot.
+  const coursesBand =
+    continueLearningOn && !bandTarget && (resumeUnanswered || settingsWaitOver);
 
   useEffect(() => {
     if (batchId) {
@@ -491,8 +807,13 @@ export function DashboardComponent() {
     }
   }, [batchId, refetchLiveSessions]);
 
+  // Its own effect with `t`: run once on mount, the title could be set before
+  // the translations loaded and stay as the raw key.
   useEffect(() => {
-    setNavHeading("Dashboard");
+    setNavHeading(t("dashboardPage.pageTitle"));
+  }, [setNavHeading, t]);
+
+  useEffect(() => {
     const initializeDashboard = async () => {
       setIsLoading(true);
       try {
@@ -557,7 +878,40 @@ export function DashboardComponent() {
           ? await fetchLiveAttendanceStats()
           : { count: 0, streak: 0 };
 
-        const gamificationData = computeGamificationData({
+        // Celebrations compare against the baseline of the last COMPLETE run, never the
+        // display cache: this effect re-runs as each input query lands, and an early run
+        // without the course tree / attendance computes completion- and XP-based badges as
+        // locked, which would otherwise read as "newly unlocked" on every fresh session.
+        // "Settled" = the study-library query is not fetching (success, error or disabled)
+        // and attendance has loaded.
+        const inputsSettled = studyLibraryFetchStatus === "idle" && !isLoadingAttendance;
+        const learnerId = await getUserId();
+        const baseline = inputsSettled ? readCelebrationBaseline(instituteId, learnerId) : null;
+
+        // points_ledger is the authoritative source for points AND the streak.
+        // Fetched through the shared ['points','me'] query so the widgets and
+        // the pill reuse it; null (offline, older server) falls back to the
+        // browser-computed figures.
+        // Keyed by the id usePointsSummary resolves (getInstituteId), so this
+        // run and the widgets share ONE cache entry even before the feature
+        // store has its instituteId.
+        const pointsInstituteId = instituteId || (await getInstituteId()) || null;
+        const serverPoints = await queryClient
+          .fetchQuery({
+            queryKey: pointsMeKey(pointsInstituteId),
+            queryFn: () => fetchPointsSummary(pointsInstituteId),
+            staleTime: 60_000,
+          })
+          .catch(() => null);
+        const serverStreak =
+          typeof serverPoints?.currentStreak === "number"
+            ? {
+                currentStreak: serverPoints.currentStreak,
+                longestStreak: serverPoints.longestStreak ?? null,
+              }
+            : null;
+
+        const computed = computeGamificationData({
           dashboard: data,
           activities,
           attendance: weeklyAttendance ?? null,
@@ -569,9 +923,74 @@ export function DashboardComponent() {
           scoring,
           liveSessionCount: liveStats.count,
           liveSessionStreak: liveStats.streak,
+          // One streak everywhere (D9): the server's, so the streak points line
+          // and the streak badge agree with every streak display.
+          serverStreak,
+          serverPoints,
         });
 
+        // The figures above are computed in THIS browser, so they can never
+        // agree with a leaderboard; overlay the server's totals, level,
+        // breakdown and streak when it answered (D2).
+        const gamificationData = applyServerPoints(computed, serverPoints);
+
+        // Cache the FINAL figures (after the server overlay) for pages that read
+        // the cache on a fresh load; compute no longer writes it (D2).
+        setCachedGamification(instituteId, gamificationData);
         setGamificationData(gamificationData);
+
+        // Celebration moment: confetti once + one toast per badge that unlocked
+        // since the last complete run (guarded once per badge id per tab). Only a
+        // settled run may celebrate or advance the baseline; no baseline = first load → quiet.
+        const newlyUnlocked =
+          inputsSettled && gamificationData.badgesEnabled
+            ? findNewlyUnlockedSince(baseline, gamificationData).filter((b) =>
+                shouldCelebrateBadge(b.id)
+              )
+            : [];
+        if (inputsSettled) {
+          writeCelebrationBaseline(instituteId, learnerId, gamificationData);
+        }
+        if (newlyUnlocked.length > 0) {
+          celebrateMilestone();
+          newlyUnlocked.forEach((badge) => {
+            toast.custom(
+              (toastId) => (
+                <button
+                  type="button"
+                  onClick={() => toast.dismiss(toastId)}
+                  className="flex w-full items-center gap-3 rounded-xl border border-primary-100 bg-card p-3 text-start shadow-lg [.ui-play_&]:rounded-play-card-sm [.ui-play_&]:border-transparent [.ui-play_&]:bg-play-gold-soft [.ui-cleaner-play_&]:border-transparent [.ui-cleaner-play_&]:bg-cp-gold-tint"
+                >
+                  <span className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary-100 [.ui-play_&]:bg-play-gold [.ui-cleaner-play_&]:bg-cp-gold">
+                    <BadgeVisual
+                      icon={badge.icon}
+                      fill
+                      weight="fill"
+                      size={26}
+                      className="text-primary-500 [.ui-play_&]:text-white [.ui-cleaner-play_&]:text-white"
+                    />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-caption font-semibold uppercase tracking-wide text-muted-foreground">
+                      {badge.isAdminAwarded
+                        ? t("badges.celebrateAwardedTitle")
+                        : t("badges.celebrateTitle")}
+                    </span>
+                    <span className="block truncate text-body font-bold text-foreground">
+                      {badge.name}
+                    </span>
+                    {badge.isAdminAwarded && badge.awardReason ? (
+                      <span className="block truncate text-caption text-muted-foreground">
+                        {badge.awardReason}
+                      </span>
+                    ) : null}
+                  </span>
+                </button>
+              ),
+              { duration: 6000 }
+            );
+          });
+        }
 
         // Persist auto-unlocked badges server-side so they show on the leaderboards
         // (best-effort, throttled per institute inside the service).
@@ -595,10 +1014,14 @@ export function DashboardComponent() {
   }, [
     data,
     weeklyAttendance,
+    isLoadingAttendance,
     instituteId,
     studyLibraryData,
+    studyLibraryFetchStatus,
     setGamificationData,
     showGamification,
+    queryClient,
+    t,
   ]);
 
   const handleJoinSession = async (session: SessionDetails) => {
@@ -675,7 +1098,7 @@ export function DashboardComponent() {
           // BBB: open the personalized join URL (real name + userId). Checked FIRST
           // so BBB never routes to the embed page (which can't resolve a BBB room →
           // "Unsupported session type") or the shared generic meeting_link.
-          await openBbbJoinForLearner(session.schedule_id);
+          await openBbbJoinForLearner(session.schedule_id, "VIEWER", { navigate: navigate as any, title: session.title });
         } else if (
           session.session_streaming_service_type ===
           SessionStreamingServiceType.EMBED
@@ -692,13 +1115,13 @@ export function DashboardComponent() {
         }
       } catch (error) {
         console.error("Failed to mark attendance:", error);
-        toast.error("Failed to mark attendance");
+        toast.error(t("dashboardPage.toast.attendanceMarkFailed"));
 
         if (isBbbSession(session.link_type)) {
           // BBB: open the personalized join URL (real name + userId). Checked FIRST
           // so BBB never routes to the embed page (which can't resolve a BBB room →
           // "Unsupported session type") or the shared generic meeting_link.
-          await openBbbJoinForLearner(session.schedule_id);
+          await openBbbJoinForLearner(session.schedule_id, "VIEWER", { navigate: navigate as any, title: session.title });
         } else if (
           session.session_streaming_service_type ===
           SessionStreamingServiceType.EMBED
@@ -725,15 +1148,33 @@ export function DashboardComponent() {
     ContentTerms.LiveSession,
     SystemTerms.LiveSession
   );
-  // One useful header fact: classes today, else attendance streak, else none.
+  // This week's attended class days out of its class days (the attendance
+  // "streak" is gone: the dashboard has one streak, the server's; D9).
+  const weekClassDays = (weeklyAttendance?.days ?? []).filter(
+    (d) => d.status !== "NO_CLASS"
+  ).length;
+  const weekPresentDays = (weeklyAttendance?.days ?? []).filter(
+    (d) => d.status === "PRESENT"
+  ).length;
+  // One useful header fact: classes today, else this week's attendance, else none.
   const headerFact =
     classesTodayCount > 0
-      ? `${classesTodayCount} ${(classesTodayCount === 1
-          ? liveClassSingular
-          : liveClassPlural
-        ).toLowerCase()} today`
-      : attendanceStreak > 0
-        ? `${attendanceStreak}-day attendance streak`
+      ? t("dashboardPage.classesToday", {
+          count: classesTodayCount,
+          liveClass: (classesTodayCount === 1
+            ? liveClassSingular
+            : liveClassPlural
+          ).toLowerCase(),
+        })
+      : weekPresentDays > 0
+        ? tEngagement("attendanceWeek.summary", {
+            present: weekPresentDays,
+            count: weekClassDays,
+            liveClass: (weekClassDays === 1
+              ? liveClassSingular
+              : liveClassPlural
+            ).toLowerCase(),
+          })
         : null;
 
   const heroProps = {
@@ -743,6 +1184,14 @@ export function DashboardComponent() {
     hasAnyProgress,
     studyLibraryLoaded,
     onJoinSession: handleJoinSession,
+  };
+  // Play / cleanerPlay heroes carry the streak and the daily-goal ring.
+  const playHeroProps = {
+    ...heroProps,
+    resume: resumeTarget,
+    resumeResolving,
+    showGamification,
+    taskProgress: dailyTaskProgress,
   };
 
   // ── Curated 2/3 + 1/3 layout ────────────────────────────────────────────────
@@ -758,7 +1207,7 @@ export function DashboardComponent() {
   }> = [
     {
       id: "coursesStat" as const,
-      render: (layout) => (
+      render: (layout: StatCardLayout) => (
         <StatCard
           layout={layout}
           title={getTerminologyPlural(ContentTerms.Course, SystemTerms.Course)}
@@ -772,10 +1221,9 @@ export function DashboardComponent() {
             navigate({ to: "/study-library/courses" });
           }}
           isLoading={isLoading}
-          emptyActionLabel={`Browse ${getTerminologyPlural(
-            ContentTerms.Course,
-            SystemTerms.Course
-          )}`}
+          emptyActionLabel={t("dashboardPage.statCard.coursesEmptyAction", {
+            courses: getTerminologyPlural(ContentTerms.Course, SystemTerms.Course),
+          })}
           className="stat-card-courses [.ui-vibrant_&]:bg-primary-50 [.ui-vibrant_&]:border-primary-100 [.ui-vibrant_&]:border-t-4 [.ui-vibrant_&]:border-t-primary-300"
           iconClassName="[.ui-vibrant_&]:bg-primary-100 [.ui-vibrant_&]:text-primary-500 [.ui-play_&]:bg-white/70 [.ui-play_&]:text-play-info-soft-ink [.ui-play_&]:ring-0"
           cleanerIllustrationSrc={cleanerIconCourses}
@@ -784,7 +1232,7 @@ export function DashboardComponent() {
     },
     {
       id: "liveClasses" as const,
-      render: (layout) => (
+      render: (layout: StatCardLayout) => (
         <StatCard
           layout={layout}
           title={getTerminologyPlural(
@@ -795,10 +1243,9 @@ export function DashboardComponent() {
           icon={Play}
           onClick={() => navigate({ to: "/study-library/live-class" })}
           isLoading={isLoadingLiveSessions}
-          emptyActionLabel={`View ${getTerminologyPlural(
-            ContentTerms.LiveSession,
-            SystemTerms.LiveSession
-          )}`}
+          emptyActionLabel={t("dashboardPage.statCard.liveClassesEmptyAction", {
+            liveClasses: getTerminologyPlural(ContentTerms.LiveSession, SystemTerms.LiveSession),
+          })}
           className="stat-card-live [.ui-vibrant_&]:bg-primary-50 [.ui-vibrant_&]:border-primary-100 [.ui-vibrant_&]:border-t-4 [.ui-vibrant_&]:border-t-primary-300"
           iconClassName="[.ui-vibrant_&]:bg-primary-100 [.ui-vibrant_&]:text-primary-500 [.ui-play_&]:bg-white/70 [.ui-play_&]:text-play-navy-soft-ink [.ui-play_&]:ring-0"
           cleanerIllustrationSrc={cleanerIconLive}
@@ -807,10 +1254,10 @@ export function DashboardComponent() {
     },
     {
       id: "evaluationStat" as const,
-      render: (layout) => (
+      render: (layout: StatCardLayout) => (
         <StatCard
           layout={layout}
-          title="Assessments"
+          title={t("dashboardPage.statCard.assessmentsTitle")}
           count={testAssignedCount}
           icon={Trophy}
           onClick={() => {
@@ -821,7 +1268,7 @@ export function DashboardComponent() {
             navigate({ to: "/assessment/examination" });
           }}
           isLoading={isLoading}
-          emptyActionLabel="View Assessments"
+          emptyActionLabel={t("dashboardPage.statCard.assessmentsEmptyAction")}
           className="stat-card-assessments [.ui-vibrant_&]:bg-primary-50 [.ui-vibrant_&]:border-primary-100 [.ui-vibrant_&]:border-t-4 [.ui-vibrant_&]:border-t-primary-300"
           iconClassName="[.ui-vibrant_&]:bg-primary-100 [.ui-vibrant_&]:text-primary-500 [.ui-play_&]:bg-white/70 [.ui-play_&]:text-play-accent-soft-ink [.ui-play_&]:ring-0"
           cleanerIllustrationSrc={cleanerIconAssessments}
@@ -845,22 +1292,245 @@ export function DashboardComponent() {
   const statCardLayout: StatCardLayout =
     statCards.length === 1 ? "row" : "stack";
 
+  // The rail is "on screen" only when some rail widget is switched on AND one
+  // of them actually rendered (most return null on a quiet day). Measured from
+  // the DOM below; while it is empty the main column takes the full width.
+  const railRef = useRef<HTMLDivElement>(null);
+  const [railHasContent, setRailHasContent] = useState(true);
+
+  // Fun: the classic widgets its home leaves out (one list, in home-widgets.ts).
+  const funLeavesOut = (id: string) =>
+    isFunTheme && !showForInstitutes([HOLISTIC_INSTITUTE_ID]) && !funHomeKeeps(id);
+  const exploreHasStore = !classFirst || storeSiteExists === true;
+  const showExploreMemberships =
+    exploreHasStore && isWidgetVisible("exploreMemberships") && !funLeavesOut("exploreMemberships");
+  const showExploreBooks =
+    exploreHasStore && isWidgetVisible("exploreBooks") && !funLeavesOut("exploreBooks");
+
+  // The Fun skin's Today cards: which widgets they stand for, in their saved order.
+  const funToday: FunTodayInput = {
+    liveSessions: mergedLiveSessions,
+    // Class first: the next class is the hero, not a Today card too.
+    showClass: isWidgetVisible("upcomingLiveClasses") && !classFirst,
+    showGoal: showTodayTasks,
+    showRing: showGamification,
+    taskProgress: dailyTaskProgress,
+    showTests: isWidgetVisible("evaluationStat"),
+    testCount: testAssignedCount,
+    order: {
+      goal: getWidgetOrder("todayTasks"),
+      class: getWidgetOrder("upcomingLiveClasses"),
+      tests: getWidgetOrder("evaluationStat"),
+    },
+  };
+
+  // ── Built-in fragments ──────────────────────────────────────────────────────
+  // Every existing widget, built once per render. The classic layout below and
+  // the home builder (one block per widget) both read this map, so a widget is
+  // written once. Skin choices that belong to the widget itself live here; where
+  // a widget sits (column, order, the Fun rail) stays with each layout.
+  const funHomeTopProps = {
+    userName: username,
+    liveSessions: mergedLiveSessions,
+    hasAnyProgress,
+    studyLibraryLoaded,
+    onJoinSession: handleJoinSession,
+    resume: resumeTarget,
+    resumeResolving,
+    showGamification,
+    taskProgress: dailyTaskProgress,
+    dashboardLoading: isLoading,
+    dashboardAnswered: Boolean(data),
+    onRetry: retryDashboard,
+    serverSlides: data?.slides,
+    today: funToday,
+    classFirst,
+  };
+  const classFirstNode = classFirst ? (
+    <ClassFirstHome
+      sessions={mergedLiveSessions}
+      sessionsLoading={isLoadingLiveSessions}
+      sessionsError={liveSessionsError}
+      summary={homeSummary}
+      summaryLoading={homeSummaryLoading}
+      onJoin={handleJoinSession}
+      syllabusOn={syllabusOn}
+    />
+  ) : null;
+  const todayNode = (slot: "main" | "rail") => (
+    <TodayModule slot={slot} showGamification={showGamification} keepGoing={keepGoing} />
+  );
+  const builtinFragments: Record<BuiltinWidget, ReactNode> = {
+    // The Fun hero is drawn inside the main column; its greeting row is placed
+    // full width through the header slot (see the layouts).
+    HERO: isFunTheme ? (
+      <FunHomeTop {...funHomeTopProps} todayBelow={!isLgScreen} headerSlot={funHeaderSlot} />
+    ) : isCleanerPlayTheme ? (
+      <CleanerPlayDashboardHero {...playHeroProps} />
+    ) : isPlayTheme ? (
+      <PlayDashboardHero {...playHeroProps} />
+    ) : (
+      // Passed only here: the play / cleaner-play heroes have no
+      // first-run checklist to suppress (they render a greeting band
+      // regardless of progress), so the flag has nothing to act on there.
+      <DashboardHero
+        {...heroProps}
+        // An institute that turned Continue Learning off gets no band,
+        // and so nothing to hold a slot for. Its settings may still be on
+        // their way, and a band that vanishes under a finger is worse
+        // than a slot held a moment longer.
+        resume={settingsPending ? null : bandTarget}
+        resumeResolving={
+          bandPossible && (resumeResolving || (settingsPending && Boolean(resumeTarget)))
+        }
+        coursesBand={coursesBand}
+        showGettingStarted={isWidgetVisible("gettingStarted")}
+      />
+    ),
+    PINS: isFunTheme ? <FunPinsCard /> : <DashboardPinsPanel maxPins={3} />,
+    // The classic link; Fun draws it as a row through its wrapper (styles/fun/home.css).
+    NOTEBOOK_REVIEW: isFunTheme ? (
+      <div className="fun-notebook-line">
+        <NotebookReviewLine />
+      </div>
+    ) : (
+      <NotebookReviewLine />
+    ),
+    // Knowledge-base study companions. Renders null when the learner has none.
+    COMPANIONS: isFunTheme ? <FunCompanionsShelf /> : <StudyCompanionsShelf />,
+    TODAY_TASKS: todayNode("main"),
+    CONTINUE_LEARNING: (
+      <ContinueLearningCard
+        data={data}
+        onResumeClick={handleResumeClick}
+        isLoading={isLoading || stillAskingOtherBatches}
+        hasAnyProgress={hasAnyProgress}
+        heroOffersResume={Boolean(isPlayTheme || isCleanerPlayTheme || isFunTheme ? resumeTarget : bandTarget)}
+        heroSlideId={isFunTheme ? (resumeTarget?.slideId ?? null) : undefined}
+      />
+    ),
+    ENROLLED_COURSES: (
+      <EnrolledCoursesWidget
+        funServerSlides={isFunTheme ? data?.slides : undefined}
+        funHero={
+          isFunTheme
+            ? {
+                hasResume: Boolean(resumeTarget),
+                resumeResolving,
+                firstRunKnown: studyLibraryLoaded,
+                hasAnyProgress,
+                dashboardLoading: isLoading,
+                dashboardAnswered: Boolean(data),
+              }
+            : undefined
+        }
+      />
+    ),
+    STATS_ROW: (
+      <div
+        className={cn(
+          "grid grid-cols-1 gap-3 sm:gap-4",
+          statGridColsClass,
+          // Play skins pair the cards two-up on phones; with a single card
+          // there is nothing to pair, so keep it one-up.
+          statCards.length > 1 &&
+            "max-sm:[.ui-cleaner-play_&]:grid-cols-2 max-sm:[.ui-play_&]:grid-cols-2 max-sm:[.ui-cleaner-play_&]:[&>*:last-child:nth-child(odd)]:col-span-2 max-sm:[.ui-play_&]:[&>*:last-child:nth-child(odd)]:col-span-2"
+        )}
+      >
+        {statCards.map((w) => (
+          <div key={w.id}>{w.render(statCardLayout)}</div>
+        ))}
+      </div>
+    ),
+    LEARNING_ANALYTICS: <PastLearningInsights />,
+    MY_MEMBERSHIP: <MyMembershipWidget />,
+    MY_BOOKS: <MyBooksWidget />,
+    MY_ORDERS: <MyOrdersWidget />,
+    UPCOMING_LIVE_CLASSES: (
+      <UpcomingLiveClassesWidget
+        liveSessions={liveSessions?.live_sessions || []}
+        upcomingSessions={liveSessions?.upcoming_sessions || []}
+        isLoading={isLoadingLiveSessions}
+        onJoinSession={handleJoinSession}
+      />
+    ),
+    THIS_WEEK_ATTENDANCE: <AttendanceWidget />,
+    MY_MENTORS: <MyMentorsWidget />,
+    // Self-hides when the institute has no app link configured, so an
+    // institute can leave this on without it ever showing an empty card.
+    GET_APP: <GetAppWidget />,
+    // Gamification (badges / XP / streak). Play keeps its vibrant play-token
+    // widgets; every other skin gets the standard design-token panel.
+    GAMIFICATION: isPlayTheme ? (
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4 [&>*:last-child:nth-child(odd)]:col-span-2 sm:[&>*:last-child:nth-child(odd)]:col-span-1">
+        <StreakCounterWidget />
+        <XpDisplayWidget />
+        <AchievementBadgesWidget />
+      </div>
+    ) : (
+      <DashboardGamificationPanel />
+    ),
+    // General query intake — renders only when the institute enabled the dashboard card.
+    RAISE_QUERY: isFunTheme ? <FunQueryRow /> : <RaiseQueryCard />,
+    // Explore Memberships / Explore Books — commerce CTAs, hidden for the play
+    // (K-12) audience and in reader mode (iOS / reader-mode institutes, Apple
+    // 3.1.1). These have their OWN widget flags (exploreMemberships /
+    // exploreBooks) rather than riding myMembership / myBooks: an institute
+    // that wants the membership widget but not a "go buy more" CTA had no way
+    // to say so, and the row rendered its padding even when both buttons were
+    // hidden.
+    EXPLORE_BUTTONS: !isPlayTheme &&
+      !shouldHidePaidPurchaseUI() &&
+      (showExploreMemberships || showExploreBooks) && (
+        <div className="flex flex-wrap items-center justify-center gap-3 mt-4 pb-12 px-4">
+          {showExploreMemberships && (
+            <ExploreButton
+              fun={isFunTheme}
+              onClick={() => {
+                sessionStorage.setItem("levelFilter", "rent");
+                navigate({ to: "/collections" as never });
+              }}
+            >
+              {t("dashboardPage.exploreMembershipsButton")}
+            </ExploreButton>
+          )}
+          {showExploreBooks && (
+            <ExploreButton
+              fun={isFunTheme}
+              onClick={() => {
+                sessionStorage.setItem("levelFilter", "buy");
+                navigate({ to: "/collections" as never });
+              }}
+            >
+              {t("dashboardPage.exploreBooksButton")}
+            </ExploreButton>
+          )}
+        </div>
+      ),
+  };
+
   // MAIN column (lg:col-span-2): continue learning, stats row, progress
   // insights, custom widget, commerce. Commerce is hidden for the play
   // (K-12) audience.
   const mainColumnWidgets = [
     {
+      // Below lg (or with no rail at all): right under the hero, collapsed.
+      id: "todayTasks" as const,
+      order: getWidgetOrder("todayTasks"),
+      visible: todayMounted && !todayInRail,
+      render: builtinFragments.TODAY_TASKS,
+    },
+    {
       id: "continueLearning" as const,
       order: getWidgetOrder("continueLearning"),
       visible: isWidgetVisible("continueLearning"),
-      render: (
-        <ContinueLearningCard
-          data={data}
-          onResumeClick={handleResumeClick}
-          isLoading={isLoading}
-          hasAnyProgress={hasAnyProgress}
-        />
-      ),
+      render: builtinFragments.CONTINUE_LEARNING,
+    },
+    {
+      id: "enrolledCourses" as const,
+      order: getWidgetOrder("enrolledCourses"),
+      visible: isWidgetVisible("enrolledCourses"),
+      render: builtinFragments.ENROLLED_COURSES,
     },
     {
       id: "statsRow" as const,
@@ -868,124 +1538,118 @@ export function DashboardComponent() {
         ? Math.min(...statCards.map((w) => getWidgetOrder(w.id)))
         : Number.MAX_SAFE_INTEGER,
       visible: statCards.length > 0,
-      render: (
-        <div
-          className={cn(
-            "grid grid-cols-1 gap-3 sm:gap-4",
-            statGridColsClass,
-            // Play skins pair the cards two-up on phones; with a single card
-            // there is nothing to pair, so keep it one-up.
-            statCards.length > 1 &&
-              "max-sm:[.ui-cleaner-play_&]:grid-cols-2 max-sm:[.ui-play_&]:grid-cols-2 max-sm:[.ui-cleaner-play_&]:[&>*:last-child:nth-child(odd)]:col-span-2 max-sm:[.ui-play_&]:[&>*:last-child:nth-child(odd)]:col-span-2"
-          )}
-        >
-          {statCards.map((w) => (
-            <div key={w.id}>{w.render(statCardLayout)}</div>
-          ))}
-        </div>
-      ),
+      render: builtinFragments.STATS_ROW,
     },
     {
       id: "learningAnalytics" as const,
       order: getWidgetOrder("learningAnalytics"),
       visible: isWidgetVisible("learningAnalytics"),
-      render: <PastLearningInsights />,
+      render: builtinFragments.LEARNING_ANALYTICS,
     },
-    {
-      id: "custom" as const,
-      order: getWidgetOrder("custom"),
-      visible: Boolean(customWidget),
-      render: customWidget ? (
-        <Card
-          className={cn(
-            "transition-shadow",
-            "[.ui-vibrant_&]:border-primary/20",
-            "[.ui-vibrant_&]:bg-gradient-to-br [.ui-vibrant_&]:from-card [.ui-vibrant_&]:to-primary/5"
-          )}
-        >
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg">
-              {customWidget.title || "Custom Widget"}
-            </CardTitle>
-            {customWidget.subTitle && (
-              <CardDescription>{customWidget.subTitle}</CardDescription>
-            )}
-          </CardHeader>
-          <CardContent>
-            {customWidget.link && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  const link = customWidget.link as string;
-                  if (/^https?:\/\//.test(link)) {
-                    window.open(link, "_blank");
-                  } else {
-                    navigate({ to: link as never });
-                  }
-                }}
-                className="w-full justify-between"
-              >
-                Open <CaretRight size={14} />
-              </Button>
-            )}
-          </CardContent>
-        </Card>
-      ) : null,
-    },
+    ...customWidgets.map((customWidget) => ({
+      id: customWidget.id,
+      order: customWidget.order ?? 0,
+      visible: true,
+      render: (
+        <CustomWidgetCard
+          fun={isFunTheme}
+          title={customWidget.title || t("dashboardPage.customWidgetFallbackTitle")}
+          subTitle={customWidget.subTitle}
+          openLabel={t("dashboardPage.openButton")}
+          onOpen={
+            customWidget.link ? () => openCustomWidgetLink(customWidget.link) : undefined
+          }
+        />
+      ),
+    })),
     {
       id: "myMembership" as const,
       order: getWidgetOrder("myMembership"),
       visible: !isPlayTheme && isWidgetVisible("myMembership"),
-      render: <MyMembershipWidget />,
+      render: builtinFragments.MY_MEMBERSHIP,
     },
     {
       id: "myBooks" as const,
       order: getWidgetOrder("myBooks"),
       visible: !isPlayTheme && isWidgetVisible("myBooks"),
-      render: <MyBooksWidget />,
+      render: builtinFragments.MY_BOOKS,
     },
     {
       id: "myOrders" as const,
       order: getWidgetOrder("myOrders"),
       visible: !isPlayTheme && isWidgetVisible("myOrders"),
-      render: <MyOrdersWidget />,
+      render: builtinFragments.MY_ORDERS,
     },
   ]
-    .filter((w) => w.visible && w.render)
+    .filter((w) => w.visible && w.render && !funLeavesOut(w.id))
     .sort((a, b) => a.order - b.order);
+  // Fun: the companions shelf follows the course tiles (see the main column below).
+  const funShelfAfterTiles = isFunTheme && mainColumnWidgets.some((w) => w.id === "enrolledCourses");
 
   // RAIL column (lg:col-span-1): pins panel renders first (always on),
   // then the configurable rail widgets.
   const railWidgets = [
     {
+      // Fun, lg and up: the Today cards lead the rail (under lg they follow the hero).
+      id: "funToday" as const,
+      order: Number.MIN_SAFE_INTEGER,
+      visible: isFunTheme && isLgScreen && !showForInstitutes([HOLISTIC_INSTITUTE_ID]),
+      render: <FunTodayCards {...funToday} variant="rail" />,
+    },
+    {
+      // Fun, lg and up: the announcements follow the Today cards (the classic panel
+      // that leads the rail is not drawn in this skin).
+      id: "funPins" as const,
+      order: Number.MIN_SAFE_INTEGER + 1,
+      visible: isFunTheme && isLgScreen && !showForInstitutes([HOLISTIC_INSTITUTE_ID]),
+      render: builtinFragments.PINS,
+    },
+    {
+      // lg and up: first in the rail (default order 0.5).
+      id: "todayTasks" as const,
+      order: getWidgetOrder("todayTasks"),
+      visible: todayMounted && todayInRail,
+      render: todayNode("rail"),
+    },
+    {
       id: "upcomingLiveClasses" as const,
       order: getWidgetOrder("upcomingLiveClasses"),
-      visible: isWidgetVisible("upcomingLiveClasses"),
-      render: (
-        <UpcomingLiveClassesWidget
-          liveSessions={liveSessions?.live_sessions || []}
-          upcomingSessions={liveSessions?.upcoming_sessions || []}
-          isLoading={isLoadingLiveSessions}
-          onJoinSession={handleJoinSession}
-        />
-      ),
+      // Class first: the hero above already shows the next class.
+      visible: isWidgetVisible("upcomingLiveClasses") && !classFirst,
+      render: builtinFragments.UPCOMING_LIVE_CLASSES,
     },
     {
       id: "thisWeekAttendance" as const,
       order: getWidgetOrder("thisWeekAttendance"),
       visible: isWidgetVisible("thisWeekAttendance"),
-      // Streak rides the gamification flag — see AttendanceWidget.
-      render: <AttendanceWidget showStreak={showGamification} />,
+      render: builtinFragments.THIS_WEEK_ATTENDANCE,
     },
     {
       id: "myMentors" as const,
       order: getWidgetOrder("myMentors"),
       visible: isWidgetVisible("myMentors"),
-      render: <MyMentorsWidget />,
+      render: builtinFragments.MY_MENTORS,
+    },
+    {
+      // Syllabus progress (institutes that track a week-by-week syllabus).
+      // Not an admin-configured widget: it joins the rail only when the
+      // learner actually has a syllabus, so every other institute's layout
+      // is untouched.
+      id: "syllabusProgress" as const,
+      order: getWidgetOrder("myMentors") + 0.5,
+      // Class first: the syllabus card sits beside the hero instead.
+      visible: syllabusOn && !classFirst,
+      render: <SyllabusProgressWidget />,
+    },
+    {
+      id: "getApp" as const,
+      order: getWidgetOrder("getApp"),
+      visible: isWidgetVisible("getApp"),
+      // Self-hides when the institute has no app link configured.
+      render: builtinFragments.GET_APP,
     },
   ]
-    .filter((w) => w.visible)
+    .filter((w) => w.visible && !funLeavesOut(w.id))
     .sort((a, b) => a.order - b.order);
 
   // With every rail widget switched off there is nothing to reserve a third of
@@ -993,22 +1657,167 @@ export function DashboardComponent() {
   // renders when the institute has live announcements, so it would strand an
   // empty rail on most days — it moves to the top of the main column instead.
   const hasRail = railWidgets.length > 0;
+  const showRail = hasRail && railHasContent;
+  // Re-checked whenever a rail widget mounts, loads or empties itself.
+  useLayoutEffect(() => {
+    const el = railRef.current;
+    if (!el) return;
+    const check = () => setRailHasContent(Array.from(el.children).some((c) => c.childNodes.length > 0));
+    check();
+    const observer = new MutationObserver(check);
+    observer.observe(el, { childList: true, subtree: true });
+    return () => observer.disconnect();
+  }, [hasRail]);
+
+  // ── Builder mode: the same fragments, placed by the institute's block list ──
+  // Each built-in keeps the gate it has on the classic home (a hidden widget
+  // still loads nothing); Fun leave-outs are dropped before this is called.
+  const renderBuiltin = (widget: BuiltinWidget, placement: HomePlacement): ReactNode => {
+    switch (widget) {
+      case "HERO":
+        // Fun: the hero carries the Today cards in builder mode (there is no Fun
+        // rail beside it), and under lg the announcements follow them.
+        return isFunTheme ? (
+          <>
+            <FunHomeTop {...funHomeTopProps} todayBelow headerSlot={funHeaderSlot} />
+            {!isLgScreen && builtinFragments.PINS}
+          </>
+        ) : (
+          builtinFragments.HERO
+        );
+      case "PINS":
+        // Fun under lg: already drawn under the hero.
+        return isFunTheme && !isLgScreen && builderBuiltins.has("HERO") ? null : builtinFragments.PINS;
+      case "TODAY_TASKS":
+        return todayMounted ? todayNode(placement === "RAIL" && isLgScreen ? "rail" : "main") : null;
+      case "STATS_ROW":
+        return statCards.length > 0 ? builtinFragments.STATS_ROW : null;
+      case "MY_MEMBERSHIP":
+      case "MY_BOOKS":
+      case "MY_ORDERS":
+        // Commerce widgets stay hidden for the play (K-12) audience.
+        return isPlayTheme ? null : builtinFragments[widget];
+      case "GAMIFICATION":
+        return showGamification ? builtinFragments.GAMIFICATION : null;
+      default:
+        return builtinFragments[widget];
+    }
+  };
+
+  const homeSkin = useMemo(
+    () => ({ fun: isFunTheme, play: isPlayTheme, cleanerPlay: isCleanerPlayTheme }),
+    [isFunTheme, isPlayTheme, isCleanerPlayTheme]
+  );
+  const homeFeatures = useFeatureAvailability({
+    enabled: builderHome !== null,
+    blocks: builderHome?.blocks ?? EMPTY_BLOCKS,
+    primaryBatchId: batchId,
+    hasPlan: rememberedPlan || engagementFeed != null,
+  });
+  const homeLinkContext: LinkContext = useMemo(
+    () => ({
+      readerMode: shouldHidePaidPurchaseUI(),
+      playSkin: isPlayTheme,
+      features: homeFeatures,
+      primaryBatchId: batchId,
+    }),
+    [isPlayTheme, homeFeatures, batchId]
+  );
+  const homeFollowDeps: Omit<FollowDeps, "beforeLeave"> = {
+    navigate: (opts) => {
+      if (opts.href) navigate({ href: opts.href });
+      else navigate({ to: opts.to as never, search: opts.search as never, params: opts.params as never });
+    },
+    openExternal: openInBrowser,
+    assign: (url) => window.location.assign(url),
+    openDoubts: () => useQueryDialogStore.getState().open("raise"),
+    openLiveClass: async (sessionId, inMyBatch) => {
+      if (!inMyBatch) {
+        navigate({ to: "/register/live-class", search: { sessionId } as never });
+        return;
+      }
+      // The learner's batch has the session: join in the app (decision Q14)
+      // once its waiting room is open, else show it in the live-class list.
+      const session = mergedLiveSessions.find((sess) => sess.session_id === sessionId);
+      if (session && sessionJoinOpen(session)) await handleJoinSession(session);
+      else navigate({ to: "/study-library/live-class" });
+    },
+    removePreference: (key) => Preferences.remove({ key }),
+    setSessionItem: (key, value) => sessionStorage.setItem(key, value),
+  };
+
+  // The avatar / greeting / date row (default, vibrant, corporate). The play,
+  // cleaner-play and Fun heroes carry their own greeting.
+  const showHeaderRow =
+    !isPlayTheme && !isCleanerPlayTheme && !(isFunTheme && !showForInstitutes([HOLISTIC_INSTITUTE_ID]));
+  const headerRow = (
+    <div
+      className={
+        phoneLayoutFixed
+          ? "flex flex-col gap-2 sm:gap-4 lg:flex-row lg:items-center lg:justify-between"
+          : "flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between"
+      }
+    >
+      <div className="flex items-center space-x-3 rtl:space-x-reverse">
+        {/* Corporate drops the letter-avatar: the account avatar already
+            sits in the top bar, and a second big initial disc beside the
+            greeting is a consumer-app cue. */}
+        <Avatar className="h-10 w-10 sm:h-12 sm:w-12 border-2 border-background shadow-sm [.ui-corporate_&]:hidden">
+          <AvatarFallback className="bg-primary-100 text-lg font-semibold text-primary-500">
+            {userInitials}
+          </AvatarFallback>
+        </Avatar>
+        <div className="min-w-0">
+          <h1 className="text-h2 sm:text-h1 tracking-tight text-foreground [.ui-corporate_&]:text-h3 [.ui-corporate_&]:sm:text-h2 [.ui-corporate_&]:font-semibold">
+            {isLoading ? (
+              <Skeleton className="h-8 w-48" />
+            ) : (
+              <span>{greetingText}</span>
+            )}
+          </h1>
+          {showForInstitutes([HOLISTIC_INSTITUTE_ID]) ? (
+            <p className="mt-1 flex items-center gap-2 text-muted-foreground">
+              <Sparkle size={16} className="text-primary" />
+              <span>{t("dashboardPage.yogaGreeting")}</span>
+            </p>
+          ) : headerFact ? (
+            <p className="mt-1 text-caption text-muted-foreground">
+              {headerFact}
+            </p>
+          ) : null}
+        </div>
+      </div>
+
+      <p className="text-caption text-muted-foreground">
+        {formatDate(new Date(), {
+          weekday: "long",
+          month: "long",
+          day: "numeric",
+        })}
+      </p>
+    </div>
+  );
 
   return (
-    <div className="min-h-screen bg-background relative overflow-hidden w-full dashboard-container smooth-scroll">
+    // One task runner for the whole page, mounted ABOVE the Today module so a
+    // resize that moves the module between slots never drops an open runner.
+    <EngagementTaskHostProvider showGamification={showGamification}>
+    <div className={`min-h-screen bg-background relative overflow-hidden w-full dashboard-container smooth-scroll${isFunTheme ? " fun-home" : ""}`}>
       <Helmet>
         <title>
           {typeof document !== "undefined" && document.title
             ? document.title
-            : "Dashboard"}
+            : t("dashboardPage.pageTitle")}
         </title>
         <meta
           name="description"
-          content="Enterprise Dashboard - Learning Management System"
+          content={t("dashboardPage.metaDescription")}
         />
         <meta
           name="viewport"
-          content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+          // Builder homes allow pinch zoom (WCAG 1.4.4); the classic home keeps
+          // its lock until the owner decides (Q2, see phone-layout.ts).
+          content={phoneLayoutFixed ? VIEWPORT_ZOOMABLE : VIEWPORT_LOCKED}
         />
       </Helmet>
 
@@ -1023,63 +1832,55 @@ export function DashboardComponent() {
         />
       )}
 
-      <div className="relative z-10 space-y-4 p-3 sm:p-4 lg:p-6 mx-auto w-full max-w-7xl animate-in fade-in duration-500">
-        {/* Header — default/vibrant only; the play / cleaner-play hero carries its own greeting */}
-        {!isPlayTheme && !isCleanerPlayTheme && (
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <div className="flex items-center space-x-3">
-              <Avatar className="h-10 w-10 sm:h-12 sm:w-12 border-2 border-background shadow-sm">
-                <AvatarFallback className="bg-primary-100 text-lg font-semibold text-primary-500">
-                  {userInitials}
-                </AvatarFallback>
-              </Avatar>
-              <div className="min-w-0">
-                <h1 className="text-h2 sm:text-h1 tracking-tight text-foreground">
-                  {isLoading ? (
-                    <Skeleton className="h-8 w-48" />
-                  ) : (
-                    <span>{greetingText}</span>
-                  )}
-                </h1>
-                {showForInstitutes([HOLISTIC_INSTITUTE_ID]) ? (
-                  <p className="mt-1 flex items-center gap-2 text-muted-foreground">
-                    <Sparkle size={16} className="text-primary" />
-                    <span>Ready for today's yoga journey?</span>
-                  </p>
-                ) : headerFact ? (
-                  <p className="mt-1 text-caption text-muted-foreground">
-                    {headerFact}
-                  </p>
-                ) : null}
-              </div>
-            </div>
-
-            <p className="text-caption text-muted-foreground">
-              {new Date().toLocaleDateString("en-US", {
-                weekday: "long",
-                month: "long",
-                day: "numeric",
-              })}
-            </p>
-          </div>
-        )}
+      {builderHome ? (
+        <div
+          className={`relative z-10 ${pagePaddingClass(true)} mx-auto w-full max-w-7xl animate-in fade-in duration-500${isFunTheme ? " fun-home__inner" : ""}`}
+        >
+          <LearnerHomeRenderer
+            home={builderHome}
+            header={
+              isFunTheme ? (
+                // The Fun greeting row is drawn here by the Fun hero (a portal).
+                <div ref={setFunHeaderSlot} className="fun-home__header-slot" />
+              ) : showHeaderRow ? (
+                headerRow
+              ) : null
+            }
+            renderBuiltin={renderBuiltin}
+            isLg={isLgScreen}
+            isPhone={isPhoneDevice}
+            skin={homeSkin}
+            linkContext={homeLinkContext}
+            followDeps={homeFollowDeps}
+            preview={homePreview}
+          />
+        </div>
+      ) : (
+      <div
+        className={
+          phoneLayoutFixed
+            ? `relative z-10 space-y-3 sm:space-y-4 ${pagePaddingClass(true)} mx-auto w-full max-w-7xl animate-in fade-in duration-500${isFunTheme ? " fun-home__inner" : ""}`
+            : `relative z-10 space-y-4 p-3 sm:p-4 lg:p-6 mx-auto w-full max-w-7xl animate-in fade-in duration-500${isFunTheme ? " fun-home__inner" : ""}`
+        }
+      >
+        {/* Header — default/vibrant only; the play / cleaner-play / fun hero carries its own greeting */}
+        {showHeaderRow && headerRow}
 
         {!showForInstitutes([HOLISTIC_INSTITUTE_ID]) && (
           <>
             {/* Hero — owns the live-class banner and resume / first-run band */}
-            {isCleanerPlayTheme ? (
-              <CleanerPlayDashboardHero {...heroProps} />
-            ) : isPlayTheme ? (
-              <PlayDashboardHero {...heroProps} />
+            {isFunTheme ? (
+              <>
+                {/* The Fun greeting row goes here, full width; its hero leads the main column. */}
+                <div ref={setFunHeaderSlot} className="fun-home__header-slot" />
+                {/* Class first: the class / syllabus band runs full width under it. */}
+                {classFirstNode}
+              </>
             ) : (
-              // Passed only here: the play / cleaner-play heroes have no
-              // first-run checklist to suppress (they render a greeting band
-              // regardless of progress), so the flag has nothing to act on there.
-              <DashboardHero
-                {...heroProps}
-                showGettingStarted={isWidgetVisible("gettingStarted")}
-              />
+              classFirstNode ?? builtinFragments.HERO
             )}
+
+            {!isFunTheme && builtinFragments.NOTEBOOK_REVIEW}
 
             {/* Main 2/3 + 1/3 layout. The rail's third is only reserved when
                 the institute actually left rail widgets on — otherwise the
@@ -1097,28 +1898,54 @@ export function DashboardComponent() {
             <div
               className={cn(
                 "grid grid-cols-1 gap-4 lg:gap-6 items-start",
-                hasRail && "lg:grid-cols-3"
+                showRail && "lg:grid-cols-3"
               )}
             >
               <div
                 className={cn(
                   "space-y-4 lg:space-y-6",
-                  hasRail && "lg:col-span-2"
+                  showRail && "lg:col-span-2"
                 )}
               >
-                {/* Without a rail, announcements lead the main column */}
-                {!hasRail && <DashboardPinsPanel maxPins={3} />}
+                {isFunTheme && (
+                  <>
+                    {builtinFragments.HERO}
+                    {/* Under lg the announcements follow the Today cards. */}
+                    {!isLgScreen && builtinFragments.PINS}
+                    {/* The classic link, drawn as a Fun row by its wrapper (styles/fun/home.css). */}
+                    {builtinFragments.NOTEBOOK_REVIEW}
+                  </>
+                )}
+                {/* One-off charges due (e.g. a bridge class), with Pay. Renders null
+                    unless the institute switched the feature on and something is due. */}
+                <div className="empty:hidden">
+                  <OneOffDuesCard />
+                </div>
+                {/* Without a rail, announcements lead the main column (Fun draws its own) */}
+                {!hasRail && !isFunTheme && builtinFragments.PINS}
+                {/* Knowledge-base study companions. Renders null when the learner
+                    has none, so the layout is unchanged for everyone else. Fun
+                    draws the same shelf as its own tiles, after the course tiles
+                    when they are on the page, so the courses stay on the first
+                    screen of a laptop. */}
+                {isFunTheme ? !funShelfAfterTiles && builtinFragments.COMPANIONS : builtinFragments.COMPANIONS}
                 {mainColumnWidgets.map((w) => (
-                  <div key={w.id} className="empty:hidden">
-                    {w.render}
-                  </div>
+                  <Fragment key={w.id}>
+                    <div className="empty:hidden">{w.render}</div>
+                    {funShelfAfterTiles && w.id === "enrolledCourses" && builtinFragments.COMPANIONS}
+                  </Fragment>
                 ))}
               </div>
 
               {hasRail && (
-                <div className="space-y-4 lg:col-span-1 lg:space-y-6">
-                  {/* Institute announcements pin to the top of the rail */}
-                  <DashboardPinsPanel maxPins={3} />
+                // Stays mounted while empty (hidden) so a widget that loads
+                // something later brings the column back.
+                <div
+                  ref={railRef}
+                  className={cn("space-y-4 lg:col-span-1 lg:space-y-6", !railHasContent && "hidden")}
+                >
+                  {/* Institute announcements pin to the top of the rail (Fun: after its Today cards) */}
+                  {!isFunTheme && builtinFragments.PINS}
                   {railWidgets.map((w) => (
                     <div key={w.id} className="empty:hidden">
                       {w.render}
@@ -1132,79 +1959,32 @@ export function DashboardComponent() {
                 Play theme keeps its vibrant play-token widgets; every other theme
                 gets the standard design-token panel. Both sides sit behind the
                 one "gamification" flag so hiding it is skin-independent. */}
-            {showGamification &&
-              (isPlayTheme ? (
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4 [&>*:last-child:nth-child(odd)]:col-span-2 sm:[&>*:last-child:nth-child(odd)]:col-span-1">
-                  <StreakCounterWidget />
-                  <XpDisplayWidget />
-                  <AchievementBadgesWidget />
-                </div>
-              ) : (
-                <DashboardGamificationPanel />
-              ))}
+            {showGamification && !funLeavesOut("gamification") && builtinFragments.GAMIFICATION}
 
             {/* General query intake — only when the institute enabled the dashboard card */}
-            <RaiseQueryCard />
+            {builtinFragments.RAISE_QUERY}
 
             {/* Developer Test Section - Only in development */}
             {process.env.NODE_ENV === "development" && (
               <Card className="border-dashed border-orange-300 bg-orange-50/50">
-                <CardContent className="p-4 flex items-center gap-4">
+                <CardContent className="p-card flex items-center gap-4">
                   <div className="p-2 bg-orange-100 rounded-lg text-orange-600">
                     <Bell weight="duotone" size={20} />
                   </div>
                   <div>
                     <h3 className="font-semibold text-orange-900">
-                      Developer Testing
+                      {t("dashboardPage.devTesting.title")}
                     </h3>
                     <p className="text-sm text-orange-700">
-                      Test push notification functionality
+                      {t("dashboardPage.devTesting.description")}
                     </p>
                   </div>
                 </CardContent>
               </Card>
             )}
 
-            {/* Explore Buttons Section — commerce CTAs, hidden for the play
-                (K-12) audience and in reader mode (iOS / reader-mode
-                institutes, Apple 3.1.1).
-
-                These have their OWN widget flags (exploreMemberships /
-                exploreBooks) rather than riding myMembership / myBooks: an
-                institute that wants the membership widget but not a
-                "go buy more" CTA had no way to say so, and the row rendered
-                its padding even when both buttons were hidden. */}
-            {!isPlayTheme &&
-              !shouldHidePaidPurchaseUI() &&
-              (isWidgetVisible("exploreMemberships") ||
-                isWidgetVisible("exploreBooks")) && (
-                <div className="flex flex-wrap items-center justify-center gap-3 mt-4 pb-12 px-4">
-                  {isWidgetVisible("exploreMemberships") && (
-                    <Button
-                      className="rounded-full bg-primary text-primary-foreground hover:bg-primary/90 transition-all shadow-sm flex items-center gap-2 py-2 px-6 h-9 text-xs font-bold"
-                      onClick={() => {
-                        sessionStorage.setItem("levelFilter", "rent");
-                        navigate({ to: "/collections" as never });
-                      }}
-                    >
-                      Explore Memberships
-                      <CaretRight size={14} />
-                    </Button>
-                  )}
-                  {isWidgetVisible("exploreBooks") && (
-                    <Button
-                      className="rounded-full bg-primary text-primary-foreground hover:bg-primary/90 transition-all shadow-sm flex items-center gap-2 py-2 px-6 h-9 text-xs font-bold"
-                      onClick={() => {
-                        sessionStorage.setItem("levelFilter", "buy");
-                        navigate({ to: "/collections" as never });
-                      }}
-                    >
-                      Explore Books
-                      <CaretRight size={14} />
-                    </Button>
-                  )}
-                </div>
-              )}
+            {/* Explore Buttons Section — commerce CTAs (see the fragment) */}
+            {builtinFragments.EXPLORE_BUTTONS}
           </>
         )}
 
@@ -1213,14 +1993,14 @@ export function DashboardComponent() {
             {/* Institute announcements */}
             <DashboardPinsPanel maxPins={3} />
 
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-section">
               {/* Hero Section */}
               <div className="lg:col-span-8">
                 <Card className="h-full overflow-hidden border-0 shadow-sm relative bg-white">
                   <CardContent className="p-0 relative h-full flex items-center justify-center min-h-72">
                     <img
-                      src="/yoga-dashboard.png"
-                      alt="Yoga illustration"
+                      src="/yoga-dashboard.webp"
+                      alt={t("dashboardPage.holistic.yogaIllustrationAlt")}
                       className="object-contain max-h-72"
                     />
                   </CardContent>
@@ -1238,7 +2018,7 @@ export function DashboardComponent() {
                           size={18}
                           className="text-primary"
                         />
-                        <span>This Week</span>
+                        <span>{t("dashboardPage.holistic.thisWeekTitle")}</span>
                       </div>
                       {weeklyAttendance?.weekRange && (
                         <span className="text-xs text-muted-foreground font-normal">
@@ -1313,17 +2093,17 @@ export function DashboardComponent() {
                 </Card>
 
                 <Card>
-                  <CardContent className="p-4 flex items-center justify-between gap-4">
+                  <CardContent className="p-card flex items-center justify-between gap-4">
                     <div className="flex items-center gap-3">
                       <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg text-blue-600 dark:text-blue-400">
                         <Users weight="duotone" size={20} />
                       </div>
                       <div>
                         <h3 className="font-semibold text-sm">
-                          Refer A Friend
+                          {t("dashboardPage.holistic.referFriendTitle")}
                         </h3>
                         <p className="text-xs text-muted-foreground">
-                          Share the journey
+                          {t("dashboardPage.holistic.referFriendSubtitle")}
                         </p>
                       </div>
                     </div>
@@ -1332,7 +2112,7 @@ export function DashboardComponent() {
                       variant="secondary"
                       onClick={() => navigate({ to: "/referral" })}
                     >
-                      Invite
+                      {t("dashboardPage.holistic.inviteButton")}
                     </Button>
                   </CardContent>
                 </Card>
@@ -1347,7 +2127,7 @@ export function DashboardComponent() {
                     <VideoCamera size={18} />
                   </div>
                   <div className="space-y-0.5">
-                    <CardTitle className="text-base">My Classes</CardTitle>
+                    <CardTitle className="text-base">{t("dashboardPage.holistic.myClassesTitle")}</CardTitle>
                     <CardDescription className="text-xs">
                       {getUserTimezone()}
                     </CardDescription>
@@ -1358,7 +2138,7 @@ export function DashboardComponent() {
                   size="sm"
                   onClick={() => navigate({ to: "/study-library/live-class" })}
                 >
-                  View All <CaretRight size={14} className="ms-1" />
+                  {t("liveClasses.viewAll")} <CaretRight size={14} className="ms-1" />
                 </Button>
               </CardHeader>
               <CardContent>
@@ -1407,13 +2187,13 @@ export function DashboardComponent() {
                             variant="default"
                             className="bg-green-600 hover:bg-green-700"
                           >
-                            Live
+                            {t("dashboardPage.holistic.liveBadge")}
                           </Badge>
                           <Button
                             size="sm"
                             onClick={() => handleJoinSession(session)}
                           >
-                            Join Now
+                            {t("dashboardPage.holistic.joinNowButton")}
                           </Button>
                         </div>
                       </div>
@@ -1435,18 +2215,22 @@ export function DashboardComponent() {
                                 {session.title}
                               </h4>
                               <p className="text-xs text-muted-foreground">
-                                {new Date(
-                                  `${session.meeting_date}T${session.start_time}`
-                                ).toLocaleDateString("en-US", {
-                                  month: "short",
-                                  day: "numeric",
-                                })}{" "}
-                                at{" "}
-                                {formatSessionTimeInUserTimezone(
-                                  session.meeting_date,
-                                  session.start_time,
-                                  session.timezone
-                                )}
+                                {t("dashboardPage.holistic.dateAtTime", {
+                                  date: formatDate(
+                                    new Date(
+                                      `${session.meeting_date}T${session.start_time}`
+                                    ),
+                                    {
+                                      month: "short",
+                                      day: "numeric",
+                                    }
+                                  ),
+                                  time: formatSessionTimeInUserTimezone(
+                                    session.meeting_date,
+                                    session.start_time,
+                                    session.timezone
+                                  ),
+                                })}
                               </p>
                             </div>
                           </div>
@@ -1454,7 +2238,7 @@ export function DashboardComponent() {
                             variant="secondary"
                             className="bg-blue-100 text-blue-700 border-blue-200"
                           >
-                            Upcoming
+                            {t("liveClasses.upcomingBadge")}
                           </Badge>
                         </div>
                       ))}
@@ -1469,10 +2253,12 @@ export function DashboardComponent() {
                             />
                           </div>
                           <h3 className="font-semibold text-sm">
-                            No {getTerminologyPlural(ContentTerms.LiveSession, SystemTerms.LiveSession).toLowerCase()} scheduled
+                            {t("dashboardPage.holistic.noLiveClassesScheduled", {
+                              liveClasses: getTerminologyPlural(ContentTerms.LiveSession, SystemTerms.LiveSession).toLowerCase(),
+                            })}
                           </h3>
                           <p className="text-xs text-muted-foreground mt-1 mb-4">
-                            Check back later for upcoming live classes
+                            {t("dashboardPage.holistic.checkBackLater")}
                           </p>
                           <Button
                             variant="outline"
@@ -1481,7 +2267,7 @@ export function DashboardComponent() {
                               navigate({ to: "/study-library/live-class" })
                             }
                           >
-                            View All Classes
+                            {t("dashboardPage.holistic.viewAllClassesButton")}
                           </Button>
                         </div>
                       )}
@@ -1495,6 +2281,8 @@ export function DashboardComponent() {
           </div>
         )}
       </div>
+      )}
     </div>
+    </EngagementTaskHostProvider>
   );
 }

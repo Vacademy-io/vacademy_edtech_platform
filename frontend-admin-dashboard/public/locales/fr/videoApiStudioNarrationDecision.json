@@ -1,0 +1,22 @@
+{
+    "header": {
+        "title_one": "Narration ({{count}} plan)",
+        "title_many": "Narration ({{count}} plans)",
+        "title_other": "Narration ({{count}} plans)",
+        "wordsEstimate_one": "{{count}} mot · ≈ {{seconds}}s",
+        "wordsEstimate_many": "{{count}} mots · ≈ {{seconds}}s",
+        "wordsEstimate_other": "{{count}} mots · ≈ {{seconds}}s"
+    },
+    "hooks": {
+        "pickLabel": "Ligne d'ouverture — choisissez une accroche :",
+        "draft": "Brouillon"
+    },
+    "shot": {
+        "placeholder": "Aucune narration pour ce plan"
+    },
+    "actions": {
+        "letAiDecide": "Laisser l'IA décider",
+        "saveAndContinue": "Enregistrer et continuer",
+        "approveAndContinue": "Approuver et continuer"
+    }
+}

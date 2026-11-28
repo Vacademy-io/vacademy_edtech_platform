@@ -1,0 +1,103 @@
+{
+    "title": "Student Test Report",
+    "toast": {
+        "exportPdfSuccess": "Test report data for PDF exported successfully!",
+        "exportPdfFailed": "Could not export the report. Please try again."
+    },
+    "info": {
+        "subject": "Subject:",
+        "attemptDate": "Attempt Date:",
+        "marks": "Marks:",
+        "completionTime": "Completion Time:",
+        "minutes": "{{value}} min",
+        "startTime": "Start Time:",
+        "endTime": "End Time:"
+    },
+    "score": {
+        "heading": "Score Report",
+        "rank": "Rank",
+        "percentile": "Percentile",
+        "marks": "Marks"
+    },
+    "response": {
+        "heading": "Response Breakdown",
+        "attempted": "Attempted:",
+        "skipped": "Skipped:"
+    },
+    "marksBreakdown": {
+        "heading": "Marks Breakdown",
+        "correctRespondents": "Correct Respondents:",
+        "partiallyCorrectRespondents": "Partially Correct Respondents:",
+        "wrongRespondents": "Wrong Respondents:",
+        "skipped": "Skipped:"
+    },
+    "review": {
+        "heading": "Answer Review",
+        "question": "Question ({{number}}.)",
+        "timeTakenSeconds_one": "{{count}} sec",
+        "timeTakenSeconds_other": "{{count}} sec",
+        "studentAnswer": "Student answer:",
+        "marksLabel": "{{marks}} Marks",
+        "correctAnswer": "Correct answer:",
+        "explanation": "Explanation:",
+        "noResponse": "No response",
+        "empty": "No answer review available"
+    },
+    "meta": {
+        "timeRange": "{{start}} – {{end}}"
+    },
+    "stats": {
+        "score": "Score",
+        "rank": "Rank",
+        "percentile": "Percentile",
+        "timeTaken": "Time taken"
+    },
+    "duration": {
+        "seconds": "{{value}} sec",
+        "minutes": "{{minutes}} min",
+        "minutesSeconds": "{{minutes}} min {{seconds}} sec",
+        "hoursMinutes": "{{hours}} hr {{minutes}} min"
+    },
+    "charts": {
+        "attempted": "Attempted",
+        "skipped": "Skipped",
+        "correct": "Correct",
+        "partial": "Partially correct",
+        "wrong": "Wrong",
+        "attemptedCenter": "attempted",
+        "marksCenter": "marks"
+    },
+    "filter": {
+        "ariaLabel": "Filter questions by result",
+        "all": "All ({{n}})",
+        "correct": "Correct ({{n}})",
+        "partial": "Partial ({{n}})",
+        "wrong": "Wrong ({{n}})",
+        "pending": "Not marked ({{n}})",
+        "skipped": "Skipped ({{n}})"
+    },
+    "status": {
+        "correct": "Correct",
+        "partial": "Partially correct",
+        "wrong": "Wrong",
+        "pending": "Not marked yet",
+        "skipped": "Skipped"
+    },
+    "answer": {
+        "questionShort": "Q{{number}}",
+        "marks": "{{marks}} marks",
+        "learnerChoice": "Student's choice",
+        "correct": "Correct",
+        "learnerAnswer": "Student's answer",
+        "correctAnswer": "Correct answer",
+        "noOptionChosen": "No option was chosen",
+        "choiceNotOnPaper": "The option the student chose is no longer on this question; it was changed after the test.",
+        "optionsUnavailable": "The options for this question could not be loaded.",
+        "explanation": "Explanation",
+        "teacherRemark": "Teacher's remark",
+        "aiFeedback": "AI feedback",
+        "noMatch": "No questions match this filter.",
+        "sectionFallback": "Section {{number}}"
+    },
+    "openSubmission": "Open submission"
+}

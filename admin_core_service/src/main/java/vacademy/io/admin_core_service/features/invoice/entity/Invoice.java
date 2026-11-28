@@ -72,6 +72,10 @@ public class Invoice {
     @Column(name = "discount_amount", precision = 10, scale = 2)
     private BigDecimal discountAmount;
 
+    /** Admin who applied a discount on an admin-created invoice (V557). */
+    @Column(name = "discount_granted_by_user_id")
+    private String discountGrantedByUserId;
+
     @Column(name = "tax_amount", precision = 10, scale = 2)
     private BigDecimal taxAmount;
 
@@ -110,6 +114,75 @@ public class Invoice {
 
     @OneToMany(mappedBy = "invoice", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<InvoiceLineItem> lineItems;
+
+    // ---------------------------------------------------------------- commerce (V682)
+    // Written only by CommerceInvoiceService. All null on every other invoice; a non-null
+    // documentType is what marks a row as a commerce GST document (see isCommerceDocument).
+
+    /** TAX_INVOICE, BILL_OF_SUPPLY or INVOICE. */
+    @Column(name = "document_type", length = 32)
+    private String documentType;
+
+    /** The commerce_document_series row the number came from. */
+    @Column(name = "series_id", length = 36)
+    private String seriesId;
+
+    /** The date printed on the document, in the institute's calendar. */
+    @Column(name = "document_date")
+    private java.time.LocalDate documentDate;
+
+    /** The number written on a paper bill-book page, for a bill-book entry. */
+    @Column(name = "external_invoice_number", length = 64)
+    private String externalInvoiceNumber;
+
+    @Column(name = "seller_gstin", length = 15)
+    private String sellerGstin;
+
+    @Column(name = "seller_state_code", length = 8)
+    private String sellerStateCode;
+
+    @Column(name = "place_of_supply_state", length = 8)
+    private String placeOfSupplyState;
+
+    /** CGST_SGST, IGST or NONE. */
+    @Column(name = "tax_head", length = 32)
+    private String taxHead;
+
+    @Column(name = "buyer_gstin", length = 15)
+    private String buyerGstin;
+
+    @Column(name = "location_id", length = 36)
+    private String locationId;
+
+    /** ONLINE, POS or ADMIN. */
+    @Column(name = "channel", length = 32)
+    private String channel;
+
+    @Column(name = "commerce_order_id", length = 36)
+    private String commerceOrderId;
+
+    @Column(name = "round_off", precision = 12, scale = 2)
+    private BigDecimal roundOff;
+
+    /** A commerce document is cancelled or reversed by a credit note, never deleted. */
+    @Column(name = "cancelled_at")
+    private LocalDateTime cancelledAt;
+
+    @Column(name = "cancel_reason", columnDefinition = "TEXT")
+    private String cancelReason;
+
+    @Column(name = "irn", length = 100)
+    private String irn;
+
+    @Column(name = "eway_bill_no", length = 32)
+    private String ewayBillNo;
+
+    /** True for a document issued by CommerceInvoiceService (a shop order), false for every other invoice. */
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    @jakarta.persistence.Transient
+    public boolean isCommerceDocument() {
+        return documentType != null;
+    }
 }
 
 

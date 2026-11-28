@@ -1,0 +1,80 @@
+{
+    "feeType": {
+        "installmentCount_zero": "لا توجد أقساط",
+        "installmentCount_one": "قسط واحد",
+        "installmentCount_two": "قسطان ({{count}})",
+        "installmentCount_few": "{{count}} أقساط",
+        "installmentCount_many": "{{count}} قسطًا",
+        "installmentCount_other": "{{count}} قسط",
+        "refundable": "قابل للاسترداد",
+        "penalty": "غرامة {{percent}}%",
+        "loadingInstallments": "جارٍ تحميل الأقساط...",
+        "columns": {
+            "number": "#",
+            "amount": "المبلغ",
+            "startDate": "تاريخ البدء",
+            "endDate": "تاريخ الانتهاء",
+            "dueDate": "تاريخ الاستحقاق",
+            "status": "الحالة"
+        },
+        "total": "الإجمالي",
+        "noSchedule": "لا يوجد جدول أقساط — دفعة واحدة بقيمة {{amount}}"
+    },
+    "package": {
+        "totalLabel": "الإجمالي <b>{{amount}}</b>",
+        "feeTypeCount_zero": "لا توجد أنواع رسوم",
+        "feeTypeCount_one": "نوع رسوم واحد",
+        "feeTypeCount_two": "نوعا رسوم ({{count}})",
+        "feeTypeCount_few": "{{count}} أنواع رسوم",
+        "feeTypeCount_many": "{{count}} نوع رسوم",
+        "feeTypeCount_other": "{{count}} نوع رسوم"
+    },
+    "header": {
+        "title": "خطة الرسوم",
+        "subtitle": "إدارة خطط الرسوم مع أنواع الرسوم وجداول الأقساط."
+    },
+    "filters": {
+        "allClasses": "جميع الفصول"
+    },
+    "actions": {
+        "createPlan": "إنشاء خطة"
+    },
+    "loading": "جارٍ تحميل خطط الرسوم...",
+    "error": {
+        "prefix": "فشل تحميل خطة الرسوم.",
+        "genericMessage": "يرجى المحاولة مرة أخرى."
+    },
+    "empty": {
+        "title": "لم يتم العثور على خطة رسوم.",
+        "hint": "انقر على <b>{{createPlan}}</b> لإضافة الأولى."
+    },
+    "summary": {
+        "packageCount_zero": "لا توجد باقات لعرضها",
+        "packageCount_one": "عرض باقة واحدة",
+        "packageCount_two": "عرض باقتين ({{count}})",
+        "packageCount_few": "عرض {{count}} باقات",
+        "packageCount_many": "عرض {{count}} باقة",
+        "packageCount_other": "عرض {{count}} باقة"
+    },
+    "redesign": {
+        "feeTypesHeading": "Fee types & installment schedules",
+        "stats": {
+            "plans": "Fee plans",
+            "plansDetail": "{{count}} active",
+            "avg": "Average plan value",
+            "avgDetail": "Across {{count}} plans with a fee",
+            "feeTypes": "Fee types in use",
+            "feeTypesDetail": "Distinct fee types across these plans",
+            "classes": "{{batches}} linked",
+            "classesDetail": "Linked to at least one plan",
+            "unlinked_one": "{{count}} plan has no {{batch}} linked",
+            "unlinked_other": "{{count}} plans have no {{batch}} linked"
+        },
+        "views": {
+            "all": "All plans"
+        },
+        "searchPlaceholder": "Search plan or fee type",
+        "sessionAria": "Session",
+        "noMatch": "No fee plans match this search."
+    }
+}

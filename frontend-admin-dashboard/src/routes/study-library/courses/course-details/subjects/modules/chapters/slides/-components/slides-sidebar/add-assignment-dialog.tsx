@@ -1,6 +1,7 @@
 import { MyButton } from '@/components/design-system/button';
 import { MyInput } from '@/components/design-system/input';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { useContentStore } from '../../-stores/chapter-sidebar-store';
 import { Route } from '../..';
@@ -18,6 +19,7 @@ const AddAssignmentDialog = ({
 }: {
     openState?: ((open: boolean) => void) | undefined;
 }) => {
+    const { t } = useTranslation('studyLibrarySlidesSidebarAddAssignmentDialog');
     const { setActiveItem, getSlideById, items } = useContentStore();
     const { getPackageSessionId } = useInstituteDetailsStore();
     const { courseId, levelId, chapterId, moduleId, subjectId, sessionId } = Route.useSearch();
@@ -55,7 +57,7 @@ const AddAssignmentDialog = ({
             }, 500);
         } catch (error) {
             console.error('Error reordering slides:', error);
-            toast.error('Slide created but reordering failed');
+            toast.error(t('toast.reorderFailed'));
         }
     };
 
@@ -99,10 +101,10 @@ const AddAssignmentDialog = ({
                 // Reorder slides and set as active
                 await reorderSlidesAfterNewSlide(response);
                 openState?.(false);
-                toast.success('Assignment added successfully!');
+                toast.success(t('toast.addSuccess'));
             }
         } catch (error) {
-            toast.error('Failed to add assignment');
+            toast.error(t('toast.addFailed'));
         } finally {
             setIsAssignmentAdding(false);
         }
@@ -117,11 +119,9 @@ const AddAssignmentDialog = ({
                 </div>
                 <div>
                     <h3 className="mb-1 text-lg font-semibold text-neutral-700">
-                        Create New Assignment
+                        {t('header.title')}
                     </h3>
-                    <p className="text-sm text-neutral-500">
-                        Add a new assignment slide for your students
-                    </p>
+                    <p className="text-sm text-neutral-500">{t('header.subtitle')}</p>
                 </div>
             </div>
 
@@ -131,10 +131,10 @@ const AddAssignmentDialog = ({
                     <MyInput
                         input={title}
                         onChangeFunction={(e) => setTitle(e.target.value)}
-                        label="Assignment Title"
+                        label={t('form.titleLabel')}
                         required={true}
                         inputType="text"
-                        inputPlaceholder="Enter assignment title (e.g., Math Problem Set 1)"
+                        inputPlaceholder={t('form.titlePlaceholder')}
                         className="w-full pr-10"
                     />
                     {title.trim() && (
@@ -153,7 +153,7 @@ const AddAssignmentDialog = ({
                             </div>
                             <div className="flex-1">
                                 <p className="text-sm font-medium text-blue-800">{title}</p>
-                                <p className="text-xs text-blue-600">Assignment • Draft</p>
+                                <p className="text-xs text-blue-600">{t('preview.assignmentDraft')}</p>
                             </div>
                             <CheckCircle className="size-4 text-green-500" />
                         </div>
@@ -164,7 +164,7 @@ const AddAssignmentDialog = ({
                 <div className="rounded-lg bg-neutral-50 p-3 text-xs text-neutral-500">
                     <p className="flex items-center gap-2">
                         <span className="size-1.5 rounded-full bg-blue-500"></span>
-                        The assignment will be created as a draft and can be edited later
+                        {t('helperText')}
                     </p>
                 </div>
             </div>
@@ -175,7 +175,7 @@ const AddAssignmentDialog = ({
                     <MyButton type="button" scale="large" buttonType="primary" className="w-full">
                         <div className="flex items-center justify-center gap-2">
                             <div className="size-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                            Creating Assignment...
+                            {t('creating')}
                         </div>
                     </MyButton>
                 ) : (
@@ -196,7 +196,7 @@ const AddAssignmentDialog = ({
                     >
                         <div className="flex items-center justify-center gap-2">
                             <File className="size-4" />
-                            Create Assignment
+                            {t('createAssignment')}
                         </div>
                     </MyButton>
                 )}

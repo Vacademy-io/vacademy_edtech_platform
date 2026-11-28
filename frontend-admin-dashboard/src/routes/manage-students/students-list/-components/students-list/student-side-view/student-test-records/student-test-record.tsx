@@ -1,4 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { MyButton } from '@/components/design-system/button';
 import { ChipToggleGroup, StatusChips } from '@/components/design-system/chips';
 import { TestReportDialog } from './test-report-dialog';
@@ -11,11 +13,16 @@ import {
     viewStudentReport,
 } from '@/routes/assessment/assessment-list/assessment-details/$assessmentId/$examType/$assesssmentType/$assessmentTab/-services/assessment-details-services';
 import { MyPagination } from '@/components/design-system/pagination';
-import { getSubjectNameById } from '@/routes/assessment/question-papers/-utils/helper';
+import {
+    resolveSubjectName,
+    unresolvedSubjectIds,
+    useSubjectNamesByIds,
+} from '@/services/subject-names';
 import { useInstituteQuery } from '@/services/student-list-section/getInstituteDetails';
 import { AssessmentReportStudentInterface } from '@/types/assessments/assessment-overview';
 import { getAssessmentDetailsData } from '@/routes/assessment/create-assessment/$assessmentId/$examtype/-services/assessment-services';
 import { Steps } from '@/types/assessments/assessment-data-type';
+import { formatMark } from '@/services/submission-review/marks';
 import {
     Trophy,
     CheckCircle,
@@ -33,6 +40,9 @@ export interface StudentReportFilterInterface {
     name: string;
     status: string[];
     sort_columns: Record<string, string>;
+    // Learner's batches (package session ids). When sent, the backend returns only tests
+    // assigned to these batches or ones the learner is registered for / has attempted.
+    batch_ids?: string[];
 }
 
 // ── Score-tone helper ─────────────────────────────────────────────────────────
@@ -50,17 +60,21 @@ function scoreTone(pct: number): ScoreTone {
 // Filter chip definitions — drives the secondary control bar.
 type FilterKey = 'ALL' | 'ENDED' | 'PENDING' | 'LIVE';
 
-const FILTER_CHIPS: {
+type FilterChip = {
     key: FilterKey;
     label: string;
     statuses: string[];
     icon?: React.ComponentType<{ className?: string }>;
-}[] = [
-    { key: 'ALL', label: 'All', statuses: [] },
-    { key: 'ENDED', label: 'Completed', statuses: ['ENDED'], icon: CheckCircle },
-    { key: 'PENDING', label: 'Pending', statuses: ['PENDING'], icon: Clock },
-    { key: 'LIVE', label: 'Live', statuses: ['LIVE'], icon: Radio },
-];
+};
+
+function buildFilterChips(t: TFunction): FilterChip[] {
+    return [
+        { key: 'ALL', label: t('filters.all'), statuses: [] },
+        { key: 'ENDED', label: t('filters.completed'), statuses: ['ENDED'], icon: CheckCircle },
+        { key: 'PENDING', label: t('filters.pending'), statuses: ['PENDING'], icon: Clock },
+        { key: 'LIVE', label: t('filters.live'), statuses: ['LIVE'], icon: Radio },
+    ];
+}
 
 export const StudentTestRecord = ({
     selectedTab,
@@ -71,6 +85,9 @@ export const StudentTestRecord = ({
     examType: string | undefined;
     isStudentList?: boolean;
 }) => {
+    const { t } = useTranslation('manageStudentsTestRecord');
+    const FILTER_CHIPS = buildFilterChips(t);
+
     // Institute data with error handling
     const {
         data: instituteDetails,
@@ -79,17 +96,33 @@ export const StudentTestRecord = ({
         refetch: refetchInstitute,
     } = useQuery(useInstituteQuery());
 
-    const [selectedFilter] = useState<StudentReportFilterInterface>({
-        name: '',
-        // The side-view / overlay drives status via the chip bar, which defaults
-        // to "All". So fetch every status up front — otherwise the initial query
-        // would be scoped to a single status (e.g. LIVE when no tab is passed) and
-        // "All" could never show Pending + Completed. The students-list "Tests" tab
-        // keeps its own comma-separated status selection.
-        status: isStudentList ? (selectedTab ?? '').split(',') : ['ENDED', 'PENDING', 'LIVE'],
-        sort_columns: {},
-    });
     const { selectedStudent } = useStudentSidebar();
+
+    // Every batch the learner is enrolled in — without this the backend lists every
+    // published test of the institute, and unassigned ones show up as "Pending".
+    const studentBatchIds = selectedStudent?.all_package_session_ids?.length
+        ? selectedStudent.all_package_session_ids
+        : [selectedStudent?.package_session_id].filter((id): id is string => !!id);
+    const studentBatchKey = studentBatchIds.join(',');
+
+    // The side-view / overlay drives status via the chip bar, which defaults
+    // to "All". So fetch every status up front — otherwise the initial query
+    // would be scoped to a single status (e.g. LIVE when no tab is passed) and
+    // "All" could never show Pending + Completed. The students-list "Tests" tab
+    // keeps its own comma-separated status selection. Fixed at mount, as before.
+    const [initialStatus] = useState<string[]>(() =>
+        isStudentList ? (selectedTab ?? '').split(',') : ['ENDED', 'PENDING', 'LIVE']
+    );
+
+    const selectedFilter = useMemo<StudentReportFilterInterface>(
+        () => ({
+            name: '',
+            status: initialStatus,
+            sort_columns: {},
+            batch_ids: studentBatchKey ? studentBatchKey.split(',') : [],
+        }),
+        [initialStatus, studentBatchKey]
+    );
 
     const [pageNo, setPageNo] = useState(0);
     const instituteId = getInstituteId();
@@ -148,17 +181,23 @@ export const StudentTestRecord = ({
             instituteId: string | undefined;
         }) => viewStudentReport(assessmentId, attemptId, instituteId),
         onSuccess: async (data, { assessmentId }) => {
-            setSelectedTest(data);
+            // The sections first, then the dialog: it used to open with the previous
+            // test's sections (or none) and keep them.
+            let assessData: Steps | null = null;
             try {
-                const assessData = await getAssessmentDetailsData({
+                assessData = await getAssessmentDetailsData({
                     assessmentId: assessmentId,
                     instituteId: instituteDetails?.id,
-                    type: examType,
+                    // From Manage Students the side view has no exam type, and the status
+                    // endpoint requires one. It only picks the step-form keys; the saved
+                    // sections this dialog reads are the same for every type.
+                    type: examType || 'EXAM',
                 });
-                setAssessmentDetails(assessData);
             } catch (error) {
                 console.error('Failed to fetch assessment details:', error);
             }
+            setAssessmentDetails(assessData);
+            setSelectedTest(data);
         },
         // eslint-disable-next-line
         onError: (error: any) => {
@@ -232,6 +271,18 @@ export const StudentTestRecord = ({
         }
     }, [data]);
 
+    // Subject labels. Must run before the guards below (hook order), and cannot come from
+    // the institute list alone: that list keeps one subject per distinct name and drops
+    // subjects whose course was deleted, so most stored ids need the direct lookup.
+    const subjectNamesById = useSubjectNamesByIds(
+        unresolvedSubjectIds(
+            instituteDetails?.subjects,
+            (studentReportData.content ?? []).map(
+                (report: AssessmentReportStudentInterface) => report.subject_id
+            )
+        )
+    );
+
     // ── Four-state guards ──────────────────────────────────────────────────────
 
     if (isLoading || instituteLoading || viewStudentTestReportMutation.status === 'pending') {
@@ -244,11 +295,11 @@ export const StudentTestRecord = ({
         const isUnauthorized = err?.response?.status === 403;
         return (
             <ProfileError
-                title={isUnauthorized ? 'Access Restricted' : "Couldn't load institute details"}
+                title={isUnauthorized ? t('common.accessRestricted') : t('errors.institute.title')}
                 hint={
                     isUnauthorized
-                        ? "You don't have permission to view institute details. Contact your administrator."
-                        : 'Something went wrong fetching institute details. Please try again.'
+                        ? t('errors.institute.hintRestricted')
+                        : t('errors.institute.hint')
                 }
                 onRetry={isUnauthorized ? undefined : () => refetchInstitute()}
             />
@@ -261,11 +312,11 @@ export const StudentTestRecord = ({
         const isUnauthorized = err?.response?.status === 403;
         return (
             <ProfileError
-                title={isUnauthorized ? 'Access Restricted' : "Couldn't load test records"}
+                title={isUnauthorized ? t('common.accessRestricted') : t('errors.report.title')}
                 hint={
                     isUnauthorized
-                        ? "You don't have permission to view test records. Contact your administrator."
-                        : 'Something went wrong fetching test records. Please try again.'
+                        ? t('errors.report.hintRestricted')
+                        : t('errors.report.hint')
                 }
                 onRetry={isUnauthorized ? undefined : () => refetchReport()}
             />
@@ -297,7 +348,7 @@ export const StudentTestRecord = ({
                 Hero is a PASSIVE summary card — the average score IS the
                 title, attempt count is the subtitle, no per-row action. */}
             <ProfileHero
-                eyebrow="TEST PERFORMANCE"
+                eyebrow={t('hero.eyebrow')}
                 icon={Trophy}
                 tone={
                     attemptedCount > 0
@@ -311,18 +362,18 @@ export const StudentTestRecord = ({
                 title={
                     attemptedCount > 0 ? (
                         <span className="text-subtitle font-semibold leading-none text-card-foreground">
-                            {avgScore.toFixed(1)} avg score
+                            {t('hero.avgScore', { score: avgScore.toFixed(1) })}
                         </span>
                     ) : (
                         <span className="text-body font-semibold leading-none text-muted-foreground">
-                            No attempts yet
+                            {t('hero.noAttempts')}
                         </span>
                     )
                 }
                 subtitle={
                     attemptedCount > 0
-                        ? `${attemptedCount} test${attemptedCount === 1 ? '' : 's'} recorded`
-                        : 'Tests assigned to this learner will appear below.'
+                        ? t('hero.testsRecorded', { count: attemptedCount })
+                        : t('hero.testsAssignedHint')
                 }
             />
 
@@ -340,7 +391,7 @@ export const StudentTestRecord = ({
                         label: c.label,
                         icon: c.icon,
                     }))}
-                    ariaLabel="Filter test attempts by status"
+                    ariaLabel={t('filters.ariaLabel')}
                 />
             </div>
 
@@ -348,8 +399,8 @@ export const StudentTestRecord = ({
             {records.length === 0 ? (
                 <ProfileEmpty
                     icon={Trophy}
-                    title="No tests yet"
-                    hint="This learner hasn't taken any assessments yet."
+                    title={t('empty.title')}
+                    hint={t('empty.hint')}
                 />
             ) : (
                 <div className="flex flex-col gap-2.5">
@@ -358,11 +409,12 @@ export const StudentTestRecord = ({
                             const isEnded = studentReport.attempt_status === 'ENDED';
                             const isPending = studentReport.attempt_status === 'PENDING';
 
-                            const subjectName =
-                                getSubjectNameById(
-                                    instituteDetails?.subjects || [],
-                                    studentReport.subject_id
-                                ) || 'N/A';
+                            // Tests without a subject show only the date (was "N/A · date").
+                            const subjectName = resolveSubjectName(
+                                instituteDetails?.subjects,
+                                subjectNamesById,
+                                studentReport.subject_id
+                            );
 
                             // Subtitle date: prefer attempt_date for ENDED rows,
                             // fall back to scheduled start_time so every card shows
@@ -390,13 +442,9 @@ export const StudentTestRecord = ({
                                             {studentReport.assessment_name}
                                         </div>
                                         <div className="mt-0.5 text-caption text-muted-foreground">
-                                            {subjectName}
-                                            {subtitleDate && (
-                                                <>
-                                                    {' · '}
-                                                    {subtitleDate}
-                                                </>
-                                            )}
+                                            {[subjectName, subtitleDate]
+                                                .filter(Boolean)
+                                                .join(' · ')}
                                         </div>
                                     </div>
 
@@ -404,7 +452,7 @@ export const StudentTestRecord = ({
                                     <div className="flex shrink-0 flex-col items-end gap-1">
                                         {isEnded && (
                                             <div className="text-h4 font-bold leading-none text-primary-600">
-                                                {studentReport.total_marks.toFixed(1)}
+                                                {formatMark(studentReport.total_marks)}
                                             </div>
                                         )}
                                         <StatusChips
@@ -415,7 +463,13 @@ export const StudentTestRecord = ({
                                                       ? 'Attempted'
                                                       : 'Not Attempted'
                                             }
-                                        />
+                                        >
+                                            {isPending
+                                                ? t('status.pending')
+                                                : isEnded
+                                                  ? t('status.attempted')
+                                                  : t('status.notAttempted')}
+                                        </StatusChips>
                                         {isEnded && (
                                             <MyButton
                                                 buttonType="text"
@@ -429,7 +483,7 @@ export const StudentTestRecord = ({
                                                     )
                                                 }
                                             >
-                                                View Report
+                                                {t('actions.viewReport')}
                                             </MyButton>
                                         )}
                                         {isPending && (
@@ -438,7 +492,7 @@ export const StudentTestRecord = ({
                                                 scale="small"
                                                 layoutVariant="default"
                                             >
-                                                Send Reminder
+                                                {t('actions.sendReminder')}
                                             </MyButton>
                                         )}
                                     </div>
@@ -459,7 +513,7 @@ export const StudentTestRecord = ({
                     }}
                     testReport={selectedTest}
                     studentReport={selectedStudentReport}
-                    assessmentDetails={assessmentDetails!}
+                    assessmentDetails={assessmentDetails}
                 />
             )}
 

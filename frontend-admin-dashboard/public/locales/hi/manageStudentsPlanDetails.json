@@ -1,0 +1,113 @@
+{
+    "heading": {
+        "activeMemberships": "सक्रिय सदस्यताएं",
+        "viewHistory": "इतिहास देखें",
+        "membershipHistory": "सदस्यता इतिहास"
+    },
+    "emptyState": {
+        "noActivePlans": "इस शिक्षार्थी के लिए कोई सक्रिय सदस्यता नहीं है।",
+        "noPlansFound": "कोई प्लान नहीं मिला।"
+    },
+    "planStatus": {
+        "active": "प्लान सक्रिय",
+        "expired": "प्लान समाप्त",
+        "unknown": "अज्ञात"
+    },
+    "enrollmentStatus": {
+        "active": "नामांकन सक्रिय",
+        "inactive": "कोर्स निष्क्रिय"
+    },
+    "fallback": {
+        "planName": "अज्ञात प्लान",
+        "paymentOption": "अज्ञात भुगतान विकल्प"
+    },
+    "coupon": {
+        "defaultLabel": "कूपन",
+        "percentageOff": "{{point}}% छूट",
+        "percentageOffWithCap": "{{point}}% छूट · अधिकतम {{amount}}",
+        "amountOff": "{{amount}} छूट"
+    },
+    "autoRenewal": {
+        "enabled": "ऑटो-नवीनीकरण",
+        "disabled": "ऑटो-नवीनीकरण नहीं",
+        "paymentAttemptOn": "{{date}} को भुगतान प्रयास",
+        "scheduledDate": "निर्धारित तिथि",
+        "disabledTooltip": "ऑटो-नवीनीकरण अक्षम है"
+    },
+    "policy": {
+        "expiryPolicy": "समाप्ति नीति",
+        "finalDate": "अंतिम: {{date}}",
+        "gracePeriod_one": "{{count}} दिन की छूट अवधि",
+        "gracePeriod_other": "{{count}} दिनों की छूट अवधि",
+        "actionsCount": "नीति कार्रवाइयां ({{count}})",
+        "reenrollmentFrom": "{{date}} से पुनः नामांकन",
+        "reenrollmentAvailable": "पुनः नामांकन उपलब्ध",
+        "gapDays_one": "({{count}} दिन का अंतराल)",
+        "gapDays_other": "({{count}} दिनों का अंतराल)",
+        "reenrollmentNotAllowed": "पुनः नामांकन की अनुमति नहीं"
+    },
+    "daysLeft": {
+        "label": "दिन शेष",
+        "noExpiry": "कोई समाप्ति नहीं",
+        "activeSession": "सक्रिय सत्र",
+        "renewalDueSoon": "नवीनीकरण जल्द देय",
+        "urgentRenewal": "तत्काल नवीनीकरण आवश्यक"
+    },
+    "dates": {
+        "started": "{{date}} को शुरू हुआ",
+        "neverExpires": "कभी समाप्त नहीं होगा",
+        "ends": "{{date}} को समाप्त"
+    },
+    "pagination": {
+        "pageOf": "पृष्ठ {{current}} / {{total}}",
+        "previous": "पिछला",
+        "next": "अगला"
+    },
+    "toast": {
+        "loadHistoryFailed": "प्लान इतिहास लोड करने में विफल",
+        "loadPageFailed": "प्लान लोड करने में विफल"
+    },
+    "changePlan": {
+        "button": "Change plan",
+        "title": "Change payment plan",
+        "noChargeWarning": "This applies immediately and takes no payment. The member keeps their current access window; the new price starts billing at their next renewal.",
+        "loadFailed": "We couldn't load the available plans. Please try again.",
+        "noOptions": "No other plan is marked switchable for this member. Turn on plan switching for a payment option in Settings → Payment Settings.",
+        "alreadyInProgress": "A plan change is already in progress for this membership.",
+        "planNotActive": "This membership isn't active, so its plan can't be changed.",
+        "currentlyOn": "Currently on {{plan}} ({{price}}).",
+        "upgrade": "Upgrade",
+        "downgrade": "Downgrade",
+        "cadence": "{{price}} every {{days}} days",
+        "crossOptionNote": "Also moves them onto the {{option}} enrolment invite — gateway, currency and auto-pay settings come from it.",
+        "reasonLabel": "Reason (optional)",
+        "reasonPlaceholder": "e.g. negotiated downgrade, billing correction",
+        "notifyLearner": "Notify the member about this change",
+        "cancel": "Cancel",
+        "apply": "Apply change",
+        "applying": "Applying…",
+        "successToast": "Moved to {{plan}}",
+        "failedToast": "Couldn't change the plan"
+    },
+    "memberPrice": {
+        "button": "कीमत",
+        "badge": "इस सदस्य की अपनी कीमत (सूची कीमत {{list}})",
+        "title": "सदस्य की कीमत बदलें",
+        "explainer": "प्लान की सूची कीमत {{list}} है; यह सदस्य {{current}} देता है। नई कीमत अगले शुल्क या रिन्यूअल से लागू होगी। पहले से चुकाया गया कुछ नहीं बदलेगा।",
+        "autopayNote": "ऑटोपे चालू है, इसलिए अगला स्वचालित शुल्क नई कीमत पर होगा।",
+        "useListPrice": "सूची कीमत लागू करें ({{list}})",
+        "newPrice": "हर अवधि की नई कीमत ({{currency}})",
+        "remarks": "टिप्पणी",
+        "remarksPlaceholder": "यह सदस्य अलग कीमत क्यों देता है, जैसे 2024 में पुरानी दर पर जुड़ा",
+        "cancel": "रद्द करें",
+        "submit": "कीमत सहेजें",
+        "saving": "सहेजा जा रहा है…",
+        "success": "कीमत {{price}} की गई।",
+        "successList": "सदस्य अब सूची कीमत देगा।",
+        "failed": "कीमत नहीं बदली जा सकी।",
+        "errors": {
+            "price": "0 या उससे अधिक कीमत डालें।",
+            "remarks": "कीमत का कारण बताते हुए टिप्पणी जोड़ें।"
+        }
+    }
+}

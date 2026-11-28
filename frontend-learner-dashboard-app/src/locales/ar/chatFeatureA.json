@@ -1,0 +1,111 @@
+{
+    "common": {
+        "cancel": "إلغاء",
+        "save": "حفظ",
+        "saving": "جارٍ الحفظ…",
+        "loading": "جارٍ التحميل…",
+        "memberFallback": "عضو",
+        "typeCommunity": "المجتمع",
+        "typeDirectMessage": "رسالة مباشرة",
+        "typeGroupMessages": "رسائل المجموعة",
+        "noPermissionToPost": "ليس لديك إذن بالنشر هنا."
+    },
+    "conversationList": {
+        "typeFallback": {
+            "batchGroup": "مجموعة {{batch}}"
+        },
+        "empty": {
+            "title": "لا توجد محادثات بعد",
+            "description": "ابدأ محادثة جديدة أو افتح قناة المجتمع."
+        },
+        "noMessagesYet": "لا توجد رسائل بعد",
+        "unreadOverflow": "99+"
+    },
+    "thread": {
+        "loadEarlier": "تحميل الرسائل الأقدم",
+        "empty": "لا توجد رسائل بعد. ابدأ المحادثة بإلقاء التحية.",
+        "deletedMessage": "تم حذف هذه الرسالة",
+        "editMessage": "تعديل الرسالة",
+        "deleteMessage": "حذف الرسالة",
+        "attachmentAltFallback": "مرفق",
+        "attachmentNameFallback": "مرفق",
+        "failedAria": "فشل إرسال الرسالة",
+        "retry": "إعادة المحاولة",
+        "dismissFailedAria": "تجاهل الرسالة الفاشلة",
+        "sendingAria": "جارٍ إرسال الرسالة",
+        "sending": "جارٍ الإرسال…",
+        "timestampEdited": "{{time}} · تم التعديل",
+        "dayToday": "اليوم",
+        "dayYesterday": "أمس",
+        "editDialog": {
+            "inputAria": "نص الرسالة",
+            "notice": "يرى الجميع في المحادثة هذا التغيير، ويُشار إليه بأنه معدَّل."
+        },
+        "deleteDialog": {
+            "body": "سيؤدي هذا إلى إزالة الرسالة للجميع في المحادثة. لا يمكن التراجع عن ذلك.",
+            "confirm": "حذف"
+        }
+    },
+    "composer": {
+        "placeholder": "اكتب رسالة…",
+        "attachAria": "إرفاق صورة",
+        "sendAria": "إرسال الرسالة",
+        "removeAttachmentAria": "إزالة المرفق",
+        "disabledDefault": "لا يمكنك النشر في هذه المحادثة.",
+        "imageOnlyError": "يُسمح بإرفاق الصور فقط.",
+        "uploadFailedError": "تعذّر رفع الصورة. يرجى المحاولة مرة أخرى."
+    },
+    "communityRules": {
+        "defaultTitle": "إرشادات المجتمع",
+        "acceptNotice": "يرجى قبول الإرشادات لبدء النشر في هذه القناة.",
+        "accept": "قبول ومتابعة",
+        "accepting": "جارٍ القبول…"
+    },
+    "newChatModal": {
+        "title": "رسالة جديدة",
+        "searchPlaceholder": "ابحث عن الأشخاص بالاسم…",
+        "everyone": "الجميع",
+        "empty": "لم يتم العثور على أشخاص.",
+        "opening": "جارٍ الفتح…",
+        "startError": "تعذّر بدء المحادثة. يرجى المحاولة مرة أخرى."
+    },
+    "ruleRejection": {
+        "slowMode": "الوضع البطيء مُفعَّل — يرجى الانتظار قبل الإرسال مرة أخرى",
+        "blockedByModeration": "تم حظر الرسالة: تحتوي على كلمة محظورة",
+        "rulesNotAcknowledged": "يرجى قبول قواعد المجتمع أولاً",
+        "linksNotAllowed": "الروابط غير مسموح بها هنا",
+        "attachmentsNotAllowed": "المرفقات غير مسموح بها هنا",
+        "newMemberReadonly": "لا يمكن للأعضاء الجدد النشر بعد",
+        "chatDisabled": "الدردشة معطّلة لهذه المؤسسة"
+    },
+    "screen": {
+        "loadThreadError": "تعذّر تحميل هذه المحادثة.",
+        "sendGenericError": "فشل إرسال الرسالة.",
+        "deleteError": "تعذّر حذف الرسالة. يرجى المحاولة مرة أخرى.",
+        "editError": "تعذّر حفظ التعديل. يرجى المحاولة مرة أخرى.",
+        "acknowledgeError": "تعذّر قبول الإرشادات. يرجى المحاولة مرة أخرى.",
+        "ackGateReason": "اقبل إرشادات المجتمع أعلاه لبدء النشر.",
+        "headerGroupFallback": "مجموعة",
+        "newMessage": "رسالة جديدة",
+        "chatDisabledTitle": "الرسائل داخل التطبيق معطّلة لمؤسستك",
+        "chatDisabledDescription": "المراسلة غير متاحة حالياً. يرجى المحاولة لاحقاً أو التواصل مع إدارة مؤسستك.",
+        "header": {
+            "messages": "الرسائل",
+            "refreshAria": "تحديث",
+            "backAria": "رجوع",
+            "communitySubtitle": "مجتمع المؤسسة"
+        },
+        "emptySelection": {
+            "title": "اختر محادثة",
+            "description": "اختر محادثة من القائمة، أو افتح قناة المجتمع، أو ابدأ رسالة مباشرة جديدة."
+        }
+    },
+    "batchPanel": {
+        "disabledFallback": "المراسلة معطّلة لهذه المؤسسة",
+        "genericErrorTitle": "تعذّر تحميل النقاش",
+        "genericErrorDescription": "حدث خطأ ما أثناء فتح هذه الرسائل. يرجى المحاولة لاحقاً."
+    },
+    "route": {
+        "openChatError": "تعذّر فتح الدردشة. يرجى المحاولة مرة أخرى."
+    }
+}

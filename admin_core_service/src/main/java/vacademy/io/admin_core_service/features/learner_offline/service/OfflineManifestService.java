@@ -59,7 +59,20 @@ public class OfflineManifestService {
      * permission preview).
      */
     public OfflineManifestDTO buildManifestForAdminPreview(String packageSessionId) {
-        return build(packageSessionId, null, false, false);
+        OfflineManifestDTO manifest = build(packageSessionId, null, false, false);
+        removeSlideContent(manifest);
+        return manifest;
+    }
+
+    /** The preview only says what a learner could download. It never reads slide content. */
+    public static void removeSlideContent(OfflineManifestDTO manifest) {
+        for (OfflineManifestSubjectDTO subject : manifest.getSubjects()) {
+            for (OfflineManifestModuleDTO module : subject.getModules()) {
+                for (OfflineManifestChapterDTO chapter : module.getChapters()) {
+                    chapter.getSlides().forEach(slide -> slide.setInlinePayload(null));
+                }
+            }
+        }
     }
 
     /** fileIds the requesting learner may currently download for this package session. */

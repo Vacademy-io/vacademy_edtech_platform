@@ -1,8 +1,10 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { DownloadSimple, SpinnerGap } from "@phosphor-icons/react";
+import { useTranslation } from "react-i18next";
 import authenticatedAxiosInstance from "@/lib/auth/axiosInstance";
 import { EXPORT_ASSESSMENT_REPORT } from "@/constants/urls";
+import { saveFile } from "@/lib/download/save-file";
 
 interface PdfDownloadButtonProps {
   assessmentId: string;
@@ -17,6 +19,7 @@ export function PdfDownloadButton({
   instituteId,
   assessmentName,
 }: PdfDownloadButtonProps) {
+  const { t } = useTranslation("testRecords");
   const [downloading, setDownloading] = useState(false);
   const [error, setError] = useState(false);
 
@@ -32,14 +35,7 @@ export function PdfDownloadButton({
       });
 
       const blob = new Blob([response.data], { type: "application/pdf" });
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `${assessmentName || "assessment"}-report.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
+      await saveFile(blob, `${assessmentName || "assessment"}-report.pdf`);
     } catch (err) {
       console.error("Error downloading PDF report:", err);
       setError(true);
@@ -63,10 +59,10 @@ export function PdfDownloadButton({
         <DownloadSimple className="h-4 w-4" />
       )}
       {downloading
-        ? "Downloading..."
+        ? t("pdfDownloadButton.downloading")
         : error
-          ? "Download failed"
-          : "Download PDF"}
+          ? t("pdfDownloadButton.downloadFailed")
+          : t("pdfDownloadButton.downloadPdf")}
     </Button>
   );
 }

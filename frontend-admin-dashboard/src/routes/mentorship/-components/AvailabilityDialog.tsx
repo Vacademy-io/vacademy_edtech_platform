@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 import { Plus, Trash } from '@phosphor-icons/react';
 import { MyButton } from '@/components/design-system/button';
 import { MyDialog } from '@/components/design-system/dialog';
@@ -21,6 +22,7 @@ import type {
     WeeklyWindow,
 } from '../-types/mentorship-types';
 import { reportApiError } from '@/lib/report-api-error';
+import type { TFunction } from 'i18next';
 
 const genId = (): string =>
     typeof crypto !== 'undefined' && crypto.randomUUID
@@ -37,14 +39,14 @@ const todayYmd = (): string => {
     ).padStart(2, '0')}`;
 };
 
-const DAYS: { key: string; label: string }[] = [
-    { key: 'MONDAY', label: 'Monday' },
-    { key: 'TUESDAY', label: 'Tuesday' },
-    { key: 'WEDNESDAY', label: 'Wednesday' },
-    { key: 'THURSDAY', label: 'Thursday' },
-    { key: 'FRIDAY', label: 'Friday' },
-    { key: 'SATURDAY', label: 'Saturday' },
-    { key: 'SUNDAY', label: 'Sunday' },
+const buildDays = (t: TFunction): { key: string; label: string }[] => [
+    { key: 'MONDAY', label: t('days.monday') },
+    { key: 'TUESDAY', label: t('days.tuesday') },
+    { key: 'WEDNESDAY', label: t('days.wednesday') },
+    { key: 'THURSDAY', label: t('days.thursday') },
+    { key: 'FRIDAY', label: t('days.friday') },
+    { key: 'SATURDAY', label: t('days.saturday') },
+    { key: 'SUNDAY', label: t('days.sunday') },
 ];
 
 const DURATIONS = [15, 20, 30, 45, 60, 90];
@@ -55,8 +57,8 @@ interface DayRow {
     end: string;
 }
 
-const emptyRows = (): Record<string, DayRow> =>
-    Object.fromEntries(DAYS.map((d) => [d.key, { enabled: false, start: '09:00', end: '17:00' }]));
+const emptyRows = (days: { key: string; label: string }[]): Record<string, DayRow> =>
+    Object.fromEntries(days.map((d) => [d.key, { enabled: false, start: '09:00', end: '17:00' }]));
 
 interface AvailabilityDialogProps {
     instituteId: string | undefined;
@@ -65,10 +67,12 @@ interface AvailabilityDialogProps {
 }
 
 export function AvailabilityDialog({ instituteId, open, onOpenChange }: AvailabilityDialogProps) {
+    const { t } = useTranslation('mentorshipAvailabilityDialog');
+    const DAYS = buildDays(t);
     const { data: page, isLoading } = useMyBookingPage(open ? instituteId : undefined);
     const update = useUpdateMyBookingPage();
 
-    const [rows, setRows] = useState<Record<string, DayRow>>(emptyRows());
+    const [rows, setRows] = useState<Record<string, DayRow>>(emptyRows(DAYS));
     const [duration, setDuration] = useState(30);
     const [minNoticeHours, setMinNoticeHours] = useState(2);
     const [bufferBefore, setBufferBefore] = useState(0);
@@ -82,7 +86,7 @@ export function AvailabilityDialog({ instituteId, open, onOpenChange }: Availabi
     // Hydrate the form once the page loads.
     useEffect(() => {
         if (!page) return;
-        const next = emptyRows();
+        const next = emptyRows(DAYS);
         (page.availability?.weekly_windows ?? []).forEach((w) => {
             const row = next[w.day_of_week];
             if (row && !row.enabled) {
@@ -164,17 +168,17 @@ export function AvailabilityDialog({ instituteId, open, onOpenChange }: Availabi
             const r = rows[d.key]!;
             if (!r.enabled) continue;
             if (r.start >= r.end) {
-                toast.error(`${d.label}: end time must be after start time.`);
+                toast.error(t('validation.endAfterStart', { day: d.label }));
                 return;
             }
             weekly_windows.push({ day_of_week: d.key, start_time: r.start, end_time: r.end });
         }
         if (weekly_windows.length === 0) {
-            toast.error('Enable at least one day so learners can book.');
+            toast.error(t('validation.enableOneDay'));
             return;
         }
         if (locationMode === 'CUSTOM_LINK' && !customLink.trim()) {
-            toast.error('Add your meeting link (Zoom, BigBlueButton, or other).');
+            toast.error(t('validation.addMeetingLink'));
             return;
         }
         const cleanTypes = sessionTypes
@@ -201,20 +205,20 @@ export function AvailabilityDialog({ instituteId, open, onOpenChange }: Availabi
         };
         try {
             await update.mutateAsync({ instituteId, data: payload });
-            toast.success('Availability saved');
+            toast.success(t('savedToast'));
             onOpenChange(false);
         } catch (error) {
             reportApiError(error, {
                 feature: 'mentorship',
                 tags: { 'mentorship.action': 'save-availability' },
-                fallbackMessage: 'Failed to save availability',
+                fallbackMessage: t('saveFailed'),
             });
         }
     };
 
     return (
         <MyDialog
-            heading="Availability"
+            heading={t('heading')}
             open={open}
             onOpenChange={onOpenChange}
             footer={
@@ -225,7 +229,7 @@ export function AvailabilityDialog({ instituteId, open, onOpenChange }: Availabi
                         scale="small"
                         onClick={() => onOpenChange(false)}
                     >
-                        Cancel
+                        {t('cancel')}
                     </MyButton>
                     <MyButton
                         type="button"
@@ -234,30 +238,32 @@ export function AvailabilityDialog({ instituteId, open, onOpenChange }: Availabi
                         onClick={save}
                         disable={update.isPending || isLoading}
                     >
-                        {update.isPending ? 'Saving…' : 'Save'}
+                        {update.isPending ? t('saving') : t('save')}
                     </MyButton>
                 </>
             }
         >
             {isLoading ? (
-                <div className="py-8 text-center text-body text-neutral-400">Loading your availability…</div>
+                <div className="py-8 text-center text-body text-neutral-400">
+                    {t('loading')}
+                </div>
             ) : (
                 <div className="flex flex-col gap-5">
-                    <p className="text-body text-neutral-600">
-                        Set when and how learners can book 1:1 sessions with you.
-                    </p>
+                    <p className="text-body text-neutral-600">{t('intro')}</p>
                     {page?.timezone && (
                         <p className="-mt-3 text-caption text-neutral-500">
-                            Times below are in <span className="font-medium">{page.timezone}</span>.
+                            {t('timezoneNote.prefix')}{' '}
+                            <span className="font-medium">{page.timezone}</span>
+                            {t('timezoneNote.suffix')}
                         </p>
                     )}
 
                     <div>
                         <div className="mb-1 text-caption font-semibold uppercase tracking-wide text-neutral-400">
-                            Meeting location
+                            {t('location.heading')}
                         </div>
                         <p className="mb-2 text-caption text-neutral-400">
-                            Where the video call happens when a learner books a session.
+                            {t('location.description')}
                         </p>
                         <Select
                             value={locationMode}
@@ -270,21 +276,21 @@ export function AvailabilityDialog({ instituteId, open, onOpenChange }: Availabi
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="GOOGLE_MEET">
-                                    Google Meet (auto-generated per booking)
+                                    {t('location.googleMeetOption')}
                                 </SelectItem>
                                 <SelectItem value="CUSTOM_LINK">
-                                    Zoom / BigBlueButton / custom link
+                                    {t('location.customLinkOption')}
                                 </SelectItem>
                             </SelectContent>
                         </Select>
                         {locationMode === 'CUSTOM_LINK' && (
                             <div className="mt-2">
                                 <Label className="text-caption text-neutral-600">
-                                    Meeting link
+                                    {t('location.meetingLinkLabel')}
                                 </Label>
                                 <Input
                                     value={customLink}
-                                    placeholder="https://zoom.us/j/… or your BigBlueButton room URL"
+                                    placeholder={t('location.meetingLinkPlaceholder')}
                                     onChange={(e) => setCustomLink(e.target.value)}
                                     className="mt-1"
                                 />
@@ -294,11 +300,10 @@ export function AvailabilityDialog({ instituteId, open, onOpenChange }: Availabi
 
                     <div>
                         <div className="mb-1 text-caption font-semibold uppercase tracking-wide text-neutral-400">
-                            Weekly hours
+                            {t('weeklyHours.heading')}
                         </div>
                         <p className="mb-2 text-caption text-neutral-400">
-                            Turn on the days you&apos;re free, and set the hours learners can book
-                            within.
+                            {t('weeklyHours.description')}
                         </p>
                         <div className="flex flex-col gap-2">
                             {DAYS.map((d) => {
@@ -322,7 +327,9 @@ export function AvailabilityDialog({ instituteId, open, onOpenChange }: Availabi
                                                     }
                                                     className="w-32"
                                                 />
-                                                <span className="text-caption text-neutral-400">to</span>
+                                                <span className="text-caption text-neutral-400">
+                                                    {t('to')}
+                                                </span>
                                                 <Input
                                                     type="time"
                                                     value={r.end}
@@ -331,7 +338,9 @@ export function AvailabilityDialog({ instituteId, open, onOpenChange }: Availabi
                                                 />
                                             </div>
                                         ) : (
-                                            <span className="text-caption text-neutral-400">Unavailable</span>
+                                            <span className="text-caption text-neutral-400">
+                                                {t('unavailable')}
+                                            </span>
                                         )}
                                     </div>
                                 );
@@ -342,24 +351,23 @@ export function AvailabilityDialog({ instituteId, open, onOpenChange }: Availabi
                     <div>
                         <div className="mb-1 flex items-center justify-between">
                             <span className="text-caption font-semibold uppercase tracking-wide text-neutral-400">
-                                Time off &amp; specific dates
+                                {t('overrides.heading')}
                             </span>
                             <MyButton
                                 type="button"
                                 buttonType="text"
                                 scale="small"
                                 onClick={addOverride}
-                                title="Add a date to block off or give custom hours"
+                                title={t('overrides.addDateTitle')}
                             >
-                                <Plus size={14} /> Add date
+                                <Plus size={14} /> {t('overrides.addDate')}
                             </MyButton>
                         </div>
                         <p className="mb-2 text-caption text-neutral-400">
-                            Block off a day, or give a specific date different hours — these override
-                            your weekly hours above.
+                            {t('overrides.description')}
                         </p>
                         {overrides.length === 0 ? (
-                            <p className="text-caption text-neutral-400">No date overrides yet.</p>
+                            <p className="text-caption text-neutral-400">{t('overrides.empty')}</p>
                         ) : (
                             <div className="flex flex-col gap-2">
                                 {overrides.map((o) => (
@@ -382,8 +390,12 @@ export function AvailabilityDialog({ instituteId, open, onOpenChange }: Availabi
                                                 <SelectValue />
                                             </SelectTrigger>
                                             <SelectContent>
-                                                <SelectItem value="off">Unavailable</SelectItem>
-                                                <SelectItem value="custom">Custom hours</SelectItem>
+                                                <SelectItem value="off">
+                                                    {t('overrides.unavailable')}
+                                                </SelectItem>
+                                                <SelectItem value="custom">
+                                                    {t('overrides.customHours')}
+                                                </SelectItem>
                                             </SelectContent>
                                         </Select>
                                         {!o.blocked && (
@@ -399,7 +411,7 @@ export function AvailabilityDialog({ instituteId, open, onOpenChange }: Availabi
                                                     className="w-28"
                                                 />
                                                 <span className="text-caption text-neutral-400">
-                                                    to
+                                                    {t('to')}
                                                 </span>
                                                 <Input
                                                     type="time"
@@ -418,8 +430,8 @@ export function AvailabilityDialog({ instituteId, open, onOpenChange }: Availabi
                                             buttonType="text"
                                             scale="small"
                                             onClick={() => removeOverride(o._id)}
-                                            aria-label="Remove this date override"
-                                            title="Remove this date override"
+                                            aria-label={t('overrides.removeAriaLabel')}
+                                            title={t('overrides.removeTitle')}
                                         >
                                             <Trash size={16} className="text-danger-500" />
                                         </MyButton>
@@ -431,15 +443,16 @@ export function AvailabilityDialog({ instituteId, open, onOpenChange }: Availabi
 
                     <div>
                         <div className="mb-1 text-caption font-semibold uppercase tracking-wide text-neutral-400">
-                            Session settings
+                            {t('sessionSettings.heading')}
                         </div>
                         <p className="mb-2 text-caption text-neutral-400">
-                            Default session length and the scheduling rules around it — notice,
-                            buffers, and how far ahead learners can book.
+                            {t('sessionSettings.description')}
                         </p>
                         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                             <div>
-                                <Label className="text-caption text-neutral-600">Default duration</Label>
+                                <Label className="text-caption text-neutral-600">
+                                    {t('sessionSettings.defaultDuration')}
+                                </Label>
                                 <Select
                                     value={String(duration)}
                                     onValueChange={(v) => setDuration(Number(v))}
@@ -450,7 +463,7 @@ export function AvailabilityDialog({ instituteId, open, onOpenChange }: Availabi
                                     <SelectContent>
                                         {DURATIONS.map((m) => (
                                             <SelectItem key={m} value={String(m)}>
-                                                {m} minutes
+                                                {t('sessionSettings.minutesOption', { count: m })}
                                             </SelectItem>
                                         ))}
                                     </SelectContent>
@@ -458,7 +471,7 @@ export function AvailabilityDialog({ instituteId, open, onOpenChange }: Availabi
                             </div>
                             <div>
                                 <Label className="text-caption text-neutral-600">
-                                    Minimum notice (hours)
+                                    {t('sessionSettings.minimumNotice')}
                                 </Label>
                                 <Input
                                     type="number"
@@ -470,7 +483,7 @@ export function AvailabilityDialog({ instituteId, open, onOpenChange }: Availabi
                             </div>
                             <div>
                                 <Label className="text-caption text-neutral-600">
-                                    Buffer before (min)
+                                    {t('sessionSettings.bufferBefore')}
                                 </Label>
                                 <Input
                                     type="number"
@@ -482,7 +495,7 @@ export function AvailabilityDialog({ instituteId, open, onOpenChange }: Availabi
                             </div>
                             <div>
                                 <Label className="text-caption text-neutral-600">
-                                    Buffer after (min)
+                                    {t('sessionSettings.bufferAfter')}
                                 </Label>
                                 <Input
                                     type="number"
@@ -494,7 +507,7 @@ export function AvailabilityDialog({ instituteId, open, onOpenChange }: Availabi
                             </div>
                             <div>
                                 <Label className="text-caption text-neutral-600">
-                                    Booking horizon (days)
+                                    {t('sessionSettings.bookingHorizon')}
                                 </Label>
                                 <Input
                                     type="number"
@@ -510,32 +523,32 @@ export function AvailabilityDialog({ instituteId, open, onOpenChange }: Availabi
                     <div>
                         <div className="mb-1 flex items-center justify-between">
                             <span className="text-caption font-semibold uppercase tracking-wide text-neutral-400">
-                                Session types
+                                {t('sessionTypes.heading')}
                             </span>
                             <MyButton
                                 type="button"
                                 buttonType="text"
                                 scale="small"
                                 onClick={addSessionType}
-                                title="Offer another bookable session length"
+                                title={t('sessionTypes.addTypeTitle')}
                             >
-                                <Plus size={14} /> Add type
+                                <Plus size={14} /> {t('sessionTypes.addType')}
                             </MyButton>
                         </div>
                         <p className="mb-2 text-caption text-neutral-400">
-                            Optional. Offer more than one bookable length (e.g. “Quick chat” 15
-                            min, “Deep dive” 60 min) — the learner picks one when booking. Leave
-                            empty to use the default duration above.
+                            {t('sessionTypes.description')}
                         </p>
                         {sessionTypes.length === 0 ? (
-                            <p className="text-caption text-neutral-400">No session types yet.</p>
+                            <p className="text-caption text-neutral-400">
+                                {t('sessionTypes.empty')}
+                            </p>
                         ) : (
                             <div className="flex flex-col gap-2">
                                 {sessionTypes.map((st) => (
                                     <div key={st.id} className="flex items-center gap-2">
                                         <Input
                                             value={st.name}
-                                            placeholder="Name (e.g. Career chat)"
+                                            placeholder={t('sessionTypes.namePlaceholder')}
                                             onChange={(e) =>
                                                 updateSessionType(st.id!, { name: e.target.value })
                                             }
@@ -555,7 +568,9 @@ export function AvailabilityDialog({ instituteId, open, onOpenChange }: Availabi
                                             <SelectContent>
                                                 {DURATIONS.map((m) => (
                                                     <SelectItem key={m} value={String(m)}>
-                                                        {m} min
+                                                        {t('sessionTypes.minutesShortOption', {
+                                                            count: m,
+                                                        })}
                                                     </SelectItem>
                                                 ))}
                                             </SelectContent>
@@ -565,8 +580,8 @@ export function AvailabilityDialog({ instituteId, open, onOpenChange }: Availabi
                                             buttonType="text"
                                             scale="small"
                                             onClick={() => removeSessionType(st.id!)}
-                                            aria-label="Remove this session type"
-                                            title="Remove this session type"
+                                            aria-label={t('sessionTypes.removeAriaLabel')}
+                                            title={t('sessionTypes.removeTitle')}
                                         >
                                             <Trash size={16} className="text-danger-500" />
                                         </MyButton>

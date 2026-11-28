@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
 import { useLexicalNodeSelection } from '@lexical/react/useLexicalNodeSelection';
 import { mergeRegister } from '@lexical/utils';
@@ -42,6 +43,7 @@ export function BlockChrome({
     readOnly: boolean;
     children: React.ReactNode;
 }) {
+    const { t } = useTranslation('studyLibraryBlockChrome');
     const [editor] = useLexicalComposerContext();
     const [isSelected, setSelected, clearSelected] = useLexicalNodeSelection(nodeKey);
     const wrapperRef = useRef<HTMLDivElement>(null);
@@ -128,7 +130,7 @@ export function BlockChrome({
             <div className="pointer-events-none absolute -top-3 right-1 z-10 opacity-0 transition-opacity group-hover:opacity-100">
                 <button
                     type="button"
-                    aria-label="Delete block"
+                    aria-label={t('deleteBlock')}
                     className="pointer-events-auto rounded-md border border-neutral-200 bg-white p-1 text-neutral-500 shadow-sm hover:border-danger-300 hover:text-danger-600"
                     onClick={(e) => {
                         e.stopPropagation();

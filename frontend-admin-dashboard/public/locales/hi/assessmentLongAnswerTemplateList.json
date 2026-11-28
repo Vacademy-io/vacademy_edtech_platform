@@ -1,0 +1,14 @@
+{
+    "settings": {
+        "title": "प्रश्न सेटिंग्स",
+        "questionType": "प्रश्न प्रकार"
+    },
+    "comprehensionText": "अनुच्छेद पाठ",
+    "question": {
+        "label": "प्रश्न"
+    },
+    "answer": "उत्तर",
+    "defaults": {
+        "explanation": "व्याख्या:"
+    }
+}

@@ -1,0 +1,5 @@
+{
+    "errors": {
+        "duplicateRun": "A {{runType}} run already exists for {{period}}. Open it from the list instead of creating a second one."
+    }
+}

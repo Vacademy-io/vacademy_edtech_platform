@@ -1,0 +1,144 @@
+{
+    "student": {
+        "fallbackName": "विद्यार्थी"
+    },
+    "masthead": {
+        "instituteFallback": "संस्थान",
+        "progressReportFallback": "प्रगति रिपोर्ट"
+    },
+    "verdict": {
+        "studentFallback": "विद्यार्थी",
+        "rollLabel": "रोल {{roll}}",
+        "enrolmentLabel": "नामांकन {{no}}",
+        "generatedLabel": "जनरेट किया गया {{date}}"
+    },
+    "common": {
+        "stats": {
+            "present": "उपस्थित",
+            "absent": "अनुपस्थित",
+            "late": "देर से",
+            "attended": "उपस्थित हुए",
+            "missed": "छूटी हुई",
+            "attendance": "उपस्थिति",
+            "totalSessions": "कुल सत्र",
+            "totalClasses": "कुल कक्षाएँ",
+            "assigned": "सौंपा गया",
+            "submitted": "जमा किया गया",
+            "onTime": "समय पर",
+            "pending": "लंबित",
+            "avgScore": "औसत स्कोर",
+            "resolved": "हल किया गया"
+        },
+        "headings": {
+            "attendance": "उपस्थिति",
+            "strengths": "मजबूत पक्ष",
+            "areasToImprove": "सुधार के क्षेत्र",
+            "liveClasses": "लाइव कक्षाएँ",
+            "assignments": "असाइनमेंट",
+            "achievements": "उपलब्धियाँ",
+            "courseProgress": "पाठ्यक्रम प्रगति",
+            "studyHabits": "अध्ययन की आदतें"
+        }
+    },
+    "attendance": {
+        "vsLastPeriod": "पिछली अवधि की तुलना में"
+    },
+    "thinking": {
+        "heading": "{{name}} कैसे सोचता/सोचती है",
+        "fromAnalysis_one": "हाल के {{count}} प्रयास के AI विश्लेषण से",
+        "fromAnalysis_other": "हाल के {{count}} प्रयासों के AI विश्लेषण से",
+        "profileTitle": "चिंतन-कौशल प्रोफ़ाइल",
+        "profileCaption": "संज्ञानात्मक स्तरों में सटीकता (ब्लूम का वर्गीकरण)",
+        "confidenceTitle": "जानना बनाम अनुमान लगाना",
+        "confidenceCaption": "उत्तर दिए गए प्रश्नों में आत्मविश्वास अंशांकन",
+        "confidentlyRight": "आत्मविश्वास से सही",
+        "rightButUnsure": "सही पर अनिश्चित",
+        "confidentlyWrong": "आत्मविश्वास से गलत",
+        "confidenceLabel": "आत्मविश्वास",
+        "radarAriaLabel": "चिंतन-कौशल रडार चार्ट",
+        "donutAriaLabel": "आत्मविश्वास अंशांकन डोनट चार्ट"
+    },
+    "bloomLevels": {
+        "remember": "याद रखना",
+        "understand": "समझना",
+        "apply": "प्रयोग करना",
+        "analyze": "विश्लेषण करना",
+        "evaluate": "मूल्यांकन करना",
+        "create": "सृजन करना"
+    },
+    "topicMastery": {
+        "title": "विषय में दक्षता",
+        "caption": "इस अवधि के सभी प्रयासों में प्रति-विषय सटीकता"
+    },
+    "subjects": {
+        "title": "विषयवार अंक",
+        "caption": "मूल्यांकन, असाइनमेंट, क्विज़ और प्रश्नों के आधार पर",
+        "vsClassCaption": "कक्षा के औसत की तुलना में विषय प्रदर्शन",
+        "vsClassSuffix": "कक्षा {{value}}%"
+    },
+    "assessments": {
+        "title": "मूल्यांकन",
+        "caption": "इस अवधि में {{count}}",
+        "rank": "रैंक {{rank}}"
+    },
+    "trend": {
+        "title": "समय के साथ अंक",
+        "classAverage": "कक्षा औसत",
+        "ariaLabel": "हर मूल्यांकन में अंक, कक्षा औसत के साथ"
+    },
+    "gradeMix": {
+        "title": "प्राप्त ग्रेड",
+        "summary": "{{total}} में से {{good}} टेस्ट में ग्रेड B या उससे ऊपर",
+        "testCount": "{{count}} टेस्ट",
+        "range": {
+            "ap": "90% और अधिक",
+            "a": "80–89%",
+            "bp": "70–79%",
+            "b": "60–69%",
+            "c": "50–59%",
+            "d": "50% से कम"
+        }
+    },
+    "misconceptions": {
+        "title": "आगे किस पर काम करें",
+        "caption": "विशिष्ट भ्रांतियाँ और उन्हें कैसे सुधारें"
+    },
+    "habits": {
+        "caption": "इस अवधि में प्रतिदिन अध्ययन के मिनट",
+        "longestStreak": "सबसे लंबी लगातार अवधि",
+        "streakDay_one": "दिन",
+        "streakDay_other": "दिन",
+        "consistency": "नियमितता",
+        "activeDaysOf": "सक्रिय दिन / {{total}}"
+    },
+    "achievements": {
+        "caption": "अर्जित बैज और प्रमाणपत्र"
+    },
+    "courseProgress": {
+        "percentComplete": "कुल {{percentage}}% पूर्ण"
+    },
+    "doubts": {
+        "title": "शंकाएँ और सहभागिता",
+        "questionsAsked": "पूछे गए प्रश्न",
+        "avgResolutionTime": "औसत समाधान समय",
+        "hoursSuffix": "घंटे"
+    },
+    "aiInsights": {
+        "whatWeNoticed": "हमने क्या देखा",
+        "recommendedNextSteps": "अनुशंसित अगले कदम",
+        "priorityMedium": "मध्यम",
+        "summary": "AI सारांश"
+    },
+    "narrative": {
+        "detailedAnalysis": "विस्तृत विश्लेषण",
+        "learningFrequency": "सीखने की आवृत्ति",
+        "progress": "प्रगति",
+        "effortVsOutput": "प्रयास बनाम परिणाम",
+        "topicsImproving": "सुधर रहे विषय",
+        "topicsNeedingAttention": "ध्यान देने योग्य विषय",
+        "actionChecklist": "कार्य-सूची"
+    },
+    "sparkline": {
+        "minutesTooltip": "{{minutes}} मिनट"
+    }
+}

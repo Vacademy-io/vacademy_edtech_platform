@@ -1,0 +1,20 @@
+{
+    "current": {
+        "heading": "Current Address"
+    },
+    "address": {
+        "label": "Address",
+        "placeholder": "Enter Complete Address"
+    },
+    "locality": {
+        "label": "Nearest Locality",
+        "placeholder": "Enter Locality/Landmark"
+    },
+    "sameAsPermanent": {
+        "label": "Current address same as permanent"
+    },
+    "permanent": {
+        "heading": "Permanent Address",
+        "addressPlaceholder": "Enter Complete Permanent Address"
+    }
+}

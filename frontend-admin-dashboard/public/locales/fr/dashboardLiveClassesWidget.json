@@ -1,0 +1,50 @@
+{
+    "header": {
+        "addButton": "Ajouter",
+        "upcomingSessionsCount_one": "{{count}} session à venir",
+        "upcomingSessionsCount_many": "{{count}} sessions à venir",
+        "upcomingSessionsCount_other": "{{count}} sessions à venir",
+        "noUpcomingSessions": "Aucune session à venir programmée"
+    },
+    "emptyState": {
+        "noSessionsScheduledYet": "Aucune {{term}} programmée pour le moment"
+    },
+    "sessionCard": {
+        "upcomingLabel": "À venir",
+        "deleteSession": "Supprimer la session",
+        "viewParticipantDetails": "Voir les détails des participants"
+    },
+    "moreCount_one": "+{{count}} de plus",
+    "moreCount_many": "+{{count}} de plus",
+    "moreCount_other": "+{{count}} de plus",
+    "participantDialog": {
+        "heading": "Détails des participants",
+        "tabs": {
+            "registeredUsers": "Utilisateurs inscrits",
+            "attendance": "Présence"
+        },
+        "registration": {
+            "title": "Inscriptions",
+            "exportButton": "Exporter"
+        },
+        "attendance": {
+            "title": "Présence",
+            "exportButton": "Exporter"
+        }
+    },
+    "deleteDialog": {
+        "heading": "Rapport de présence",
+        "confirmMessage": "Voulez-vous supprimer chaque cours de cette session",
+        "yes": "Oui",
+        "no": "Non"
+    },
+    "csvExport": {
+        "registrationsDownloaded": "Inscriptions téléchargées avec succès.",
+        "attendanceDownloaded": "Rapport de présence téléchargé avec succès.",
+        "attendanceStatus": {
+            "present": "Présent",
+            "absent": "Absent",
+            "unmarked": "Non marqué"
+        }
+    }
+}

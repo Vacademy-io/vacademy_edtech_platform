@@ -1,6 +1,14 @@
 #!/bin/bash
 
-# Microsoft Store (AppX) Windows build script for ZOE Edtech.
+# Microsoft Store (AppX) Windows build script for ZOE Online School.
+#
+# ZOE's Windows version is pinned by "extraMetadata.version" in
+# electron-builder.zoe-store.json. Without it the AppX Identity Version comes
+# from electron/package.json, which is Shiksha Nation's Electron shell version
+# — so ZOE's Store version would move whenever SN shipped. Keep it above
+# whatever this product already has in Partner Center.
+# (electron-builder 23.6.0 validates its config strictly and rejects unknown
+# keys, so that note cannot live in the JSON as a "_comment" field.)
 # Publishes under the Shiksha Nation Partner Center account (shared publisher
 # identity CN=86D745F8-... in electron-builder.zoe-store.json).
 #
@@ -27,7 +35,7 @@ trap cleanup EXIT
 export FLAVOR="zoe"
 export VITE_ELECTRON_APP_ID="com.zoeedtech.app"
 
-echo "🚀 Building ZOE Edtech Windows Store (AppX) App (x64 + x86)"
+echo "🚀 Building ZOE Online School Windows Store (AppX) App (x64 + x86)"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "   FLAVOR=$FLAVOR"
 echo "   VITE_ELECTRON_APP_ID=$VITE_ELECTRON_APP_ID"
@@ -52,26 +60,37 @@ echo ""
 echo -e "${BLUE}📁 Copying frontend build to electron/app...${NC}"
 rm -rf "$SCRIPT_DIR/app"
 cp -r "$PARENT_DIR/dist" "$SCRIPT_DIR/app"
-echo -e "${GREEN}✅ Frontend copied${NC}"
+
+# Record which OTA bundle version is baked in. Without it ota.ts falls back to the
+# ELECTRON package version (1.0.x) — a different numbering space — so every OTA
+# bundle looks newer and the fresh builtin bundle is replaced by an older one on
+# first launch. build-mas-zoe.sh has always done this; this script had not.
+WEB_VERSION=$(node -p "require('$PARENT_DIR/package.json').version")
+echo -n "$WEB_VERSION" > "$SCRIPT_DIR/app/ota-bundle-version.txt"
+echo -e "${GREEN}✅ Frontend copied (packaged OTA bundle version: ${WEB_VERSION})${NC}"
 echo ""
 
 cd "$SCRIPT_DIR"
 
 # Step 3: Write flavor file so capacitor.config reads it at runtime
 echo -e "${BLUE}📝 Writing electron-flavor.json...${NC}"
-echo '{"flavor":"zoe"}' > "$SCRIPT_DIR/electron-flavor.json"
+# otaAppId is the STORE bundle id (com.zoeedtech.app for the Microsoft Store
+# package). ota.ts falls back to app.getName() without it, which never matches an
+# OTA target_app_ids, so the app would silently never receive an update.
+echo '{"flavor":"zoe","otaAppId":"com.zoeedtech.app"}' > "$SCRIPT_DIR/electron-flavor.json"
 echo -e "${GREEN}✅ Flavor file written${NC}"
 echo ""
 
 # Step 4: Patch package.json for ZOE branding
-echo -e "${BLUE}📝 Patching package.json for ZOE Edtech...${NC}"
+echo -e "${BLUE}📝 Patching package.json for ZOE Online School...${NC}"
 cp "$SCRIPT_DIR/package.json" "$SCRIPT_DIR/package.json.bak"
 node -e "
 const fs = require('fs');
 const pkg = JSON.parse(fs.readFileSync('$SCRIPT_DIR/package.json', 'utf8'));
-pkg.name = 'ZOE_Edtech';
-pkg.description = 'ZOE Global Edtech — AI-Powered Learning Platform';
-pkg.author = { name: 'ZOE Global Edtech', email: 'support@zoeedtech.com' };
+pkg.name = 'ZOE_Online_School';
+pkg.productName = 'ZOE Online School';
+pkg.description = 'ZOE Global Online School — AI-Powered Learning Platform';
+pkg.author = { name: 'ZOE Global Online School', email: 'support@zoeedtech.com' };
 fs.writeFileSync('$SCRIPT_DIR/package.json', JSON.stringify(pkg, null, 2) + '\n');
 "
 echo -e "${GREEN}✅ package.json patched${NC}"
@@ -116,4 +135,4 @@ fi
 
 # Restore original package.json (trap also handles failures)
 mv "$SCRIPT_DIR/package.json.bak" "$SCRIPT_DIR/package.json"
-echo -e "${GREEN}✅ ZOE Edtech Store build finished. Upload dist-store/*.appx to Partner Center.${NC}"
+echo -e "${GREEN}✅ ZOE Online School Store build finished. Upload dist-store/*.appx to Partner Center.${NC}"

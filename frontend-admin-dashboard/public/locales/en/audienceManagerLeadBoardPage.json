@@ -1,0 +1,89 @@
+{
+    "heading": {
+        "title": "Lead Board",
+        "subtitle": "Drag a lead into another column to change its status."
+    },
+    "slaOptions": {
+        "anyOverdue": "Any deadline missed",
+        "firstContactMissed": "First contact missed",
+        "firstContactComingUp": "First contact coming up",
+        "followUpComingUp": "Follow-up coming up",
+        "followUpMissed": "Follow-up missed"
+    },
+    "dateRangeOptions": {
+        "last24Hours": "Last 24 hours",
+        "last7Days": "Last 7 days",
+        "last15Days": "Last 15 days",
+        "last30Days": "Last 30 days",
+        "allTime": "All time",
+        "customRange": "Custom range"
+    },
+    "filters": {
+        "tier": {
+            "label": "All tiers",
+            "hot": "Hot",
+            "warm": "Warm",
+            "cold": "Cold"
+        },
+        "sla": {
+            "label": "All SLA states"
+        },
+        "audience": {
+            "label": "All {{term}}",
+            "untitled": "Untitled audience"
+        },
+        "callHistory": {
+            "any": "Call history",
+            "notCalled": "Not called",
+            "calledAny": "Called (any)",
+            "calledOnce": "Called once",
+            "calledTwicePlus": "Called 2+ times",
+            "aiCalled": "AI called",
+            "manualCalled": "Manually called"
+        },
+        "customDate": {
+            "setDates": "Set dates",
+            "rangeDisplay": "{{from}} → {{to}}",
+            "done": "Done",
+            "from": "From",
+            "to": "To"
+        }
+    },
+    "toolbar": {
+        "leadSettings": "Lead settings"
+    },
+    "chips": {
+        "search": "Search: {{query}}",
+        "audience": "Audience: {{names}}",
+        "tier": "Tier: {{tiers}}",
+        "sla": "SLA: {{states}}",
+        "counsellor": "Counsellor: {{names}}",
+        "source": "Source: {{source}}",
+        "customField": "{{field}}: {{value}}",
+        "dateRangeCustomWithDates": "Date: {{from}} → {{to}}",
+        "dateRangeCustomFallback": "Date: custom range",
+        "dateRangeFallback": "Date range",
+        "fallbackSelected": "Selected",
+        "fallbackField": "Field",
+        "unassigned": "Unassigned",
+        "removeAriaLabel": "Remove {{label}}",
+        "clearAll": "Clear all"
+    },
+    "search": {
+        "placeholder": "Search leads across all columns",
+        "ariaLabel": "Search leads"
+    },
+    "board": {
+        "loading": "Loading board…",
+        "noStatusColumnLabel": "No status",
+        "noStatusesTitle": "No lead statuses configured",
+        "noStatusesDescription": "Set up your pipeline statuses in Lead settings to use the board.",
+        "allHiddenTitle": "All columns hidden",
+        "allHiddenDescription": "Every status column is hidden — use \"Manage Column\" to show some."
+    },
+    "callReasons": {
+        "noSubmissionId": "Lead has no submission id",
+        "noPhone": "Lead has no phone on file",
+        "callInProgress": "Another call is starting…"
+    }
+}

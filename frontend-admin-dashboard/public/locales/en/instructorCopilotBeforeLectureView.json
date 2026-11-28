@@ -1,0 +1,19 @@
+{
+    "backButton": "Back to Lecture Modes",
+    "heading": "Before Lecture",
+    "subtitle": "Preparation tools and planning",
+    "cards": {
+        "planner": {
+            "title": "AI Lecture Planner",
+            "description": "Generate comprehensive lesson plans with AI assistance."
+        },
+        "attendance": {
+            "title": "Take Attendance",
+            "description": "Manage live sessions and track student attendance."
+        },
+        "presentation": {
+            "title": "Create Lecture Presentation",
+            "description": "Design interactive slides and presentations with Volt."
+        }
+    }
+}

@@ -1,41 +1,43 @@
 import React from 'react';
 import { UseFormSetValue, UseFormWatch } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { EnquiryForm } from '../../-schema/EnquirySchema';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Input } from '@/components/ui/input';
-import { X, ChevronDown } from 'lucide-react';
+import { X, CaretDown } from '@phosphor-icons/react';
 import { MyButton } from '@/components/design-system/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
-const ASSIGNMENT_STRATEGIES = [
+const buildAssignmentStrategies = (t: TFunction) => [
     {
         value: 'ROUND_ROBIN',
-        label: 'Round Robin',
-        desc: 'Distributes equally in rotation',
+        label: t('strategies.roundRobin.label'),
+        desc: t('strategies.roundRobin.desc'),
     },
     {
         value: 'RANDOM',
-        label: 'Random',
-        desc: 'Picks any counselor randomly',
+        label: t('strategies.random.label'),
+        desc: t('strategies.random.desc'),
     },
     {
         value: 'WEIGHTED_ROUND_ROBIN',
-        label: 'Weighted',
-        desc: 'Senior counselors handle more',
+        label: t('strategies.weighted.label'),
+        desc: t('strategies.weighted.desc'),
         disabled: true,
-        disabledNote: 'Per-counselor weights coming soon',
+        disabledNote: t('strategies.weighted.disabledNote'),
     },
     {
         value: 'PERFORMANCE_BASED',
-        label: 'Performance',
-        desc: 'Routes to highest-converting counselor',
+        label: t('strategies.performance.label'),
+        desc: t('strategies.performance.desc'),
     },
     {
         value: 'LEAST_LOADED',
-        label: 'Least Loaded',
-        desc: 'Assigns to counselor with fewest active leads',
+        label: t('strategies.leastLoaded.label'),
+        desc: t('strategies.leastLoaded.desc'),
     },
 ];
 
@@ -48,6 +50,8 @@ export const CounsellorSettingsCard: React.FC<CounsellorSettingsCardProps> = ({
     watch,
     setValue,
 }) => {
+    const { t } = useTranslation('admissionsCounsellorSettingsCard');
+    const ASSIGNMENT_STRATEGIES = React.useMemo(() => buildAssignmentStrategies(t), [t]);
     const [counsellorInput, setCounsellorInput] = React.useState('');
 
     const allowParentSelection = watch('counsellor_settings.data.allowParentSelection');
@@ -115,19 +119,17 @@ export const CounsellorSettingsCard: React.FC<CounsellorSettingsCardProps> = ({
     return (
         <div className="space-y-6 rounded-lg border border-neutral-200 p-6">
             <div>
-                <h3 className="text-lg font-semibold text-neutral-900">Counsellor Allocation</h3>
-                <p className="mt-1 text-sm text-neutral-500">
-                    Configure how counsellors are assigned to enquiries
-                </p>
+                <h3 className="text-lg font-semibold text-neutral-900">{t('heading')}</h3>
+                <p className="mt-1 text-sm text-neutral-500">{t('subheading')}</p>
             </div>
 
             {/* Auto-Assign Enabled */}
             <div className="flex items-center justify-between rounded-lg border border-neutral-200 p-4">
                 <div className="space-y-0.5">
-                    <Label className="text-sm font-medium text-neutral-700">Auto-Assign</Label>
-                    <p className="text-xs text-neutral-500">
-                        Automatically assign enquiries to counsellors
-                    </p>
+                    <Label className="text-sm font-medium text-neutral-700">
+                        {t('autoAssign.label')}
+                    </Label>
+                    <p className="text-xs text-neutral-500">{t('autoAssign.desc')}</p>
                 </div>
                 <Switch
                     checked={autoAssignEnabled}
@@ -139,10 +141,10 @@ export const CounsellorSettingsCard: React.FC<CounsellorSettingsCardProps> = ({
             {/* Allow Parent Selection */}
             <div className="flex items-center justify-between rounded-lg border border-neutral-200 p-4">
                 <div className="space-y-0.5">
-                    <Label className="text-sm font-medium text-neutral-700">Allow Parent</Label>
-                    <p className="text-xs text-neutral-500">
-                        Let parents choose their preferred counsellor
-                    </p>
+                    <Label className="text-sm font-medium text-neutral-700">
+                        {t('allowParent.label')}
+                    </Label>
+                    <p className="text-xs text-neutral-500">{t('allowParent.desc')}</p>
                 </div>
                 <Switch
                     checked={allowParentSelection}
@@ -155,7 +157,7 @@ export const CounsellorSettingsCard: React.FC<CounsellorSettingsCardProps> = ({
             {autoAssignEnabled && (
                 <div className="space-y-3">
                     <Label className="text-sm font-medium text-neutral-700">
-                        Assignment Strategy
+                        {t('assignmentStrategy.label')}
                     </Label>
                     <RadioGroup
                         value={
@@ -205,7 +207,7 @@ export const CounsellorSettingsCard: React.FC<CounsellorSettingsCardProps> = ({
                                     <div className="font-medium">{strategy.label}</div>
                                     <div className="text-xs text-neutral-500">{strategy.desc}</div>
                                     {strategy.disabled && strategy.disabledNote && (
-                                        <div className="mt-0.5 text-[10px] font-medium text-amber-600">
+                                        <div className="mt-0.5 text-caption font-medium text-amber-600">
                                             {strategy.disabledNote}
                                         </div>
                                     )}
@@ -217,19 +219,19 @@ export const CounsellorSettingsCard: React.FC<CounsellorSettingsCardProps> = ({
                     {/* Advanced Settings */}
                     <Collapsible open={isAdvancedOpen} onOpenChange={setIsAdvancedOpen}>
                         <CollapsibleTrigger className="flex w-full items-center gap-1.5 rounded-lg border border-neutral-200 px-3 py-2 text-xs font-medium text-neutral-600 hover:bg-neutral-50">
-                            <ChevronDown
+                            <CaretDown
                                 className={`size-3.5 transition-transform ${isAdvancedOpen ? 'rotate-180' : ''}`}
                             />
-                            Advanced
+                            {t('advanced.trigger')}
                         </CollapsibleTrigger>
                         <CollapsibleContent className="mt-2 space-y-3 rounded-lg border border-neutral-100 bg-neutral-50 p-3">
                             <div className="space-y-1.5">
                                 <Label className="text-xs font-medium text-neutral-700">
-                                    Max active leads per counselor
+                                    {t('advanced.maxActiveLeads.label')}
                                 </Label>
                                 <Input
                                     type="number"
-                                    placeholder="No limit"
+                                    placeholder={t('advanced.maxActiveLeads.placeholder')}
                                     min={1}
                                     value={maxActiveLeadsPerCounselor ?? ''}
                                     onChange={(e) => {
@@ -244,9 +246,8 @@ export const CounsellorSettingsCard: React.FC<CounsellorSettingsCardProps> = ({
                                     }}
                                     className="h-8 text-sm"
                                 />
-                                <p className="text-[10px] text-neutral-400">
-                                    Leave empty for no limit. New leads beyond this cap will go to
-                                    the next available counselor.
+                                <p className="text-caption text-neutral-400">
+                                    {t('advanced.maxActiveLeads.helper')}
                                 </p>
                             </div>
                         </CollapsibleContent>
@@ -257,9 +258,10 @@ export const CounsellorSettingsCard: React.FC<CounsellorSettingsCardProps> = ({
             {/* Counsellor IDs */}
             <div className="space-y-3">
                 <Label className="text-sm font-medium text-neutral-700">
-                    Counsellors <span className="text-neutral-400">(Optional)</span>
+                    {t('counsellors.label')}{' '}
+                    <span className="text-neutral-400">{t('counsellors.optional')}</span>
                 </Label>
-                <p className="text-xs text-neutral-500">Add counsellor IDs for assignment pool</p>
+                <p className="text-xs text-neutral-500">{t('counsellors.desc')}</p>
 
                 {/* Existing counsellor chips */}
                 {counsellorIds.length > 0 && (
@@ -286,7 +288,7 @@ export const CounsellorSettingsCard: React.FC<CounsellorSettingsCardProps> = ({
                 <div className="flex gap-2">
                     <Input
                         type="text"
-                        placeholder="Enter counsellor ID"
+                        placeholder={t('counsellors.inputPlaceholder')}
                         value={counsellorInput}
                         onChange={(e) => setCounsellorInput(e.target.value)}
                         onKeyDown={handleKeyDown}
@@ -299,7 +301,7 @@ export const CounsellorSettingsCard: React.FC<CounsellorSettingsCardProps> = ({
                         scale="medium"
                         disabled={!counsellorInput.trim()}
                     >
-                        Add
+                        {t('counsellors.addButton')}
                     </MyButton>
                 </div>
             </div>

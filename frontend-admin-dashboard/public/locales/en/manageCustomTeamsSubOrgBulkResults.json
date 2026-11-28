@@ -1,0 +1,15 @@
+{
+    "tiles": {
+        "added": "Added",
+        "moved": "Moved",
+        "alreadyMember": "Already in",
+        "failed": "Failed"
+    },
+    "status": {
+        "ADDED": "Added",
+        "MOVED": "Moved",
+        "ALREADY_MEMBER": "Already in",
+        "FAILED": "Failed"
+    },
+    "unknownLearner": "Learner"
+}

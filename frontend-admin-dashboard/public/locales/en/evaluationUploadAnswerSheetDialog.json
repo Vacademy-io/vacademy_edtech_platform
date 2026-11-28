@@ -1,0 +1,13 @@
+{
+    "uploadStudentAnswerSheetHeading": "Upload Student's Answer Sheet",
+    "cancel": "Cancel",
+    "uploadingEllipsis": "Uploading...",
+    "uploadAndView": "Upload & View",
+    "uploadOnBehalfHint": "If the student couldn't upload their response, upload the answer sheet they shared with you (e.g. over email or WhatsApp) to evaluate it on their behalf.",
+    "change": "Change",
+    "clickToUploadOrDrag": "Click to upload or drag & drop",
+    "pdfOnly": "PDF only",
+    "uploadFailedTryAgain": "File upload failed, please try again",
+    "answerSheetUploaded": "Answer sheet uploaded for the student",
+    "couldNotUploadAnswerSheet": "Could not upload the answer sheet"
+}

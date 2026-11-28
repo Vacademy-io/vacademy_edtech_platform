@@ -1,0 +1,38 @@
+{
+    "dialog": {
+        "heading": "Inviter un apprenant"
+    },
+    "inviteLink": {
+        "label": "Nom du lien d'invitation",
+        "placeholder": "Entrez le nom du lien d'invitation"
+    },
+    "activeStatus": {
+        "label": "Statut actif"
+    },
+    "batchSelection": {
+        "label": "Sélection du groupe",
+        "createBatch": "Créer un groupe",
+        "assignBatches": "Je souhaite attribuer des groupes",
+        "learnersChooseBatches": "Je souhaite que les {{term}}s choisissent leurs groupes",
+        "maxBatchesLabel": "Entrez le nombre maximal de groupes qu'un étudiant peut sélectionner"
+    },
+    "linkExpiration": {
+        "label": "Jours d'expiration du lien",
+        "days": "jours"
+    },
+    "inviteeEmail": {
+        "label": "Entrez l'e-mail de l'invité",
+        "placeholder": "you@email.com",
+        "addButton": "Ajouter"
+    },
+    "validation": {
+        "invalidEmail": "Veuillez saisir une adresse e-mail valide",
+        "duplicateEmail": "Cet e-mail a déjà été ajouté"
+    },
+    "toast": {
+        "batchCreateSuccess": "Groupe créé avec succès",
+        "batchCreateError": "Échec de la création du groupe",
+        "inviteError": "Erreur lors de la mise à jour/création de l'invitation",
+        "formErrors": "Veuillez corriger les erreurs du formulaire avant de soumettre"
+    }
+}

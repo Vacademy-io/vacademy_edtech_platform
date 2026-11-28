@@ -1,0 +1,83 @@
+{
+    "dialogTitle": "Manage Course Access",
+    "unlimitedLabel": "Unlimited",
+    "modes": {
+        "extend": {
+            "label": "Extend by days",
+            "hint": "Adds days on top of the current expiry. Already-expired learners are counted from today so they get the full extension."
+        },
+        "setFromEnrollment": {
+            "label": "Set total days from enrollment",
+            "hint": "Recomputes expiry as enrollment date + this many days, ignoring whatever it is now."
+        },
+        "setDate": {
+            "label": "Set an exact expiry date",
+            "hint": "Replaces the expiry with this exact date."
+        },
+        "unlimited": {
+            "label": "Give unlimited access",
+            "hint": "Removes the expiry entirely — the learner keeps access indefinitely."
+        }
+    },
+    "config": {
+        "changePrompt": "Change how long <strong>{{name}}</strong> keeps access to selected courses.",
+        "noEnrollments": "No enrollments to manage",
+        "unnamedCourse": "Unnamed Course",
+        "expiresExpired": "Expires {{date}} — expired",
+        "expiresRemaining_one": "Expires {{date}} — {{count}} day left",
+        "expiresRemaining_other": "Expires {{date}} — {{count}} days left",
+        "unlimitedAccess": "Unlimited access",
+        "whatToChange": "What to change",
+        "daysToAdd": "Days to add",
+        "totalDaysOfAccess": "Total days of access",
+        "negativeHint": "Use a negative number to shorten access.",
+        "newExpiryDate": "New expiry date",
+        "reasonLabel": "Reason (optional)",
+        "reasonPlaceholder": "e.g. Compensating for the batch reschedule",
+        "reasonHint": "Stored with the change so anyone reviewing the history can see why."
+    },
+    "resultList": {
+        "enrollmentFallback": "Enrollment",
+        "daysDelta_one": "({{sign}}{{count}} day)",
+        "daysDelta_other": "({{sign}}{{count}} days)"
+    },
+    "preview": {
+        "willChange_one": "{{count}} enrollment will change",
+        "willChange_other": "{{count}} enrollments will change",
+        "skippedCount_one": "{{count}} skipped",
+        "skippedCount_other": "{{count}} skipped",
+        "notSaved": "Nothing has been saved yet."
+    },
+    "results": {
+        "updatedCount_one": "{{count}} updated",
+        "updatedCount_other": "{{count}} updated",
+        "skippedCount_one": "{{count}} skipped",
+        "skippedCount_other": "{{count}} skipped",
+        "failedCount_one": "{{count}} failed",
+        "failedCount_other": "{{count}} failed"
+    },
+    "history": {
+        "loading": "Loading history…",
+        "empty": "No access changes recorded yet.",
+        "byActor": " · by {{name}}",
+        "reasonQuote": "“{{reason}}”"
+    },
+    "footer": {
+        "backToChanges": "Back to changes",
+        "viewHistory": "View history",
+        "checking": "Checking…",
+        "previewChanges": "Preview changes",
+        "back": "Back",
+        "applying": "Applying…",
+        "applyChanges": "Apply changes",
+        "done": "Done"
+    },
+    "toasts": {
+        "previewFailed": "Preview failed",
+        "accessChangeFailed": "Access change failed",
+        "accessUpdated_one": "Access updated for {{count}} enrollment",
+        "accessUpdated_other": "Access updated for {{count}} enrollments",
+        "partialUpdate": "{{updated}} updated, {{failed}} failed.",
+        "noChanges": "No enrollments were changed."
+    }
+}

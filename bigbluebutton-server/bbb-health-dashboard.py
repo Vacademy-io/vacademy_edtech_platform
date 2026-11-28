@@ -1189,10 +1189,16 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
   .live-banner .pulse { width: 8px; height: 8px; background: var(--orange); border-radius: 50%; animation: pulse 1.2s ease-in-out infinite; }
   @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(1.6); } }
   .row-active { background: rgba(249,115,22,0.08); }
-  .pagination { display: flex; justify-content: space-between; align-items: center; margin-top: 16px; font-size: 0.85rem; color: var(--muted); }
+  .pagination { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 16px; font-size: 0.85rem; color: var(--muted); }
   .pagination button { background: var(--card); border: 1px solid var(--border); color: var(--text); padding: 6px 12px; border-radius: 4px; cursor: pointer; margin: 0 4px; }
   .pagination button:disabled { opacity: 0.4; cursor: not-allowed; }
   .pagination button:not(:disabled):hover { border-color: var(--accent); }
+  .pager-controls { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 2px; }
+  .pagination button.page-num { min-width: 32px; padding: 6px 8px; margin: 0; text-align: center; }
+  /* The current page stays solid rather than greyed out, even though it is
+     disabled — otherwise the one page you are on is the hardest one to read. */
+  .pagination button.page-num.current { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; opacity: 1; cursor: default; }
+  .pagination .page-gap { color: var(--muted); padding: 0 4px; }
   .recid { font-family: monospace; font-size: 0.7rem; color: var(--muted); }
   .chk-col { width: 30px; text-align: center; }
   .chk-col input { cursor: pointer; }
@@ -1280,8 +1286,9 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
     <div id="recordingsTableWrap"></div>
     <div class="pagination" id="recordingsPagination" style="display:none">
       <span id="paginationInfo"></span>
-      <span>
+      <span class="pager-controls">
         <button id="prevPage" onclick="loadRecordings(currentPage - 1)">‹ Prev</button>
+        <span id="pageNumbers"></span>
         <button id="nextPage" onclick="loadRecordings(currentPage + 1)">Next ›</button>
       </span>
     </div>
@@ -1479,6 +1486,32 @@ function fmtBytes(bytes) {
   return (bytes / 1024 / 1024 / 1024).toFixed(2) + ' GB';
 }
 
+// Pages to show: always the first and the last, plus a window of `span`
+// either side of the current one. Whatever is left out collapses into an
+// ellipsis, so the control is the same width at 3 pages and at 300.
+function pageList(page, totalPages, span) {
+  const out = [1];
+  const lo = Math.max(2, page - span);
+  const hi = Math.min(totalPages - 1, page + span);
+  if (lo > 2) out.push('gap');
+  for (let p = lo; p <= hi; p++) out.push(p);
+  if (hi < totalPages - 1) out.push('gap');
+  if (totalPages > 1) out.push(totalPages);
+  return out;
+}
+
+function renderPageNumbers(page, totalPages) {
+  const box = document.getElementById('pageNumbers');
+  if (totalPages <= 1) { box.innerHTML = ''; return; }
+  box.innerHTML = pageList(page, totalPages, 2).map(p => {
+    if (p === 'gap') return '<span class="page-gap">\u2026</span>';
+    const cur = p === page;
+    return '<button class="page-num' + (cur ? ' current' : '') + '"'
+         + (cur ? ' disabled' : '')
+         + ' title="Page ' + p + '" onclick="loadRecordings(' + p + ')">' + p + '</button>';
+  }).join('');
+}
+
 async function loadRecordings(page) {
   if (!page || page < 1) return;
   currentPage = page;
@@ -1648,6 +1681,7 @@ async function loadRecordings(page) {
       `Page ${d.page} of ${d.total_pages}`;
     document.getElementById('prevPage').disabled = d.page <= 1;
     document.getElementById('nextPage').disabled = d.page >= d.total_pages;
+    renderPageNumbers(d.page, d.total_pages);
   } catch (e) {
     wrap.innerHTML = '<div style="color:var(--red);padding:20px">Failed to load: ' + e.message + '</div>';
   }

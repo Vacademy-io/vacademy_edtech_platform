@@ -1,0 +1,15 @@
+{
+    "tiles": {
+        "added": "जोड़े गए",
+        "moved": "ले जाए गए",
+        "alreadyMember": "पहले से शामिल",
+        "failed": "विफल"
+    },
+    "status": {
+        "ADDED": "जोड़ा गया",
+        "MOVED": "ले जाया गया",
+        "ALREADY_MEMBER": "पहले से शामिल",
+        "FAILED": "विफल"
+    },
+    "unknownLearner": "शिक्षार्थी"
+}

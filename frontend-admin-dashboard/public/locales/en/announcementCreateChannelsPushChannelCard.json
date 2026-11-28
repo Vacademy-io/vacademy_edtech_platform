@@ -1,0 +1,8 @@
+{
+    "mirrorTitleAndContent": "Mirror the announcement title and content",
+    "pushTitle": "Push title",
+    "titlePlaceholder": "Short, specific headline",
+    "pushBody": "Push body",
+    "bodyPlaceholder": "One line of detail",
+    "syncedHint": "Turn the switch off to write push copy that differs from the announcement."
+}

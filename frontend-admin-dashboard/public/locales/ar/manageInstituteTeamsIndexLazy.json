@@ -1,0 +1,39 @@
+{
+    "navHeading": "الفرق",
+    "tabs": {
+        "instituteUsers": "مستخدمو المؤسسة",
+        "invites": "الدعوات",
+        "orgChart": "الهيكل التنظيمي"
+    },
+    "search": {
+        "placeholder": "ابحث بالاسم أو البريد الإلكتروني..."
+    },
+    "filters": {
+        "roleType": "نوع الدور",
+        "status": "الحالة",
+        "subOrg": "المؤسسة الفرعية",
+        "applyFilters": "تطبيق الفلاتر",
+        "clearAll": "مسح الكل",
+        "clearAllFilters": "مسح جميع الفلاتر"
+    },
+    "columns": {
+        "name": "الاسم",
+        "email": "البريد الإلكتروني",
+        "username": "اسم المستخدم",
+        "password": "كلمة المرور",
+        "phone": "الهاتف",
+        "roles": "الأدوار",
+        "subOrgs": "المؤسسات الفرعية",
+        "actions": "الإجراءات"
+    },
+    "subOrgColumn": {
+        "assignedTooltip": "مسند إلى هذا الشخص",
+        "grantedByRoleTooltip": "ممنوح عبر دور هذا الشخص",
+        "viaRole": "عبر الدور"
+    },
+    "assignSubOrgs": "إسناد {{term}}",
+    "emptyState": {
+        "title": "لم يتم العثور على أعضاء فريق",
+        "body": "لم نتمكن من العثور على أي عضو فريق يطابق بحثك أو الفلاتر الحالية. اضبطها أو ادعُ مستخدمين جدد."
+    }
+}

@@ -54,6 +54,8 @@ export interface ConnectorSaveResult {
     message: string;
     page_name?: string;
     webhook_url?: string;
+    /** Google only: the server-generated key — paste it into Google Ads with the URL. */
+    google_key?: string;
     /** "true"/"false" — whether the page→app webhook subscribe actually succeeded. */
     subscribed?: string;
 }
@@ -130,9 +132,12 @@ export const saveMetaConnector = async (
 
 // ── Google endpoints ──────────────────────────────────────────────────────────
 
-/** Save a Google Lead Form connector (no OAuth needed). */
+/**
+ * Save a Google Lead Form connector (no OAuth needed). Omit googleKey to have the
+ * server generate one; it comes back as google_key. platform_form_id is set server-side.
+ */
 export const saveGoogleConnector = async (
-    request: AdConnectorSetupRequest
+    request: Omit<AdConnectorSetupRequest, 'platformFormId'>
 ): Promise<ConnectorSaveResult> => {
     const res = await authenticatedAxiosInstance.post(`${BASE}/google/connector`, request);
     return res.data;
@@ -163,6 +168,8 @@ export interface ConnectorListItem {
      * means no defaults are configured.
      */
     defaultValuesJson: string | null;
+    /** Google: campaigns that sent leads but have no list yet (they feed the main list). */
+    unmappedCampaigns?: number | null;
 }
 
 /**
@@ -213,9 +220,7 @@ export interface ConnectorHealth {
  * ACTIVE) based on the result, so callers should refetch the connector list.
  */
 export const checkConnectorHealth = async (connectorId: string): Promise<ConnectorHealth> => {
-    const res = await authenticatedAxiosInstance.get(
-        `${BASE}/connectors/${connectorId}/health`
-    );
+    const res = await authenticatedAxiosInstance.get(`${BASE}/connectors/${connectorId}/health`);
     return res.data;
 };
 
@@ -223,9 +228,7 @@ export const checkConnectorHealth = async (connectorId: string): Promise<Connect
  * Re-attempt the page→app webhook subscription using the connector's stored
  * token. Use after granting the connecting account Full control of the Page.
  */
-export const resubscribeConnector = async (
-    connectorId: string
-): Promise<ConnectorSaveResult> => {
+export const resubscribeConnector = async (connectorId: string): Promise<ConnectorSaveResult> => {
     const res = await authenticatedAxiosInstance.post(
         `${BASE}/connectors/${connectorId}/resubscribe`
     );
@@ -276,6 +279,8 @@ export interface ConnectorUpdateRequest {
      * Pass '{}' to clear all defaults.
      */
     defaultValuesJson?: string;
+    /** Display name for the connector; '' clears it. Omit to leave it unchanged. */
+    platformFormName?: string;
 }
 
 export const updateConnector = async (
@@ -331,5 +336,97 @@ export const buildFieldMappingJson = (
 };
 
 /** Build the full Google webhook URL for display. */
+// ── Google campaign → lead list routing ──────────────────────────────────────
+
+/** One Google campaign of a connector and the list its leads go to (snake_case: API shape). */
+export interface CampaignRoute {
+    campaign_id: string;
+    /** null = not mapped yet: its leads go to the connector's main list. */
+    audience_id: string | null;
+    /** Admin-entered name (Google's webhook sends only the id); null until named. */
+    campaign_name: string | null;
+    lead_count: number;
+    /** UTC, zone-less (the server JVM runs in UTC). */
+    first_lead_at: string | null;
+    last_lead_at: string | null;
+    added_manually: boolean;
+}
+
+export interface CampaignRoutes {
+    /** The connector's own list: the catch-all for campaigns without a list. */
+    main_audience_id: string;
+    routes: CampaignRoute[];
+    /** New campaigns get their own list on their first lead. */
+    auto_create_lists: boolean;
+}
+
+export interface CampaignRouteUpdate {
+    audience_id?: string;
+    /** Create this list and route the campaign to it (wins over audience_id). */
+    new_list?: { name: string; campaign_type?: string };
+    move_existing_leads?: boolean;
+    /** The campaign's name from Google Ads; blank clears it. Sent alone, it only names it. */
+    campaign_name?: string;
+}
+
+export interface CampaignRouteUpdateResult {
+    route: CampaignRoute;
+    created_audience_id: string | null;
+    moved_leads: number;
+    skipped_leads: number;
+}
+
+export const campaignRoutesQueryKey = (connectorId: string) =>
+    ['google-campaign-routes', connectorId] as const;
+
+export const fetchCampaignRoutes = async (connectorId: string): Promise<CampaignRoutes> => {
+    const res = await authenticatedAxiosInstance.get<CampaignRoutes>(
+        `${BASE}/connectors/${connectorId}/campaign-routes`
+    );
+    return res.data;
+};
+
+/** Route a campaign to a list (also maps a campaign id before its first lead). */
+export const updateCampaignRoute = async (
+    connectorId: string,
+    campaignId: string,
+    update: CampaignRouteUpdate
+): Promise<CampaignRouteUpdateResult> => {
+    const res = await authenticatedAxiosInstance.put<CampaignRouteUpdateResult>(
+        `${BASE}/connectors/${connectorId}/campaign-routes/${encodeURIComponent(campaignId)}`,
+        update
+    );
+    return res.data;
+};
+
+/** Turn "a new list for each new campaign" on or off for a connector. */
+export const setCampaignAutoLists = async (
+    connectorId: string,
+    enabled: boolean
+): Promise<CampaignRoutes> => {
+    const res = await authenticatedAxiosInstance.put<CampaignRoutes>(
+        `${BASE}/connectors/${connectorId}/campaign-auto-lists`,
+        { enabled }
+    );
+    return res.data;
+};
+
+/** Remove a campaign added by mistake (only while it has sent no leads). */
+export const deleteCampaignRoute = async (connectorId: string, campaignId: string) => {
+    await authenticatedAxiosInstance.delete(
+        `${BASE}/connectors/${connectorId}/campaign-routes/${encodeURIComponent(campaignId)}`
+    );
+};
+
+/**
+ * The id to show for a connector in lists. A Google connector's platform_form_id IS
+ * its webhook key (a credential), so only its last four characters are shown.
+ */
+export const connectorDisplayId = (c: Pick<ConnectorListItem, 'vendor' | 'platformFormId'>) => {
+    if (!c.platformFormId) return null;
+    if (c.vendor === 'GOOGLE_LEAD_ADS') return `••••${c.platformFormId.slice(-4)}`;
+    return c.platformFormId;
+};
+
 export const buildGoogleWebhookUrl = (googleKey: string): string =>
     `${WEBHOOK_BASE}/google/${googleKey}`;

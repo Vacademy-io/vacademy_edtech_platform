@@ -16,6 +16,7 @@ import { StudentVariableResolver } from './resolvers/student-resolver';
 import { CourseVariableResolver } from './resolvers/course-resolver';
 import { BatchVariableResolver } from './resolvers/batch-resolver';
 import { AttendanceVariableResolver } from './resolvers/attendance-resolver';
+import { isServerResolvedEmailVariable } from '@/lib/email-templates/server-resolved-variables';
 
 export class TemplateVariableResolverManager {
     private resolvers: VariableResolver[] = [];
@@ -142,7 +143,11 @@ export class TemplateVariableResolverManager {
         templateContent: string,
         context?: VariableContext
     ): Promise<VariableResolutionResult> {
-        const variables = this.extractVariables(templateContent);
+        // Membership tags are filled per recipient by the notification service on send, so they
+        // are neither resolvable here nor missing.
+        const variables = this.extractVariables(templateContent).filter(
+            (v) => !isServerResolvedEmailVariable(v)
+        );
         const availableVariables: Record<string, string> = {};
         const missingVariables: string[] = [];
         const warnings: string[] = [];

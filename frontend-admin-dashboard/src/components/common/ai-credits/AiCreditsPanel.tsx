@@ -1,5 +1,7 @@
+import { isInEvalezyShell } from '@/lib/evalezy-mode';
 import { useState, useMemo, useEffect } from 'react';
 import {
+    creditHistoryText,
     useAiCreditsQuery,
     useAiTransactionsQuery,
     useAiUsageAnalyticsQuery,
@@ -9,7 +11,28 @@ import {
 import { getUserId } from '@/utils/userDetails';
 import { parseUtcDate } from '@/utils/dateUtils';
 import { isIOS } from '@/native';
+import { toast } from 'sonner';
+import { getCurrentInstituteId } from '@/lib/auth/instituteUtils';
 import { TopUpModal } from './TopUpModal';
+import { UsageHistoryV2 } from './UsageHistoryV2';
+import { UsageAnalyticsV2 } from './UsageAnalyticsV2';
+import { PlanSummaryCard } from './PlanSummaryCard';
+import {
+    LowCreditPlansNudge,
+    goToPlans,
+    shouldNudgePlans,
+    useStorefrontVisible,
+} from './PlanEntryPoints';
+import { BillingDocumentRow, sortDocuments } from './PlanBillingDocuments';
+import { useBillingDocumentsQuery } from '@/services/ai-plans/storefront';
+import { useTranslation } from 'react-i18next';
+import { useUsageConfigQuery } from '@/services/ai-credits/usage-v2';
+import {
+    usePlatformInvoicesQuery,
+    consumeTopUpReturnId,
+    downloadInvoicePdf,
+    type PlatformInvoiceSummary,
+} from '@/services/ai-credits/credit-pack-services';
 import type {
     CreditTransaction,
     UsageByRequestType,
@@ -31,10 +54,12 @@ import {
     Sparkle,
     TrendUp,
     Receipt,
+    DownloadSimple,
+    FileText,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 
-type TabId = 'overview' | 'transactions' | 'analytics';
+type TabId = 'overview' | 'transactions' | 'analytics' | 'billing';
 
 // ─── Badge (Trigger) ───────────────────────────────
 interface AiCreditsBadgeProps {
@@ -96,7 +121,7 @@ const txTypeConfig: Record<
 };
 
 // ─── Overview Tab ──────────────────────────────────
-function OverviewTab() {
+export function OverviewTab({ storefrontVisible = false }: { storefrontVisible?: boolean }) {
     const { data: credits, isLoading: isCreditsLoading } = useAiCreditsQuery(true);
     const { data: forecast, isLoading: isForecastLoading } = useAiUsageForecastQuery(true);
     const { data: analytics, isLoading: isAnalyticsLoading } = useAiUsageAnalyticsQuery(7, true);
@@ -107,10 +132,17 @@ function OverviewTab() {
         true
     );
 
-    const totalCredits = parseFloat(credits?.total_credits || '0');
     const usedCredits = parseFloat(credits?.used_credits || '0');
     const currentBalance = parseFloat(credits?.current_balance || '0');
+    // In the Evalezy shell, used + left: a balance credited without a ledger entry leaves
+    // total_credits behind ("757 / 100", "2808% consumed" on a healthy balance).
+    const totalCredits = isInEvalezyShell()
+        ? usedCredits + currentBalance
+        : parseFloat(credits?.total_credits || '0');
     const usagePercent = totalCredits > 0 ? (usedCredits / totalCredits) * 100 : 0;
+    const nudgePlans =
+        storefrontVisible &&
+        shouldNudgePlans(!!credits?.is_low_balance, forecast?.estimated_days_remaining);
 
     const getBarColor = () => {
         if (usagePercent > 80) return 'bg-red-500';
@@ -162,6 +194,10 @@ function OverviewTab() {
                     <span>{usagePercent.toFixed(0)}% consumed</span>
                 </div>
             </div>
+
+            {/* AI plan (renders nothing unless the institute has a plan in effect,
+                or — storefront on — a small "Plans from …" card) */}
+            <PlanSummaryCard storefrontAllowed={storefrontVisible} />
 
             {/* Stats grid */}
             <div className="grid grid-cols-2 gap-2">
@@ -262,8 +298,11 @@ function OverviewTab() {
                 )}
             </div>
 
+            {/* Running low and plans are on offer: suggest a plan (replaces the tip) */}
+            {nudgePlans && <LowCreditPlansNudge />}
+
             {/* Forecast recommendation */}
-            {forecast?.recommendation && (
+            {!nudgePlans && forecast?.recommendation && (
                 <div className="rounded-lg border border-blue-100 bg-blue-50/60 px-3 py-2">
                     <p className="text-[11px] leading-relaxed text-blue-700">
                         💡 {forecast.recommendation}
@@ -275,7 +314,7 @@ function OverviewTab() {
 }
 
 // ─── Transactions Tab ──────────────────────────────
-function TransactionsTab() {
+export function TransactionsTab() {
     const [page, setPage] = useState(1);
     const { data, isLoading } = useAiTransactionsQuery(page, 8, undefined, true);
 
@@ -321,8 +360,16 @@ function TransactionsTab() {
                         </div>
                         <div className="min-w-0 flex-1">
                             <div className="flex items-center gap-1.5">
-                                <span className="truncate text-xs font-medium text-neutral-800">
-                                    {tx.description || cfg.label}
+                                {/* A copy check row names the copy: all of it has to stay readable. */}
+                                <span
+                                    className={cn(
+                                        'text-xs font-medium text-neutral-800',
+                                        tx.request_type === 'evaluation'
+                                            ? 'min-w-0 break-words'
+                                            : 'truncate'
+                                    )}
+                                >
+                                    {creditHistoryText(tx.description) || cfg.label}
                                 </span>
                             </div>
                             <div className="mt-0.5 flex items-center gap-2 text-[10px] text-neutral-400">
@@ -385,7 +432,7 @@ function TransactionsTab() {
 }
 
 // ─── Analytics Tab ─────────────────────────────────
-function AnalyticsTab() {
+export function AnalyticsTab() {
     const [days, setDays] = useState(30);
     const { data: analytics, isLoading } = useAiUsageAnalyticsQuery(days, true);
 
@@ -544,11 +591,181 @@ function DailyUsageChart({ data }: { data: { date: string; total_credits: number
     );
 }
 
+// ─── Billing Tab ───────────────────────────────────
+// Credit-pack invoices exactly as before; with the plan storefront on, AI plan
+// invoices and every credit note (from the plans facade) are listed below them.
+export function BillingTab({ storefrontVisible = false }: { storefrontVisible?: boolean }) {
+    return (
+        <div className="space-y-3">
+            <PackInvoiceList />
+            {storefrontVisible && <PlanDocumentList />}
+        </div>
+    );
+}
+
+function PlanDocumentList() {
+    const { t } = useTranslation('aiPlans');
+    const instituteId = getCurrentInstituteId();
+    const { data } = useBillingDocumentsQuery(instituteId);
+    const docs = sortDocuments(
+        (data ?? []).filter((d) => d.doc_type === 'CREDIT_NOTE' || d.item_kind !== 'CREDIT_PACK')
+    );
+    if (!instituteId || docs.length === 0) return null;
+    return (
+        <div className="space-y-1.5">
+            <p className="text-2xs font-semibold uppercase tracking-wide text-neutral-500">
+                {t('invoices.popoverTitle')}
+            </p>
+            <ul className="space-y-1.5">
+                {docs.map((d) => (
+                    <BillingDocumentRow
+                        key={`${d.doc_type}-${d.id}`}
+                        instituteId={instituteId}
+                        doc={d}
+                        compact
+                    />
+                ))}
+            </ul>
+        </div>
+    );
+}
+
+// AI credit purchase invoices (credit packs).
+function PackInvoiceList() {
+    const instituteId = getCurrentInstituteId();
+    const { data, isLoading, isError } = usePlatformInvoicesQuery(instituteId);
+    const [downloadingId, setDownloadingId] = useState<string | null>(null);
+
+    const handleDownload = async (inv: PlatformInvoiceSummary) => {
+        setDownloadingId(inv.invoice_id);
+        try {
+            await downloadInvoicePdf(inv.invoice_id, `${inv.invoice_number}.pdf`);
+        } catch {
+            toast.error('Could not download the invoice', {
+                description: 'Please try again in a moment.',
+            });
+        } finally {
+            setDownloadingId(null);
+        }
+    };
+
+    if (isLoading) {
+        return (
+            <div className="space-y-2">
+                {[...Array(4)].map((_, i) => (
+                    <Skeleton key={i} className="h-14 w-full rounded-lg" />
+                ))}
+            </div>
+        );
+    }
+
+    if (isError) {
+        return (
+            <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+                Could not load invoices. Please try again later.
+            </div>
+        );
+    }
+
+    const invoices = data ?? [];
+
+    if (invoices.length === 0) {
+        return (
+            <div className="flex flex-col items-center justify-center py-8 text-center text-xs text-neutral-400">
+                <FileText className="mb-2 size-8 text-neutral-300" />
+                No purchases yet
+                <span className="mt-1 text-2xs text-neutral-400">
+                    GST tax invoices for credit top-ups will appear here.
+                </span>
+            </div>
+        );
+    }
+
+    return (
+        <div className="space-y-1.5">
+            {invoices.map((inv) => {
+                const refunded = inv.payment_status !== 'PAID';
+                const busy = downloadingId === inv.invoice_id;
+                return (
+                    <div
+                        key={inv.invoice_id}
+                        className="flex items-center gap-2.5 rounded-lg border bg-white px-2.5 py-2 transition-colors hover:bg-neutral-50"
+                    >
+                        <div className="rounded-lg bg-purple-50 p-1.5">
+                            <FileText className="size-3 text-purple-600" weight="bold" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-1.5">
+                                <span className="truncate text-xs font-medium text-neutral-800">
+                                    {inv.pack_name} · {Number(inv.credits).toLocaleString('en-IN')}{' '}
+                                    credits
+                                </span>
+                                {refunded && (
+                                    <span className="rounded bg-amber-50 px-1 py-0.5 text-2xs font-semibold uppercase tracking-wide text-amber-600">
+                                        {inv.payment_status === 'REFUNDED'
+                                            ? 'Refunded'
+                                            : 'Partly refunded'}
+                                    </span>
+                                )}
+                            </div>
+                            <div className="mt-0.5 flex items-center gap-2 text-2xs text-neutral-400">
+                                <span className="truncate font-mono">{inv.invoice_number}</span>
+                                <span>
+                                    {parseUtcDate(inv.issued_at).toLocaleDateString('en-IN', {
+                                        day: 'numeric',
+                                        month: 'short',
+                                        year: 'numeric',
+                                    })}
+                                </span>
+                                {inv.buyer_gstin && (
+                                    <span className="rounded bg-emerald-50 px-1 py-0.5 text-2xs font-semibold text-emerald-600">
+                                        B2B
+                                    </span>
+                                )}
+                            </div>
+                        </div>
+                        <div className="text-end">
+                            <div className="text-xs font-bold text-neutral-800">
+                                {inv.display_total_major}
+                            </div>
+                            <div className="text-2xs text-neutral-400">
+                                {inv.is_export
+                                    ? 'GST 0% (export)'
+                                    : `incl. GST ${(inv.tax_amount_minor / 100).toLocaleString(
+                                          'en-IN',
+                                          {
+                                              minimumFractionDigits: 2,
+                                              maximumFractionDigits: 2,
+                                          }
+                                      )}`}
+                            </div>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={() => handleDownload(inv)}
+                            disabled={busy}
+                            title="Download GST tax invoice (PDF)"
+                            aria-label={`Download invoice ${inv.invoice_number}`}
+                            className="ms-1 rounded-md border border-neutral-200 p-1.5 text-neutral-500 transition-colors hover:border-purple-200 hover:bg-purple-50 hover:text-purple-700 disabled:opacity-50"
+                        >
+                            <DownloadSimple
+                                className={cn('size-3.5', busy && 'animate-pulse')}
+                                weight="bold"
+                            />
+                        </button>
+                    </div>
+                );
+            })}
+        </div>
+    );
+}
+
 // ─── Tab buttons ───────────────────────────────────
 const tabs: { id: TabId; label: string; icon: typeof ChartBar }[] = [
     { id: 'overview', label: 'Overview', icon: ChartBar },
     { id: 'transactions', label: 'History', icon: Clock },
     { id: 'analytics', label: 'Analytics', icon: Lightning },
+    { id: 'billing', label: 'Billing', icon: Receipt },
 ];
 
 // ─── Main Component ────────────────────────────────
@@ -583,30 +800,29 @@ export function AiCreditsPanel({
     const [topUpOpen, setTopUpOpen] = useState(false);
     const [resumePaymentId, setResumePaymentId] = useState<string | null>(null);
 
-    // Returning from Razorpay's hosted payment lands on …?topup_pp=<id>.
-    // Reopen the top-up modal straight into its polling/confirmation state, then
-    // scrub the payment params from the URL so a refresh can't re-trigger it.
+    // Usage metering v2 (History v2 / Analytics v2). Asked for only once the
+    // popover is opened; any error or a false flag keeps today's v1 tabs.
+    const instituteId = getCurrentInstituteId();
+    const usageConfig = useUsageConfigQuery(instituteId, isOpen);
+    // AI plan storefront: asked for only once the popover is open; admin-only,
+    // off by default, hidden on iOS — null keeps the popover exactly as before.
+    const storefront = useStorefrontVisible(instituteId, isOpen && !hideTopUp);
+    const storefrontVisible = !!storefront;
+    const { t: tPlans } = useTranslation('aiPlans');
+    const usageV2 =
+        !!instituteId && usageConfig.data?.history_v2_enabled === true ? instituteId : null;
+    const usageV2Admin = usageConfig.data?.is_admin === true;
+    // Hold the History/Analytics tabs on a skeleton while the flag is in
+    // flight so v1 and v2 never both fire their requests.
+    const usageConfigPending = isOpen && !!instituteId && usageConfig.isPending;
+
+    // Returning from Razorpay's hosted payment: reopen the top-up modal straight
+    // into its polling/confirmation state.
     useEffect(() => {
-        if (typeof window === 'undefined') return;
-        const params = new URLSearchParams(window.location.search);
-        const pp = params.get('topup_pp');
+        const pp = consumeTopUpReturnId();
         if (!pp) return;
         setResumePaymentId(pp);
         setTopUpOpen(true);
-        [
-            'topup_pp',
-            'razorpay_payment_id',
-            'razorpay_payment_link_id',
-            'razorpay_payment_link_reference_id',
-            'razorpay_payment_link_status',
-            'razorpay_signature',
-        ].forEach((k) => params.delete(k));
-        const qs = params.toString();
-        window.history.replaceState(
-            {},
-            '',
-            `${window.location.pathname}${qs ? `?${qs}` : ''}${window.location.hash}`
-        );
     }, []);
 
     if (!credits || isError) return null;
@@ -651,6 +867,8 @@ export function AiCreditsPanel({
                 {/* Tab bar */}
                 <div className="flex gap-0.5 border-b bg-white px-2 pt-1.5">
                     {tabs.map((tab) => {
+                        // Billing (purchase invoices) only makes sense where top-ups do.
+                        if (tab.id === 'billing' && hideTopUp) return null;
                         const Icon = tab.icon;
                         return (
                             <button
@@ -676,9 +894,41 @@ export function AiCreditsPanel({
                 {/* Content */}
                 <div className="max-h-[400px] overflow-y-auto">
                     <div className="p-3">
-                        {activeTab === 'overview' && <OverviewTab />}
-                        {activeTab === 'transactions' && <TransactionsTab />}
-                        {activeTab === 'analytics' && <AnalyticsTab />}
+                        {activeTab === 'overview' && (
+                            <OverviewTab storefrontVisible={storefrontVisible} />
+                        )}
+                        {(activeTab === 'transactions' || activeTab === 'analytics') &&
+                        usageConfigPending ? (
+                            <div className="space-y-2">
+                                {[...Array(4)].map((_, i) => (
+                                    <Skeleton key={i} className="h-12 w-full rounded-lg" />
+                                ))}
+                            </div>
+                        ) : (
+                            <>
+                                {activeTab === 'transactions' &&
+                                    (usageV2 ? (
+                                        <UsageHistoryV2
+                                            instituteId={usageV2}
+                                            isAdmin={usageV2Admin}
+                                        />
+                                    ) : (
+                                        <TransactionsTab />
+                                    ))}
+                                {activeTab === 'analytics' &&
+                                    (usageV2 ? (
+                                        <UsageAnalyticsV2
+                                            instituteId={usageV2}
+                                            isAdmin={usageV2Admin}
+                                        />
+                                    ) : (
+                                        <AnalyticsTab />
+                                    ))}
+                            </>
+                        )}
+                        {activeTab === 'billing' && (
+                            <BillingTab storefrontVisible={storefrontVisible} />
+                        )}
                     </div>
                 </div>
 
@@ -689,17 +939,31 @@ export function AiCreditsPanel({
                         <span />
                     ) : (
                         footerAction ?? (
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    setIsOpen(false);
-                                    setTopUpOpen(true);
-                                }}
-                                className="flex items-center gap-1.5 rounded-lg bg-purple-600 px-2.5 py-1.5 text-[11px] font-semibold text-white shadow-sm transition-colors hover:bg-purple-700"
-                            >
-                                <Sparkle className="size-3" weight="fill" />
-                                Top up
-                            </button>
+                            <div className="flex items-center gap-1.5">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setIsOpen(false);
+                                        setTopUpOpen(true);
+                                    }}
+                                    className="flex items-center gap-1.5 rounded-lg bg-purple-600 px-2.5 py-1.5 text-[11px] font-semibold text-white shadow-sm transition-colors hover:bg-purple-700"
+                                >
+                                    <Sparkle className="size-3" weight="fill" />
+                                    Top up
+                                </button>
+                                {storefrontVisible && (
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setIsOpen(false);
+                                            goToPlans();
+                                        }}
+                                        className="rounded-lg border border-primary-200 px-2.5 py-1.5 text-2xs font-semibold text-primary-600 transition-colors hover:bg-primary-50"
+                                    >
+                                        {tPlans('entry.plansLink')}
+                                    </button>
+                                )}
+                            </div>
                         )
                     )}
 

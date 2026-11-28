@@ -8,6 +8,7 @@ import {
   SpinnerGap,
   WarningCircle,
 } from "@phosphor-icons/react";
+import { useTranslation } from "react-i18next";
 import { ModernCard } from "@/components/design-system/modern-card";
 import { MyButton } from "@/components/design-system/button";
 import PaymentSelectionStep from "@/components/common/enroll-by-invite/-components/payment-selection-step";
@@ -134,6 +135,7 @@ const PaymentStep = ({
   onSessionMissing,
   onBack,
 }: PaymentStepProps) => {
+  const { t } = useTranslation("registrationB");
   const vendor = (payment.vendor || "").toUpperCase() as PaymentVendor;
 
   const [phase, setPhase] = useState<PaymentPhase>(
@@ -245,7 +247,7 @@ const PaymentStep = ({
       planId: string
     ): Promise<CompleteRegistrationResponse | null> => {
       if (!registrationId) {
-        toast.error("Registration session missing. Please start again");
+        toast.error(t("common.sessionMissing"));
         onSessionMissing();
         return null;
       }
@@ -260,7 +262,7 @@ const PaymentStep = ({
       setCompleteResponse(response);
       return response;
     },
-    [registrationId, tncAccepted, customFieldValues, onSessionMissing]
+    [registrationId, tncAccepted, customFieldValues, onSessionMissing, t]
   );
 
   /**
@@ -275,7 +277,7 @@ const PaymentStep = ({
       paymentInitiationRequest: PaymentInitiationRequest
     ): Promise<CompleteRegistrationResponse | null> => {
       if (!registrationId) {
-        toast.error("Registration session missing. Please start again");
+        toast.error(t("common.sessionMissing"));
         onSessionMissing();
         return null;
       }
@@ -291,7 +293,7 @@ const PaymentStep = ({
       setCompleteResponse(response);
       return response;
     },
-    [registrationId, onSessionMissing, onRegistered]
+    [registrationId, onSessionMissing, onRegistered, t]
   );
 
   /** Routes order creation: /retry-payment when retrying, else the one-shot /complete. */
@@ -389,9 +391,7 @@ const PaymentStep = ({
       if (!paymentSessionId) {
         const userPlanId = response.user_plan_id;
         if (!userPlanId) {
-          throw new Error(
-            "Could not prepare the payment session. Please contact support"
-          );
+          throw new Error(t("subOrgRegistration.payment.sessionPrepFailed"));
         }
         // Public flow — a token exists only if the visitor is already logged in.
         const token = (await getTokenFromStorage(TokenKey.accessToken)) ?? "";
@@ -419,7 +419,7 @@ const PaymentStep = ({
 
       if (!paymentSessionId) {
         throw new Error(
-          "Failed to initialize payment. Please try again or contact support"
+          t("subOrgRegistration.payment.initFailedContactSupport")
         );
       }
       setOrderId(cfOrderId);
@@ -432,10 +432,7 @@ const PaymentStep = ({
         environment: cfEnvironment,
       });
     } catch (err) {
-      handlePaymentFailure(
-        err,
-        "Failed to initialize payment. Please try again"
-      );
+      handlePaymentFailure(err, t("subOrgRegistration.payment.initFailed"));
     } finally {
       setCashfreeInitLoading(false);
     }
@@ -451,6 +448,7 @@ const PaymentStep = ({
     stashReturnContext,
     createPaymentOrder,
     handlePaymentFailure,
+    t,
   ]);
 
   useEffect(() => {
@@ -472,16 +470,13 @@ const PaymentStep = ({
     try {
       if (vendor === "STRIPE") {
         if (!stripeProcessor) {
-          setError(
-            "The payment form is still loading. Please wait a moment and try again"
-          );
+          setError(t("subOrgRegistration.payment.stripeLoading"));
           return;
         }
         const result = await stripeProcessor();
         if (!result.success || !result.paymentMethodId) {
           setError(
-            result.error ||
-              "Payment processing failed. Please check your card details"
+            result.error || t("subOrgRegistration.payment.stripeFailed")
           );
           return;
         }
@@ -502,7 +497,7 @@ const PaymentStep = ({
 
       if (vendor === "EWAY") {
         if (!ewayData) {
-          setError("Please complete the card details first");
+          setError(t("subOrgRegistration.payment.ewayIncomplete"));
           return;
         }
         const response = await createPaymentOrder(
@@ -546,13 +541,13 @@ const PaymentStep = ({
             ? responseData.razorpayOrderId
             : "";
         if (!razorpayKeyId || !razorpayOrderId) {
-          throw new Error("Failed to create the payment order. Please try again");
+          throw new Error(
+            t("subOrgRegistration.payment.orderCreateFailed")
+          );
         }
         setOrderId(response.payment_response?.order_id ?? "");
         if (!razorpayRef.current) {
-          throw new Error(
-            "The payment gateway is not ready yet. Please try again"
-          );
+          throw new Error(t("subOrgRegistration.payment.gatewayNotReady"));
         }
         razorpayRef.current.openPayment({
           razorpayKeyId,
@@ -600,9 +595,7 @@ const PaymentStep = ({
             responseData.redirect_url) ||
           "";
         if (!redirectUrl) {
-          throw new Error(
-            "Could not start PhonePe checkout. Please try again or contact support"
-          );
+          throw new Error(t("subOrgRegistration.payment.phonepeFailed"));
         }
         const ordId = response.payment_response?.order_id ?? "";
         if (ordId) {
@@ -624,13 +617,10 @@ const PaymentStep = ({
       }
 
       setError(
-        `The payment gateway "${vendor}" is not supported yet. Please contact support`
+        t("subOrgRegistration.payment.vendorUnsupported", { vendor })
       );
     } catch (err) {
-      handlePaymentFailure(
-        err,
-        "Payment could not be processed. Please try again"
-      );
+      handlePaymentFailure(err, t("subOrgRegistration.payment.processFailed"));
     } finally {
       if (!redirecting) setIsProcessing(false);
     }
@@ -694,16 +684,15 @@ const PaymentStep = ({
             <HourglassHigh className="size-8 text-warning-600" />
           </div>
           <h2 className="text-xl font-semibold text-neutral-700">
-            Payment already in progress
+            {t("subOrgRegistration.payment.alreadyInProgressTitle")}
           </h2>
           <p className="mx-auto max-w-md text-sm text-neutral-500">
-            A payment for this registration is already being processed. If you
-            completed it, your login credentials will be emailed to{" "}
+            {t("subOrgRegistration.payment.alreadyInProgressPrefix")}{" "}
             <span className="font-semibold text-neutral-700">{adminEmail}</span>{" "}
-            shortly.
+            {t("subOrgRegistration.payment.alreadyInProgressSuffix")}
           </p>
           <p className="text-caption text-neutral-400">
-            If the payment didn&apos;t go through, you can retry it below.
+            {t("subOrgRegistration.payment.retryHint")}
           </p>
           <div className="flex justify-center pt-1">
             <MyButton
@@ -715,7 +704,7 @@ const PaymentStep = ({
               className="w-full sm:w-auto"
             >
               <CreditCard className="me-2 size-4" />
-              Complete payment
+              {t("subOrgRegistration.payment.completePaymentButton")}
             </MyButton>
           </div>
         </div>
@@ -736,19 +725,18 @@ const PaymentStep = ({
             <CreditCard className="size-8 text-primary-500" />
           </div>
           <h2 className="text-xl font-semibold text-neutral-700">
-            Complete your payment
+            {t("subOrgRegistration.payment.retryConfirmTitle")}
           </h2>
           <p className="mx-auto max-w-md text-sm text-neutral-500">
-            Your registration for{" "}
+            {t("subOrgRegistration.payment.retryConfirmFor")}{" "}
             <span className="font-semibold text-neutral-700">
               {templateName}
             </span>{" "}
-            is saved — only the payment is pending. Your plan is already locked
-            in
+            {t("subOrgRegistration.payment.retryConfirmLockedIn")}
             {retryDisplayPlan ? (
               <>
                 {" "}
-                at{" "}
+                {t("subOrgRegistration.payment.retryConfirmAt")}{" "}
                 <span className="font-semibold text-neutral-700">
                   {getCurrencySymbol(currency)}
                   {retryDisplayPlan.actual_price}
@@ -766,7 +754,7 @@ const PaymentStep = ({
               onClick={() => setPhase("GATEWAY")}
               className="w-full min-w-40 sm:w-auto"
             >
-              Proceed to Payment
+              {t("subOrgRegistration.payment.proceedButton")}
             </MyButton>
           </div>
         </div>
@@ -797,7 +785,7 @@ const PaymentStep = ({
           selectedPayment={selectedPayment}
           onPaymentSelect={handlePaymentSelect}
         />
-        <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
+        <div className="flex flex-col-reverse gap-stack sm:flex-row sm:justify-between">
           {canGoBack ? (
             <MyButton
               type="button"
@@ -809,7 +797,7 @@ const PaymentStep = ({
               className="w-full sm:w-auto"
             >
               <ArrowLeft className="me-2 size-4" />
-              Back
+              {t("common.back")}
             </MyButton>
           ) : (
             <span className="hidden sm:block" />
@@ -823,7 +811,7 @@ const PaymentStep = ({
             disable={!selectedPayment}
             className="w-full min-w-32 sm:w-auto"
           >
-            Continue to Payment
+            {t("subOrgRegistration.payment.continueToPaymentButton")}
           </MyButton>
         </div>
       </div>
@@ -840,14 +828,16 @@ const PaymentStep = ({
         rounded="lg"
         className="border border-white/40 bg-white/90 shadow-lg backdrop-blur-md"
       >
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-stack sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-start gap-2 sm:gap-3">
             <div className="flex-shrink-0 rounded-lg bg-primary-50 p-1.5 sm:p-2">
               <CreditCard className="size-5 text-primary-500 sm:size-6" />
             </div>
             <div>
               <p className="text-caption text-neutral-500">
-                {selectedPayment ? "Selected plan" : "Payment"}
+                {selectedPayment
+                  ? t("subOrgRegistration.payment.selectedPlanLabel")
+                  : t("subOrgRegistration.payment.paymentLabel")}
               </p>
               <p className="text-sm font-semibold text-neutral-700">
                 {selectedPayment?.name ?? retryDisplayPlan?.name ?? templateName}
@@ -876,7 +866,7 @@ const PaymentStep = ({
                 disable={isProcessing || cashfreeInitLoading}
               >
                 <ArrowLeft className="me-1 size-3.5" />
-                Change plan
+                {t("subOrgRegistration.payment.changePlanButton")}
               </MyButton>
             )}
           </div>
@@ -902,7 +892,10 @@ const PaymentStep = ({
         userEmail={adminEmail}
         userContact={adminPhone}
         courseName={templateName}
-        courseDescription={`Registration payment for ${templateName}`}
+        courseDescription={t(
+          "subOrgRegistration.payment.registrationPaymentFor",
+          { templateName }
+        )}
         razorpayRef={razorpayRef}
         cashfreePaymentSessionId={cashfreeSession?.paymentSessionId ?? null}
         cashfreeEnvironment={cashfreeSession?.environment}
@@ -933,7 +926,7 @@ const PaymentStep = ({
                 disable={cashfreeInitLoading}
               >
                 <ArrowCounterClockwise className="me-1 size-3.5" />
-                Try again
+                {t("subOrgRegistration.payment.tryAgainButton")}
               </MyButton>
             </div>
           )}
@@ -955,10 +948,10 @@ const PaymentStep = ({
             {isProcessing ? (
               <>
                 <SpinnerGap className="me-2 size-4 animate-spin" />
-                Processing...
+                {t("subOrgRegistration.payment.processingButton")}
               </>
             ) : (
-              "Confirm & Pay"
+              t("subOrgRegistration.payment.confirmAndPayButton")
             )}
           </MyButton>
         </div>

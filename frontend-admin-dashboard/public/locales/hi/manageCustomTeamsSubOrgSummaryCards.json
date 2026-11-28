@@ -1,0 +1,8 @@
+{
+    "cards": {
+        "totalTerm": "कुल {{term}}",
+        "active": "सक्रिय",
+        "totalLearners": "कुल शिक्षार्थी",
+        "totalSeats": "कुल सीटें"
+    }
+}

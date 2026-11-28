@@ -1,0 +1,19 @@
+{
+    "tabs": {
+        "outline": "रूपरेखा",
+        "contentStructure": "सामग्री संरचना",
+        "assessment": "मूल्यांकन",
+        "quizResults": "क्विज़ परिणाम",
+        "planning": "योजना",
+        "activity": "गतिविधि",
+        "pulse": "पल्स",
+        "reports": "रिपोर्ट",
+        "certificates": "प्रमाणपत्र",
+        "downloads": "डाउनलोड",
+        "settings": "सेटिंग्स",
+        "discussion": "चर्चा",
+        "tutorMode": "ट्यूटर मोड",
+        "aiKnowledge": "AI ज्ञान",
+        "engagement": "सहभागिता"
+    }
+}

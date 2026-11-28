@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import {
@@ -9,7 +10,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Info } from 'lucide-react';
+import { Info } from '@phosphor-icons/react';
 import { PaymentPlans } from '@/types/payment';
 
 interface CustomInterval {
@@ -42,6 +43,8 @@ export const PlanDiscountsConfiguration: React.FC<PlanDiscountsConfigurationProp
     onPlanDiscountsChange,
     getCurrencySymbol,
 }) => {
+    const { t } = useTranslation('settingsPlanDiscountsConfiguration');
+
     const updateDiscount = (key: string, type: string, amount: string) => {
         const updatedDiscounts = {
             ...planDiscounts,
@@ -70,10 +73,8 @@ export const PlanDiscountsConfiguration: React.FC<PlanDiscountsConfigurationProp
     return (
         <Card>
             <CardHeader>
-                <CardTitle className="text-lg">Apply Discounts to Plan</CardTitle>
-                <p className="text-sm text-gray-600">
-                    Set discounts for each plan interval or price tier
-                </p>
+                <CardTitle className="text-lg">{t('header.title')}</CardTitle>
+                <p className="text-sm text-gray-600">{t('header.subtitle')}</p>
             </CardHeader>
             <CardContent>
                 {planType === PaymentPlans.SUBSCRIPTION && customIntervals.length > 0 ? (
@@ -82,19 +83,19 @@ export const PlanDiscountsConfiguration: React.FC<PlanDiscountsConfigurationProp
                             <thead>
                                 <tr className="bg-gray-50">
                                     <th className="border border-gray-200 px-4 py-2 text-left font-medium">
-                                        Subscription Interval
+                                        {t('table.headers.subscriptionInterval')}
                                     </th>
                                     <th className="border border-gray-200 px-4 py-2 text-left font-medium">
-                                        Original Price
+                                        {t('table.headers.originalPrice')}
                                     </th>
                                     <th className="border border-gray-200 px-4 py-2 text-left font-medium">
-                                        Discount Type
+                                        {t('table.headers.discountType')}
                                     </th>
                                     <th className="border border-gray-200 px-4 py-2 text-left font-medium">
-                                        Discount Amount
+                                        {t('table.headers.discountAmount')}
                                     </th>
                                     <th className="border border-gray-200 px-4 py-2 text-left font-medium">
-                                        Final Price
+                                        {t('table.headers.finalPrice')}
                                     </th>
                                 </tr>
                             </thead>
@@ -115,7 +116,10 @@ export const PlanDiscountsConfiguration: React.FC<PlanDiscountsConfigurationProp
                                             <td className="border border-gray-200 px-4 py-2">
                                                 <span className="font-medium">
                                                     {interval.title ||
-                                                        `${interval.value} ${interval.unit} Plan`}
+                                                        t('table.intervalPlanFallback', {
+                                                            value: interval.value,
+                                                            unit: interval.unit,
+                                                        })}
                                                 </span>
                                             </td>
                                             <td className="border border-gray-200 px-4 py-2">
@@ -140,13 +144,13 @@ export const PlanDiscountsConfiguration: React.FC<PlanDiscountsConfigurationProp
                                                     </SelectTrigger>
                                                     <SelectContent>
                                                         <SelectItem value="none">
-                                                            No Discount
+                                                            {t('discountOptions.none')}
                                                         </SelectItem>
                                                         <SelectItem value="percentage">
-                                                            % Off
+                                                            {t('discountOptions.percentage')}
                                                         </SelectItem>
                                                         <SelectItem value="fixed">
-                                                            Flat Off
+                                                            {t('discountOptions.fixed')}
                                                         </SelectItem>
                                                     </SelectContent>
                                                 </Select>
@@ -169,8 +173,8 @@ export const PlanDiscountsConfiguration: React.FC<PlanDiscountsConfigurationProp
                                                             }
                                                             placeholder={
                                                                 discountType === 'percentage'
-                                                                    ? '10'
-                                                                    : '50'
+                                                                    ? t('placeholders.percentage')
+                                                                    : t('placeholders.fixed')
                                                             }
                                                             value={discountAmount}
                                                             onChange={(e) =>
@@ -199,7 +203,8 @@ export const PlanDiscountsConfiguration: React.FC<PlanDiscountsConfigurationProp
                                                 </span>
                                                 {finalPrice < originalPrice && (
                                                     <div className="text-xs text-gray-500">
-                                                        Save {getCurrencySymbol(currency)}
+                                                        {t('table.savePrefix')}{' '}
+                                                        {getCurrencySymbol(currency)}
                                                         {(
                                                             originalPrice - finalPrice
                                                         ).toLocaleString()}
@@ -218,26 +223,28 @@ export const PlanDiscountsConfiguration: React.FC<PlanDiscountsConfigurationProp
                             <thead>
                                 <tr className="bg-gray-50">
                                     <th className="border border-gray-200 px-4 py-2 text-left font-medium">
-                                        Plan Type
+                                        {t('table.headers.planType')}
                                     </th>
                                     <th className="border border-gray-200 px-4 py-2 text-left font-medium">
-                                        Original Price
+                                        {t('table.headers.originalPrice')}
                                     </th>
                                     <th className="border border-gray-200 px-4 py-2 text-left font-medium">
-                                        Discount Type
+                                        {t('table.headers.discountType')}
                                     </th>
                                     <th className="border border-gray-200 px-4 py-2 text-left font-medium">
-                                        Discount Amount
+                                        {t('table.headers.discountAmount')}
                                     </th>
                                     <th className="border border-gray-200 px-4 py-2 text-left font-medium">
-                                        Final Price
+                                        {t('table.headers.finalPrice')}
                                     </th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <tr className="hover:bg-gray-50">
                                     <td className="border border-gray-200 px-4 py-2">
-                                        <span className="font-medium">One-Time Payment</span>
+                                        <span className="font-medium">
+                                            {t('table.oneTimePayment')}
+                                        </span>
                                     </td>
                                     <td className="border border-gray-200 px-4 py-2">
                                         <span className="font-medium">
@@ -260,9 +267,15 @@ export const PlanDiscountsConfiguration: React.FC<PlanDiscountsConfigurationProp
                                                 <SelectValue />
                                             </SelectTrigger>
                                             <SelectContent>
-                                                <SelectItem value="none">No Discount</SelectItem>
-                                                <SelectItem value="percentage">% Off</SelectItem>
-                                                <SelectItem value="fixed">Flat Off</SelectItem>
+                                                <SelectItem value="none">
+                                                    {t('discountOptions.none')}
+                                                </SelectItem>
+                                                <SelectItem value="percentage">
+                                                    {t('discountOptions.percentage')}
+                                                </SelectItem>
+                                                <SelectItem value="fixed">
+                                                    {t('discountOptions.fixed')}
+                                                </SelectItem>
                                             </SelectContent>
                                         </Select>
                                     </td>
@@ -284,8 +297,8 @@ export const PlanDiscountsConfiguration: React.FC<PlanDiscountsConfigurationProp
                                                     }
                                                     placeholder={
                                                         planDiscounts.upfront?.type === 'percentage'
-                                                            ? '10'
-                                                            : '50'
+                                                            ? t('placeholders.percentage')
+                                                            : t('placeholders.fixed')
                                                     }
                                                     value={planDiscounts.upfront?.amount || ''}
                                                     onChange={(e) =>
@@ -329,7 +342,8 @@ export const PlanDiscountsConfiguration: React.FC<PlanDiscountsConfigurationProp
                                                     </span>
                                                     {finalPrice < originalPrice && (
                                                         <div className="text-xs text-gray-500">
-                                                            Save {getCurrencySymbol(currency)}
+                                                            {t('table.savePrefix')}{' '}
+                                                            {getCurrencySymbol(currency)}
                                                             {(
                                                                 originalPrice - finalPrice
                                                             ).toLocaleString()}
@@ -346,9 +360,7 @@ export const PlanDiscountsConfiguration: React.FC<PlanDiscountsConfigurationProp
                 ) : (
                     <Alert>
                         <Info className="size-4" />
-                        <AlertDescription>
-                            No pricing information available for this plan type.
-                        </AlertDescription>
+                        <AlertDescription>{t('emptyState')}</AlertDescription>
                     </Alert>
                 )}
             </CardContent>

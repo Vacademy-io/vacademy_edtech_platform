@@ -1,0 +1,27 @@
+{
+    "stages": {
+        "salaryStructure": "Salary structure",
+        "attendance": "Attendance",
+        "components": "Components",
+        "tax": "Tax",
+        "statutory": "Statutory",
+        "loans": "Loans",
+        "reimbursements": "Reimbursements",
+        "adjustments": "Adjustments",
+        "persist": "Saving the entry"
+    },
+    "table": {
+        "headers": {
+            "employeeId": "Employee id",
+            "failedAt": "Failed at",
+            "whatWentWrong": "What went wrong"
+        },
+        "noMessage": "No message recorded."
+    },
+    "loadError": "Could not load the errors for this run.",
+    "empty": {
+        "title": "Every employee processed cleanly.",
+        "description": "Nothing failed in this run — the register covers everyone it was meant to."
+    },
+    "banner": "These employees are simply <0>absent</0> from this run — no payslip, nothing paid. Fix the underlying data (usually a missing salary structure), then Reject the run and process it again to include them."
+}

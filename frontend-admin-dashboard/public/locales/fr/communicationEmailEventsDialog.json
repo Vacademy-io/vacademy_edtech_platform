@@ -1,0 +1,22 @@
+{
+    "eventLabels": {
+        "delivery": "E-mails livrés",
+        "open": "E-mails ouverts",
+        "click": "E-mails cliqués",
+        "bounce": "E-mails rejetés",
+        "complaint": "Réclamations"
+    },
+    "window": {
+        "last24h": "les dernières 24h",
+        "lastDays_one": "le dernier {{count}} jour",
+        "lastDays_many": "les {{count}} derniers jours",
+        "lastDays_other": "les {{count}} derniers jours"
+    },
+    "loadingEvents": "Chargement des événements des {{window}}…",
+    "eventsCount_one": "{{formattedCount}} événement dans les {{window}}.",
+    "eventsCount_many": "{{formattedCount}} événements dans les {{window}}.",
+    "eventsCount_other": "{{formattedCount}} événements dans les {{window}}.",
+    "errorLoad": "Impossible de charger les e-mails. Veuillez réessayer.",
+    "emptyState": "Aucun {{label}} dans les {{window}}.",
+    "openedFrom": "Ouvert depuis {{ip}}"
+}

@@ -1,7 +1,8 @@
 import type { ReactNode } from 'react';
 import type { LeadCardVM } from './lead-view-model';
 
-export type LeadTier = 'HOT' | 'WARM' | 'COLD';
+/** A tier_key from the institute's lead_tier catalog (HOT / WARM / COLD by default). */
+export type LeadTier = string;
 export type LeadStatus = 'LEAD' | 'CONVERTED' | 'LOST';
 
 /**

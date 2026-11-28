@@ -1,0 +1,19 @@
+{
+    "validationPassed": "सीएसवी सत्यापन सफल",
+    "validationFailed": "सीएसवी सत्यापन विफल",
+    "errorsCount_one": "{{count}} त्रुटि",
+    "errorsCount_other": "{{count}} त्रुटियाँ",
+    "warningsCount_one": "{{count}} चेतावनी",
+    "warningsCount_other": "{{count}} चेतावनियाँ",
+    "allChecksPassed": "सभी जांचें सफलतापूर्वक पूरी हुईं",
+    "hideDetails": "विवरण छिपाएं",
+    "showDetails": "विवरण दिखाएं",
+    "errorsHeading": "त्रुटियाँ ({{count}})",
+    "warningsHeading": "चेतावनियाँ ({{count}})",
+    "requirementsHeading": "सीएसवी आवश्यकताएं:",
+    "requirementFirstColumns": "पहले 3 कॉलम होने चाहिए: user_id, enrollment_number, student_name",
+    "requirementAllSelectedIncluded": "सभी चयनित छात्रों को सीएसवी में शामिल किया जाना चाहिए",
+    "requirementNoExtraStudents": "चयनित छात्रों के अलावा कोई अतिरिक्त छात्र नहीं होना चाहिए",
+    "requirementUniqueHeaders": "तीसरे कॉलम के बाद के हेडर अद्वितीय होने चाहिए",
+    "requirementFileSize": "फ़ाइल का आकार 1MB से अधिक नहीं होना चाहिए"
+}

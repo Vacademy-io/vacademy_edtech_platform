@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { CheckCircle, UserMinus } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 import { MyButton } from '@/components/design-system/button';
@@ -27,6 +28,7 @@ export function RecordSessionDialog({
     open: boolean;
     onOpenChange: (open: boolean) => void;
 }) {
+    const { t } = useTranslation('mentorshipRecordSessionDialog');
     const [outcome, setOutcome] = useState<'COMPLETED' | 'NO_SHOW' | null>(null);
     const [topic, setTopic] = useState('');
     const [notes, setNotes] = useState('');
@@ -52,14 +54,16 @@ export function RecordSessionDialog({
                     notes: notes.trim() || undefined,
                 },
             });
-            toast.success(outcome === 'COMPLETED' ? 'Session recorded' : 'Marked as a no-show');
+            toast.success(
+                outcome === 'COMPLETED' ? t('sessionRecorded') : t('markedNoShow')
+            );
             onOpenChange(false);
         } catch (error) {
             reportApiError(error, {
                 feature: 'mentorship',
                 tags: { 'mentorship.action': 'record-session' },
                 extra: { bookingInstanceId: session.booking_instance_id, outcome },
-                fallbackMessage: "Couldn't save this session. Please try again.",
+                fallbackMessage: t('saveFailed'),
             });
         }
     };
@@ -68,7 +72,7 @@ export function RecordSessionDialog({
 
     return (
         <MyDialog
-            heading="Record session"
+            heading={t('heading')}
             open={open}
             onOpenChange={onOpenChange}
             dialogWidth="max-w-md"
@@ -80,7 +84,7 @@ export function RecordSessionDialog({
                         scale="medium"
                         onClick={() => onOpenChange(false)}
                     >
-                        Cancel
+                        {t('cancel')}
                     </MyButton>
                     <MyButton
                         type="button"
@@ -88,33 +92,33 @@ export function RecordSessionDialog({
                         scale="medium"
                         onClick={submit}
                         disable={!outcome || record.isPending}
-                        title={!outcome ? 'Pick an outcome first' : undefined}
+                        title={!outcome ? t('pickOutcomeFirst') : undefined}
                     >
-                        {record.isPending ? 'Saving…' : 'Save'}
+                        {record.isPending ? t('saving') : t('save')}
                     </MyButton>
                 </div>
             }
         >
             <div className="flex flex-col gap-4">
                 <p className="text-body text-neutral-600">
-                    <b>{session.title || 'Session'}</b> with{' '}
-                    <b>{session.student_name || 'your mentee'}</b>
+                    <b>{session.title || t('sessionFallback')}</b> {t('withMentee')}{' '}
+                    <b>{session.student_name || t('menteeFallback')}</b>
                 </p>
 
                 <div className="flex flex-col gap-1.5">
                     <span className="text-caption font-semibold uppercase tracking-wide text-neutral-400">
-                        What happened?
+                        {t('whatHappened')}
                     </span>
                     <div className="flex gap-2">
                         <OutcomeChoice
-                            label="It went ahead"
+                            label={t('outcomeWentAhead')}
                             icon={<CheckCircle size={18} weight="fill" />}
                             selected={outcome === 'COMPLETED'}
                             tone="success"
                             onClick={() => setOutcome('COMPLETED')}
                         />
                         <OutcomeChoice
-                            label="They didn't show"
+                            label={t('outcomeNoShow')}
                             icon={<UserMinus size={18} weight="fill" />}
                             selected={outcome === 'NO_SHOW'}
                             tone="danger"
@@ -129,8 +133,8 @@ export function RecordSessionDialog({
                         setTopic(e.target.value)
                     }
                     inputType="text"
-                    inputPlaceholder="e.g. Rotational motion"
-                    label="Topic covered (optional)"
+                    inputPlaceholder={t('topicPlaceholder')}
+                    label={t('topicLabel')}
                     className="sm:w-full"
                 />
 
@@ -139,18 +143,18 @@ export function RecordSessionDialog({
                         htmlFor="session-notes"
                         className="text-caption font-medium text-neutral-600"
                     >
-                        Notes (optional)
+                        {t('notesLabel')}
                     </label>
                     <Textarea
                         id="session-notes"
                         value={notes}
                         maxLength={MAX_NOTES}
                         onChange={(e) => setNotes(e.target.value)}
-                        placeholder="Progress, blockers, what to do before the next session…"
+                        placeholder={t('notesPlaceholder')}
                         className="min-h-24 resize-none"
                     />
                     <span className="text-caption text-neutral-400">
-                        Visible to you and your admins. Never shown to the learner.
+                        {t('notesHelp')}
                     </span>
                 </div>
             </div>

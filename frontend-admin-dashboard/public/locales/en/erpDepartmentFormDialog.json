@@ -1,0 +1,26 @@
+{
+    "editHeading": "Edit department",
+    "addHeading": "Add department",
+    "cancel": "Cancel",
+    "saveChanges": "Save changes",
+    "saving": "Saving…",
+    "noParent": "No parent (top level)",
+    "fields": {
+        "nameLabel": "Name",
+        "namePlaceholder": "e.g. Academics",
+        "codeLabel": "Code",
+        "codePlaceholder": "e.g. ACAD",
+        "codeHelp": "Short code used in reports and payroll exports.",
+        "parentLabel": "Parent department",
+        "descriptionLabel": "Description",
+        "descriptionPlaceholder": "What this department is responsible for"
+    },
+    "toasts": {
+        "updated": "Department updated",
+        "added": "Department added"
+    },
+    "errors": {
+        "nameRequired": "Give the department a name",
+        "saveFailed": "Could not save this department"
+    }
+}

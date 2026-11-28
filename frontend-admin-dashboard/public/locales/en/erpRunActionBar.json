@@ -1,0 +1,57 @@
+{
+    "thisMonth": "this month",
+    "notYet": "Not yet",
+    "keepTheRun": "Keep the run",
+    "adminOnlyNotice": "Processing, approving and paying a run is limited to HR admins. You can review every figure here.",
+    "buttons": {
+        "processRun": "Process run",
+        "approveRun": "Approve run",
+        "markAsPaid": "Mark as paid",
+        "rejectAndRecalculate": "Reject & recalculate",
+        "cancelRun": "Cancel run"
+    },
+    "process": {
+        "heading": "Process payroll for {{period}}",
+        "processing": "Processing…",
+        "body1": "This computes a payslip for every employee this run covers — earnings, statutory deductions, loan EMIs and approved reimbursements.",
+        "body2Prefix": "It also",
+        "body2Bold": "locks {{period}}'s attendance and leave",
+        "body2Suffix": ", so corrections after this point need the run rejected first.",
+        "body3": "Processing runs synchronously and takes longer the more employees you have. Employees it cannot compute are listed under Errors rather than failing the whole run."
+    },
+    "approve": {
+        "heading": "Approve {{period}} payroll",
+        "keepReviewing": "Keep reviewing",
+        "approving": "Approving…",
+        "body1Prefix": "Approving",
+        "body1Bold": "posts the accounting journal",
+        "body1Suffix": "for this run — salary expense, statutory liabilities and net payable all land in the books.",
+        "body2": "Check the totals and any held employees first. Approval can still be undone with Reject, but that reverses the journal too."
+    },
+    "markPaid": {
+        "heading": "Mark {{period}} payroll as paid",
+        "marking": "Marking paid…",
+        "body1": "Do this once the money has actually left the bank. Every entry in the run is marked paid and the run closes.",
+        "body2": "A paid run can no longer be rejected or cancelled — it is the end of the line."
+    },
+    "reject": {
+        "title": "Reject {{period}} payroll?",
+        "intro": "This unwinds everything processing did:",
+        "item1": "Loan EMIs deducted by this run are reversed",
+        "item2": "Reimbursements are unlinked and become claimable again",
+        "item3": "Every computed payslip entry is deleted",
+        "item4": "The accounting journal is reversed",
+        "returnsPrefix": "The run returns to",
+        "draft": "Draft",
+        "returnsSuffix": "so you can fix the data and process it again. Nothing is lost permanently, but the figures on this screen are.",
+        "rejecting": "Rejecting…",
+        "confirm": "Reject & return to Draft"
+    },
+    "cancel": {
+        "title": "Cancel {{period}} payroll?",
+        "body1": "The run is closed as cancelled and drops off the happy path. Any loan EMIs and reimbursements it had claimed are released back to the employees.",
+        "body2": "A fresh run can then be created for {{period}} — cancelling is how you start over rather than correct.",
+        "cancelling": "Cancelling…",
+        "confirm": "Cancel this run"
+    }
+}

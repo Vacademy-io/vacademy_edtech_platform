@@ -1,0 +1,82 @@
+{
+    "grid": {
+        "title": "Folders",
+        "newFolder": "New folder",
+        "dropHint": "Drop the paper on a folder to move it there",
+        "empty": "No folders yet. Create one, then drag papers into it or use ⋯ → Move to folder.",
+        "count_one": "{{count}} paper",
+        "count_other": "{{count}} papers",
+        "reorder": "Drag to reorder {{name}}",
+        "loading": "Loading folders…",
+        "loadError": "Could not load the folders.",
+        "retry": "Try again",
+        "unfiledTitle": "Not in a folder",
+        "unfiledHint": "Drag a paper onto a folder above to move it, or use ⋯ → Move to folder.",
+        "allFolders": "All folders"
+    },
+    "menu": {
+        "moveToFolder": "Move to folder",
+        "folderActions": "Actions for {{name}}",
+        "edit": "Edit",
+        "copyLink": "Copy link",
+        "delete": "Delete folder"
+    },
+    "form": {
+        "createTitle": "New folder",
+        "editTitle": "Edit folder",
+        "nameRequired": "Enter a folder name",
+        "cancel": "Cancel",
+        "saving": "Saving…",
+        "save": "Save",
+        "create": "Create folder"
+    },
+    "move": {
+        "title": "Move to folder",
+        "afterAddTitle": "Add to a folder",
+        "afterAddHint": "Pick a folder for “{{name}}”. You can change it later from ⋯ → Move to folder.",
+        "hint": "Choose the folder for “{{name}}”.",
+        "back": "Back",
+        "skip": "Skip",
+        "createAndAdd": "Create and add",
+        "add": "Add to folder",
+        "move": "Move",
+        "current": "Current",
+        "noFolder": "No folder",
+        "noFolderHint": "Take it out of its folder",
+        "createNew": "Create new folder"
+    },
+    "toast": {
+        "updated": "Folder saved",
+        "created": "Folder “{{name}}” created",
+        "createdAndMoved": "Folder “{{name}}” created and the paper added",
+        "moved": "Moved to {{name}}",
+        "removed": "Removed from folder",
+        "error": "Something went wrong. Please try again.",
+        "linkCopied": "Folder link copied",
+        "deleted": "Folder deleted. Its papers are now not in any folder."
+    },
+    "delete": {
+        "title": "Delete folder?",
+        "body_one": "“{{name}}” will be deleted. Its {{count}} paper is kept and moves to Not in a folder.",
+        "body_other": "“{{name}}” will be deleted. Its {{count}} papers are kept and move to Not in a folder.",
+        "confirm": "Delete folder"
+    },
+    "banner": {
+        "emptyHint": "No papers here yet. Go back to All folders and drag a paper onto this folder, or use ⋯ → Move to folder.",
+        "unfiledHint": "Papers that are not in any folder.",
+        "folderEmptyTitle": "No papers in this folder yet",
+        "folderEmptyHint": "Go back to All folders and move papers here with ⋯ → Move to folder, or add a new paper and pick this folder.",
+        "unfiledEmptyTitle": "Every paper is in a folder",
+        "unfiledEmptyHint": "New papers and papers taken out of a folder show up here."
+    },
+    "view": {
+        "label": "How to show papers",
+        "folders": "Folders",
+        "list": "All papers",
+        "listHint": "Every paper in one list. Each card shows its folder."
+    },
+    "picker": {
+        "listHint": "Every paper in one list.",
+        "folderEmptyHint": "Pick a paper from another folder, or add papers to this folder on the Questions Banks and Papers page."
+    }
+}

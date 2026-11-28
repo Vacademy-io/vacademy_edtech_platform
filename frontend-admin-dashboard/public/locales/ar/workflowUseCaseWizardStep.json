@@ -1,0 +1,66 @@
+{
+    "unknown": "غير معروف",
+    "unknownCourse": "دورة غير معروفة",
+    "untitled": "بدون عنوان",
+    "dropdown": {
+        "allNoRestriction": "الكل (بدون قيود)",
+        "loading": "جارٍ التحميل...",
+        "noOptions": "لا توجد خيارات متاحة"
+    },
+    "multiSelect": {
+        "selectedCount_zero": "لا شيء محدد",
+        "selectedCount_one": "عنصر واحد محدد",
+        "selectedCount_two": "عنصران محددان",
+        "selectedCount_few": "{{count}} عناصر محددة",
+        "selectedCount_many": "{{count}} عنصرًا محددًا",
+        "selectedCount_other": "{{count}} عنصر محدد",
+        "searchPlaceholder": "بحث...",
+        "noMatches": "لا توجد نتائج لـ ”{{search}}“.",
+        "someHiddenBySearch": "بعض العناصر المحددة مخفية بسبب البحث"
+    },
+    "batch": {
+        "selectPlaceholder": "-- اختر دفعة --",
+        "emptyRequired": "اختر دفعة واحدة على الأقل.",
+        "emptyOptional": "لا يوجد تحديد — يعمل عبر جميع الدفعات النشطة في مؤسستك."
+    },
+    "audience": {
+        "emptyRequired": "اختر حملة واحدة على الأقل.",
+        "emptyOptional": "لا يوجد تحديد — يعمل عبر جميع الحملات."
+    },
+    "template": {
+        "emailPlaceholder": "-- اختر قالب بريد إلكتروني --",
+        "whatsappPlaceholder": "-- اختر قالب واتساب --",
+        "livesessionPlaceholder": "-- اختر جلسة مباشرة --",
+        "invitePlaceholder": "-- اختر دعوة --",
+        "coursePlaceholder": "-- اختر دورة --",
+        "creating": "جارٍ الإنشاء...",
+        "useSample": "استخدم النموذج: \"{{name}}\"",
+        "useSampleHint": "قالب جاهز يحتوي على المتغيرات الصحيحة — تمت إضافته إلى مكتبة القوالب الخاصة بك",
+        "noWhatsappTemplates": "لم يتم العثور على قوالب واتساب معتمدة. تتم مزامنتها من Meta — افتح الاتصالات ← قوالب واتساب وقم بالمزامنة، أو اعتمد القالب في Meta أولاً.",
+        "whatsappVarsNeedMapping": "يستخدم هذا القالب {{vars}}. تُملأ المتغيرات المسماة باسم أحد حقول العميل المحتمل تلقائيًا، أما المتغيرات المرقّمة فيجب ربطها في أداة الإنشاء بعد التوليد — يرفض واتساب الرسالة إذا بقي أي منها فارغًا."
+    },
+    "jsonPayload": {
+        "invalidObject": "يجب أن تكون الحمولة كائن JSON (وليست مصفوفة أو قيمة أولية).",
+        "valid": "✓ JSON صالح",
+        "errorPrefix": "⚠ {{error}}"
+    },
+    "picker": {
+        "heading": "كيف تود بناء سير العمل هذا؟",
+        "subheading": "اختر قالبًا جاهزًا أدناه، أو ابنِ سير العمل من الصفر باستخدام المحرر المرئي.",
+        "templatesForTrigger": "قوالب لهذا المشغّل",
+        "useThisTemplate": "استخدم هذا القالب",
+        "noTemplates": "لا توجد قوالب جاهزة متاحة لهذا المشغّل حتى الآن.",
+        "noTemplatesHint": "استخدم المنشئ المتقدم لبناء سير العمل الخاص بك من الصفر.",
+        "or": "أو",
+        "buildFromScratch": "البناء من الصفر",
+        "buildFromScratchHint": "استخدم محرر السحب والإفلات المرئي لبناء سير عمل مخصص بتحكم كامل.",
+        "back": "رجوع"
+    },
+    "wizard": {
+        "backToTemplates": "العودة إلى القوالب",
+        "configureHeading": "قم بتكوين سير العمل الخاص بك",
+        "whatWillBeCreated": "ما الذي سيتم إنشاؤه",
+        "back": "رجوع",
+        "generate": "إنشاء سير العمل"
+    }
+}

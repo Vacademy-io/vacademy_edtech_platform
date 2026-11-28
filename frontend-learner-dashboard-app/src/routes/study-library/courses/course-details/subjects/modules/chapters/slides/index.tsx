@@ -6,6 +6,9 @@ import { SidebarProvider, useSidebar } from "@/components/ui/sidebar";
 import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { useNavHeadingStore } from "@/stores/layout-container/useNavHeadingStore";
 import { toTitleCase } from "@/lib/utils";
+import { useFunTheme } from "@/hooks/use-fun-theme";
+import { courseColourClass } from "@/components/design-system/fun/course-palette";
+import { FunChapterCompleteBar } from "@/routes/study-library/courses/course-details/-components/fun/FunLesson";
 import { getTerminology } from "@/components/common/layout-container/sidebar/utils";
 import { ContentTerms, SystemTerms } from "@/types/naming-settings";
 import {
@@ -25,6 +28,10 @@ import {
 import { CourseTreeSidebar } from "@/components/common/study-library/level-material/subject-material/module-material/chapter-material/slide-material/course-tree-sidebar";
 import { LessonListSidebar } from "@/components/common/study-library/level-material/subject-material/module-material/chapter-material/slide-material/lesson-list-sidebar";
 import {
+  ModuleSwitcher,
+  switchableModules,
+} from "@/components/common/study-library/level-material/subject-material/module-material/chapter-material/slide-material/module-switcher";
+import {
   computeDisplayTitles,
   getSlideMeta,
   getSlideTitle,
@@ -33,6 +40,7 @@ import { getModuleName } from "@/utils/study-library/get-name-by-id/getModuleNam
 import { getSubjectName } from "@/utils/study-library/get-name-by-id/getSubjectNameById";
 import { getChapterName } from "@/utils/study-library/get-name-by-id/getChapterById";
 import { useContentStore } from "@/stores/study-library/chapter-sidebar-store";
+import { useLessonNotesStore } from "@/stores/study-library/lesson-notes-store";
 import useSidebarBranding from "@/components/common/layout-container/sidebar/useSidebar";
 import { InitStudyLibraryProvider } from "@/providers/study-library/init-study-library-provider";
 import { ModulesWithChaptersProvider } from "@/providers/study-library/modules-with-chapters-provider";
@@ -42,10 +50,7 @@ import { useModulesWithChaptersStore, ModulesWithChapters } from "@/stores/study
 import { useDripConditionStore } from "@/stores/study-library/drip-conditions-store";
 import { useCourseDripSchedule } from "@/hooks/use-course-drip-schedule";
 import { useDripConditions } from "@/hooks/use-drip-conditions";
-import {
-  evaluateDripCondition,
-  type LearnerProgressData,
-} from "@/utils/drip-conditions";
+import { evaluateListedItem } from "@/utils/drip-conditions";
 import {
   shouldFilterItem,
   isItemLocked,
@@ -55,7 +60,11 @@ import { GET_COURSE_DETAILS } from "@/constants/urls";
 import authenticatedAxiosInstance from "@/lib/auth/axiosInstance";
 import { handleGetCourseInit } from "@/routes/study-library/courses/course-details/-services/get-course-details";
 import { getInstituteId } from "@/constants/helper";
-import { fetchModulesWithChapters, fetchModulesWithChaptersPublic } from "@/services/study-library/getModulesWithChapters";
+import {
+  fetchModulesWithChapters,
+  fetchModulesWithChaptersPublic,
+  useModulesWithChaptersQuery,
+} from "@/services/study-library/getModulesWithChapters";
 import { toast } from "sonner";
 import FeedbackPage from "@/components/common/study-library/level-material/subject-material/module-material/chapter-material/slide-material/FeedbackPage";
 import { PencilSimple } from "@phosphor-icons/react";
@@ -149,21 +158,40 @@ interface ChapterSearchParams {
   chapterId: string;
   slideId: string;
   sessionId: string;
+  // Citation deep links from the chat: open a PDF at this page (1-based) or a
+  // video / audio at this second. Applied once, then cleared from the URL.
+  page?: number;
+  t?: number;
 }
+
+// A deep-link number param: finite and positive, else dropped. Accepts the
+// numeric strings a hand-edited URL can carry as well as parsed numbers.
+const positiveNumberParam = (value: unknown): number | undefined => {
+  const n =
+    typeof value === "string" && value.trim() !== "" ? Number(value) : value;
+  return typeof n === "number" && Number.isFinite(n) && n > 0 ? n : undefined;
+};
 
 export const Route = createFileRoute(
   "/study-library/courses/course-details/subjects/modules/chapters/slides/"
 )({
   component: Slides,
-  validateSearch: (search: Record<string, unknown>): ChapterSearchParams => ({
-    courseId: search.courseId as string,
-    levelId: search.levelId as string | undefined,
-    subjectId: search.subjectId as string,
-    moduleId: search.moduleId as string,
-    chapterId: search.chapterId as string,
-    slideId: search.slideId as string,
-    sessionId: search.sessionId as string,
-  }),
+  validateSearch: (search: Record<string, unknown>): ChapterSearchParams => {
+    const page = positiveNumberParam(search.page);
+    const t = positiveNumberParam(search.t);
+    return {
+      courseId: search.courseId as string,
+      levelId: search.levelId as string | undefined,
+      subjectId: search.subjectId as string,
+      moduleId: search.moduleId as string,
+      chapterId: search.chapterId as string,
+      slideId: search.slideId as string,
+      sessionId: search.sessionId as string,
+      // Pages are whole; a fractional page (2.5) means its page (2).
+      ...(page !== undefined && page >= 1 && { page: Math.floor(page) }),
+      ...(t !== undefined && { t }),
+    };
+  },
 });
 
 // ── Module Accordion Item ────────────────────────────────────────────────────
@@ -265,11 +293,47 @@ const ModuleAccordionItem = ({
 // ────────────────────────────────────────────────────────────────────────────
 
 function Slides() {
-  const { courseId, levelId, subjectId, moduleId, chapterId, slideId, sessionId } =
-    Route.useSearch();
+  const {
+    courseId,
+    levelId,
+    subjectId,
+    moduleId,
+    chapterId,
+    slideId,
+    sessionId,
+    page: deepLinkPage,
+    t: deepLinkTime,
+  } = Route.useSearch();
+  const isFunSkin = useFunTheme();
 
-  const { setOpen: setAppSidebarOpen } = useSidebar();
+  const { setOpen: setAppSidebarOpen, toggleSidebar } = useSidebar();
   const navigate = useNavigate();
+
+  // Citation deep link (?page / ?t) for the slide named in the URL. The viewer
+  // applies it once when that slide is on screen; the params are then dropped
+  // with a replace navigation so a refresh resumes from saved progress.
+  const slideStartAt = useMemo(
+    () =>
+      slideId && (deepLinkPage !== undefined || deepLinkTime !== undefined)
+        ? { slideId, page: deepLinkPage, t: deepLinkTime }
+        : undefined,
+    [slideId, deepLinkPage, deepLinkTime]
+  );
+  const handleSlideStartApplied = useCallback(() => {
+    navigate({
+      to: "/study-library/courses/course-details/subjects/modules/chapters/slides",
+      search: {
+        courseId,
+        levelId,
+        subjectId,
+        moduleId,
+        chapterId,
+        slideId,
+        sessionId,
+      },
+      replace: true,
+    });
+  }, [navigate, courseId, levelId, subjectId, moduleId, chapterId, slideId, sessionId]);
 
   // Tracks the URL slideId the slide-selection effect last resolved against, so
   // a re-run can tell "the learner navigated (slideId changed)" apart from "the
@@ -319,6 +383,11 @@ function Slides() {
     setCurrentPackageSessionId,
   } = useContentStore();
 
+  // The active slide belongs to this visit. Left in the store, it is what the
+  // viewer would open on the next visit, to any course, before that visit's own
+  // slide is resolved.
+  useEffect(() => () => setActiveItem(null), [setActiveItem]);
+
   // Keep the content store in sync with the course currently being viewed so
   // that doubts are raised/filtered against THIS course's package session
   // (the URL's sessionId), not the learner's default first enrollment.
@@ -326,9 +395,32 @@ function Slides() {
     setCurrentPackageSessionId(resolvedSessionId || null);
   }, [resolvedSessionId, setCurrentPackageSessionId]);
 
-  const { slides } = useSlides(chapterId || "");
+  const { slides, isLoading: slidesLoading } = useSlides(chapterId || "");
   const { studyLibraryData } = useStudyLibraryStore();
   const { modulesWithChaptersData, setModulesWithChaptersData } = useModulesWithChaptersStore();
+  // The modules store is app-wide and outlives this route, so a learner who
+  // opens a second course arrives with the first course's outline still in it
+  // until this course's fetch lands. The sidebars seed from what they are
+  // handed on mount and never refetch that subject, so the old outline (and its
+  // "5 / 42 completed") stuck for good. Hand them the store only once it holds
+  // the module in the URL; until then they fetch the outline themselves.
+  //
+  // The provider's own query for this subject is read first. It answers from
+  // cache (60s staleTime) without running its queryFn, which is the only thing
+  // that writes the store, so a learner back in a course within a minute finds
+  // the store still holding the course they just left. Same key and options as
+  // ModulesWithChaptersProvider, so this adds an observer, not a request.
+  const { data: subjectModulesFromQuery } = useQuery({
+    ...useModulesWithChaptersQuery(subjectId || "", resolvedSessionId),
+    enabled: !!resolvedSessionId && !!subjectId,
+  });
+  const currentSubjectModules = useMemo(() => {
+    if (!moduleId) return null;
+    const holdsModule = (list: ModulesWithChapters[] | null | undefined) =>
+      !!list?.some((m) => m.module?.id === moduleId);
+    if (holdsModule(subjectModulesFromQuery)) return subjectModulesFromQuery ?? null;
+    return holdsModule(modulesWithChaptersData) ? modulesWithChaptersData : null;
+  }, [subjectModulesFromQuery, modulesWithChaptersData, moduleId]);
 
   // Get drip conditions from store or fetch from API
   const {
@@ -406,20 +498,14 @@ function Slides() {
   // not on the slide rows — same source the course page reads.
   const dripSchedule = useCourseDripSchedule(courseId, resolvedSessionId);
   const { conditionFor: dripConditionFor, now: dripNow } = dripSchedule;
-  // Anchors plus the first-item strictness flag, spread into every
-  // LearnerProgressData below. strictFirstItem rides the same opt-in as the
-  // rest: institutes that have not turned this on keep today's behaviour.
+  // Day-1 anchors for day-wise rules, spread into every LearnerProgressData
+  // below.
   const dripAnchors = useMemo(
     () => ({
       enrollmentDate: dripSchedule.enrollmentDate,
       sessionStartDate: dripSchedule.sessionStartDate,
-      strictFirstItem: dripSchedule.applyConfiguredRules,
     }),
-    [
-      dripSchedule.enrollmentDate,
-      dripSchedule.sessionStartDate,
-      dripSchedule.applyConfiguredRules,
-    ],
+    [dripSchedule.enrollmentDate, dripSchedule.sessionStartDate],
   );
 
   const { condition: slideCondition } = useDripConditions(
@@ -452,6 +538,8 @@ function Slides() {
   // Loads the studyContent catalog for the chapter hand-off strings and
   // re-renders this route once it arrives.
   const { t } = useTranslation("studyContent");
+  // The Fun catalog is read only under Fun; other skins ask for no extra catalog.
+  const { t: tFunCourse } = useTranslation(isFunSkin ? "funCourse" : "studyContent");
   // "breadcrumb" = legacy per-chapter slide list; cross-module navigation
   // happens via the popovers in the breadcrumb. This is the default to keep
   // existing learners on familiar terrain — admins can opt into the richer
@@ -462,6 +550,22 @@ function Slides() {
   // "hidden": no viewer sidebar at all — the learner moves through the course
   // with the Prev/Next controls in the slide header alone.
   const hideSlidesSidebar = sidebarNavigation === "hidden";
+  // Strings for the sidebar header's module switcher and course link.
+  const { t: tLibrary } = useTranslation("libraryCommonB");
+  // A course split into several named modules gets a module switcher in the
+  // sidebar header. It shows only in the lesson-list sidebar, which lists every
+  // module in one long scroll. The tree already has a node per module, and the
+  // breadcrumb sidebar keeps its module popover, which there is also the only
+  // way to pick a chapter. It sits with the learning path, so an institute
+  // that hid that (showLearningPath off) gets no switcher either.
+  const switcherModules = useMemo(
+    () =>
+      sidebarNavigation === "lessons"
+        ? switchableModules(currentSubjectModules)
+        : [],
+    [sidebarNavigation, currentSubjectModules]
+  );
+  const showModuleSwitcher = showLearningPath && switcherModules.length > 1;
 
   // Whether the "Give Feedback" slide sits in the Prev/Next sequence. Unset
   // follows the sidebar mode: the sidebar-less viewer leaves it out so Next
@@ -552,7 +656,7 @@ function Slides() {
         source_type: "FEEDBACK",
         source_id: "",
         image_file_id: "",
-        description: "Provide feedback for this chapter",
+        description: `Provide feedback for this ${getTerminology(ContentTerms.Chapters, SystemTerms.Chapters).toLocaleLowerCase()}`,
         status: "ACTIVE",
         slide_order: slides.length + 1,
         percentage_completed: 0,
@@ -568,111 +672,45 @@ function Slides() {
         { isLocked: boolean; isHidden: boolean; unlockMessage: string | null }
       > = {};
 
-      // Build comprehensive prerequisite completions map with BOTH chapters and slides
-      const prerequisiteCompletions: Record<string, number> = {};
-
-      // 1. Add all chapters and their progress
-      if (modulesWithChaptersData) {
-        modulesWithChaptersData.forEach((module) => {
-          module.chapters.forEach((chapter) => {
-            // Calculate chapter progress from its slides (if available in current context)
-            // For now, use 0 as default - will be updated when we have slide data loaded
-            prerequisiteCompletions[chapter.id] = 0;
-          });
+      // Chapters count as 0 until their slides are loaded; this chapter comes
+      // from its own slides. The slides themselves are added per slide below.
+      const chapterCompletions: Record<string, number> = {};
+      modulesWithChaptersData?.forEach((module) => {
+        module.chapters.forEach((chapter) => {
+          chapterCompletions[chapter.id] = 0;
         });
-      }
-
-      // 2. Add all slides from current chapter and their progress
-      slides.forEach((slide: Slide) => {
-        prerequisiteCompletions[slide.id] = slide.percentage_completed || 0;
       });
-
-      // 3. Calculate chapter progress for current chapter based on its slides
       if (chapterId) {
-        const chapterProgress = calculateOverallCompletion(slides);
-        prerequisiteCompletions[chapterId] = chapterProgress;
+        chapterCompletions[chapterId] = calculateOverallCompletion(slides);
       }
+
+      const listed = slides.map((slide: Slide) => ({
+        id: slide.id,
+        percentage: slide.percentage_completed || 0,
+        rowCondition: slide.drip_condition || slide.drip_condition_json,
+      }));
+      const dripRules = {
+        // Admin-configured conditions win over anything stamped on the row.
+        conditionFor: dripConditionFor,
+        courseCondition: slideCondition,
+        // `isDrippingEnable` owns the original row-level path; a configured
+        // condition has already cleared the new path's opt-in in conditionFor.
+        rowLevelEnabled: isDrippingEnable,
+        ...dripAnchors,
+        now: dripNow ? new Date(dripNow) : new Date(),
+      };
 
       // Evaluate drip conditions for each slide
       accessibleSlides = slides.filter((slide: Slide, index: number) => {
-        const previousSlide = index > 0 ? slides[index - 1] : null;
-        const progressData: LearnerProgressData = {
-          percentageCompleted: slide.percentage_completed || 0,
-          previousItemId: previousSlide?.id,
-          previousItemCompletion: previousSlide?.percentage_completed || 0,
-          itemIndex: index,
-          prerequisiteCompletions,
-          // Completion of every slide before this one, in slide_order.
-          recentScores: slides
-            .slice(0, index)
-            .map((s: Slide) => s.percentage_completed || 0),
-          ...dripAnchors,
-        };
-
-        // Check if this slide has its own drip condition (check both fields)
-        let slideDripCondition = null;
-        const dripConditionData =
-          slide.drip_condition || slide.drip_condition_json;
-
-        if (dripConditionData) {
-          try {
-            const parsed =
-              typeof dripConditionData === "string"
-                ? JSON.parse(dripConditionData)
-                : dripConditionData;
-
-            // Handle array of conditions - filter for enabled slide conditions
-            if (Array.isArray(parsed)) {
-              slideDripCondition =
-                parsed.find(
-                  (cond) =>
-                    (cond.target === "slide" || !cond.target) &&
-                    cond.is_enabled !== false
-                ) || null;
-            } else if (parsed && typeof parsed === "object") {
-              // Single condition - check if enabled and for slides
-              if (
-                (parsed.target === "slide" || !parsed.target) &&
-                parsed.is_enabled !== false
-              ) {
-                slideDripCondition = parsed;
-              }
-            }
-          } catch (e) {
-            console.error("Failed to parse slide drip condition:", e);
-          }
-        }
-
-        // Admin-configured conditions win over anything stamped on the row.
-        const configuredCondition = dripConditionFor("slide", slide.id);
-        const conditionToUse =
-          configuredCondition || slideDripCondition || slideCondition;
-        const hasCondition =
-          !!configuredCondition || !!slideDripCondition || !!slideCondition;
-
-        // `isDrippingEnable` owns the original row-level path; a configured
-        // condition has already cleared the new path's opt-in in conditionFor.
-        const shouldEvaluate =
-          (isDrippingEnable || !!configuredCondition) &&
-          hasCondition &&
-          conditionToUse?.is_enabled !== false;
-
-        const evaluation =
-          shouldEvaluate && conditionToUse
-            ? evaluateDripCondition(
-                conditionToUse,
-                progressData,
-                dripNow ? new Date(dripNow) : new Date(),
-              )
-            : {
-              isLocked: false,
-              isHidden: false,
-              unlockMessage: null,
-            };
+        const evaluation = evaluateListedItem(
+          "slide",
+          listed,
+          index,
+          dripRules,
+          chapterCompletions,
+        );
         evaluations[slide.id] = evaluation; // Store evaluation for this slide
-        const shouldHide = shouldFilterItem(evaluation);
-
-        return !shouldHide; // Keep slide if not hidden
+        return !shouldFilterItem(evaluation); // Keep slide if not hidden
       });
 
       // Store evaluations for all accessible slides
@@ -924,6 +962,37 @@ function Slides() {
     ]
   );
 
+  // Module switcher: open the chosen module at the chapter the switcher picked
+  // (its first unfinished one). The slide is left for this page to choose, the
+  // same as the breadcrumb's module popover does.
+  const handleModuleSwitch = useCallback(
+    (targetModuleId: string, targetChapterId: string) => {
+      navigate({
+        to: "/study-library/courses/course-details/subjects/modules/chapters/slides",
+        search: {
+          courseId,
+          subjectId,
+          moduleId: targetModuleId,
+          chapterId: targetChapterId,
+          slideId: "",
+          sessionId,
+        },
+      });
+    },
+    [navigate, courseId, subjectId, sessionId]
+  );
+
+  // The course page, where the Content Structure cards are. The dashboard and
+  // the back arrow both skip it once a course is under way, so the sidebar
+  // header links to it.
+  const openCourseOverview = useCallback(() => {
+    if (!courseId) return;
+    navigate({
+      to: "/study-library/courses/course-details",
+      search: { courseId, packageSessionId: resolvedSessionId || undefined },
+    });
+  }, [navigate, courseId, resolvedSessionId]);
+
   // truncatedChapterName removed (unused)
   const handleInstituteLogoClick = useCallback(() => {
     if (homeIconClickRoute) {
@@ -1016,6 +1085,7 @@ function Slides() {
                 matchingBatch.package_dto?.package_name || "";
               const levelNameFromBatch = matchingBatch.level?.level_name || "";
               setCourseName(courseNameFromBatch);
+              useLessonNotesStore.getState().setCourseName(courseNameFromBatch || null);
               setLevelName(levelNameFromBatch);
             }
           }
@@ -1488,7 +1558,13 @@ function Slides() {
   ]);
 
   const SidebarComponent = (
-    <div className="flex flex-col h-full bg-white border-e border-gray-100">
+    <div
+      className={
+        isFunSkin
+          ? `flex flex-col h-full bg-white border-e border-gray-100 fun-lesson-side ${courseColourClass(courseId || "")}`
+          : "flex flex-col h-full bg-white border-e border-gray-100"
+      }
+    >
       {/* --- Header Section: Identity & Breadcrumbs ---
           One header, not two. This panel now replaces the app sidebar's own
           institute header (see mySidebar), so it carries both names: the
@@ -1544,7 +1620,31 @@ function Slides() {
               className="text-caption font-semibold text-gray-900 leading-tight truncate"
               title={courseName ? toTitleCase(courseName) : undefined}
             >
-              {courseName ? toTitleCase(courseName) : `${getTerminology(ContentTerms.Course, SystemTerms.Course)} Details`}
+              {/* The course name opens the course page (its structure
+                  cards), the one way back to them from inside the viewer. */}
+              {courseId ? (
+                <button
+                  type="button"
+                  onClick={openCourseOverview}
+                  title={[
+                    courseName ? toTitleCase(courseName) : null,
+                    tLibrary("moduleSwitcher.courseOverview", {
+                      term: getTerminology(ContentTerms.Course, SystemTerms.Course),
+                    }),
+                  ]
+                    .filter(Boolean)
+                    .join(" · ")}
+                  // max-w-full, not w-full: the Fun skin restyles every
+                  // `button.w-full` in this panel as a bordered control.
+                  className="block max-w-full truncate text-start transition-colors hover:text-primary-500 hover:underline"
+                >
+                  {courseName ? toTitleCase(courseName) : `${getTerminology(ContentTerms.Course, SystemTerms.Course)} Details`}
+                </button>
+              ) : courseName ? (
+                toTitleCase(courseName)
+              ) : (
+                `${getTerminology(ContentTerms.Course, SystemTerms.Course)} Details`
+              )}
             </h3>
           </div>
           {/* Focus mode: hides this sidebar + tightens content margins.
@@ -1560,6 +1660,15 @@ function Slides() {
             <ArrowsOut size={14} weight="bold" />
           </button>
         </div>
+
+        {showModuleSwitcher && (
+          <ModuleSwitcher
+            modules={switcherModules}
+            currentModuleId={moduleId || ""}
+            onModuleSelect={handleModuleSwitch}
+            onOpenOverview={openCourseOverview}
+          />
+        )}
 
         {/* Breadcrumb: [Subject >] Module Switcher > Current Chapter.
             Rendered in every mode. It was gated to "breadcrumb" mode on the
@@ -1581,7 +1690,10 @@ function Slides() {
             !!subjectId &&
             courseSubjects.length > 0 &&
             !isDefaultName(subjectName);
-          const showModuleCrumb = !isDefaultName(moduleName);
+          // The module switcher above already names the module and lists
+          // the others, so the crumb would only repeat it.
+          const showModuleCrumb =
+            !isDefaultName(moduleName) && !showModuleSwitcher;
           const showChapterCrumb = !isDefaultName(chapterName);
           return (
           <div className="flex items-center gap-1.5 text-xs text-gray-500 font-medium min-w-0">
@@ -1746,7 +1858,7 @@ function Slides() {
             currentSubjectId={subjectId || ""}
             currentChapterId={chapterId || ""}
             currentSlideId={slideId || ""}
-            currentSubjectModules={modulesWithChaptersData}
+            currentSubjectModules={currentSubjectModules}
             onSlideSelect={({
               subjectId: targetSubjectId,
               moduleId: targetModuleId,
@@ -1777,7 +1889,7 @@ function Slides() {
               currentModuleId={moduleId || ""}
               currentChapterId={chapterId || ""}
               currentSlideId={slideId || ""}
-              currentSubjectModules={modulesWithChaptersData}
+              currentSubjectModules={currentSubjectModules}
               onSlideSelect={({ subjectId: targetSubjectId, moduleId: targetModuleId, chapterId: targetChapterId, slideId: targetSlideId }) => {
                 navigate({
                   to: "/study-library/courses/course-details/subjects/modules/chapters/slides",
@@ -1819,7 +1931,7 @@ function Slides() {
                 weight="bold"
               />
               <span className="text-caption font-bold text-neutral-500 uppercase tracking-wider shrink-0">
-                Prev
+                {isFunSkin ? tFunCourse("lesson.prevShort") : "Prev"}
               </span>
               <span className="text-caption font-semibold text-neutral-700 truncate leading-tight min-w-0">
                 {toTitleCase(previousChapter.chapter.chapter_name)}
@@ -1841,10 +1953,10 @@ function Slides() {
                 <button
                   onClick={handleNextSlide}
                   title={`Up next: ${toTitleCase(getSlideTitle(nextSlide))}`}
-                  className="w-full flex items-center gap-1.5 rounded-md border border-primary-200 bg-primary-50 px-2 py-1.5 hover:bg-primary-100 hover:border-primary-300 transition-colors group/next text-start [.ui-play_&]:rounded-lg [.ui-play_&]:border-2"
+                  className={`w-full flex items-center gap-1.5 rounded-md border border-primary-200 bg-primary-50 px-2 py-1.5 hover:bg-primary-100 hover:border-primary-300 transition-colors group/next text-start [.ui-play_&]:rounded-lg [.ui-play_&]:border-2${isFunSkin ? " fun-side-next" : ""}`}
                 >
                   <span className="text-caption font-bold text-primary-500 uppercase tracking-wider shrink-0">
-                    Up next
+                    {isFunSkin ? tFunCourse("lesson.upNextShort") : "Up next"}
                   </span>
                   <span className="text-caption font-bold text-primary-700 truncate leading-tight min-w-0 flex-1">
                     {nextSlideTitle}
@@ -1866,13 +1978,15 @@ function Slides() {
             <button
               onClick={handleNextChapter}
               title={`Next ${getTerminology(ContentTerms.Chapters, SystemTerms.Chapters)}: ${toTitleCase(nextChapter.chapter.chapter_name)}`}
-              className="w-full flex items-center gap-1.5 rounded-md border border-primary-200 bg-primary-50 px-2 py-1.5 hover:bg-primary-100 hover:border-primary-300 transition-colors group/next text-start [.ui-play_&]:rounded-lg [.ui-play_&]:border-2"
+              className={`w-full flex items-center gap-1.5 rounded-md border border-primary-200 bg-primary-50 px-2 py-1.5 hover:bg-primary-100 hover:border-primary-300 transition-colors group/next text-start [.ui-play_&]:rounded-lg [.ui-play_&]:border-2${isFunSkin ? " fun-side-next" : ""}`}
             >
               {/* "Next Chapter", not "Up next" — this pill jumps out of the
                   current chapter, and labeling that jump "Up next" mid-chapter
                   misread as the next thing to play. */}
               <span className="text-caption font-bold text-primary-500 uppercase tracking-wider shrink-0">
-                Next {getTerminology(ContentTerms.Chapters, SystemTerms.Chapters)}
+                {isFunSkin
+                  ? tFunCourse("lesson.nextChapterShort", { chapter: getTerminology(ContentTerms.Chapters, SystemTerms.Chapters) })
+                  : <>Next {getTerminology(ContentTerms.Chapters, SystemTerms.Chapters)}</>}
               </span>
               <span className="text-caption font-bold text-primary-700 truncate leading-tight min-w-0 flex-1">
                 {toTitleCase(nextChapter.chapter.chapter_name)}
@@ -1889,8 +2003,9 @@ function Slides() {
               "Chapter progress · 40%" (terminology-aware chapter term).
               Breadcrumb mode only: the tree shows progress inline on the
               current chapter's row, so repeating it here duplicated the
-              chip and detached the number from the chapter it describes. */}
-          {sidebarNavigation === "breadcrumb" && (
+              chip and detached the number from the chapter it describes.
+              The Fun skin shows it once, labelled, in the viewer's top bar. */}
+          {sidebarNavigation === "breadcrumb" && !isFunSkin && (
             <div className="space-y-1">
               <p className="text-caption font-semibold text-gray-500 uppercase tracking-wider [.ui-play_&]:font-black [.ui-play_&]:uppercase [.ui-play_&]:tracking-wide">
                 {getTerminology(ContentTerms.Chapters, SystemTerms.Chapters)}{" "}
@@ -1923,7 +2038,7 @@ function Slides() {
                   source_type: "FEEDBACK",
                   source_id: "",
                   image_file_id: "",
-                  description: "Provide feedback for this chapter",
+                  description: `Provide feedback for this ${getTerminology(ContentTerms.Chapters, SystemTerms.Chapters).toLocaleLowerCase()}`,
                   status: "ACTIVE",
                   slide_order: slides?.length ? slides.length + 1 : 1,
                   percentage_completed: 0,
@@ -1943,7 +2058,7 @@ function Slides() {
               `}
             >
               <PencilSimple className="w-3 h-3" />
-              <span>Feedback</span>
+              <span>{isFunSkin ? tFunCourse("lesson.feedback") : "Feedback"}</span>
             </button>
           )}
         </div>
@@ -1967,6 +2082,24 @@ function Slides() {
       </span>
     );
   }, [setNavHeading, chapterName]);
+
+  // Fun: the lesson bar closes to the course page and opens the viewer's outline,
+  // since the app's top bar (with its back and sidebar buttons) is not drawn here.
+  const funExit = isFunSkin
+    ? {
+        onClose: () => {
+          if (!courseId) {
+            window.history.back();
+            return;
+          }
+          navigate({
+            to: "/study-library/courses/course-details",
+            search: { courseId, packageSessionId: resolvedSessionId || undefined },
+          });
+        },
+        onToggleOutline: hideSlidesSidebar ? undefined : toggleSidebar,
+      }
+    : undefined;
 
   return (
     <LayoutContainer
@@ -1995,10 +2128,20 @@ function Slides() {
         >
           <SidebarProvider defaultOpen={false}>
             {activeItem?.id === "feedback-slide" ? (
-              <FeedbackPage />
+              isFunSkin ? (
+                <div className="fun-feedback">
+                  <FeedbackPage />
+                </div>
+              ) : (
+                <FeedbackPage />
+              )
             ) : (
               <SlideMaterial
                 onNavigateToSlide={handleNavigateToSlide}
+                slidesLoading={slidesLoading}
+                startAt={slideStartAt}
+                onStartAtApplied={handleSlideStartApplied}
+                funExit={funExit}
                 standaloneNav={hideSlidesSidebar}
                 manualCompletion={manualCompletion}
                 completionContext={{
@@ -2035,7 +2178,13 @@ function Slides() {
       {chapterCompleteCta &&
         chapterComplete &&
         nextChapter &&
-        !chapterCtaDismissed && (
+        !chapterCtaDismissed && (isFunSkin ? (
+          <FunChapterCompleteBar
+            nextChapterName={toTitleCase(nextChapter.chapter.chapter_name)}
+            onNext={handleNextChapter}
+            onDismiss={() => setChapterCtaDismissed(true)}
+          />
+        ) : (
           <div className="fixed inset-x-0 bottom-0 z-30 border-t border-success-200 bg-success-50 px-4 py-3">
             <div className="mx-auto flex max-w-screen-lg items-center gap-3">
               <CheckCircle
@@ -2070,7 +2219,7 @@ function Slides() {
               </button>
             </div>
           </div>
-        )}
+        ))}
 
       {effectiveFocusMode && (
         <button

@@ -1,0 +1,17 @@
+{
+    "instructorEmailInvalid": "Adresse e-mail invalide.",
+    "instructorNameRequired": "Le nom du formateur est requis.",
+    "levelNameRequired": "Le nom du niveau est requis.",
+    "durationNonNegative": "La durée doit être un entier non négatif.",
+    "sessionNameRequired": "Le nom de la session est requis.",
+    "statusNameRequired": "Le nom du statut est requis.",
+    "startDateFormat": "La date de début doit être au format AAAA-MM-JJ.",
+    "levelDetailsRequired": "Au moins un détail de niveau est requis par session.",
+    "titleRequired": "Le titre est requis.",
+    "descriptionMinLength": "La description doit comporter au moins 10 caractères.",
+    "tagsRequired": "Au moins un tag est requis.",
+    "imageUrlInvalid": "Doit être une URL valide pour l'image.",
+    "instructorsRequired": "Au moins un formateur est requis.",
+    "sessionsRequired": "Au moins une session est requise.",
+    "mockCourseTitleRequired": "Le titre du cours fictif est requis."
+}

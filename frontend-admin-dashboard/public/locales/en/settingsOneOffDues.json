@@ -1,0 +1,30 @@
+{
+    "title": "One-off charges",
+    "description": "Let staff add a single extra charge to a learner, such as a one-on-one bridge class, from the learner’s Payments tab.",
+    "loadFailed": "Could not load this setting.",
+    "retry": "Try again",
+    "toggleLabel": "Allow one-off charges",
+    "add": {
+        "title": "Add a charge",
+        "point1": "Staff enter a title, an amount and a due date, and can link it to a batch.",
+        "point2": "An optional note is for staff only.",
+        "point3": "A charge that is not paid yet can be cancelled."
+    },
+    "pay": {
+        "title": "Learner pays online",
+        "point1": "The charge appears in the learner app with a Pay button.",
+        "point2": "It is paid through your payment gateway, like any invoice.",
+        "point3": "It also shows in the learner’s invoices and account summary, and can be marked paid offline."
+    },
+    "quiet": {
+        "title": "No messages",
+        "point1": "Adding or cancelling a charge sends the learner no email, WhatsApp or notification.",
+        "point2": "No tax is added: the learner pays the amount you enter."
+    },
+    "offNote": "Switching this off hides one-off charges in the learner app and stops new ones. Charges still due stay on the learner’s Payments tab so they can be cancelled.",
+    "audit": "Every charge added or cancelled is recorded in the activity log, with who did it and when.",
+    "save": "Save",
+    "saving": "Saving…",
+    "saved": "One-off charges setting saved.",
+    "saveFailed": "Could not save the setting."
+}

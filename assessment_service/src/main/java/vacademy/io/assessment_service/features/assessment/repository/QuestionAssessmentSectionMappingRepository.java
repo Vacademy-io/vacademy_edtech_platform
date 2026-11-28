@@ -41,6 +41,22 @@ public interface QuestionAssessmentSectionMappingRepository extends CrudReposito
             """, nativeQuery = true)
     List<MarkingSchemeRow> findMarkingSchemeRowsBySectionIds(@Param("sectionIds") List<String> sectionIds);
 
+    /** Whether the live paper has at least one question of these types. */
+    @Query(value = """
+            SELECT EXISTS (
+                SELECT 1
+                FROM question_assessment_section_mapping qasm
+                JOIN section s ON s.id = qasm.section_id
+                JOIN question q ON q.id = qasm.question_id
+                WHERE s.assessment_id = :assessmentId
+                  AND s.status <> 'DELETED'
+                  AND (qasm.status IS NULL OR qasm.status <> 'DELETED')
+                  AND q.question_type IN (:questionTypes)
+            )
+            """, nativeQuery = true)
+    boolean existsQuestionOfTypesInAssessment(@Param("assessmentId") String assessmentId,
+                                              @Param("questionTypes") List<String> questionTypes);
+
 
     @Modifying
     @Transactional
@@ -78,6 +94,49 @@ public interface QuestionAssessmentSectionMappingRepository extends CrudReposito
                                                                          @Param("statusList") List<String> statusList);
 
     boolean existsBySection_Assessment_IdAndSection_IdAndQuestion_Id(String assessmentId, String sectionId, String questionId);
+
+    /** Whether the question is in this assessment's paper (any section). */
+    boolean existsBySection_Assessment_IdAndQuestion_Id(String assessmentId, String questionId);
+
+    /** A reported question, located in its assessment's paper for the admin request inbox. */
+    interface ReportedQuestionRow {
+        String getAssessmentId();
+
+        String getQuestionId();
+
+        String getSectionName();
+
+        Integer getQuestionNumber();
+
+        String getQuestionHtml();
+    }
+
+    /**
+     * Section name, position in the section (1-based, paper order) and question HTML for the
+     * given questions. One query per inbox page instead of one per request. The position is
+     * counted over the live paper, so it matches what the admin sees in the Questions tab; the
+     * learner may have seen another number if the paper was shuffled for them.
+     */
+    @Query(value = """
+            SELECT x.assessment_id AS "assessmentId", x.question_id AS "questionId",
+                   x.section_name AS "sectionName", CAST(x.question_number AS INTEGER) AS "questionNumber",
+                   x.question_html AS "questionHtml"
+            FROM (
+                SELECT s.assessment_id, qasm.question_id, s.name AS section_name, rt.content AS question_html,
+                       ROW_NUMBER() OVER (PARTITION BY qasm.section_id
+                                          ORDER BY qasm.question_order NULLS LAST, qasm.created_at, qasm.id) AS question_number
+                FROM question_assessment_section_mapping qasm
+                JOIN section s ON s.id = qasm.section_id
+                JOIN question q ON q.id = qasm.question_id
+                LEFT JOIN assessment_rich_text_data rt ON rt.id = q.text_id
+                WHERE s.assessment_id IN (:assessmentIds)
+                  AND s.status <> 'DELETED'
+                  AND (qasm.status IS NULL OR qasm.status <> 'DELETED')
+            ) x
+            WHERE x.question_id IN (:questionIds)
+            """, nativeQuery = true)
+    List<ReportedQuestionRow> findReportedQuestions(@Param("assessmentIds") List<String> assessmentIds,
+                                                    @Param("questionIds") List<String> questionIds);
 
     @Query("SELECT qasm FROM QuestionAssessmentSectionMapping qasm WHERE qasm.section.id = :sectionId")
     List<QuestionAssessmentSectionMapping> findBySectionId(@Param("sectionId") String sectionId);

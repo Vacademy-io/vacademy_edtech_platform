@@ -1,0 +1,74 @@
+{
+    "header": {
+        "title": "Assistant de prompt",
+        "detected": "Détecté : {{persona}}"
+    },
+    "creditCost_one": "{{count}} crédit",
+    "creditCost_many": "{{count}} crédits",
+    "creditCost_other": "{{count}} crédits",
+    "brief": {
+        "label": "Décrivez votre agent en mots simples",
+        "placeholder": "ex. Nous dirigeons un institut de coaching NEET. L'agent doit appeler les nouveaux prospects, qualifier leur classe et leur année cible, répondre aux questions sur les frais et réserver une séance de conseil.",
+        "drafting": "Rédaction…",
+        "action": "Rédiger avec l'IA"
+    },
+    "review": {
+        "reviewing": "Analyse…",
+        "action": "Examiner le prompt"
+    },
+    "details": {
+        "toggle": "Détails",
+        "dimensionScore": "{{score}}/10"
+    },
+    "suggestions": {
+        "label": "Améliorations suggérées",
+        "applying": "Application…",
+        "applySelected_one": "Appliquer {{count}} sélectionnée",
+        "applySelected_many": "Appliquer {{count}} sélectionnées",
+        "applySelected_other": "Appliquer {{count}} sélectionnées"
+    },
+    "derived": {
+        "label": "Dérivé de ce prompt :",
+        "useButton": "Utiliser la phrase d'ouverture, les questions et les résultats suggérés"
+    },
+    "toasts": {
+        "derivedApplied": "Phrase d'ouverture, questions et résultats renseignés",
+        "applied": "Prompt, phrase d'accroche, questions et résultats mis à jour — pensez à enregistrer"
+    },
+    "errors": {
+        "insufficientCredits": "Crédits IA insuffisants",
+        "genericFailure": "L'assistant IA a échoué — réessayez",
+        "timeout": "L'assistant IA met trop de temps — veuillez réessayer"
+    },
+    "feedback": {
+        "toggle": "Améliorer à partir des retours d'appel",
+        "placeholder": "ex. Il abandonne trop vite quand quelqu'un dit « envoyez-moi un e-mail ». Les appelants ont posé des questions sur les frais et il n'avait pas de réponse.",
+        "hint": "L'assistant lit aussi les appels réels récents de cet agent (transcriptions, résultats) pour fonder la révision.",
+        "revising": "Révision…",
+        "action": "Suggérer une révision"
+    },
+    "progress": {
+        "working": "En cours… {{seconds}} s. Les longs prompts peuvent prendre quelques minutes ; le travail continue si vous fermez cette page."
+    },
+    "proposal": {
+        "title": "Mise à jour proposée (score {{score}})",
+        "willUpdate": "« Tout appliquer » met à jour ensemble :",
+        "openingLine": "Phrase d'accroche",
+        "questions": "Questions à poser",
+        "outcomes": "Résultats d'appel",
+        "unchanged": "inchangé",
+        "prompt": "Prompt système : {{before}} → {{after}} caractères",
+        "applyAll": "Tout appliquer",
+        "discard": "Ignorer"
+    },
+    "lint": {
+        "title": "Éléments qui posent problème en appel réel"
+    },
+    "regenerate": {
+        "label": "Régénérer avec mes notes",
+        "placeholder": "ex. Parler du test de bourse avant les frais. Plus court. Proposer un rappel d'un conseiller plutôt qu'une démo.",
+        "hint": "Réécrit ensemble le prompt, la phrase d'accroche, les questions et les résultats. Conserve vos informations sauf si vos notes les modifient, et lit les appels récents de cet agent.",
+        "running": "Régénération…",
+        "action": "Régénérer"
+    }
+}

@@ -1,0 +1,69 @@
+{
+    "loading": "Chargement…",
+    "view": "Voir",
+    "unnamedLearner": "{{learner}} sans nom",
+    "viewProgressBreakdownAriaLabel": "Voir le détail de la progression de {{name}}",
+    "status": {
+        "completed": "Terminé",
+        "onTrack": "En bonne voie",
+        "inProgress": "En cours",
+        "behind": "En retard",
+        "notStarted": "Pas commencé"
+    },
+    "columns": {
+        "courseProgress": "Progression du {{course}}",
+        "status": "Statut",
+        "chaptersDone": "Chapitres terminés"
+    },
+    "emptyBatch": {
+        "selectBatch": "Sélectionnez un {{batch}} pour voir la progression des {{learner}}.",
+        "multiHint": "Choisissez plusieurs {{batch}} pour voir les apprenants de ces {{batch}} dans une seule liste."
+    },
+    "stats": {
+        "enrolled_one": "{{learner}} inscrit",
+        "enrolled_many": "{{learner}}s inscrits",
+        "enrolled_other": "{{learner}}s inscrits",
+        "avgProgressThisPage": "Progression moyenne (cette page)",
+        "completedThisPage": "Terminé (cette page)",
+        "notStartedThisPage": "Pas commencé (cette page)"
+    },
+    "search": {
+        "placeholder": "Rechercher {{learner}} par nom",
+        "label": "Rechercher",
+        "clear": "Effacer",
+        "enrolledCount_one": "{{count}} {{learner}} inscrit",
+        "enrolledCount_many": "{{count}} {{learner}}s inscrits",
+        "enrolledCount_other": "{{count}} {{learner}}s inscrits"
+    },
+    "error": {
+        "loadFailed": "Impossible de charger les {{learner}}s inscrits pour ce groupe.",
+        "retry": "Réessayer"
+    },
+    "empty": {
+        "noMatch": "Aucun {{learner}} ne correspond à « {{search}} ».",
+        "noneEnrolled": "Aucun {{learner}} n’est encore inscrit dans les {{batch}} sélectionnés.",
+        "tryDifferentName": "Essayez un autre nom.",
+        "progressAppearsHere": "La progression apparaît ici une fois que des {{learner}}s sont inscrits."
+    },
+    "drawer": {
+        "percentComplete": "{{percent}} % du {{course}} terminé"
+    },
+    "csv": {
+        "fileStem": "progression-{{learner}}",
+        "exportCsv": "Exporter en CSV",
+        "preparing": "Préparation…",
+        "exporting": "Export {{done}}/{{total}}…",
+        "exportSuccess": "CSV exporté · {{count}} lignes",
+        "exportTruncated": "CSV exporté · {{count}} premiers seulement",
+        "exportFailed": "Échec de l'export CSV",
+        "summaryTitle": "Progression des {{learner}}",
+        "email": "E-mail",
+        "username": "Nom d'utilisateur",
+        "enrollmentNumber": "Numéro d'inscription",
+        "courseProgress": "Progression {{course}} (%)",
+        "chaptersDone": "Chapitres terminés",
+        "chaptersTotal": "Chapitres au total",
+        "subjectTitle": "Progression des {{learner}} par matière",
+        "moduleProgress": "Progression {{module}} (%)"
+    }
+}

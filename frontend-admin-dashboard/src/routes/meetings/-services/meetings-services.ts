@@ -5,6 +5,8 @@ import {
     MEETINGS_BOOKING_PAGES_LIST,
     MEETINGS_BY_LEAD,
     MEETINGS_MY_CALENDAR,
+    MEETINGS_MY_GOOGLE,
+    MEETINGS_MY_GOOGLE_INITIATE,
     MEETINGS_SCOPE,
     MEETINGS_TEAM_CALENDAR,
 } from '@/constants/urls';
@@ -132,4 +134,39 @@ export const fetchMeetingsScope = async (instituteId: string) => {
         params: { instituteId },
     });
     return response.data as MeetingsScope;
+};
+
+export interface MyGoogleStatus {
+    connected: boolean;
+    email?: string | null;
+    /** ACTIVE | RECONNECT_NEEDED */
+    status?: string | null;
+}
+
+/** The caller's own Google connection — each host sees and uses only their own calendar. */
+export const getMyGoogle = async (instituteId: string) => {
+    const response = await authenticatedAxiosInstance({
+        method: 'GET',
+        url: MEETINGS_MY_GOOGLE,
+        params: { instituteId },
+    });
+    return response.data as MyGoogleStatus;
+};
+
+/** Returns the Google consent URL; the callback lands back on My Schedule. */
+export const initiateMyGoogle = async (instituteId: string) => {
+    const response = await authenticatedAxiosInstance({
+        method: 'POST',
+        url: MEETINGS_MY_GOOGLE_INITIATE,
+        params: { instituteId },
+    });
+    return response.data as { oauth_url: string; session_key: string };
+};
+
+export const disconnectMyGoogle = async (instituteId: string) => {
+    await authenticatedAxiosInstance({
+        method: 'DELETE',
+        url: MEETINGS_MY_GOOGLE,
+        params: { instituteId },
+    });
 };

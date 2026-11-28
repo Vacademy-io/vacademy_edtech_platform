@@ -1,0 +1,10 @@
+{
+    "header": {
+        "title": "Enquiry Form Fields",
+        "description": "Configure fields from Custom Field Settings"
+    },
+    "emptyState": {
+        "title": "No custom fields with \"Enquiry\" location enabled.",
+        "description": "Go to Settings → Custom Fields to enable fields for Enquiry location."
+    }
+}

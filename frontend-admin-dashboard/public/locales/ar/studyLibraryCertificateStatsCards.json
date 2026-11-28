@@ -1,0 +1,22 @@
+{
+    "totalEnrolled": {
+        "title": "إجمالي المسجلين",
+        "subtitle": "المتعلمون في هذه الدفعة"
+    },
+    "certificatesGenerated": {
+        "title": "الشهادات الصادرة",
+        "subtitle": "الصادرة حتى الآن"
+    },
+    "certificatesPending": {
+        "title": "الشهادات المعلقة",
+        "subtitle": "لم تصدر بعد"
+    },
+    "awaitingGeneration": {
+        "title": "بانتظار الإصدار",
+        "subtitle": "تجاوز {{threshold}}٪، بلا شهادة"
+    },
+    "closeToThreshold": {
+        "title": "قريب من الحد الأدنى",
+        "subtitle": "{{nearFloor}}–{{thresholdMinusOne}}٪ مكتمل"
+    }
+}

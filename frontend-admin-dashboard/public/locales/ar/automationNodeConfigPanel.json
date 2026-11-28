@@ -1,0 +1,286 @@
+{
+    "panel": {
+        "selectNode": "اختر عقدة لتكوينها",
+        "nodeNamePlaceholder": "اسم العقدة"
+    },
+    "common": {
+        "variableMappings": "تعيينات المتغيرات",
+        "filename": "اسم الملف",
+        "filenamePlaceholder": "brochure.pdf"
+    },
+    "trigger": {
+        "sectionLabel": "إعدادات المُشغِّل",
+        "typeLabel": "نوع المُشغِّل",
+        "type": {
+            "keywordMatch": "مطابقة كلمة مفتاحية",
+            "firstContact": "أول تواصل (مستخدم جديد)",
+            "buttonReply": "الرد بزر"
+        },
+        "keywordsLabel": "الكلمات المفتاحية (مفصولة بفواصل)",
+        "keywordsPlaceholder": "hello, hi, start",
+        "matchTypeLabel": "نوع المطابقة",
+        "matchType": {
+            "exact": "مطابقة تامة",
+            "contains": "يحتوي على",
+            "regex": "نمط Regex"
+        },
+        "priorityLabel": "الأولوية (كلما زادت، فُحصت أولًا)"
+    },
+    "sendMessage": {
+        "sectionLabel": "رسالة الجلسة",
+        "noTemplateNotice": "لا حاجة إلى قالب — تُرسَل مباشرة ضمن نافذة الجلسة البالغة 24 ساعة.",
+        "typeLabel": "نوع الرسالة",
+        "type": {
+            "text": "رسالة نصية",
+            "image": "صورة",
+            "video": "فيديو",
+            "document": "مستند (PDF وغيره)",
+            "audio": "صوت"
+        },
+        "textLabel": "نص الرسالة",
+        "textPlaceholder": "مرحبًا {{example}}! 👋\n\nأهلًا بك في خدمتنا. كيف يمكنني مساعدتك اليوم؟",
+        "formattingHint": "تُدعم تنسيقات واتساب: *غامق*، _مائل_، ~يتوسطه خط~، ```كود```",
+        "variableHint": {
+            "prefix": "استخدم",
+            "suffix": "للقيم الديناميكية:"
+        },
+        "mediaUrlLabel": "رابط الوسائط",
+        "mediaUrlPlaceholder": "https://example.com/image.jpg",
+        "mediaUrlHint": {
+            "prefix": "يجب أن يكون رابط HTTPS متاحًا للعموم. استخدم",
+            "suffix": "لروابط ديناميكية."
+        },
+        "captionLabel": "التسمية التوضيحية (اختياري)",
+        "captionPlaceholder": "ألقِ نظرة على هذه الصورة!",
+        "variableMappingsHint": {
+            "prefix": "اربط",
+            "suffix": "المستخدمة أعلاه بحقول النظام أو الحقول المخصصة مع قيم احتياطية."
+        }
+    },
+    "sendTemplate": {
+        "sectionLabel": "القالب",
+        "searchLabel": "ابحث عن قالب واختره",
+        "searchPlaceholder": "ابحث عن القوالب...",
+        "loading": "جارٍ تحميل القوالب...",
+        "noResults": "لم يُعثر على أي قالب. اكتب الاسم يدويًا أدناه.",
+        "nameLabel": "اسم القالب",
+        "namePlaceholder": "welcome_message",
+        "languageLabel": "اللغة",
+        "languagePlaceholder": "ar",
+        "previewLabel": "معاينة",
+        "previewHeader": "الرأس: [{{type}}]",
+        "headerSectionLabel": "الرأس ({{type}})",
+        "headerUrlLabelDocument": "رابط المستند",
+        "headerUrlLabelGeneric": "رابط {{type}}",
+        "headerUrlPlaceholder": "https://...",
+        "bodyParamsLabel": "معلمات النص",
+        "bodyParamsHint": {
+            "prefix": "استخدم صيغة",
+            "suffix": "أو اكتب قيمًا ثابتة"
+        },
+        "bodyParamPlaceholder": "{{example}} أو نص ثابت",
+        "addParameter": "إضافة معلمة",
+        "buttonParamsLabel": "معلمات الأزرار",
+        "buttonFallbackLabel": "الزر {{index}}",
+        "urlSuffixLabel": "لاحقة الرابط",
+        "payloadLabel": "الحمولة",
+        "variableMappingsHint": {
+            "prefix": "اربط",
+            "suffix": "المستخدمة في معلمات النص أو رابط الرأس أو لاحقة رابط الزر بحقول المستخدم أو الحقول المخصصة مع قيم احتياطية."
+        }
+    },
+    "sendInteractive": {
+        "sectionLabel": "رسالة تفاعلية",
+        "sessionNotice": "تتطلب نافذة جلسة مدتها 24 ساعة. كوّن قالبًا احتياطيًا أدناه.",
+        "typeLabel": "النوع",
+        "type": {
+            "button": "أزرار الرد (بحد أقصى 3)",
+            "list": "قائمة منسدلة"
+        },
+        "bodyLabel": "نص الرسالة",
+        "bodyPlaceholder": "يرجى اختيار خيار...",
+        "footerLabel": "التذييل (اختياري)",
+        "footerPlaceholder": "بدعم من...",
+        "buttonsLabel": "الأزرار",
+        "buttonTitlePlaceholder": "عنوان الزر",
+        "addButton": "إضافة زر",
+        "listButtonLabel": "نص زر القائمة",
+        "listButtonPlaceholder": "عرض الخيارات",
+        "sectionsLabel": "الأقسام",
+        "sectionTitlePlaceholder": "عنوان القسم",
+        "rowTitlePlaceholder": "عنوان الصف",
+        "rowIdPlaceholder": "معرّف الصف (للشروط)",
+        "rowDescriptionPlaceholder": "الوصف (اختياري)",
+        "addRow": "إضافة صف",
+        "addSection": "إضافة قسم",
+        "fallbackTemplateLabel": "القالب الاحتياطي (إذا انتهت نافذة الـ24 ساعة)"
+    },
+    "condition": {
+        "sectionLabel": "فروع الشرط",
+        "hint": "ينشئ كل فرع حافة صادرة. اربطها بالعقد التالية على اللوحة.",
+        "typeLabel": "نوع الشرط",
+        "type": {
+            "userResponse": "استجابة نصية من المستخدم",
+            "buttonReply": "رد بزر تفاعلي",
+            "listReply": "رد باختيار من قائمة"
+        },
+        "importButton_zero": "لا توجد خيارات لاستيرادها من العقدة التفاعلية المتصلة",
+        "importButton_one": "استيراد خيار واحد من العقدة التفاعلية المتصلة",
+        "importButton_two": "استيراد خيارين من العقدة التفاعلية المتصلة",
+        "importButton_few": "استيراد {{count}} خيارات من العقدة التفاعلية المتصلة",
+        "importButton_many": "استيراد {{count}} خيارًا من العقدة التفاعلية المتصلة",
+        "importButton_other": "استيراد {{count}} خيار من العقدة التفاعلية المتصلة",
+        "defaultBranchLabel": "افتراضي",
+        "branchLabelPlaceholder": "تسمية الفرع",
+        "defaultCheckboxLabel": "افتراضي (احتياطي)",
+        "matchType": {
+            "exact": "تام",
+            "contains": "يحتوي على",
+            "regex": "Regex",
+            "buttonId": "معرّف الزر",
+            "listId": "معرّف صف القائمة",
+            "payload": "الحمولة"
+        },
+        "matchValuePlaceholder": "قيمة المطابقة...",
+        "addBranch": "إضافة فرع"
+    },
+    "delay": {
+        "sectionLabel": "إعدادات التأخير",
+        "durationLabel": "المدة",
+        "unit": {
+            "seconds": "ثوانٍ",
+            "minutes": "دقائق",
+            "hours": "ساعات",
+            "days": "أيام"
+        }
+    },
+    "workflow": {
+        "sectionLabel": "إجراء سير العمل",
+        "idLabel": "معرّف سير العمل",
+        "contextHint": "سيتلقى سير العمل phone وinstituteId وuserId وmessageText كسياق."
+    },
+    "webhook": {
+        "sectionLabel": "Webhook عبر HTTP",
+        "urlLabel": "الرابط",
+        "methodLabel": "الطريقة",
+        "resultVariableLabel": "اسم متغيّر النتيجة",
+        "resultHint": {
+            "prefix": "تُخزَّن الاستجابة باسم",
+            "suffix": "لاستخدامها في العقد اللاحقة."
+        }
+    },
+    "aiCredits": {
+        "outOfCreditsTitle": "نفدت أرصدة الذكاء الاصطناعي.",
+        "outOfCreditsBody": "لن تستدعي هذه الخطوة النموذج — المحادثات التي تصل إليها تُسلَّم إلى شخص في صندوق وارد واتساب حتى تشحن المؤسسة رصيدها.",
+        "spendNotice": "كل رد يستهلك أرصدة الذكاء الاصطناعي",
+        "balance": "· الرصيد {{balance}}"
+    },
+    "aiResponse": {
+        "sectionLabel": "محادثة الذكاء الاصطناعي",
+        "modelLabel": "النموذج",
+        "model": {
+            "platformDefault": "الافتراضي للمنصة (GLM 5.3 Flash)",
+            "gemini20Flash": "Gemini 2.0 Flash (سريع)",
+            "gemini25Flash": "Gemini 2.5 Flash",
+            "gemini25Pro": "Gemini 2.5 Pro",
+            "claude35Sonnet": "Claude 3.5 Sonnet",
+            "gpt4oMini": "GPT-4o Mini",
+            "deepseekV32": "DeepSeek V3.2"
+        },
+        "systemPromptLabel": "توجيه النظام",
+        "systemPromptPlaceholder": "أنت مساعد مفيد لـ {{example}}. أجب عن الأسئلة المتعلقة بالدورات والتسجيل...",
+        "maxTokensLabel": "الحد الأقصى للرموز",
+        "maxTurnsLabel": "الحد الأقصى للأدوار",
+        "temperatureLabel": "درجة الحرارة",
+        "exitKeywordsLabel": "كلمات الخروج (مفصولة بفواصل)",
+        "fallbackMessageLabel": "رسالة احتياطية (عند الخطأ/بلوغ الحد الأقصى للأدوار)",
+        "fallbackMessagePlaceholder": "دعني أوصلك بأحد موظفينا.",
+        "unsureSectionLabel": "عندما لا يعرف الذكاء الاصطناعي الإجابة",
+        "escalateCheckboxLabel": "تسليم الأمر لمسؤول بدلًا من التخمين",
+        "handoverMessageLabel": "رسالة التسليم",
+        "handoverMessagePlaceholder": "ليست لديّ هذه المعلومة الآن. دعني أتحقق مع فريقنا وأعود إليك قريبًا.",
+        "escalationNotice": {
+            "prefix": "عندما لا تكون الإجابة ضمن سياق الذكاء الاصطناعي، يُرسِل هذه الرسالة بدلًا من اختلاق إجابة. تُوسَم المحادثة عندئذٍ بأنها",
+            "unanswered": "غير مُجابة",
+            "middle": "في صندوق وارد واتساب، ويُبلَّغ الأشخاص المدرجون ضمن",
+            "flowSettings": "إعدادات التدفق",
+            "suffix": "عبر البريد الإلكتروني و/أو واتساب بأن متعلمًا في انتظار الرد. الرد من صندوق الوارد يزيل هذه العلامة."
+        },
+        "interactiveSectionLabel": "الردود التفاعلية",
+        "interactiveCheckboxLabel": "السماح للذكاء الاصطناعي بإرسال أزرار الرد والقوائم",
+        "interactiveNotice": "يمكن للذكاء الاصطناعي الآن تضمين أزرار الرد (بحد أقصى 3) أو قوائم عند عرض الخيارات. يعود إلى النص العادي إذا كانت الصيغة غير صالحة أو انتهت جلسة الـ24 ساعة."
+    },
+    "crmLeadCheck": {
+        "sectionLabel": "التحقق من العميل المحتمل في CRM",
+        "hint": "يبحث عن رقم WhatsApp هذا في CRM بالكامل. يُضاف الرقم الجديد فورًا إلى قائمة “WhatsApp Leads”. لا يتكرر العميل المحتمل المعروف أبدًا — يُسجَّل التواصل على سجله الحالي.",
+        "outputsLabel": "المخرجات",
+        "branchNew": "عميل محتمل جديد",
+        "branchExisting": "عميل محتمل حالي",
+        "connected": "متصل",
+        "notConnected": "غير متصل",
+        "connectBothNotice": "المخرج غير المتصل يُنهي التدفق لهذا النوع من العملاء المحتملين. اسحب من النقطة المقابلة أسفل العقدة لتوصيله.",
+        "existingSectionLabel": "إذا كان العميل المحتمل موجودًا بالفعل",
+        "existingMessageLabel": "الرسالة المراد إرسالها",
+        "existingMessagePlaceholder": "مثال: أهلًا بعودتك! سيتواصل معك فريقنا قريبًا.",
+        "blankSendsNothing": "اتركه فارغًا لعدم إرسال أي شيء.",
+        "notifyTeamLabel": "تنبيه الفريق",
+        "notifyTeamHint": "يضع علامة على المحادثة بأنها بانتظار الرد في صندوق وارد WhatsApp ويُخطر الأشخاص المحددين في إعدادات هذا التدفق."
+    },
+    "askField": {
+        "sectionLabel": "السؤال عن حقل وحفظه",
+        "hint": "يطرح سؤالًا واحدًا، وينتظر الرد، ويتحقق من ملاءمته للحقل ثم يحفظه على العميل المحتمل.",
+        "fieldLabel": "الحقل",
+        "fieldPlaceholder": "اختر حقلًا…",
+        "leadDetailsGroup": "بيانات العميل المحتمل",
+        "customFieldsGroup": "الحقول المخصصة",
+        "systemFields": {
+            "fullName": "الاسم الكامل",
+            "email": "البريد الإلكتروني"
+        },
+        "loadingFields": "جارٍ تحميل الحقول المخصصة…",
+        "loadFieldsFailed": "تعذر تحميل الحقول المخصصة.",
+        "retry": "إعادة المحاولة",
+        "noCustomFields": "لا توجد حقول مخصصة بعد — أضفها من الإعدادات ← الحقول المخصصة.",
+        "missingFieldOption": "{{field}} (لم يعد موجودًا)",
+        "missingFieldNotice": "لم يعد هذا الحقل موجودًا في حقولك المخصصة. اختر حقلًا آخر.",
+        "typeWithChoices": "النوع: {{type}} · {{total}} خيارات",
+        "typeOnly": "النوع: {{type}}",
+        "noChoicesNotice": "لا توجد خيارات لهذا الحقل بعد. أضفها من الإعدادات ← الحقول المخصصة.",
+        "choicesChangedNotice": "تغيّرت خيارات هذا الحقل منذ اختياره.",
+        "refreshChoices": "استخدام أحدث الخيارات",
+        "defaultQuestion": "يرجى مشاركة {{field}} الخاص بك.",
+        "questionLabel": "السؤال",
+        "questionPlaceholder": "ماذا يجب أن يسأل الروبوت؟",
+        "retryMessageLabel": "رسالة إعادة المحاولة",
+        "retryMessagePlaceholder": "عذرًا، يبدو أن هذا غير صحيح. يرجى المحاولة مرة أخرى.",
+        "retryMessageHint": "تُرسل عندما لا يلائم الرد الحقل — مثل بريد إلكتروني غير صالح، أو رد ليس من الخيارات.",
+        "maxRetriesLabel": "الحد الأقصى لإعادة المحاولة",
+        "allowSkipLabel": "السماح بتخطي هذا السؤال",
+        "listButtonLabel": "نص زر القائمة",
+        "noSaveStepNotice": "أضف خطوة “Save Lead to CRM” بعد أسئلتك لتعيين حالة العميل المحتمل وتشغيل مسارات عمل العملاء المحتملين.",
+        "preview": {
+            "sectionLabel": "معاينة",
+            "noQuestion": "سيظهر سؤالك هنا",
+            "modeText": "يكتب الشخص إجابته.",
+            "modeButtons": "يُرسل كأزرار رد.",
+            "modeList": "يُرسل كقائمة تُفتح بالزر.",
+            "modeNumbered": "أكثر من 10 خيارات — يُرسل كقائمة مرقمة؛ ويرد الشخص بالرقم.",
+            "modeMultiSelect": "اختيار متعدد — يُرسل كقائمة مرقمة؛ ويمكن للشخص الرد بعدة أرقام.",
+            "longChoiceNotice": "بعض الخيارات أطول مما يسمح به WhatsApp هنا ({{max}} حرفًا) وقد يتم اختصارها."
+        }
+    },
+    "saveToCrm": {
+        "sectionLabel": "حفظ العميل المحتمل في CRM",
+        "hint": "يحفظ كل الإجابات التي جُمعت في هذا التدفق على العميل المحتمل — وينشئه إن لم يكن موجودًا بعد — ويشغّل مسارات عمل إرسال العملاء المحتملين.",
+        "statusLabel": "تعيين حالة العميل المحتمل",
+        "dontChange": "بدون تغيير",
+        "loadingStatuses": "جارٍ تحميل الحالات…",
+        "missingStatusOption": "{{status}} (لم تعد موجودة)",
+        "missingStatusNotice": "لم تعد هذه الحالة موجودة. اختر حالة أخرى، أو “بدون تغيير”.",
+        "successMessageLabel": "الرسالة بعد الحفظ",
+        "successMessagePlaceholder": "مثال: شكرًا! سيتواصل معك فريقنا قريبًا.",
+        "blankSendsNothing": "اتركه فارغًا لعدم إرسال أي شيء.",
+        "fireWorkflowsLabel": "تشغيل مسارات عمل العملاء المحتملين",
+        "fireWorkflowsHint": "يشغّل مسارات عمل \"تم إرسال عميل محتمل\" الخاصة بالمؤسسة (مثل رسائل التأكيد وتنبيهات المشرفين) للعميل الجديد بعد حفظ الإجابات. أوقفه إذا كانت هذه المسارات سترسل رسالة ترحيب ثانية. لا يعمل أبدًا لعميل موجود مسبقًا."
+    }
+}

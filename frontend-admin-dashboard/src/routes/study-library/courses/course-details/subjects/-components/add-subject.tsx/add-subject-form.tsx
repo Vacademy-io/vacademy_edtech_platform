@@ -3,6 +3,7 @@ import { MyButton } from '@/components/design-system/button';
 import { MyInput } from '@/components/design-system/input';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import * as z from 'zod';
 import {
     Form,
@@ -21,13 +22,15 @@ import { getInstituteId } from '@/constants/helper';
 import { Input } from '@/components/ui/input';
 import { ImageSquare, X } from '@phosphor-icons/react';
 import { ImageCropperDialog } from '@/components/design-system/image-cropper-dialog';
+import type { TFunction } from 'i18next';
 
-const formSchema = z.object({
-    subjectName: z.string().min(1, 'Subject name is required'),
-    imageFile: z.any().optional(),
-});
+const buildFormSchema = (t: TFunction) =>
+    z.object({
+        subjectName: z.string().min(1, t('validation.subjectNameRequired')),
+        imageFile: z.any().optional(),
+    });
 
-type FormValues = z.infer<typeof formSchema>;
+type FormValues = z.infer<ReturnType<typeof buildFormSchema>>;
 
 interface AddSubjectFormProps {
     onSubmitSuccess: (subject: SubjectType) => void;
@@ -35,6 +38,7 @@ interface AddSubjectFormProps {
 }
 
 export const AddSubjectForm = ({ onSubmitSuccess, initialValues }: AddSubjectFormProps) => {
+    const { t } = useTranslation('studyLibraryAddSubjectForm');
     const { uploadFile } = useFileUpload();
     const instituteId = getInstituteId();
     const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -48,7 +52,7 @@ export const AddSubjectForm = ({ onSubmitSuccess, initialValues }: AddSubjectFor
     const [cropSrc, setCropSrc] = useState<string>('');
 
     const form = useForm<FormValues>({
-        resolver: zodResolver(formSchema),
+        resolver: zodResolver(buildFormSchema(t)),
         defaultValues: {
             subjectName: initialValues?.subject_name || '',
             imageFile: null,
@@ -131,16 +135,20 @@ export const AddSubjectForm = ({ onSubmitSuccess, initialValues }: AddSubjectFor
                         <FormItem>
                             <FormControl>
                                 <MyInput
-                                    label={`${getTerminology(
-                                        ContentTerms.Subjects,
-                                        SystemTerms.Subjects
-                                    )} Name`}
+                                    label={t('nameLabel', {
+                                        subject: getTerminology(
+                                            ContentTerms.Subjects,
+                                            SystemTerms.Subjects
+                                        ),
+                                    })}
                                     required={true}
                                     inputType="text"
-                                    inputPlaceholder={`Enter ${getTerminology(
-                                        ContentTerms.Subjects,
-                                        SystemTerms.Subjects
-                                    )} name`}
+                                    inputPlaceholder={t('namePlaceholder', {
+                                        subject: getTerminology(
+                                            ContentTerms.Subjects,
+                                            SystemTerms.Subjects
+                                        ),
+                                    })}
                                     className="w-[352px]"
                                     input={field.value}
                                     onChangeFunction={(e) => field.onChange(e.target.value)}
@@ -154,8 +162,9 @@ export const AddSubjectForm = ({ onSubmitSuccess, initialValues }: AddSubjectFor
                 {/* Image Upload Section */}
                 <FormItem>
                     <FormLabel className="text-sm font-medium text-gray-700">
-                        {getTerminology(ContentTerms.Subjects, SystemTerms.Subjects)} Image
-                        (Optional)
+                        {t('imageLabel', {
+                            subject: getTerminology(ContentTerms.Subjects, SystemTerms.Subjects),
+                        })}
                     </FormLabel>
                     <div className="space-y-3">
                         {/* File Input */}
@@ -175,17 +184,15 @@ export const AddSubjectForm = ({ onSubmitSuccess, initialValues }: AddSubjectFor
                             >
                                 <ImageSquare size={32} className="mx-auto mb-2 text-gray-400" />
                                 <p className="mb-1 text-sm text-gray-600">
-                                    Click to upload an image
+                                    {t('clickToUpload')}
                                 </p>
-                                <p className="text-xs text-gray-400">
-                                    PNG, JPG, GIF up to 10MB · 16:9 recommended
-                                </p>
+                                <p className="text-xs text-gray-400">{t('uploadHint')}</p>
                             </div>
                         ) : (
                             <div className="relative">
                                 <img
                                     src={previewUrl}
-                                    alt="Preview"
+                                    alt={t('previewAlt')}
                                     className="aspect-video w-full rounded-lg border object-cover"
                                 />
                                 <button
@@ -208,7 +215,11 @@ export const AddSubjectForm = ({ onSubmitSuccess, initialValues }: AddSubjectFor
                         scale="large"
                         disabled={isUploading}
                     >
-                        {isUploading ? 'Uploading...' : initialValues ? 'Save Changes' : 'Add'}
+                        {isUploading
+                            ? t('uploading')
+                            : initialValues
+                              ? t('saveChanges')
+                              : t('add')}
                     </MyButton>
                 </div>
             </form>
@@ -220,7 +231,7 @@ export const AddSubjectForm = ({ onSubmitSuccess, initialValues }: AddSubjectFor
                     onOpenChange={setCropperOpen}
                     src={cropSrc}
                     aspectRatio={16 / 9} // 16:9 ratio to match the display tile (no crop on display)
-                    title="Crop Subject Thumbnail"
+                    title={t('cropTitle')}
                     outputMimeType="image/jpeg"
                     outputQuality={0.9}
                     onCropped={handleImageCropped}

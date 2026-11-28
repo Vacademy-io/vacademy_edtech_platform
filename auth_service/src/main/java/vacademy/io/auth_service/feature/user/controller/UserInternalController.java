@@ -12,6 +12,7 @@ import vacademy.io.auth_service.feature.user_resolution.service.UserResolutionSe
 import vacademy.io.common.auth.dto.UserDTO;
 import vacademy.io.common.auth.entity.User;
 import vacademy.io.common.auth.enums.UserRoleStatus;
+import vacademy.io.common.auth.repository.UserRoleRepository;
 import vacademy.io.common.auth.service.UserService;
 import vacademy.io.common.exceptions.VacademyException;
 
@@ -33,6 +34,9 @@ public class UserInternalController {
 
     @Autowired
     private UserOperationService userOperationService;
+
+    @Autowired
+    private UserRoleRepository userRoleRepository;
 
     @PostMapping("/create-or-get-existing-by-id")
     @Transactional
@@ -68,6 +72,21 @@ public class UserInternalController {
             @RequestParam("instituteId") String instituteId,
             @RequestParam("userIds") List<String> userIds) {
         return ResponseEntity.ok(userService.getInstituteRoles(instituteId, userIds));
+    }
+
+    /**
+     * Role IDS (not names) the user holds ACTIVE at this institute. Per-role Display Settings are
+     * keyed by role id, and roles live in this service's database, so admin_core resolves a
+     * caller's custom-role settings card through here.
+     */
+    @GetMapping("/v1/institute-role-ids")
+    public ResponseEntity<List<String>> getInstituteRoleIds(
+            @RequestParam("instituteId") String instituteId,
+            @RequestParam("userId") String userId) {
+        if (!StringUtils.hasText(instituteId) || !StringUtils.hasText(userId)) {
+            return ResponseEntity.ok(List.of());
+        }
+        return ResponseEntity.ok(userRoleRepository.findActiveRoleIdsByUserIdAndInstituteId(userId, instituteId));
     }
 
     /**

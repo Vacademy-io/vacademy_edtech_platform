@@ -1,0 +1,85 @@
+{
+    "dash": "-",
+    "selectPrompt": "Sélectionnez un plan de frais pour voir les détails.",
+    "emptyState": {
+        "selectPackage": "Sélectionnez une session de forfait à l'étape 1 pour afficher les plans de frais."
+    },
+    "success": {
+        "title": "Inscription terminée",
+        "messageNamed": "{{name}} a été inscrit(e) avec le plan de frais sélectionné.",
+        "messageGeneric": "L'élève a été inscrit(e) avec le plan de frais sélectionné.",
+        "planLabel": "Plan : {{name}}",
+        "totalAssignedLabel": "Montant total assigné : {{amount}}",
+        "paymentModeLabel": "Mode de paiement : hors ligne",
+        "goToAdmissions": "Aller aux admissions"
+    },
+    "header": {
+        "title": "Attribuer un plan de frais",
+        "subtitle": "Récupéré depuis le CPO lié à la session de forfait sélectionnée.",
+        "refresh": "Actualiser"
+    },
+    "status": {
+        "loadingFeePlans": "Chargement des plans de frais...",
+        "loadError": "Échec du chargement des options CPO. Veuillez réessayer.",
+        "noFeePlans": "Aucun plan de frais trouvé pour cette session de forfait."
+    },
+    "cpoCard": {
+        "defaultPaymentOption": "Option de paiement par défaut :",
+        "available": "Disponible",
+        "notSet": "Non définie"
+    },
+    "detailHeader": {
+        "linked": "Lié à la session de forfait actuelle",
+        "notLinked": "Aucun lien de session trouvé"
+    },
+    "feeTable": {
+        "feeType": "Type de frais",
+        "amount": "Montant",
+        "installments": "Échéances"
+    },
+    "installmentsTable": {
+        "title": "Échéances",
+        "fee": "Frais",
+        "number": "#",
+        "amount": "Montant",
+        "due": "Échéance",
+        "start": "Début",
+        "end": "Fin",
+        "noneConfigured": "Aucune échéance configurée."
+    },
+    "paymentForm": {
+        "recordTitle": "Enregistrer un paiement (facultatif)",
+        "recordSubtitle": "Saisissez les détails du paiement hors ligne avant l'inscription.",
+        "hide": "Masquer",
+        "payNow": "Payer maintenant",
+        "amountLabel": "Montant reçu (facultatif)",
+        "transactionIdLabel": "ID de transaction",
+        "generate": "Générer",
+        "receiptLabel": "Reçu (facultatif)",
+        "receiptUploaded": "Reçu téléversé",
+        "uploadReceipt": "Téléverser le reçu",
+        "uploading": "Téléversement en cours..."
+    },
+    "footer": {
+        "totalLabel": "Total : {{amount}}",
+        "enroll": "Inscrire avec ce plan de frais",
+        "enrolling": "Inscription en cours..."
+    },
+    "installmentLabel": {
+        "oneTime": "Paiement unique",
+        "count_one": "{{count}} échéance",
+        "count_many": "{{count}} d'échéances",
+        "count_other": "{{count}} échéances",
+        "startsSuffix": " • débute le {{date}}"
+    },
+    "toast": {
+        "packageSessionRequired": "Une session de forfait est requise pour l'inscription.",
+        "selectFeePlan": "Sélectionnez un plan de frais pour continuer.",
+        "childUserIdMissing": "L'ID utilisateur de l'enfant est manquant dans la réponse d'admission.",
+        "paymentOptionRequired": "Une option de paiement est requise. Définissez une valeur par défaut ou mettez à jour le CPO.",
+        "enrollSuccess": "Élève inscrit(e) et plan de frais attribué.",
+        "enrollFailed": "Échec de l'inscription de l'élève. Veuillez réessayer.",
+        "receiptUploaded": "Reçu téléversé",
+        "receiptUploadFailed": "Échec du téléversement du reçu"
+    }
+}

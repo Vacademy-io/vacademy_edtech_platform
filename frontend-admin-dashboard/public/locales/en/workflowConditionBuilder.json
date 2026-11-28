@@ -1,0 +1,26 @@
+{
+    "operators": {
+        "equals": "equals",
+        "notEquals": "not equals",
+        "greaterThan": "greater than",
+        "lessThan": "less than",
+        "greaterOrEqual": "greater or equal",
+        "lessOrEqual": "less or equal",
+        "contains": "contains",
+        "isEmpty": "is empty",
+        "isNotEmpty": "is not empty",
+        "isTrue": "is true",
+        "isFalse": "is false"
+    },
+    "switchToVisual": "Switch to visual builder",
+    "rawSpelMode": "Raw SpEL expression mode",
+    "ifLabel": "If",
+    "pickVariablePlaceholder": "Pick a variable...",
+    "valuePlaceholder": "value",
+    "addCondition": "Add condition",
+    "switchToRawSpel": "Switch to raw SpEL",
+    "advanced": "Advanced",
+    "spelBadge": "SpEL",
+    "joinerAnd": "AND",
+    "joinerOr": "OR"
+}

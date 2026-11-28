@@ -10,18 +10,18 @@ import { useQueries } from '@tanstack/react-query';
  * `basePayload`) change.
  */
 
-export type LeadKpiMetric = 'TOTAL' | 'HOT' | 'WARM' | 'COLD' | 'CONVERTED';
+/** 'TOTAL' | 'CONVERTED' | any tier_key from the institute's lead_tier catalog. */
+export type LeadKpiMetric = string;
 
+/** Legacy metric list (HOT/WARM/COLD). Pass `tierKeys` to useLeadKpiCounts for custom tiers. */
 export const LEAD_KPI_METRICS: LeadKpiMetric[] = ['TOTAL', 'HOT', 'WARM', 'COLD', 'CONVERTED'];
 
 // Tier cards count still-active leads; Converted is its own bucket; Total spans all.
-const METRIC_PARAMS: Record<LeadKpiMetric, Record<string, unknown>> = {
-    TOTAL: { conversion_status_filter: 'ALL' },
-    HOT: { lead_tier: 'HOT', conversion_status_filter: 'EXCLUDE_CONVERTED' },
-    WARM: { lead_tier: 'WARM', conversion_status_filter: 'EXCLUDE_CONVERTED' },
-    COLD: { lead_tier: 'COLD', conversion_status_filter: 'EXCLUDE_CONVERTED' },
-    CONVERTED: { conversion_status_filter: 'ONLY_CONVERTED' },
-};
+function metricParams(metric: LeadKpiMetric): Record<string, unknown> {
+    if (metric === 'TOTAL') return { conversion_status_filter: 'ALL' };
+    if (metric === 'CONVERTED') return { conversion_status_filter: 'ONLY_CONVERTED' };
+    return { lead_tier: metric, conversion_status_filter: 'EXCLUDE_CONVERTED' };
+}
 
 interface UseLeadKpiCountsArgs {
     /** Stable surface discriminator, e.g. 'recent' | 'campaign'. */
@@ -36,6 +36,8 @@ interface UseLeadKpiCountsArgs {
      */
     basePayload: Record<string, unknown>;
     enabled: boolean;
+    /** Tier keys to count (institute catalog order). Defaults to the legacy HOT/WARM/COLD. */
+    tierKeys?: string[];
 }
 
 export function useLeadKpiCounts({
@@ -44,18 +46,22 @@ export function useLeadKpiCounts({
     fetchFn,
     basePayload,
     enabled,
+    tierKeys,
 }: UseLeadKpiCountsArgs) {
     const baseKey = JSON.stringify(basePayload);
+    const metrics: LeadKpiMetric[] = tierKeys
+        ? ['TOTAL', ...tierKeys, 'CONVERTED']
+        : LEAD_KPI_METRICS;
 
     const results = useQueries({
-        queries: LEAD_KPI_METRICS.map((metric) => ({
+        queries: metrics.map((metric) => ({
             // baseKey is the serialized basePayload, so the key already captures it.
             // eslint-disable-next-line @tanstack/query/exhaustive-deps
             queryKey: ['lead-kpi', surfaceId, scopeId, baseKey, metric],
             queryFn: () =>
                 fetchFn({
                     ...basePayload,
-                    ...METRIC_PARAMS[metric],
+                    ...metricParams(metric),
                     page: 0,
                     size: 1,
                 }).then((r) => r.totalElements ?? 0),
@@ -65,7 +71,7 @@ export function useLeadKpiCounts({
     });
 
     const counts = {} as Record<LeadKpiMetric, number | undefined>;
-    LEAD_KPI_METRICS.forEach((metric, i) => {
+    metrics.forEach((metric, i) => {
         counts[metric] = results[i]?.data;
     });
 

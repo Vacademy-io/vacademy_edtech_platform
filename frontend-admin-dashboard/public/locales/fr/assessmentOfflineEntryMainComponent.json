@@ -1,0 +1,37 @@
+{
+    "navHeading": "Saisie de données hors ligne",
+    "defaults": {
+        "assessmentName": "Évaluation"
+    },
+    "selectStudent": {
+        "subtitle": "Saisie de données hors ligne — Sélectionnez un élève pour commencer",
+        "bulkImport": "Import groupé"
+    },
+    "completed": {
+        "title": "Soumission terminée",
+        "summaryPrefix": "Les réponses hors ligne de ",
+        "summarySuffix": " ont été soumises et notées.",
+        "enterAnotherStudent": "Saisir un autre élève",
+        "backToAssessments": "Retour aux évaluations"
+    },
+    "responses": {
+        "back": "Retour",
+        "viewMode": {
+            "table": "Tableau",
+            "preview": "Aperçu"
+        },
+        "scoringMode": {
+            "auto": "Auto",
+            "directMarks": "Notes directes"
+        },
+        "submitAll": "Soumettre toutes les réponses",
+        "noQuestionsInSection": "Aucune question dans cette section."
+    },
+    "toasts": {
+        "submitSuccess": "Réponses hors ligne soumises avec succès"
+    },
+    "errors": {
+        "uploadFailed": "Impossible de téléverser « {{fileName}} »",
+        "submitFailed": "Échec de la soumission des réponses hors ligne"
+    }
+}

@@ -1,0 +1,19 @@
+{
+    "title": {
+        "generated": "تم إنشاء مفتاح API",
+        "create": "إنشاء مفتاح API جديد"
+    },
+    "description": {
+        "generated": "انسخ مفتاح API الآن. لن تتمكن من رؤيته مرة أخرى!",
+        "create": "امنح مفتاح API الخاص بك اسمًا لمساعدتك على التعرف عليه لاحقًا."
+    },
+    "keyNameLabel": "اسم المفتاح",
+    "keyNamePlaceholder": "مثال: مفتاح الإنتاج، مفتاح التطوير",
+    "cancelButton": "إلغاء",
+    "generatingButton": "جارٍ الإنشاء...",
+    "generateButton": "إنشاء مفتاح",
+    "saveKeyWarningTitle": "⚠️ احفظ هذا المفتاح الآن!",
+    "saveKeyWarningDescription": "هذه هي المرة الوحيدة التي سترى فيها المفتاح كاملاً. احفظه في مكان آمن.",
+    "yourApiKeyLabel": "مفتاح API الخاص بك",
+    "doneButton": "تم"
+}

@@ -1,0 +1,330 @@
+{
+    "hero": {
+        "eyebrow": "लाइव क्लास एनालिटिक्स",
+        "title": "{{term}} डैशबोर्ड",
+        "compared": "{{range}} से तुलना"
+    },
+    "presets": {
+        "today": "आज",
+        "last5": "पिछले 5 दिन",
+        "last7": "पिछले 7 दिन",
+        "last30": "पिछले 30 दिन",
+        "next7": "अगले 7 दिन",
+        "custom": "कस्टम"
+    },
+    "filters": {
+        "rangeLabel": "तारीख़ की सीमा",
+        "allOf": "सभी {{term}}",
+        "noTeachers": "इस अवधि में किसी ने नहीं पढ़ाया",
+        "clear": "हटाएँ",
+        "refresh": "रीफ़्रेश करें",
+        "startDate": "शुरू की तारीख़",
+        "endDate": "अंतिम तारीख़",
+        "apply": "लागू करें",
+        "invalidRange": "अंतिम तारीख़ शुरू की तारीख़ के बाद होनी चाहिए",
+        "rangeTooLong": "अधिकतम {{days}} दिनों की सीमा चुनें",
+        "updatedAt": "{{time}} पर अपडेट · हर मिनट रीफ़्रेश"
+    },
+    "units": {
+        "hourShort": "घं",
+        "minuteShort": "मि"
+    },
+    "delta": {
+        "points": "{{v}} अंक",
+        "percent": "{{v}}%",
+        "plain": "{{v}}",
+        "vs": "{{range}} की तुलना में"
+    },
+    "kpis": {
+        "classes": "{{term}}",
+        "classesDetail": "{{completed}} पूरी · {{live}} लाइव · {{upcoming}} आगामी",
+        "attendance": "उपस्थिति",
+        "attendanceDetail": "{{expected}} में से {{present}} उपस्थित",
+        "noCompleted": "इस अवधि में अभी कोई क्लास पूरी नहीं हुई",
+        "avgJoined": "प्रति क्लास औसत जुड़े",
+        "avgJoinedDetail": "कुल जुड़े: {{joined}}",
+        "avgJoinedDetailGuests": "कुल जुड़े: {{joined}} (मेहमान: {{guests}})",
+        "timeInClass": "क्लास में औसत समय",
+        "timeInClassDetail": "{{scheduled}} निर्धारित में से · {{rate}} रुके",
+        "noDurationData": "इन क्लासों के लिए क्लास में बिताया समय उपलब्ध नहीं है",
+        "engagement": "सहभागिता",
+        "engagementBreakdown": "बोले {{spoke}} · चैट की {{chatted}}",
+        "engagementNotTracked": "सहभागिता केवल Vacademy Meet क्लासों के लिए ट्रैक होती है",
+        "rating": "औसत रेटिंग",
+        "ratingDetail": "{{n}} प्रतिक्रियाएँ · उपस्थित छात्रों का {{rate}}",
+        "noFeedback": "अभी कोई फ़ीडबैक नहीं"
+    },
+    "insights": {
+        "best": "सबसे अच्छी उपस्थिति",
+        "lowest": "ध्यान देने की ज़रूरत",
+        "topTeacher": "सबसे अच्छी रेटिंग",
+        "busiestDay": "सबसे व्यस्त दिन",
+        "zeroJoin": "ख़ाली क्लासें",
+        "classMeta": "{{rate}} उपस्थिति · {{date}}",
+        "teacherMeta": "★ {{rating}} · {{n}} रेटिंग",
+        "busiestMeta": "{{n}} {{term}} निर्धारित",
+        "zeroJoinTitle": "{{n}} {{term}} में कोई नहीं जुड़ा",
+        "zeroJoinNone": "हर क्लास में छात्र थे",
+        "zeroJoinMeta": "पूरी हुई क्लासें जिनमें कोई नहीं जुड़ा"
+    },
+    "trend": {
+        "title": "उपस्थिति का रुझान",
+        "present": "उपस्थित",
+        "expected": "अपेक्षित",
+        "rateLine": "उपस्थिति {{rate}}",
+        "subtitles": {
+            "attendance": "प्रति दिन अपेक्षित बनाम उपस्थित छात्र (पूरी क्लासें)",
+            "rate": "प्रति दिन उपस्थिति % (पूरी क्लासें)",
+            "classes": "प्रति दिन निर्धारित क्लासें",
+            "rating": "प्रति दिन औसत फ़ीडबैक रेटिंग"
+        },
+        "metrics": {
+            "attendance": "उपस्थित बनाम अपेक्षित",
+            "rate": "उपस्थिति %",
+            "classes": "{{term}}",
+            "rating": "रेटिंग"
+        }
+    },
+    "heatmap": {
+        "title": "क्लासें कब होती हैं",
+        "subtitle": "दिन और शुरू होने के समय के अनुसार {{term}} — उपस्थिति देखने के लिए किसी स्लॉट पर होवर करें",
+        "cellClasses": "{{n}} {{term}}",
+        "cellAttendance": "उपस्थिति {{rate}}",
+        "fewer": "कम",
+        "more": "ज़्यादा"
+    },
+    "empty": {
+        "noClassesInRange": "इस अवधि में कोई {{term}} नहीं",
+        "noMatch": "इन फ़िल्टरों से कोई {{term}} मेल नहीं खाती",
+        "noBatches": "इस अवधि के लिए {{term}} का डेटा नहीं"
+    },
+    "donut": {
+        "title": "उपस्थिति का विवरण",
+        "subtitle": "पूरी क्लासों के अपेक्षित छात्र",
+        "present": "उपस्थित",
+        "belowRule": "जुड़े, पर उपस्थिति नियम से कम",
+        "notJoined": "नहीं जुड़े",
+        "center": "उपस्थिति",
+        "guestsNote": "इनके अलावा जुड़े (मेहमान या इन बैच से बाहर के छात्र): {{n}}"
+    },
+    "ratings": {
+        "title": "फ़ीडबैक रेटिंग",
+        "subtitle": "{{n}} प्रतिक्रियाएँ · उपस्थित छात्रों का {{rate}}"
+    },
+    "engagement": {
+        "title": "सहभागिता",
+        "subtitle": "{{rate}} छात्रों ने भाग लिया · ट्रैक किए गए छात्र: {{n}}",
+        "talks": "माइक पर बोले",
+        "chats": "चैट की",
+        "raiseHands": "हाथ उठाया",
+        "pollVotes": "पोल में वोट दिया",
+        "emojis": "रिएक्ट किया",
+        "totals": "चैट संदेश: {{chats}} · उठाए गए हाथ: {{hands}} · पोल वोट: {{votes}}"
+    },
+    "platforms": {
+        "title": "प्लेटफ़ॉर्म",
+        "subtitle": "प्लेटफ़ॉर्म के अनुसार {{term}}",
+        "names": {
+            "bbb": "वेकेडमी मीट",
+            "youtube": "यूट्यूब",
+            "google_meet": "गूगल मीट",
+            "zoom": "ज़ूम",
+            "zoho": "ज़ोहो",
+            "recorded": "रिकॉर्डेड वीडियो",
+            "other": "अन्य"
+        }
+    },
+    "liveNow": {
+        "none": "अभी कोई {{term}} लाइव नहीं है",
+        "title": "अभी लाइव",
+        "autoRefresh": "जुड़ने की संख्या हर मिनट अपडेट होती है",
+        "joinedOf": "{{expected}} में से {{joined}} जुड़े",
+        "joinedCount": "{{n}} जुड़े",
+        "open": "क्लास खोलें"
+    },
+    "status": {
+        "LIVE": "लाइव",
+        "UPCOMING": "आगामी",
+        "COMPLETED": "पूरी",
+        "ALL": "सभी"
+    },
+    "table": {
+        "title": "सभी {{term}}",
+        "subtitle": "दिखाई जा रही: {{n}}",
+        "truncated": "नवीनतम {{limit}} दिखाई जा रही हैं — बाकी देखने के लिए अवधि छोटी करें",
+        "when": "तारीख़ और समय",
+        "class": "क्लास",
+        "status": "स्थिति",
+        "attendance": "उपस्थिति",
+        "avgTime": "औसत समय",
+        "engagement": "सहभागिता",
+        "feedback": "रेटिंग",
+        "untitled": "बिना शीर्षक की क्लास",
+        "search": "क्लास, विषय या {{term}} खोजें"
+    },
+    "teachers": {
+        "title": "{{term}} लीडरबोर्ड",
+        "subtitle": "पढ़ाई गई क्लासों के क्रम में, उनकी {{term}} की उपस्थिति के साथ",
+        "classesCount": "{{n}} {{term}}",
+        "joinsCount": "{{n}} जुड़े",
+        "avgTime": "औसतन {{time}} रुके"
+    },
+    "batches": {
+        "title": "{{term}} की उपस्थिति",
+        "subtitle": "केवल पूरी {{term}}",
+        "unknown": "अन्य बैच",
+        "meta": "{{n}} {{term}} · {{expected}} में से {{present}} उपस्थित",
+        "sort": {
+            "lowest": "सबसे कम पहले",
+            "highest": "सबसे ज़्यादा पहले",
+            "largest": "सबसे बड़े"
+        }
+    },
+    "error": {
+        "title": "डैशबोर्ड लोड नहीं हो सका",
+        "body": "अपना कनेक्शन जाँचें और फिर से कोशिश करें।",
+        "retry": "फिर से कोशिश करें"
+    },
+    "share": {
+        "csv": "CSV निर्यात करें",
+        "pdf": "PDF डाउनलोड करें"
+    },
+    "actions": {
+        "whatsapp": "व्हाट्सऐप",
+        "email": "ईमेल",
+        "csv": "CSV",
+        "learnersCount": "{{n}} छात्र",
+        "nobodyToMessage": "इस सूची में संदेश भेजने के लिए कोई छात्र नहीं"
+    },
+    "drilldown": {
+        "guest": "मेहमान",
+        "guestNote": "मेहमान / सार्वजनिक पंजीकरण",
+        "notExpected": "इन बैच में नहीं",
+        "joined": "जुड़े",
+        "openFull": "क्लास पेज खोलें",
+        "search": "नाम, ईमेल या फ़ोन खोजें",
+        "empty": "इस सूची में कोई छात्र नहीं",
+        "timeInClass": "क्लास में समय",
+        "filters": {
+            "ALL": "सभी",
+            "PRESENT": "उपस्थित",
+            "BELOW_RULE": "नियम से कम",
+            "NOT_JOINED": "नहीं जुड़े"
+        },
+        "status": {
+            "PRESENT": "उपस्थित",
+            "BELOW_RULE": "नियम से कम",
+            "NOT_JOINED": "नहीं जुड़े"
+        },
+        "activeness": "एक्टिवनेस",
+        "activenessOnScreen": "स्क्रीन पर {{value}}%",
+        "activenessAttention": "ध्यान {{value}}%",
+        "activenessTracked": "ट्रैक किया {{duration}}",
+        "activenessAway": "{{count}}× दूर गए"
+    },
+    "csv": {
+        "name": "नाम",
+        "email": "ईमेल",
+        "mobile": "मोबाइल",
+        "batch": "बैच",
+        "status": "स्थिति",
+        "minutesInClass": "क्लास में मिनट",
+        "talks": "बोले (बार)",
+        "chats": "चैट संदेश",
+        "hands": "उठाए गए हाथ",
+        "pollVotes": "पोल वोट",
+        "rating": "रेटिंग",
+        "feedback": "फ़ीडबैक",
+        "expected": "अपेक्षित",
+        "attended": "उपस्थित रहे",
+        "missed": "छूटी",
+        "attendance": "उपस्थिति %",
+        "missStreak": "लगातार छूटी",
+        "lastAttended": "आख़िरी बार उपस्थित",
+        "date": "तारीख़",
+        "start": "शुरू",
+        "end": "समाप्त",
+        "class": "क्लास",
+        "subject": "विषय",
+        "teachers": "शिक्षक",
+        "batches": "बैच",
+        "platform": "प्लेटफ़ॉर्म",
+        "joined": "जुड़े",
+        "present": "उपस्थित",
+        "avgMinutes": "औसत रुके मिनट",
+        "scheduledMinutes": "निर्धारित मिनट",
+        "engagement": "सहभागिता %",
+        "feedbackCount": "फ़ीडबैक प्रतिक्रियाएँ",
+        "activeness": "एक्टिवनेस %",
+        "activenessOnScreen": "स्क्रीन पर %",
+        "activenessAttention": "ध्यान %",
+        "activenessMinutesTracked": "कैमरा ट्रैक मिनट",
+        "activenessAwayCount": "दूर जाने की संख्या",
+        "activenessStatus": "एक्टिवनेस स्थिति"
+    },
+    "atRisk": {
+        "title": "जोखिम वाले छात्र",
+        "none": "इस अवधि में किसी छात्र ने {{missed}}+ पूरी {{term}} नहीं छोड़ीं",
+        "loading": "बार-बार क्लास छोड़ने वाले छात्र खोजे जा रहे हैं…",
+        "threshold": "कम से कम छूटी",
+        "missedPlus": "{{n}}+ छूटी",
+        "messageAll": "सभी को व्हाट्सऐप ({{n}})",
+        "showingTop": "{{total}} में से शीर्ष {{shown}} दिखाए जा रहे हैं",
+        "missedOf": "{{expected}} में से {{missed}} छूटी",
+        "streak": "लगातार {{n}}",
+        "lastAttended": "आख़िरी बार {{date}} को आए",
+        "neverAttended": "इस अवधि में नहीं आए",
+        "rate": "उपस्थिति {{rate}}",
+        "viewLabel": "दिखाएँ",
+        "views": {
+            "DROPPED": "आना बंद किया",
+            "NEVER": "कभी नहीं आए",
+            "ALL": "सभी"
+        },
+        "subtitles": {
+            "DROPPED": "{{n}} छात्र पहले आते थे, फिर {{missed}}+ पूरी {{term}} छोड़ीं",
+            "NEVER": "{{n}} छात्र अपनी {{missed}}+ पूरी {{term}} में से किसी में नहीं जुड़े",
+            "ALL": "{{n}} छात्रों ने इस अवधि में {{missed}}+ पूरी {{term}} छोड़ीं"
+        }
+    },
+    "wall": {
+        "title": "छात्र क्या कह रहे हैं",
+        "subtitle": "इस अवधि की {{term}} पर हाल का लिखित फ़ीडबैक",
+        "filters": {
+            "all": "सभी",
+            "low": "कम रेटिंग",
+            "doubts": "डाउट्स"
+        },
+        "empty": "इस अवधि में कोई लिखित फ़ीडबैक नहीं",
+        "showMore": "{{n}} और दिखाएँ",
+        "showLess": "कम दिखाएँ",
+        "anonymous": "छात्र"
+    },
+    "page": {
+        "description": "लाइव क्लासों की उपस्थिति, क्लास में समय, सहभागिता और फ़ीडबैक — शिक्षक और बैच के अनुसार।"
+    },
+    "activenessState": {
+        "1": "मापा गया",
+        "2": "शिक्षार्थी ने बंद किया",
+        "3": "फ़ोन/टैबलेट — मापा नहीं गया",
+        "4": "कैमरा ब्लॉक है",
+        "5": "कैमरा नहीं है",
+        "6": "कैमरा किसी दूसरे ऐप में चल रहा है",
+        "7": "डिवाइस बहुत धीमा",
+        "8": "लोड नहीं हो सका",
+        "9": "कैमरा रुक गया",
+        "10": "कैमरे की अनुमति नहीं दी"
+    },
+    "activenessStateShort": {
+        "1": "मापा गया",
+        "2": "बंद किया",
+        "3": "फ़ोन",
+        "4": "कैमरा ब्लॉक",
+        "5": "कैमरा नहीं",
+        "6": "कैमरा व्यस्त",
+        "7": "बहुत धीमा",
+        "8": "लोड नहीं हुआ",
+        "9": "कैमरा रुका",
+        "10": "अनुमति नहीं"
+    }
+}

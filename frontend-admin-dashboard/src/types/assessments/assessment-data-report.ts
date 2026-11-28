@@ -3,24 +3,28 @@ interface Option {
     option_name: string;
 }
 
-interface Question {
+export interface ReportQuestion {
     question_id: string; // UUID
     question_name: string;
-    // For most types this is an Option[]. For CODING questions the backend sends
-    // the raw response JSON string (responseData with verdict/testCaseResults/etc.).
-    student_response_options: Option[] | string;
-    // Option[] normally; for CODING this is the question config JSON string.
-    correct_options: Option[] | string;
+    question_order?: number | null;
+    // The stored response JSON (question_wise_marks.response_json) for every type;
+    // older payloads sent an Option[]. Read with parseStudentAnswer.
+    student_response_options: Option[] | string | null;
+    // The question's auto_evaluation_json; older payloads sent an Option[].
+    // Read with parseCorrectAnswer.
+    correct_options: Option[] | string | null;
     question_type?: string;
     explanation_id: string; // UUID
     explanation: string;
     mark: number;
     time_taken_in_seconds: number;
     answer_status: string;
+    evaluator_feedback?: string | null;
+    ai_feedback?: string | null;
 }
 
 interface AllSections {
-    [sectionId: string]: Question[]; // Dynamic section ID as key
+    [sectionId: string]: ReportQuestion[]; // Dynamic section ID as key
 }
 
 interface QuestionOverallDetailDTO {

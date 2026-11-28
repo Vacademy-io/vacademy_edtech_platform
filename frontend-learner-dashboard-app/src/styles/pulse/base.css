@@ -1,0 +1,132 @@
+/* =====================================================================
+   Pulse skin (fitness and gyms): tokens, course colours, type.
+   <html> carries ui-fun AND ui-pulse. Charcoal ground, volt green action with
+   charcoal text, orange for live, condensed italic capitals. Contrast:
+   charcoal on volt 16.1, volt on cards 14.5, quiet grey on cards 7.6, charcoal
+   on orange 6.7. A night skin: tests are taken with it held off.
+   ===================================================================== */
+
+html.ui-fun.ui-pulse {
+  color-scheme: dark;
+  --pulse-night: #0F1012;
+  --pulse-card: #1A1C20;
+  --pulse-raised: #24272C;
+  --pulse-line: #2F333A;
+  --pulse-text: #FFFFFF;
+  --pulse-soft: #E3E6EA;
+  --pulse-quiet: #A8ADB7;
+  --pulse-volt: #C8FF2E;          /* action: charcoal on it 16.1 */
+  --pulse-volt-lip: #7F9E1E;
+  --pulse-orange: #FF6A2B;        /* live */
+  --pulse-orange-text: #FF8B5C;
+  --pulse-display: 'Barlow Condensed', 'Teko', 'Arial Narrow', sans-serif;
+
+  --fun-ink: var(--pulse-text);
+  --fun-ink-2: var(--pulse-soft);
+  --fun-muted: var(--pulse-quiet);
+  --fun-line-control: #5C626C;
+  --fun-line-card: var(--pulse-line);
+  --fun-line-nav: var(--pulse-raised);
+  --fun-line-button: var(--pulse-line);
+  --fun-ground: var(--pulse-card);
+
+  --fun-success: #5BE38A;
+  --fun-success-strong: #5BE38A;
+  --fun-success-tint: #15291E;
+  --fun-success-text: #7CF0A6;
+  --fun-success-text-strong: #A6F5C2;
+  --fun-success-track: #23402F;
+  --fun-live: var(--pulse-orange);
+  --fun-live-text: var(--pulse-orange-text);
+  --fun-live-tint: #2E1C14;
+  --fun-live-tint-text: #FFB899;
+  --fun-live-tint-text-2: #FFA27A;
+  --fun-test-tint: #262315;
+  --fun-test-text: #FFD23F;
+  --fun-test-text-strong: #FFE58A;
+  --fun-test-text-2: #FFD23F;
+  --fun-test-icon-bg: #3D3615;
+  --fun-quiz: #FFD23F;
+  --fun-quiz-tint: #2E2A12;
+  --fun-info: #4CC2FF;
+  --fun-info-tint: #12283A;
+  --fun-info-text: #8FD6FF;
+  --fun-highlight: var(--pulse-volt);
+  --fun-highlight-text: var(--pulse-night);
+  --fun-streak-bg: #2E1C14;
+  --fun-streak-text: #FFB27A;
+  --fun-flame: var(--pulse-orange);
+  --fun-flame-core: #FFD23F;
+  --fun-brand: var(--pulse-volt);
+  --fun-brand-tint: #2A3312;
+  --fun-brand-lip: var(--pulse-volt-lip);
+  --fun-home-live-deco: #FF8B5C;
+  --fun-home-done-deco: #9AF0B6;
+  --fun-home-done-text: var(--pulse-night);
+  --fun-home-empty-art: #2E2A12;
+  --fun-home-note-bg: var(--pulse-raised);
+  --fun-home-note-text: var(--pulse-soft);
+  --fun-course-locked-bg: #141518;
+  --fun-radius-control: 12px;
+  --fun-font-family: 'Inter', 'Noto Sans Devanagari', 'Noto Naskh Arabic', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+/* ── Course colours: bright fills with charcoal text ── */
+html.ui-pulse .fun-course-0 { --fc-solid: #C8FF2E; --fc-text: #D0FF4D; --fc-tint: #394523; --fc-deco: #DBFF77; --fc-lip: #78991C; }
+html.ui-pulse .fun-course-1 { --fc-solid: #FF8A3D; --fc-text: #FF9C5A; --fc-tint: #433025; --fc-deco: #FFB381; --fc-lip: #995325; }
+html.ui-pulse .fun-course-2 { --fc-solid: #2EE6D6; --fc-text: #4DEADC; --fc-tint: #1E4041; --fc-deco: #77EFE4; --fc-lip: #1C8A80; }
+html.ui-pulse .fun-course-3 { --fc-solid: #FF5C7A; --fc-text: #FF748E; --fc-tint: #432830; --fc-deco: #FF95A9; --fc-lip: #993749; }
+html.ui-pulse .fun-course-4 { --fc-solid: #FFD23F; --fc-text: #FFD95C; --fc-tint: #433D26; --fc-deco: #FFE282; --fc-lip: #997E26; }
+html.ui-pulse .fun-course-5 { --fc-solid: #4CC2FF; --fc-text: #67CBFF; --fc-tint: #233A48; --fc-deco: #8BD7FF; --fc-lip: #2E7499; }
+html.ui-pulse .fun-course-6 { --fc-solid: #A98BFF; --fc-text: #B69CFF; --fc-tint: #343048; --fc-deco: #C7B4FF; --fc-lip: #655399; }
+html.ui-pulse .fun-course-7 { --fc-solid: #5BE38A; --fc-text: #74E79C; --fc-tint: #264033; --fc-deco: #94EDB3; --fc-lip: #378853; }
+html.ui-pulse :is(.fun-course-0, .fun-course-1, .fun-course-2, .fun-course-3, .fun-course-4, .fun-course-5, .fun-course-6, .fun-course-7) {
+  --fc-on-band: #0F1012;
+  --fc-track: rgba(0, 0, 0, 0.25);
+}
+
+/* ── Headings ── */
+html.ui-pulse :is(.fun-t-display, .fun-t-title, .fun-t-section, .fun-learn-head__title, .fun-section-title, .fun-home-header__name, .fun-band__title) {
+  font-family: var(--pulse-display);
+  font-style: italic;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+html.ui-pulse:is([lang="hi"], [lang="mr"]) :is(.fun-t-display, .fun-t-title, .fun-t-section, .fun-learn-head__title, .fun-section-title, .fun-home-header__name, .fun-band__title) {
+  font-family: 'Teko', var(--pulse-display);
+  font-style: normal;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+html.ui-pulse :is(.fun-t-display, .fun-t-title, .fun-t-section, .fun-learn-head__title, .fun-section-title, .fun-home-header__name, .fun-band__title) { font-size: 1.15em; line-height: 0.95; }
+html.ui-pulse .fun-btn--primary,
+html.ui-pulse .fun-quiz-result__primary {
+  font-family: var(--pulse-display);
+  font-style: italic;
+  font-weight: 800;
+  font-size: 1.375rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+html.ui-pulse:is([lang="hi"], [lang="mr"]) :is(.fun-btn--primary, .fun-quiz-result__primary) { font-family: var(--fun-font-family); font-style: normal; font-size: 1.125rem; letter-spacing: 0; text-transform: none; }
+html.ui-pulse .fun-btn:focus-visible { outline-color: var(--pulse-text); }
+html.ui-pulse .fun-on-colour .fun-btn:focus-visible { outline-color: var(--pulse-night); }
+html.ui-pulse .fun-quiz {
+  --fun-quiz-option-line: var(--pulse-line);
+  --fun-quiz-wrong-line: #6B2A1C;
+  --fun-quiz-wrong-bg: #2A1712;
+  --fun-quiz-pass-text: var(--pulse-soft);
+  --fun-quiz-head: var(--fc-tint, var(--pulse-raised));
+  --fun-quiz-ring-track: var(--pulse-raised);
+}
+html.ui-pulse .fun-quiz-ring__disc { fill: var(--pulse-night); }
+html.ui-pulse .fun-quiz-result__card { background: var(--pulse-card); border: 1.5px solid var(--pulse-line); }
+html.ui-pulse .fun-quiz-result__card[data-verdict="passed"] { background: var(--pulse-card); border-color: var(--pulse-volt); }
+html.ui-pulse .fun-quiz-result__card[data-verdict="passed"] .fun-quiz-ring__arc { stroke: var(--pulse-volt); }
+html.ui-pulse .fun-quiz-result__card[data-verdict="passed"] .fun-quiz-ring__track { stroke: var(--pulse-raised); }
+html.ui-pulse .fun-quiz-result__card[data-verdict="passed"] .fun-quiz-result__marks { color: var(--pulse-soft); }
+/* Laptop sidebar at the app's 17rem: Inter runs wider than Nunito. */
+html.ui-pulse .group\/sidebar-wrapper { --sidebar-width: 17rem !important; }

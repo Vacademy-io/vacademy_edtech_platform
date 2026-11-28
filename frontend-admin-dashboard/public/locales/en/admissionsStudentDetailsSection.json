@@ -1,0 +1,123 @@
+{
+    "sections": {
+        "basicInformation": "Basic Information",
+        "demographics": "Demographics",
+        "identification": "Identification",
+        "healthInformation": "Health Information"
+    },
+    "fields": {
+        "fullName": {
+            "label": "Full Name",
+            "hint": "(As per Birth Certificate)",
+            "placeholder": "Enter student's full name"
+        },
+        "dateOfBirth": {
+            "label": "Date of Birth"
+        },
+        "gender": {
+            "label": "Gender"
+        },
+        "nationality": {
+            "label": "Nationality",
+            "placeholder": "Select nationality"
+        },
+        "religion": {
+            "label": "Religion",
+            "placeholder": "Select"
+        },
+        "category": {
+            "label": "Category",
+            "placeholder": "Select"
+        },
+        "bloodGroup": {
+            "label": "Blood Group",
+            "placeholder": "Select"
+        },
+        "motherTongue": {
+            "label": "Mother Tongue",
+            "placeholder": "Select"
+        },
+        "languagesKnown": {
+            "label": "Languages Known",
+            "placeholder": "E.g., English, Hindi, Marathi"
+        },
+        "idType": {
+            "label": "ID Type",
+            "placeholder": "Select ID Type"
+        },
+        "idNumber": {
+            "label": "ID Number",
+            "placeholder": "Enter ID number"
+        },
+        "aadhaarNumber": "Aadhaar Number",
+        "medicalConditions": {
+            "label": "Medical Conditions / Allergies (if any)",
+            "placeholder": "E.g., Asthma, Diabetes, Food allergies, etc."
+        },
+        "dietaryRestrictions": {
+            "label": "Dietary Restrictions",
+            "placeholder": "E.g., Vegetarian, No nuts, etc."
+        }
+    },
+    "genderLabels": {
+        "male": "Male",
+        "female": "Female",
+        "other": "Other"
+    },
+    "nationalityOptions": {
+        "indian": "Indian",
+        "other": "Other"
+    },
+    "religionOptions": {
+        "hindu": "Hindu",
+        "muslim": "Muslim",
+        "christian": "Christian",
+        "sikh": "Sikh",
+        "jain": "Jain",
+        "buddhist": "Buddhist",
+        "other": "Other"
+    },
+    "categoryOptions": {
+        "general": "General",
+        "obc": "OBC",
+        "sc": "SC",
+        "st": "ST",
+        "ews": "EWS"
+    },
+    "bloodGroupOptions": {
+        "aPositive": "A+",
+        "aNegative": "A-",
+        "bPositive": "B+",
+        "bNegative": "B-",
+        "oPositive": "O+",
+        "oNegative": "O-",
+        "abPositive": "AB+",
+        "abNegative": "AB-"
+    },
+    "motherTongueOptions": {
+        "hindi": "Hindi",
+        "english": "English",
+        "gujarati": "Gujarati",
+        "marathi": "Marathi",
+        "tamil": "Tamil",
+        "telugu": "Telugu",
+        "kannada": "Kannada",
+        "bengali": "Bengali",
+        "malayalam": "Malayalam",
+        "punjabi": "Punjabi",
+        "odia": "Odia",
+        "urdu": "Urdu",
+        "other": "Other"
+    },
+    "checkboxLanguages": {
+        "hindi": "Hindi",
+        "english": "English",
+        "regional": "Regional"
+    },
+    "idTypeOptions": {
+        "aadhaarCard": "Aadhaar Card",
+        "birthCertificate": "Birth Certificate",
+        "passport": "Passport",
+        "other": "Other"
+    }
+}

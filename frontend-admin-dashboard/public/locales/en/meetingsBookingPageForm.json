@@ -1,0 +1,122 @@
+{
+    "schema": {
+        "titleRequired": "Title is required",
+        "durationRequired": "Duration is required",
+        "timezoneRequired": "Timezone is required",
+        "horizonDaysInvalid": "Enter a number of days"
+    },
+    "days": {
+        "monday": "Monday",
+        "tuesday": "Tuesday",
+        "wednesday": "Wednesday",
+        "thursday": "Thursday",
+        "friday": "Friday",
+        "saturday": "Saturday",
+        "sunday": "Sunday"
+    },
+    "durationOption_one": "{{count}} minute",
+    "durationOption_other": "{{count}} minutes",
+    "noMinimumNotice": "No minimum notice",
+    "hoursOption_one": "{{count}} hour",
+    "hoursOption_other": "{{count}} hours",
+    "daysOption_one": "{{count}} day",
+    "daysOption_other": "{{count}} days",
+    "noReminder": "No pre-meeting reminder",
+    "minutesBeforeOption_one": "{{count}} minute before",
+    "minutesBeforeOption_other": "{{count}} minutes before",
+    "hoursBeforeOption_one": "{{count}} hour before",
+    "hoursBeforeOption_other": "{{count}} hours before",
+    "daysBeforeOption_one": "{{count}} day before",
+    "daysBeforeOption_other": "{{count}} days before",
+    "fieldOptions": {
+        "inviteeName": "Invitee's name",
+        "meetingDatetime": "Meeting date & time",
+        "meetingDate": "Meeting date",
+        "meetingTime": "Meeting time",
+        "meetLink": "Google Meet / join link",
+        "hostName": "Host's name",
+        "meetingTitle": "Meeting title",
+        "durationMinutes": "Duration (minutes)"
+    },
+    "defaultHostSelected": "Selected host",
+    "defaultHostMe": "Me",
+    "toast": {
+        "enableOneDay": "Enable at least one day of weekly availability",
+        "updated": "Booking page updated",
+        "created": "Booking page created",
+        "updateFailed": "Failed to update the booking page",
+        "createFailed": "Failed to create the booking page"
+    },
+    "basics": {
+        "title": "Basics",
+        "description": "The essentials people see when they book time with you.",
+        "titleLabel": "Title",
+        "titlePlaceholder": "e.g. Counselling Call",
+        "hostLabel": "Host",
+        "hostDescription": "Who runs this meeting and appears as the point of contact.",
+        "durationLabel": "Duration",
+        "timezoneLabel": "Timezone",
+        "audienceLabel": "Audience List (optional)",
+        "audienceNone": "None"
+    },
+    "availability": {
+        "title": "Availability",
+        "description": "Choose which days and hours people can book, and how much lead time you need.",
+        "weeklyAvailability": "Weekly availability",
+        "weeklyAvailabilityDescription": "Tick the days you're free, then set your hours for each day.",
+        "to": "to",
+        "minNoticeLabel": "Minimum notice",
+        "horizonLabel": "Booking horizon (days)",
+        "horizonPlaceholder": "30",
+        "footnote": "Minimum notice keeps last-minute bookings out; booking horizon caps how far ahead people can book."
+    },
+    "location": {
+        "title": "Location & Booking Rules",
+        "description": "Decide how the meeting happens, and whether you need to approve bookings first.",
+        "meetTitle": "Allocate Google Meet",
+        "meetDescription": "Attach a Google Meet link to every booked meeting",
+        "approvalTitle": "Require approval",
+        "approvalDescription": "New bookings stay pending until the host approves them"
+    },
+    "reminders": {
+        "title": "Reminders",
+        "description": "Notify invitees by email or WhatsApp before their meeting.",
+        "email": "Email",
+        "whatsapp": "WhatsApp",
+        "templateLabel": "WhatsApp template",
+        "templatePlaceholder": "Choose an approved template",
+        "templateEmptyText": "No approved template matches your search.",
+        "noTemplateOption": "No template (won’t send WhatsApp)",
+        "loadingTemplates": "Loading templates…",
+        "noApprovedTemplates": "No approved WhatsApp templates yet. Create and get one approved in Communication → WhatsApp Templates first.",
+        "fillVariables": "Fill the template variables",
+        "mapToPlaceholder": "Map to…",
+        "notSet": "— not set —",
+        "noVariables": "This template has no variables — it will send as-is.",
+        "remindBeforeLabel": "Remind before meeting",
+        "remindBeforeFootnote": "Sends an extra reminder this long before the meeting starts, on top of the booking-confirmation message."
+    },
+    "formQuestions": {
+        "title": "Form Questions",
+        "description": "Extra questions the invitee answers when booking, on top of name, email and phone.",
+        "addQuestion": "Add question",
+        "empty": "No custom questions yet.",
+        "questionPlaceholder": "Question (e.g. What do you want help with?)",
+        "fieldTypes": {
+            "text": "Short text",
+            "textarea": "Long text",
+            "dropdown": "Dropdown",
+            "number": "Number",
+            "email": "Email",
+            "phone": "Phone"
+        },
+        "required": "Required",
+        "optionsPlaceholder": "Options, comma-separated (e.g. Career, Interview, Resume)"
+    },
+    "actions": {
+        "cancel": "Cancel",
+        "saving": "Saving...",
+        "saveChanges": "Save Changes",
+        "createBookingPage": "Create Booking Page"
+    }
+}

@@ -14,6 +14,9 @@ public interface EngagementEngineRepository extends JpaRepository<EngagementEngi
 
     List<EngagementEngine> findByInstituteIdOrderByCreatedAtDesc(String instituteId);
 
+    /** Live engines (the promotion of graduated tasks looks at these). */
+    List<EngagementEngine> findByStatus(String status);
+
     /**
      * The sweep driver: O(engines), never O(due members). Ordered by next_due_at so a busy
      * engine cannot monopolize the sweep — bumping the cursor after each visit round-robins

@@ -1,0 +1,24 @@
+{
+    "errors": {
+        "downloadFailed": "فشل تنزيل الشهادة الخاصة بـ {{name}}",
+        "noCertificatesAvailable": "لا توجد شهادات متاحة للتنزيل"
+    },
+    "summary": {
+        "title": "ملخص إنشاء الشهادات",
+        "generatedOn": "تم الإنشاء في: {{timestamp}}",
+        "totalStudents": "إجمالي الطلاب: {{count}}",
+        "successful": "الناجحة: {{count}}",
+        "errorsLabel": "الأخطاء: {{count}}",
+        "successfulCertificatesHeading": "الشهادات الناجحة:",
+        "errorsHeading": "الأخطاء:"
+    },
+    "fileSize": {
+        "zeroBytes": "0 بايت",
+        "units": {
+            "bytes": "بايت",
+            "kb": "كيلوبايت",
+            "mb": "ميجابايت",
+            "gb": "جيجابايت"
+        }
+    }
+}

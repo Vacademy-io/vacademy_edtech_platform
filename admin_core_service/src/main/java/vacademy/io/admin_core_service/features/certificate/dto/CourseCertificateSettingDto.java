@@ -54,6 +54,13 @@ public class CourseCertificateSettingDto {
      */
     private String templateHtml;
 
+    /**
+     * What a learner must do to earn the certificate: course progress (the
+     * default), marks in chosen quizzes/assessments, or both. Null keeps the
+     * progress-only rule every course had before.
+     */
+    private CertificateCriteriaDto criteria;
+
     // Certificate numbering is deliberately NOT overridable per course. The
     // format is an institute-wide setting so numbers stay consistent and the
     // per-institute sequence remains the single allocator.

@@ -1,0 +1,27 @@
+{
+    "boolYes": "Yes",
+    "boolNo": "No",
+    "intro": "Every line that can appear on a payslip. Codes are what the payroll engine matches on, so treat them as identifiers rather than labels.",
+    "addComponent": "Add component",
+    "loadError": "Could not load salary components.",
+    "retry": "Retry",
+    "retrying": "Retrying…",
+    "emptyTitle": "No components yet",
+    "emptyDescription": "Start with the earnings you actually pay — BASIC and HRA are usually first. Statutory deductions (TDS, PF, ESI, PT) are created by payroll itself, so you don't need to add them.",
+    "columns": {
+        "component": "Component",
+        "code": "Code",
+        "type": "Type",
+        "category": "Category",
+        "taxable": "Taxable",
+        "statutory": "Statutory",
+        "glAccount": "GL account",
+        "state": "State"
+    },
+    "glTooltip": "Where this component posts in the accounting journal; blank uses the default for its type",
+    "glDefault": "Default",
+    "stateActive": "Active",
+    "stateInactive": "Inactive",
+    "editAriaLabel": "Edit {{name}}",
+    "defaultComponentName": "component"
+}

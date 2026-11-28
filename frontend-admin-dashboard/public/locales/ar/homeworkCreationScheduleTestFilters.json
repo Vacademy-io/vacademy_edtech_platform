@@ -1,0 +1,7 @@
+{
+    "selectedCount": "{{count}} محدد",
+    "search": {
+        "placeholder": "ابحث في {{label}}...",
+        "noResults": "لم يتم العثور على نتائج."
+    }
+}

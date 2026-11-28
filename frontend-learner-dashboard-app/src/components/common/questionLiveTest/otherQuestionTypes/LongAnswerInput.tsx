@@ -1,14 +1,21 @@
-import { useAssessmentStore } from "@/stores/assessment-store";
+import { useTranslation } from "react-i18next";
+import {
+  displayedAnswerFor,
+  useAssessmentStore,
+} from "@/stores/assessment-store";
 import { cn } from "@/lib/utils";
 
 export function LongAnswerInput() {
-  const { currentQuestion, answers, setAnswer, setQuestionState } =
+  const { t } = useTranslation("questionTest");
+  const { currentQuestion, answers, draftAnswers, setAnswer, setQuestionState } =
     useAssessmentStore();
   if (!currentQuestion) {
     return null;
   }
 
-  const currentAnswer = answers[currentQuestion.question_id]?.[0] || "";
+  const currentAnswer =
+    displayedAnswerFor({ answers, draftAnswers }, currentQuestion.question_id)?.[0] ||
+    "";
   const wordCount = currentAnswer.trim()
     ? currentAnswer.trim().split(/\s+/).length
     : 0;
@@ -22,18 +29,18 @@ export function LongAnswerInput() {
     <div>
       <div className="mb-2 flex items-baseline gap-2">
         <p className="text-3xs font-bold uppercase tracking-wide text-neutral-400">
-          Your answer
+          {t("common.yourAnswer")}
         </p>
         <span className="flex-1" />
         <span className="font-mono text-2xs tabular-nums text-neutral-400">
-          {wordCount} {wordCount === 1 ? "word" : "words"}
+          {t("longAnswer.wordCount", { count: wordCount })}
         </span>
       </div>
       <textarea
         value={currentAnswer}
         onChange={handleChange}
-        placeholder="Write your answer here. Marks are given for reasoning, not length."
-        aria-label="Your answer"
+        placeholder={t("longAnswer.placeholder")}
+        aria-label={t("common.yourAnswer")}
         rows={7}
         // Copy/cut/paste stay blocked here for the same reason as the rest of
         // the live test — pasted answers defeat the proctoring rules.

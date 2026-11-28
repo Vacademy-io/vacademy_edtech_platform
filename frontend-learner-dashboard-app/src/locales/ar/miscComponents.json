@@ -1,0 +1,116 @@
+{
+    "otaUpdate": {
+        "version": "الإصدار {{version}}",
+        "autoUpdating": {
+            "title": "جارٍ تحديث التطبيق…",
+            "pleaseWait": "يرجى الانتظار لحظة"
+        },
+        "forceUpdate": {
+            "title": "التحديث مطلوب",
+            "downloading": "جارٍ تنزيل التحديث...",
+            "updateNow": "التحديث الآن"
+        },
+        "banner": {
+            "updateAvailable": "التحديث {{version}} متاح",
+            "releaseNotesSuffix": " — {{notes}}",
+            "downloading": "جارٍ التنزيل...",
+            "update": "تحديث",
+            "dismiss": "إغلاق"
+        }
+    },
+    "tutorialsHelpButton": {
+        "ariaLabel": "المساعدة والدروس التعليمية",
+        "viewedAriaLabel": "تمت المشاهدة",
+        "title": "الدروس التعليمية",
+        "description": "جولات إرشادية سريعة في التطبيق. اختر واحدة للبدء.",
+        "pdfGuide": {
+            "preparing": "جارٍ إعداد الدليل...",
+            "label": "الدليل الشامل خطوة بخطوة (PDF)",
+            "description": "نزّل كتيبًا تفصيليًا لكل ما سبق."
+        },
+        "toast": {
+            "downloadFailed": "تعذّر تنزيل الدليل. يرجى المحاولة مرة أخرى."
+        }
+    },
+    "notificationInitializer": {
+        "newNotification": "إشعار جديد"
+    },
+    "modernDesignShowcase": {
+        "header": {
+            "title": "نظام التصميم الحديث",
+            "subtitle": "جرّب نظام التصميم الشامل الخاص بنا بمكونات حديثة ورسوم متحركة جميلة وتفاعلات بديهية."
+        },
+        "notification": {
+            "initiated": "{{action}} قيد التنفيذ...",
+            "completed": "تم {{action}} بنجاح!"
+        },
+        "actions": {
+            "play": "تشغيل",
+            "download": "تنزيل",
+            "formSubmit": "إرسال النموذج"
+        },
+        "buttons": {
+            "buttonComponents": "مكونات الأزرار",
+            "primaryActions": "الإجراءات الأساسية",
+            "startLearning": "ابدأ التعلم",
+            "downloadResources": "تنزيل الموارد",
+            "quickAction": "إجراء سريع",
+            "secondaryActions": "الإجراءات الثانوية",
+            "settings": "الإعدادات",
+            "share": "مشاركة",
+            "like": "إعجاب"
+        },
+        "cards": {
+            "progressTracker": "متتبع التقدم",
+            "courseCompletionRate": "معدل إتمام {{course}}",
+            "notificationsTitle": "الإشعارات",
+            "notificationsDescription": "ابقَ على اطلاع بتقدمك في التعلم",
+            "enableNotifications": "تفعيل الإشعارات",
+            "quickStats": "إحصائيات سريعة",
+            "coursesLabel": "{{courses}}",
+            "completedLabel": "مكتمل"
+        },
+        "forms": {
+            "formComponents": "مكونات النماذج",
+            "standardInputs": "الحقول القياسية",
+            "fullNameLabel": "الاسم الكامل",
+            "fullNamePlaceholder": "أدخل اسمك الكامل",
+            "emailLabel": "البريد الإلكتروني",
+            "emailPlaceholder": "أدخل بريدك الإلكتروني",
+            "emailHelper": "لن نشارك بريدك الإلكتروني أبدًا",
+            "passwordLabel": "كلمة المرور",
+            "passwordPlaceholder": "أدخل كلمة المرور",
+            "passwordError": "يجب ألا تقل كلمة المرور عن 8 أحرف",
+            "enhancedInputs": "الحقول المحسّنة",
+            "searchLabel": "بحث",
+            "searchPlaceholder": "ابحث في {{courses}}...",
+            "usernameLabel": "اسم المستخدم",
+            "usernamePlaceholder": "اختر اسم مستخدم",
+            "usernameHelper": "اسم المستخدم هذا متاح!",
+            "loadingExampleLabel": "مثال التحميل",
+            "loadingExamplePlaceholder": "جارٍ التحقق من التوفر...",
+            "submitForm": "إرسال النموذج",
+            "reset": "إعادة تعيين"
+        },
+        "animations": {
+            "title": "أمثلة الرسوم المتحركة",
+            "hoverLift": {
+                "title": "رفع عند التحويم",
+                "description": "رفع لطيف عند التحويم"
+            },
+            "scaleEffect": {
+                "title": "تأثير التكبير",
+                "description": "تكبير لطيف عند التحويم"
+            },
+            "clickEffect": {
+                "title": "تأثير النقر",
+                "description": "استجابة عند التفعيل"
+            }
+        },
+        "footer": {
+            "description": "يوفر نظام التصميم هذا أساسًا متينًا لبناء واجهات مستخدم حديثة وسهلة الوصول وعالية الأداء.",
+            "viewDocumentation": "عرض التوثيق",
+            "githubRepository": "مستودع GitHub"
+        }
+    }
+}

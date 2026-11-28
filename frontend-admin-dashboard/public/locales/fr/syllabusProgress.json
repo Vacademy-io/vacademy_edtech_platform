@@ -1,0 +1,155 @@
+{
+    "page": {
+        "title": "Progression du programme",
+        "subtitle": "Indiquez où en est chaque apprenant dans le programme du niveau. Les apprenants voient leur propre progression dans l’application.",
+        "settings": "Paramètres",
+        "loadFailed": "Impossible de charger vos groupes",
+        "loadFailedHint": "Vérifiez votre connexion et réessayez."
+    },
+    "retry": "Réessayer",
+    "off": {
+        "title": "La progression du programme est désactivée",
+        "body": "Activez-la dans les paramètres pour que les enseignants notent la progression de chaque apprenant semaine après semaine, et que les apprenants la voient dans leur application.",
+        "action": "Ouvrir les paramètres"
+    },
+    "noBatches": {
+        "title": "Aucun groupe n’a encore de programme",
+        "body": "Un groupe apparaît ici dès que le niveau de son cours a un programme en blocs de semaines. Demandez à votre administrateur d’en ajouter un."
+    },
+    "noAssigned": {
+        "title": "Aucun groupe ne vous est attribué",
+        "body": "Aucun groupe ne vous est encore attribué. Demandez à votre administrateur de vous affecter à un groupe."
+    },
+    "picker": {
+        "label": "Groupe",
+        "placeholder": "Choisir un groupe",
+        "search": "Rechercher un cours, un niveau ou un groupe",
+        "empty": "Aucun groupe ne correspond.",
+        "option_one": "{{course}} · {{stage}} · {{batch}} ({{count}} apprenant)",
+        "option_many": "{{course}} · {{stage}} · {{batch}} ({{count}} apprenants)",
+        "option_other": "{{course}} · {{stage}} · {{batch}} ({{count}} apprenants)",
+        "summary": "{{learners}} apprenants · {{blocks}} blocs de semaines",
+        "promptTitle": "Choisissez un groupe",
+        "promptBody": "Choisissez un groupe ci-dessus pour voir la progression de chaque apprenant, bloc par bloc."
+    },
+    "search": {
+        "label": "Élève",
+        "placeholder": "Rechercher un élève par nom",
+        "minChars": "Saisissez au moins 2 lettres.",
+        "failed": "Impossible de rechercher les élèves.",
+        "empty": "Aucun élève ne correspond à « {{q}} ».",
+        "results": "Élèves correspondants",
+        "noName": "Élève sans nom",
+        "batchLine": "{{course}} · {{stage}} · {{batch}} — {{done}}/{{total}} terminés",
+        "batchName": "{{course}} · {{stage}} · {{batch}}"
+    },
+    "learner": {
+        "back": "Retour",
+        "loadFailed": "Impossible de charger la progression de cet élève",
+        "loadFailedHint": "Vérifiez votre connexion et réessayez.",
+        "noCoursesTitle": "Aucun groupe avec un programme",
+        "noCoursesBody": "Cet élève n’est dans aucun groupe dont le niveau a un programme.",
+        "openBatch": "Ouvrir le groupe",
+        "summary": "{{done}} blocs de semaines terminés sur {{total}}",
+        "current": "En cours",
+        "markHint": "Touchez un bloc de semaines pour le marquer.",
+        "notYoursTitle": "Pas dans vos groupes",
+        "notYoursBody": "Cet élève n’est pas dans vos groupes. Demandez à votre administrateur si vous devez marquer sa progression."
+    },
+    "batch": {
+        "loadFailed": "Impossible de charger ce groupe",
+        "loadFailedHint": "Vérifiez votre connexion et réessayez.",
+        "noSyllabusTitle": "Ce groupe n’a pas de programme",
+        "noSyllabusBody": "Le niveau de son cours n’a pas encore de blocs de semaines. Ajoutez un programme au niveau pour commencer.",
+        "noLearnersTitle": "Aucun apprenant dans ce groupe",
+        "noLearnersBody": "Les apprenants apparaîtront ici dès qu’ils seront inscrits dans ce groupe."
+    },
+    "grid": {
+        "searchPlaceholder": "Rechercher un apprenant ou un n° d’inscription",
+        "noMatchTitle": "Aucun apprenant ne correspond",
+        "noMatchBody": "Essayez un autre nom ou numéro d’inscription.",
+        "caption": "Progression du programme pour {{batch}}",
+        "selectAllLearners": "Sélectionner tous les apprenants affichés",
+        "learners_one": "{{count}} apprenant",
+        "learners_many": "{{count}} apprenants",
+        "learners_other": "{{count}} apprenants",
+        "showPoints": "Afficher les points de {{block}}",
+        "selectWeek": "Sélectionner {{block}}",
+        "selectLearner": "Sélectionner {{name}}",
+        "completedCount": "{{done}}/{{total}} terminés",
+        "enrollment": "N° d’inscription {{number}}",
+        "cellLabel": "{{name}}, {{block}} : {{status}}",
+        "pointsOf": "{{done}} points sur {{total}} réalisés",
+        "hasNote": "Contient une note de l’enseignant"
+    },
+    "legend": {
+        "note": "Note de l’enseignant"
+    },
+    "status": {
+        "NOT_STARTED": "Non commencé",
+        "IN_PROGRESS": "En cours",
+        "COMPLETED": "Terminé",
+        "SKIPPED": "Ignoré"
+    },
+    "block": {
+        "week": "Semaine {{week}}",
+        "weeks": "Semaines {{from}}–{{to}}",
+        "weekShort": "S{{week}}",
+        "weeksShort": "S{{from}}–{{to}}",
+        "month": "Mois {{month}}"
+    },
+    "dialog": {
+        "status": "Statut",
+        "statusRequired": "Choisissez un statut",
+        "pointsDone": "Points réalisés ({{done}} sur {{total}})",
+        "tickAll": "Tout cocher",
+        "clearPoints": "Effacer",
+        "noPoints": "Ce bloc de semaines n’a aucun point.",
+        "note": "Note de l’enseignant",
+        "notePlaceholder": "Ce qui a bien marché, ce qu’il faut travailler ensuite…",
+        "noteHint": "L’apprenant voit cette note.",
+        "noteTooLong": "La note doit faire moins de {{max}} caractères",
+        "cancel": "Annuler",
+        "save": "Enregistrer",
+        "saving": "Enregistrement…",
+        "lastMarkedBy": "Dernière saisie par {{name}} le {{date}}",
+        "lastMarked": "Dernière saisie le {{date}}",
+        "startedOn": "Commencé le {{date}}",
+        "completedOn": "Terminé le {{date}}"
+    },
+    "bulk": {
+        "open": "Marquer la semaine comme…",
+        "title": "Marquer des semaines",
+        "clear": "Effacer la sélection",
+        "selectionSummary": "{{learners}} · {{weeks}}",
+        "learnerCount_one": "{{count}} apprenant",
+        "learnerCount_many": "{{count}} apprenants",
+        "learnerCount_other": "{{count}} apprenants",
+        "allLearnersShort": "Tous les apprenants",
+        "weekCount_one": "{{count}} bloc de semaines",
+        "weekCount_many": "{{count}} blocs de semaines",
+        "weekCount_other": "{{count}} blocs de semaines",
+        "weeks": "Blocs de semaines",
+        "weeksPlaceholder": "Choisir des blocs de semaines",
+        "weeksRequired": "Choisissez au moins un bloc de semaines",
+        "markAs": "Marquer comme",
+        "note": "Note (facultatif)",
+        "noteHint": "Ajoutée à chaque apprenant et semaine marqués.",
+        "replaceNote": "Cela remplace le statut actuel de ces semaines pour ces apprenants.",
+        "apply_one": "Marquer {{count}} entrée",
+        "apply_many": "Marquer {{count}} entrées",
+        "apply_other": "Marquer {{count}} entrées",
+        "allLearners_one": "S’applique à l’apprenant de ce groupe (aucun apprenant coché).",
+        "allLearners_many": "S’applique aux {{count}} apprenants de ce groupe (aucun apprenant coché).",
+        "allLearners_other": "S’applique aux {{count}} apprenants de ce groupe (aucun apprenant coché).",
+        "selectedLearners_one": "S’applique à l’apprenant que vous avez coché.",
+        "selectedLearners_many": "S’applique aux {{count}} apprenants que vous avez cochés.",
+        "selectedLearners_other": "S’applique aux {{count}} apprenants que vous avez cochés."
+    },
+    "toast": {
+        "saved_one": "Progression enregistrée ({{count}} entrée).",
+        "saved_many": "Progression enregistrée ({{count}} entrées).",
+        "saved_other": "Progression enregistrée ({{count}} entrées).",
+        "saveFailed": "Impossible d’enregistrer la progression."
+    }
+}

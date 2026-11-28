@@ -7,6 +7,7 @@ import {
     HourglassMedium,
     Users,
 } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
 import type { CourseCertificateDashboard } from '../../-services/course-certificates';
 
 interface CertificateStatsCardsProps {
@@ -15,6 +16,9 @@ interface CertificateStatsCardsProps {
 }
 
 export const CertificateStatsCards = ({ data, isLoading }: CertificateStatsCardsProps) => {
+    const { t } = useTranslation('studyLibraryCertificateStatsCards');
+    const { t: tCriteria } = useTranslation('studyLibraryCertificateCriteria');
+
     if (isLoading) {
         return (
             <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
@@ -38,36 +42,48 @@ export const CertificateStatsCards = ({ data, isLoading }: CertificateStatsCards
     // The "close to the threshold" band the spec asked for: within 10 points
     // below the bar, e.g. 70-79 when the threshold is 80.
     const nearFloor = Math.max(0, threshold - 10);
+    // Under a test-score rule the backend counts "awaiting" as "meets the whole
+    // rule" and "near" as one test short (or close to the average bar).
+    const scoreRule = !!data.criteria_mode && data.criteria_mode !== 'PROGRESS';
 
     const cards = [
         {
-            title: 'Total Enrolled',
+            title: t('totalEnrolled.title'),
             value: data.total_enrolled,
-            subtitle: 'Learners in this batch',
+            subtitle: t('totalEnrolled.subtitle'),
             icon: <Users className="size-5 text-neutral-500" />,
         },
         {
-            title: 'Certificates Generated',
+            title: t('certificatesGenerated.title'),
             value: data.certificates_generated,
-            subtitle: 'Issued so far',
+            subtitle: t('certificatesGenerated.subtitle'),
             icon: <Certificate className="size-5 text-success-500" />,
         },
         {
-            title: 'Certificates Pending',
+            title: t('certificatesPending.title'),
             value: data.certificates_pending,
-            subtitle: 'Not yet issued',
+            subtitle: t('certificatesPending.subtitle'),
             icon: <Clock className="size-5 text-neutral-500" />,
         },
         {
-            title: 'Awaiting Generation',
+            title: t('awaitingGeneration.title'),
             value: data.completed_awaiting_certificate,
-            subtitle: `Past ${threshold}%, no certificate`,
+            subtitle: scoreRule
+                ? tCriteria('stats.awaitingSubtitle')
+                : t('awaitingGeneration.subtitle', { threshold }),
             icon: <HourglassMedium className="size-5 text-warning-500" />,
         },
         {
-            title: 'Close to Threshold',
+            title: scoreRule ? tCriteria('stats.closeTitle') : t('closeToThreshold.title'),
             value: data.near_threshold,
-            subtitle: `${nearFloor}–${threshold - 1}% complete`,
+            subtitle: scoreRule
+                ? data.pass_rule === 'AVERAGE'
+                    ? tCriteria('stats.closeSubtitleAverage')
+                    : tCriteria('stats.closeSubtitleTests')
+                : t('closeToThreshold.subtitle', {
+                      nearFloor,
+                      thresholdMinusOne: threshold - 1,
+                  }),
             icon: <ChartLineUp className="size-5 text-info-500" />,
         },
     ];

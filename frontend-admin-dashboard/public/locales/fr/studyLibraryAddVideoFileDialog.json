@@ -1,0 +1,17 @@
+{
+    "validation": {
+        "fileNameRequired": "Le nom du fichier est requis",
+        "videoFileRequired": "Le fichier vidéo est requis"
+    },
+    "toast": {
+        "reorderFailed": "La diapositive a été créée mais la réorganisation a échoué",
+        "durationReadFailed": "Impossible de lire la durée de la vidéo. Essayez un autre fichier ou réencodez-le.",
+        "uploadSuccess": "Vidéo téléversée avec succès !",
+        "uploadFailed": "Échec du téléversement de la vidéo"
+    },
+    "importYourFile": "Importez votre fichier",
+    "dragOrClickToUpload": "Glissez ou cliquez pour téléverser",
+    "selected": "Sélectionné : {{name}}",
+    "uploading": "Téléversement...",
+    "uploadVideo": "Téléverser la vidéo"
+}

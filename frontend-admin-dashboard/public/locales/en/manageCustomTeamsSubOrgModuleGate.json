@@ -1,0 +1,4 @@
+{
+    "notEnabled": "{{term}} aren't enabled for your role",
+    "notEnabledHint": "Ask an institute admin to turn on the {{term}} module for your role in Settings → Display Settings."
+}

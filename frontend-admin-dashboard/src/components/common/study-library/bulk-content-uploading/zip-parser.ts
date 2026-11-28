@@ -38,6 +38,8 @@ const MIME_BY_EXT: Record<string, string> = {
     mov: 'video/quicktime',
     mkv: 'video/x-matroska',
     webm: 'video/webm',
+    // Nested zip = SCORM package; the upload is multipart so the type matters.
+    zip: 'application/zip',
 };
 
 export const mimeForFileName = (fileName: string): string => {

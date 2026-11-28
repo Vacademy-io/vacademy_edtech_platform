@@ -1,7 +1,9 @@
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link } from '@tanstack/react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Tag, Info } from '@phosphor-icons/react';
+import { ArrowLeft, Tag, Info, SealPercent } from '@phosphor-icons/react';
+import { ScreenHeader } from '@/components/shared/crm-enhance/screen-header';
 import { MyButton } from '@/components/design-system/button';
 import { FilterChips } from '@/components/design-system/chips';
 import { StudentSearchBox } from '@/components/common/student-search-box';
@@ -47,6 +49,7 @@ const STATUS_OPTIONS = [
 ];
 
 export const OffersPage = () => {
+    const { t } = useTranslation('adminPackageManagement');
     const queryClient = useQueryClient();
     const { settings: courseSettings, loading: courseSettingsLoading } = useCourseSettings();
     const offerPricingEnabled = courseSettings?.offerPricing?.enabled === true;
@@ -202,13 +205,14 @@ export const OffersPage = () => {
                     Offer pricing is disabled
                 </h1>
                 <p className="max-w-md text-sm text-neutral-500">
-                    Enable offer pricing in Course Settings to let admins set an offer price
-                    below the MRP on individual {packageTermLower}.
+                    Enable offer pricing in{' '}
+                    {getTerminology(ContentTerms.Course, SystemTerms.Course)} Settings to let admins
+                    set an offer price below the MRP on individual {packageTermLower}.
                 </p>
                 <div className="mt-2 flex gap-2">
                     <Link to="/settings" search={{ selectedTab: 'course' }}>
                         <MyButton buttonType="primary" scale="small" layoutVariant="default">
-                            Open Course Settings
+                            Open {getTerminology(ContentTerms.Course, SystemTerms.Course)} Settings
                         </MyButton>
                     </Link>
                     <Link to="/admin-package-management">
@@ -223,28 +227,28 @@ export const OffersPage = () => {
 
     return (
         <div className="space-y-4 p-4">
-            <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                    <Link to="/admin-package-management">
-                        <MyButton buttonType="secondary" scale="small" layoutVariant="icon">
-                            <ArrowLeft className="size-4" />
-                        </MyButton>
+            <ScreenHeader
+                icon={SealPercent}
+                back={
+                    <Link
+                        to="/admin-package-management"
+                        className="inline-flex w-fit items-center gap-1.5 text-caption font-semibold text-neutral-500 hover:text-primary-500"
+                    >
+                        <ArrowLeft className="size-4" />
+                        {t('title', {
+                            package: getTerminology(ContentTerms.Package, SystemTerms.Package),
+                        })}
                     </Link>
-                    <div>
-                        <h1 className="text-h3 font-semibold text-neutral-700">
-                            Offer Prices
-                        </h1>
-                        <p className="text-caption text-neutral-500">
-                            Lower the actual price below MRP for {packageTermLower}. Elevated price
-                            stays as the strike-through reference.
-                        </p>
-                    </div>
-                </div>
-                <span className="text-sm text-neutral-500">
-                    Total: <strong className="text-neutral-700">{totalElements}</strong>{' '}
-                    {packageTermLower}
-                </span>
-            </div>
+                }
+                title="Offer Prices"
+                subtitle={`Lower the actual price below MRP for ${packageTermLower}. Elevated price stays as the strike-through reference.`}
+                actions={
+                    <span className="text-sm text-neutral-500">
+                        Total: <strong className="text-neutral-700">{totalElements}</strong>{' '}
+                        {packageTermLower}
+                    </span>
+                }
+            />
 
             <div className="rounded-xl border border-neutral-200/70 bg-white p-4 shadow-sm">
                 <div className="flex flex-col gap-3">

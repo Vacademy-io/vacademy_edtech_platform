@@ -1,0 +1,67 @@
+{
+  "carousel": {
+    "roleCarousel": "carousel",
+    "roleSlide": "slide",
+    "label": "Featured",
+    "play": "Play slides",
+    "pause": "Pause slides",
+    "slideOf": "{{n}} of {{count}}",
+    "previous": "Previous slide",
+    "next": "Next slide",
+    "chooseSlide": "Choose a slide",
+    "showSlide": "Show slide {{n}} of {{count}}",
+    "openSlide": "Open banner {{n}} of {{count}}"
+  },
+  "shortcuts": {
+    "label": "Shortcuts"
+  },
+  "shelf": {
+    "seeAll": "See all",
+    "enrolled": "Enrolled",
+    "free": "Free"
+  },
+  "notice": {
+    "dismiss": "Dismiss notice",
+    "readOn": "Read on {{date}}",
+    "read": "Read",
+    "ackDefault": "I have read this",
+    "dismissFailed": "Could not hide the notice. Please try again.",
+    "ackFailed": "Could not save that you read this. Please try again."
+  },
+  "event": {
+    "liveNow": "Live now",
+    "startsOn": "Starts on {{when}}",
+    "startsInDays": "Starts in {{days}} d {{hours}} h",
+    "startsInHours": "Starts in {{hours}} h {{minutes}} min",
+    "startsInMinutes": "Starts in {{minutes}} min",
+    "startsInSeconds": "Starts in {{seconds}} s",
+    "register": "Register",
+    "join": "Join"
+  },
+  "builtin": {
+    "HERO": "Welcome and live class",
+    "PINS": "Announcements",
+    "NOTEBOOK_REVIEW": "Notebook review",
+    "COMPANIONS": "Study companions",
+    "TODAY_TASKS": "Today's tasks",
+    "CONTINUE_LEARNING": "Continue learning",
+    "ENROLLED_COURSES": "My courses",
+    "STATS_ROW": "Course, class and test counts",
+    "LEARNING_ANALYTICS": "Learning progress",
+    "MY_MEMBERSHIP": "My membership",
+    "MY_BOOKS": "My books",
+    "MY_ORDERS": "My orders",
+    "UPCOMING_LIVE_CLASSES": "Upcoming live classes",
+    "THIS_WEEK_ATTENDANCE": "This week's attendance",
+    "MY_MENTORS": "My mentors",
+    "GET_APP": "Get the app",
+    "GAMIFICATION": "Points and badges",
+    "RAISE_QUERY": "Raise a query",
+    "EXPLORE_BUTTONS": "Explore buttons",
+    "placeholderNote": "Shows each learner's own information"
+  },
+  "preview": {
+    "header": "Greeting and date",
+    "waiting": "Waiting for the draft from the editor…"
+  }
+}

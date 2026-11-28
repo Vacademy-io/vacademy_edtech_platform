@@ -1,0 +1,18 @@
+{
+    "mathLatex": "رياضيات / LaTeX",
+    "display": "معروض",
+    "inline": "مضمّن",
+    "preview": "معاينة",
+    "edit": "تحرير",
+    "latexPlaceholder": "أدخل تعبير LaTeX، مثل \\frac{a}{b} أو \\int_0^1 f(x)\\,dx",
+    "clickToAddEquation": "انقر لإضافة معادلة رياضية",
+    "invalidLatex": "LaTeX غير صالح: {{latex}}",
+    "shortcutFraction": "كسر",
+    "shortcutSquareRoot": "جذر تربيعي",
+    "shortcutPower": "أُس",
+    "shortcutSubscript": "منخفض",
+    "shortcutIntegral": "تكامل",
+    "shortcutSum": "مجموع",
+    "shortcutGreek": "حروف يونانية",
+    "shortcutMatrix": "مصفوفة"
+}

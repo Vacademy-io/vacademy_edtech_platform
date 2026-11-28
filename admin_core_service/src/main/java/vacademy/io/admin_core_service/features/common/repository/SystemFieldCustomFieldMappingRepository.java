@@ -6,6 +6,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import vacademy.io.admin_core_service.features.common.entity.SystemFieldCustomFieldMapping;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -46,6 +47,17 @@ public interface SystemFieldCustomFieldMappingRepository extends JpaRepository<S
            "AND m.syncDirection IN ('BIDIRECTIONAL', 'TO_SYSTEM')")
     List<SystemFieldCustomFieldMapping> findMappingsForCustomFieldSync(
             @Param("customFieldId") String customFieldId);
+
+    /**
+     * Ids among the given custom fields that have at least one mapping syncing custom → system.
+     * Lets a batch of saved values skip the per-value lookup for unmapped fields.
+     */
+    @Query("SELECT DISTINCT m.customFieldId FROM SystemFieldCustomFieldMapping m " +
+           "WHERE m.customFieldId IN :customFieldIds " +
+           "AND m.status = 'ACTIVE' " +
+           "AND m.syncDirection IN ('BIDIRECTIONAL', 'TO_SYSTEM')")
+    List<String> findCustomFieldIdsWithSystemSync(
+            @Param("customFieldIds") Collection<String> customFieldIds);
 
     /**
      * Find all mappings that should sync when a system field changes.

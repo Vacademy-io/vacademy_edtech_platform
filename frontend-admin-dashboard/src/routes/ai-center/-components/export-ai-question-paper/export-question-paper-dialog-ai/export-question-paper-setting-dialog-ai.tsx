@@ -14,8 +14,8 @@ import { Input } from '@/components/ui/input';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { useCallback, useState } from 'react';
-import { Plus } from 'lucide-react';
-import { Minus } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
+import { Minus, Plus } from '@phosphor-icons/react';
 import {
     Accordion,
     AccordionItem,
@@ -44,6 +44,7 @@ export function ExportQuestionPaperSettingsDialogAI({
     onOpenChange,
     questionsData,
 }: ExportSettingsDialogProps) {
+    const { t } = useTranslation('aiCenterExportQuestionPaperSettingDialog');
     const { settings, updateSettings } = useExportSettings();
 
     const handleSettingChange = useCallback(
@@ -78,9 +79,9 @@ export function ExportQuestionPaperSettingsDialogAI({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-h-[90vh] w-3/5 max-w-2xl overflow-y-auto">
+            <DialogContent className="max-h-[90vh] w-3/5 max-w-2xl overflow-y-auto">{/* design-lint-ignore: vh-based dialog height matches MyDialog primitive */}
                 <DialogHeader>
-                    <DialogTitle>Export Settings</DialogTitle>
+                    <DialogTitle>{t('title')}</DialogTitle>
                 </DialogHeader>
 
                 <div className="grid gap-6 py-2">
@@ -88,13 +89,13 @@ export function ExportQuestionPaperSettingsDialogAI({
                     <Accordion type="single" collapsible className="w-full">
                         <AccordionItem value="layout">
                             <AccordionTrigger className="text-base">
-                                Layout Settings
+                                {t('sections.layout')}
                             </AccordionTrigger>
                             <AccordionContent>
                                 <div className="space-y-4">
                                     <div className="flex w-full gap-x-4">
                                         <div className="flex w-1/2 items-center gap-2">
-                                            <Label>Columns per Page</Label>
+                                            <Label>{t('layout.columnsPerPage')}</Label>
                                             <div className="flex items-center space-x-2">
                                                 <Button
                                                     type="button"
@@ -145,7 +146,7 @@ export function ExportQuestionPaperSettingsDialogAI({
                                     </div>
 
                                     <div className="space-y-2">
-                                        <Label>Space for Rough Work</Label>
+                                        <Label>{t('layout.spaceForRoughWork')}</Label>
                                         <RadioGroup
                                             value={settings.spaceForRoughWork}
                                             onValueChange={(value) =>
@@ -158,17 +159,21 @@ export function ExportQuestionPaperSettingsDialogAI({
                                         >
                                             <div className="flex items-center gap-2">
                                                 <RadioGroupItem value="none" id="rough-none" />
-                                                <Label htmlFor="rough-none">None</Label>
+                                                <Label htmlFor="rough-none">
+                                                    {t('layout.roughWorkPosition.none')}
+                                                </Label>
                                             </div>
                                             <div className="flex items-center gap-2">
                                                 <RadioGroupItem value="bottom" id="rough-bottom" />
-                                                <Label htmlFor="rough-bottom">Bottom</Label>
+                                                <Label htmlFor="rough-bottom">
+                                                    {t('layout.roughWorkPosition.bottom')}
+                                                </Label>
                                             </div>
                                         </RadioGroup>
                                     </div>
 
                                     <div className="space-y-2">
-                                        <Label>Rough Work Space Size</Label>
+                                        <Label>{t('layout.roughWorkSize.label')}</Label>
                                         <RadioGroup
                                             value={settings.roughWorkSize}
                                             onValueChange={(value) =>
@@ -185,7 +190,7 @@ export function ExportQuestionPaperSettingsDialogAI({
                                                     id="rough-size-small"
                                                 />
                                                 <Label htmlFor="rough-size-small">
-                                                    Small (50mm)
+                                                    {t('layout.roughWorkSize.small')}
                                                 </Label>
                                             </div>
                                             <div className="flex items-center gap-2">
@@ -194,7 +199,7 @@ export function ExportQuestionPaperSettingsDialogAI({
                                                     id="rough-size-medium"
                                                 />
                                                 <Label htmlFor="rough-size-medium">
-                                                    Medium (100mm)
+                                                    {t('layout.roughWorkSize.medium')}
                                                 </Label>
                                             </div>
                                             <div className="flex items-center gap-2">
@@ -203,14 +208,14 @@ export function ExportQuestionPaperSettingsDialogAI({
                                                     id="rough-size-large"
                                                 />
                                                 <Label htmlFor="rough-size-large">
-                                                    Large (150mm)
+                                                    {t('layout.roughWorkSize.large')}
                                                 </Label>
                                             </div>
                                         </RadioGroup>
                                     </div>
 
                                     <div className="space-y-2">
-                                        <Label>Page Padding</Label>
+                                        <Label>{t('layout.pagePadding.label')}</Label>
                                         <RadioGroup
                                             value={settings.pagePadding}
                                             onValueChange={(value) =>
@@ -223,7 +228,9 @@ export function ExportQuestionPaperSettingsDialogAI({
                                         >
                                             <div className="flex items-center gap-2">
                                                 <RadioGroupItem value="low" id="padding-low" />
-                                                <Label htmlFor="padding-low">Low (10mm)</Label>
+                                                <Label htmlFor="padding-low">
+                                                    {t('layout.pagePadding.low')}
+                                                </Label>
                                             </div>
                                             <div className="flex items-center gap-2">
                                                 <RadioGroupItem
@@ -231,18 +238,20 @@ export function ExportQuestionPaperSettingsDialogAI({
                                                     id="padding-medium"
                                                 />
                                                 <Label htmlFor="padding-medium">
-                                                    Medium (20mm)
+                                                    {t('layout.pagePadding.medium')}
                                                 </Label>
                                             </div>
                                             <div className="flex items-center gap-2">
                                                 <RadioGroupItem value="high" id="padding-high" />
-                                                <Label htmlFor="padding-high">High (30mm)</Label>
+                                                <Label htmlFor="padding-high">
+                                                    {t('layout.pagePadding.high')}
+                                                </Label>
                                             </div>
                                         </RadioGroup>
                                     </div>
 
                                     <div className="space-y-2">
-                                        <Label>Font Size</Label>
+                                        <Label>{t('layout.fontSize.label')}</Label>
                                         <RadioGroup
                                             value={settings.fontSize}
                                             onValueChange={(value) =>
@@ -255,20 +264,26 @@ export function ExportQuestionPaperSettingsDialogAI({
                                         >
                                             <div className="flex items-center gap-2">
                                                 <RadioGroupItem value="small" id="font-small" />
-                                                <Label htmlFor="font-small">Small (10pt)</Label>
+                                                <Label htmlFor="font-small">
+                                                    {t('layout.fontSize.small')}
+                                                </Label>
                                             </div>
                                             <div className="flex items-center gap-2">
                                                 <RadioGroupItem value="medium" id="font-medium" />
-                                                <Label htmlFor="font-medium">Medium (12pt)</Label>
+                                                <Label htmlFor="font-medium">
+                                                    {t('layout.fontSize.medium')}
+                                                </Label>
                                             </div>
                                             <div className="flex items-center gap-2">
                                                 <RadioGroupItem value="large" id="font-large" />
-                                                <Label htmlFor="font-large">Large (14pt)</Label>
+                                                <Label htmlFor="font-large">
+                                                    {t('layout.fontSize.large')}
+                                                </Label>
                                             </div>
                                         </RadioGroup>
                                     </div>
                                     <div className="space-y-2">
-                                        <Label>Image Size</Label>
+                                        <Label>{t('layout.imageSize.label')}</Label>
                                         <div className="flex items-center space-x-2">
                                             <Checkbox
                                                 id={'maintainImageAspectRatio'}
@@ -281,7 +296,7 @@ export function ExportQuestionPaperSettingsDialogAI({
                                                 }
                                             />
                                             <Label htmlFor="maintainImageAspectRatio">
-                                                Maintain image aspect ratio
+                                                {t('layout.imageSize.maintainAspectRatio')}
                                             </Label>
                                         </div>
                                     </div>
@@ -290,35 +305,44 @@ export function ExportQuestionPaperSettingsDialogAI({
                         </AccordionItem>
                         <AccordionItem value="display">
                             <AccordionTrigger className="text-base">
-                                Display Settings
+                                {t('sections.display')}
                             </AccordionTrigger>
                             <AccordionContent>
                                 <div className="flex flex-col gap-y-2">
                                     {[
-                                        ['showInstitutionLetterhead', 'Show Institute Letterhead'],
+                                        [
+                                            'showInstitutionLetterhead',
+                                            t('display.showInstitutionLetterhead'),
+                                        ],
                                         [
                                             'showFirstPageInstructions',
-                                            'Show Instructions on First Page',
+                                            t('display.showFirstPageInstructions'),
                                         ],
                                         [
                                             'showAdaptiveMarkingRules',
-                                            'Show Adaptive Marking Rules - Entire Assessment',
+                                            t('display.showAdaptiveMarkingRules'),
                                         ],
                                         [
                                             'showSectionInstructions',
-                                            'Show Section-wise Instructions',
+                                            t('display.showSectionInstructions'),
                                         ],
-                                        ['showSectionDuration', 'Show Section-wise Duration'],
-                                        ['showMarksPerQuestion', 'Show Marks per Question'],
+                                        [
+                                            'showSectionDuration',
+                                            t('display.showSectionDuration'),
+                                        ],
+                                        [
+                                            'showMarksPerQuestion',
+                                            t('display.showMarksPerQuestion'),
+                                        ],
                                         [
                                             'showAdaptiveMarkingRulesSection',
-                                            'Show Adaptive Marking Rules - Section-wise',
+                                            t('display.showAdaptiveMarkingRulesSection'),
                                         ],
                                         [
                                             'showCheckboxesBeforeOptions',
-                                            'Show Checkboxes before Options',
+                                            t('display.showCheckboxesBeforeOptions'),
                                         ],
-                                        ['showPageNumbers', 'Show Page Numbers'],
+                                        ['showPageNumbers', t('display.showPageNumbers')],
                                     ].map(([key, label]) => (
                                         <div key={key} className="flex items-center gap-4">
                                             <Checkbox
@@ -341,12 +365,12 @@ export function ExportQuestionPaperSettingsDialogAI({
                         </AccordionItem>
                         <AccordionItem value="paper">
                             <AccordionTrigger className="text-base">
-                                Paper Settings
+                                {t('sections.paper')}
                             </AccordionTrigger>
                             <AccordionContent>
                                 <div className="flex flex-col gap-y-2">
                                     <div className="flex items-center gap-2">
-                                        <Label>Create Question Papers Sets</Label>
+                                        <Label>{t('paper.createSets')}</Label>
                                         <div className="flex items-center space-x-2">
                                             <Button
                                                 type="button"
@@ -405,7 +429,7 @@ export function ExportQuestionPaperSettingsDialogAI({
                                             }
                                         />
                                         <label htmlFor="includeQuestionSetCode">
-                                            Include Question Set Code
+                                            {t('paper.includeQuestionSetCode')}
                                         </label>
                                     </div>
 
@@ -418,7 +442,7 @@ export function ExportQuestionPaperSettingsDialogAI({
                                             }
                                         />
                                         <label htmlFor="randomizeQuestions">
-                                            Randomize Questions
+                                            {t('paper.randomizeQuestions')}
                                         </label>
                                     </div>
 
@@ -430,14 +454,16 @@ export function ExportQuestionPaperSettingsDialogAI({
                                                 handleSettingChange('randomizeOptions', checked)
                                             }
                                         />
-                                        <label htmlFor="randomizeOptions">Randomize Options</label>
+                                        <label htmlFor="randomizeOptions">
+                                            {t('paper.randomizeOptions')}
+                                        </label>
                                     </div>
                                 </div>
                             </AccordionContent>
                         </AccordionItem>
                         <AccordionItem value="custom">
                             <AccordionTrigger className="text-base">
-                                Custom Fields Settings
+                                {t('sections.customFields')}
                             </AccordionTrigger>
                             <AccordionContent>
                                 <div className="grid gap-2">
@@ -452,7 +478,7 @@ export function ExportQuestionPaperSettingsDialogAI({
                                             }
                                         />
                                         <Label htmlFor="includeCustomInputFields">
-                                            Include Custom Input Fields
+                                            {t('customFields.include')}
                                         </Label>
                                     </div>
                                     {settings.includeCustomInputFields && (
@@ -493,20 +519,26 @@ export function ExportQuestionPaperSettingsDialogAI({
                                                             }
                                                         >
                                                             <SelectTrigger>
-                                                                <SelectValue placeholder="Select field type" />
+                                                                <SelectValue
+                                                                    placeholder={t(
+                                                                        'customFields.selectTypePlaceholder'
+                                                                    )}
+                                                                />
                                                             </SelectTrigger>
                                                             <SelectContent>
                                                                 <SelectItem value="blank">
-                                                                    Blank (Default)
+                                                                    {t('customFields.type.blank')}
                                                                 </SelectItem>
                                                                 <SelectItem value="blocks">
-                                                                    Blocks
+                                                                    {t('customFields.type.blocks')}
                                                                 </SelectItem>
                                                                 <SelectItem value="input">
-                                                                    Input Box
+                                                                    {t('customFields.type.input')}
                                                                 </SelectItem>
                                                                 <SelectItem value="checkbox">
-                                                                    Checkbox
+                                                                    {t(
+                                                                        'customFields.type.checkbox'
+                                                                    )}
                                                                 </SelectItem>
                                                             </SelectContent>
                                                         </Select>
@@ -540,7 +572,9 @@ export function ExportQuestionPaperSettingsDialogAI({
                                             ))}
                                             <div className="mt-4 flex gap-4">
                                                 <Input
-                                                    placeholder="Enter new field label"
+                                                    placeholder={t(
+                                                        'customFields.newFieldPlaceholder'
+                                                    )}
                                                     value={newFieldLabel}
                                                     onChange={(e) =>
                                                         setNewFieldLabel(e.target.value)
@@ -548,7 +582,7 @@ export function ExportQuestionPaperSettingsDialogAI({
                                                 />
                                                 <Button onClick={addCustomField} className="gap-2">
                                                     <Plus className="size-4" />
-                                                    Add
+                                                    {t('customFields.add')}
                                                 </Button>
                                             </div>
                                         </div>
@@ -558,23 +592,23 @@ export function ExportQuestionPaperSettingsDialogAI({
                         </AccordionItem>
                         <AccordionItem value="advanced">
                             <AccordionTrigger className="text-base">
-                                Advanced Settings
+                                {t('sections.advanced')}
                             </AccordionTrigger>
                             <AccordionContent>
                                 {/* Your existing advanced settings */}
 
                                 <div className="space-y-4">
                                     <div className="flex flex-col gap-2">
-                                        <Label>Answer Spacing</Label>
+                                        <Label>{t('advanced.answerSpacing')}</Label>
                                         <Button
                                             type="button"
                                             variant="outline"
                                             onClick={() => setIsAnswerSpacingDialogOpen(true)}
                                         >
-                                            Custom Spacing
+                                            {t('advanced.customSpacing')}
                                         </Button>
                                         <p className="text-sm text-muted-foreground">
-                                            Configure custom space for answers.
+                                            {t('advanced.customSpacingHint')}
                                         </p>
                                     </div>
                                 </div>
@@ -600,13 +634,13 @@ export function ExportQuestionPaperSettingsDialogAI({
 
                 <div className="mt-6 flex justify-end gap-2">
                     <Button variant="outline" onClick={() => onOpenChange(false)}>
-                        Cancel
+                        {t('actions.cancel')}
                     </Button>
                     <Button
                         className="bg-primary-500 text-white hover:bg-primary-400"
                         onClick={() => onOpenChange(false)}
                     >
-                        Save
+                        {t('actions.save')}
                     </Button>
                 </div>
             </DialogContent>

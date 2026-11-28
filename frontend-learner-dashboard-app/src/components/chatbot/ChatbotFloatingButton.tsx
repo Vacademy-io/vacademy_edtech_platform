@@ -3,20 +3,18 @@ import type { CSSProperties, PointerEvent as ReactPointerEvent } from "react";
 import { ChatCircle, Sparkle, Question, BookOpen } from "@phosphor-icons/react";
 import { useLocation } from "@tanstack/react-router";
 import { Capacitor } from "@capacitor/core";
+import { useTranslation } from "react-i18next";
 import { useChatbotContext } from "./useChatbotContext";
 import { useDoubtSidebarStore } from "@/stores/study-library/doubt-sidebar-store";
 import { useQuizActiveStore } from "@/stores/study-library/quiz-active-store";
 import { useChatbotPanelStore } from "@/stores/chatbot/useChatbotPanelStore";
 import type { FabPosition, FabSide } from "@/stores/chatbot/useChatbotPanelStore";
 import { cn } from "@/lib/utils";
-import { avatarUrl } from "@/services/chatbot-settings";
-import { AnimatePresence, motion } from "framer-motion";
-
-const ROTATING_MESSAGES = [
-  { text: "Any doubts?", icon: Question },
-  { text: "Learn something new?", icon: Sparkle },
-  { text: "Practice questions?", icon: BookOpen },
-];
+import { useChatbotAvatarUrl } from "@/services/chatbot-settings";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { LauncherPeek } from "./LauncherPeek";
+import { usePlayTheme } from "@/hooks/use-play-theme";
+import { useCleanerPlayTheme } from "@/hooks/use-cleaner-play-theme";
 
 // Fallbacks when the institute hasn't configured launcher_settings
 const DEFAULT_NUDGE_INTERVAL_S = 120; // reveal the pill once every 2 minutes
@@ -26,13 +24,26 @@ const DEFAULT_NUDGE_DURATION_S = 5; // keep it open ~5s, then collapse to the ic
 const DRAG_THRESHOLD = 6; // px of travel before a press counts as a drag (vs a tap)
 const EDGE_MARGIN = 24; // matches end-6 / bottom-6 (1.5rem)
 const BUTTON_SIZE = 56; // h-14 collapsed launcher
+// A phone in either orientation: no corner of the screen is free of quiz content.
+const PHONE_MAX_WIDTH = 768;
+const PHONE_MAX_HEIGHT = 480;
 // A stored position is only usable if it matches the current { side, yRatio } shape
 const isValidFabPosition = (p: FabPosition | null): p is FabPosition =>
   !!p && (p.side === "left" || p.side === "right") && typeof p.yRatio === "number";
 
 export const ChatbotFloatingButton = () => {
-  const { isOpen, setIsOpen, shouldShowChatbot, chatbotSettings } =
+  const avatarUrl = useChatbotAvatarUrl();
+  const { t } = useTranslation("chatFeatureB");
+  const { isOpen, setIsOpen, shouldShowChatbot, chatbotSettings, voiceMode } =
     useChatbotContext();
+  const reduceMotion = useReducedMotion();
+  const [isPeekVisible, setIsPeekVisible] = useState(false);
+
+  const ROTATING_MESSAGES = [
+    { text: t("floatingButton.nudgeMessages.doubts"), icon: Question },
+    { text: t("floatingButton.nudgeMessages.learnSomething"), icon: Sparkle },
+    { text: t("floatingButton.nudgeMessages.practice"), icon: BookOpen },
+  ];
 
   // Admin-configurable launcher behavior (all default-on / previous behavior)
   const launcher = chatbotSettings.launcher_settings ?? {};
@@ -46,11 +57,16 @@ export const ChatbotFloatingButton = () => {
 
   const isDoubtSidebarOpen = useDoubtSidebarStore((state) => state.isOpen);
   const isQuizActive = useQuizActiveStore((state) => state.isActive);
+  const isQuizAttemptScreen = useQuizActiveStore((state) => state.isAttemptScreen);
   const location = useLocation();
 
   // Move button higher on video/slide pages to avoid overlapping player controls
   const isOnVideoPage = location.pathname.includes("/slides") || location.pathname.includes("/content");
   const isNativePlatform = Capacitor.getPlatform() === "android" || Capacitor.getPlatform() === "ios";
+  // Play themes show a bottom tab bar below md (layout-container PlayBottomNav).
+  const isPlayTheme = usePlayTheme();
+  const isCleanerPlayTheme = useCleanerPlayTheme();
+  const hasBottomTabBar = isPlayTheme || isCleanerPlayTheme;
 
   const [isHovered, setIsHovered] = useState(false);
   const [activeMessageIndex, setActiveMessageIndex] = useState(0);
@@ -190,7 +206,20 @@ export const ChatbotFloatingButton = () => {
   }, [nudgeEnabled, nudgeIntervalMs, nudgeDurationMs]);
 
 
+  const isTutorRoute = location.pathname.includes("/course-details/tutor");
+  const yieldsToQuiz =
+    isQuizAttemptScreen &&
+    (window.innerWidth < PHONE_MAX_WIDTH || window.innerHeight < PHONE_MAX_HEIGHT);
+  // The launcher peek only speaks while the launcher is idle on screen.
+  const peekEnabled =
+    !isOpen && !voiceMode && !isDoubtSidebarOpen && !isTutorRoute && !isDragging && !yieldsToQuiz && shouldShowChatbot();
+
   if (!shouldShowChatbot()) {
+    return null;
+  }
+
+  // The Live AI Tutor is its own conversation: no second assistant on screen.
+  if (isTutorRoute) {
     return null;
   }
 
@@ -205,12 +234,18 @@ export const ChatbotFloatingButton = () => {
     return null;
   }
 
+  // On a phone the start screen and the questions fill the screen, so the button
+  // would sit over the facts, an option or Next.
+  if (yieldsToQuiz) {
+    return null;
+  }
+
   const CurrentIcon = ROTATING_MESSAGES[activeMessageIndex].icon;
 
   // Don't expand the launcher (hover/pill) while it's being dragged
   // The pill only expands on the 2-minute timer (showPill) — deliberately NOT on
   // hover, so it can't get stuck open under the cursor / a stale touch-hover.
-  const isExpanded = showPill && !isDragging;
+  const isExpanded = showPill && !isDragging && !isPeekVisible;
 
   // Only honor a saved position when dragging is enabled and it matches the
   // current { side, yRatio } shape; otherwise fall back to the default corner.
@@ -239,6 +274,8 @@ export const ChatbotFloatingButton = () => {
     alignEnd = !isLeft;
   }
 
+  const peekBelow = !dragPos && !!savedPosition && savedPosition.yRatio < 0.35;
+
   return (
     <div
       style={positionStyle}
@@ -251,34 +288,46 @@ export const ChatbotFloatingButton = () => {
           // While a quiz is being taken, float higher so the button never covers
           // the quiz Next/Finish controls in the bottom-right corner
           (isQuizActive ? "bottom-40" : isOnVideoPage ? "bottom-20" : "bottom-6"),
+        !hasCustomPosition && !isQuizActive && hasBottomTabBar && "max-md:bottom-24",
         !hasCustomPosition && isNativePlatform && "mb-10"
       )}
     >
+      {/* Out of the flow, so the bubble never moves the launcher; below it
+          when the launcher was parked near the top of the screen. */}
+      <div
+        className={cn(
+          "absolute",
+          peekBelow ? "top-full mt-3" : "bottom-full mb-3",
+          alignEnd ? "end-0" : "start-0",
+        )}
+      >
+        <LauncherPeek
+          enabled={peekEnabled}
+          alignEnd={alignEnd}
+          below={peekBelow}
+          onVisibleChange={setIsPeekVisible}
+        />
+      </div>
 
       <motion.div
         ref={wrapRef}
         className="pointer-events-auto relative"
         // Bounce the whole launcher while the nudge pill is showing, to catch
         // the eye — only when enabled and not mid-drag.
-        animate={showPill && bounceEnabled && !isDragging ? { y: [0, -12, 0, -6, 0] } : { y: 0 }}
+        animate={isExpanded && bounceEnabled && !reduceMotion ? { y: [0, -12, 0, -6, 0] } : { y: 0 }}
         transition={
-          showPill && bounceEnabled && !isDragging
+          isExpanded && bounceEnabled && !reduceMotion
             ? { duration: 1, ease: "easeInOut", repeat: Infinity, repeatDelay: 0.6 }
             : { duration: 0.25 }
         }
       >
-          {/* Pulsing Glow Ring - draws attention */}
-          <motion.div
-            className="absolute inset-0 rounded-full bg-primary/30"
-            animate={{
-              scale: isDragging ? 1 : [1, 1.3, 1],
-              opacity: isDragging ? 0 : [0.6, 0, 0.6],
-            }}
-            transition={{
-              duration: 2,
-              repeat: Infinity,
-              ease: "easeInOut",
-            }}
+          {/* Pulsing Glow Ring - draws attention. A CSS animation, so an idle
+              page runs no script for it. */}
+          <div
+            className={cn(
+              "absolute inset-0 rounded-full bg-primary/30",
+              isDragging ? "hidden" : "animate-launcher-ring motion-reduce:hidden"
+            )}
           />
 
           {/* Main Button — tap to open, drag to move */}
@@ -290,7 +339,7 @@ export const ChatbotFloatingButton = () => {
             onMouseLeave={() => setIsHovered(false)}
             onPointerDown={handlePointerDown}
             onClick={handleClick}
-            title={isDraggable ? "Tap to chat • Drag to move" : "Tap to chat"}
+            title={isDraggable ? t("floatingButton.tooltip.draggable") : t("floatingButton.tooltip.tapOnly")}
             className={cn(
               // touch-none stops a touch-drag from scrolling the page underneath;
               // select-none stops the iOS long-press text-selection/callout
@@ -354,7 +403,7 @@ export const ChatbotFloatingButton = () => {
           
           {/* Notification Dot (Optional - just visual flair) */}
           <motion.div
-            className="absolute top-0 end-0 w-3 h-3 bg-red-500 rounded-full border-2 border-white z-10"
+            className="absolute top-0 end-0 w-3 h-3 bg-danger-500 rounded-full border-2 border-background z-10"
             initial={{ scale: 0 }}
             animate={{ scale: isExpanded ? 0 : 1 }}
           />

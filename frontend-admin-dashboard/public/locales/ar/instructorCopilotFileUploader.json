@@ -1,0 +1,19 @@
+{
+    "defaultAcceptMsg": "الصيغ المدعومة: MP3، WAV، M4A، OGG",
+    "dropHere": "أسقط الملف هنا",
+    "dragDrop": "اسحب الملف وأسقطه هنا",
+    "clickToBrowse": "أو انقر للتصفح",
+    "formatsAndMaxSize": "{{formats}} (الحد الأقصى {{maxSize}} ميغابايت)",
+    "uploading": "جاري الرفع... {{percent}}%",
+    "units": {
+        "bytes": "بايت",
+        "kb": "كيلوبايت",
+        "mb": "ميغابايت",
+        "gb": "غيغابايت"
+    },
+    "errors": {
+        "fileTooLarge": "الملف كبير جدًا. الحد الأقصى للحجم هو {{maxSize}} ميغابايت.",
+        "invalidFileType": "نوع الملف غير صالح. {{formats}}",
+        "uploadFailed": "فشل رفع الملف. يرجى المحاولة مرة أخرى."
+    }
+}

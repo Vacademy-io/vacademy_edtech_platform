@@ -1,4 +1,5 @@
 import { lazy, Suspense, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { PaymentVendor } from "../-utils/payment-vendor-helper";
 import EwayCardForm from "./eway-card-form";
 import {
@@ -98,14 +99,15 @@ const EwayCheckoutForm = ({
   onError?: (error: string) => void;
   isProcessing?: boolean;
 }) => {
+  const { t } = useTranslation("enrollmentA");
   return (
     <div className="w-full max-w-md mx-auto">
       <div className="bg-white rounded-md border border-gray-200 p-6">
         <h2 className="text-2xl font-bold text-gray-800 mb-2 text-center">
-          💳 Secure Payment
+          💳 {t("paymentInfoStep.securePayment")}
         </h2>
         <p className="text-gray-600 mb-6 text-center">
-          Enter your card details below.
+          {t("paymentInfoStep.enterCardDetails")}
         </p>
         <EwayCardForm
           onPaymentReady={onPaymentReady || (() => {})}
@@ -114,7 +116,7 @@ const EwayCheckoutForm = ({
         />
         {error && (
           <div className="mt-5 p-4 bg-red-50 border border-red-200 rounded-lg text-start">
-            <strong className="text-red-800">❌ Error</strong>
+            <strong className="text-red-800">❌ {t("common.error")}</strong>
             <p className="text-red-700 text-sm mt-1">{error}</p>
           </div>
         )}
@@ -162,6 +164,7 @@ const PaymentInfoStep = ({
   onCashfreePayClick,
   onCashfreePayError,
 }: PaymentInfoStepProps) => {
+  const { t } = useTranslation("enrollmentA");
   // Unconditional hook call. `shouldThrow: false` makes it return undefined
   // (instead of throwing) when this component renders outside
   // /learner-invitation-response — those flows pass instituteId as a prop.
@@ -216,7 +219,7 @@ const PaymentInfoStep = ({
       {/* Conditional Payment Form based on vendor */}
       {vendor === "STRIPE" && isLoadingStripeKey && (
         <div className="text-center p-6">
-          <div className="animate-pulse">Loading Stripe configuration...</div>
+          <div className="animate-pulse">{t("paymentInfoStep.loadingStripeConfig")}</div>
         </div>
       )}
 
@@ -226,19 +229,19 @@ const PaymentInfoStep = ({
           <div className="w-full max-w-md mx-auto">
             <div className="bg-red-50 border border-red-200 rounded-md p-6 text-center">
               <h2 className="text-xl font-bold text-red-800 mb-2">
-                ⚠️ Stripe Configuration Error
+                ⚠️ {t("paymentInfoStep.stripeConfigErrorTitle")}
               </h2>
               <p className="text-red-700">
                 {stripeKeyError
-                  ? "Failed to load Stripe configuration. Please try again."
-                  : "Unable to load Stripe payment gateway. Please contact support."}
+                  ? t("paymentInfoStep.stripeLoadFailed")
+                  : t("paymentInfoStep.stripeUnavailable")}
               </p>
               <p className="text-sm text-red-600 mt-2">
-                Institute ID: {instituteId}
+                {t("paymentInfoStep.instituteId", { instituteId })}
               </p>
               {stripeKeyError && (
                 <p className="text-xs text-red-500 mt-2">
-                  Error: {String(stripeKeyError)}
+                  {t("paymentInfoStep.errorDetail", { error: String(stripeKeyError) })}
                 </p>
               )}
             </div>
@@ -252,13 +255,13 @@ const PaymentInfoStep = ({
           <div className="w-full max-w-md mx-auto">
             <div className="bg-yellow-50 border border-yellow-200 rounded-md p-6 text-center">
               <h2 className="text-xl font-bold text-yellow-800 mb-2">
-                ⚠️ Stripe Key Missing
+                ⚠️ {t("paymentInfoStep.stripeKeyMissingTitle")}
               </h2>
               <p className="text-yellow-700">
-                Stripe publishable key not found in configuration.
+                {t("paymentInfoStep.stripeKeyMissingMessage")}
               </p>
               <p className="text-xs text-yellow-600 mt-2">
-                Available keys: {Object.keys(stripeKeyData).join(", ")}
+                {t("paymentInfoStep.availableKeys", { keys: Object.keys(stripeKeyData).join(", ") })}
               </p>
             </div>
           </div>
@@ -267,7 +270,7 @@ const PaymentInfoStep = ({
       {vendor === "STRIPE" && !isLoadingStripeKey && stripePromise && (
         <Suspense
           fallback={
-            <div className="text-center p-6">Loading payment form...</div>
+            <div className="text-center p-6">{t("paymentInfoStep.loadingPaymentForm")}</div>
           }
         >
           <Elements stripe={stripePromise}>
@@ -324,22 +327,24 @@ const PaymentInfoStep = ({
         <div className="w-full max-w-md mx-auto">
           <div className="bg-white rounded-md border border-gray-200 p-6 text-center">
             <h2 className="text-xl font-bold text-gray-800 mb-2">
-              Pay with PhonePe
+              {t("paymentInfoStep.phonepe.title")}
             </h2>
             <p className="text-gray-600 mb-4">
-              You'll be securely redirected to PhonePe to complete your payment
               {typeof amount === "number" && amount > 0
-                ? ` of ${currency || "INR"} ${amount}`
-                : ""}
-              . After paying, you'll be brought back here automatically.
+                ? t("paymentInfoStep.phonepe.descriptionWithAmount", {
+                    currency: currency || "INR",
+                    amount,
+                  })
+                : t("paymentInfoStep.phonepe.description")}
             </p>
             <p className="text-sm text-gray-500">
-              Click <span className="font-semibold">Confirm &amp; Pay</span>{" "}
-              below to continue.
+              {t("paymentInfoStep.phonepe.clickPrefix")}{" "}
+              <span className="font-semibold">{t("navigationButtons.confirmAndPay")}</span>{" "}
+              {t("paymentInfoStep.phonepe.clickSuffix")}
             </p>
             {error && (
               <div className="mt-5 p-4 bg-red-50 border border-red-200 rounded-lg text-start">
-                <strong className="text-red-800">Error</strong>
+                <strong className="text-red-800">{t("common.error")}</strong>
                 <p className="text-red-700 text-sm mt-1">{error}</p>
               </div>
             )}
@@ -353,13 +358,12 @@ const PaymentInfoStep = ({
         vendor !== "CASHFREE" &&
         vendor !== "PHONEPE" && (
         <div className="w-full max-w-md mx-auto">
-          <div className="bg-yellow-50 border border-yellow-200 rounded-md p-6 text-center">
-            <h2 className="text-xl font-bold text-yellow-800 mb-2">
-              ⚠️ Payment Gateway Not Configured
+          <div className="bg-yellow-50 border border-yellow-200 rounded-md p-6 text-center space-y-2">
+            <h2 className="text-xl font-bold text-yellow-800">
+              ⚠️ {t("paymentInfoStep.gatewayNotConfiguredTitle")}
             </h2>
             <p className="text-yellow-700">
-              The payment gateway "{vendor}" is not yet supported. Please
-              contact support.
+              {t("paymentInfoStep.gatewayNotConfiguredMessage", { vendor })}
             </p>
           </div>
         </div>

@@ -1,0 +1,57 @@
+{
+    "searchPlaceholder": "Rechercher par téléphone ou nom...",
+    "retrying": "Nouvelle tentative…",
+    "tryAgain": "Réessayer",
+    "loading": "Chargement...",
+    "botHandedOver": "Transmis par le bot",
+    "notDelivered": "Non livré",
+    "notDeliveredCount_one": "{{count}} message n'a pas été livré",
+    "notDeliveredCount_many": "{{count}} messages n'ont pas été livrés",
+    "notDeliveredCount_other": "{{count}} messages n'ont pas été livrés",
+    "notDeliveredCountShort_one": "{{count}} non livré",
+    "notDeliveredCountShort_many": "{{count}} non livrés",
+    "notDeliveredCountShort_other": "{{count}} non livrés",
+    "filters": {
+        "all": {
+            "label": "Tous",
+            "title": "Toutes les conversations"
+        },
+        "unanswered": {
+            "label": "Sans réponse",
+            "title": "Le chatbot les a transmises et personne n'a encore répondu"
+        },
+        "failed": {
+            "label": "Non livré",
+            "title": "Conversations où un message a été refusé par WhatsApp"
+        }
+    },
+    "empty": {
+        "unanswered": "Toutes les conversations ont reçu une réponse",
+        "failed": "Tous les messages ont été livrés",
+        "all": "Aucune conversation pour l'instant"
+    },
+    "escalation": {
+        "maxTurns": "La conversation a atteint sa limite de réponses automatiques",
+        "aiError": "L'assistant n'a pas pu générer de réponse",
+        "manual": "Transmis par un administrateur",
+        "noInfo": "L'assistant n'avait pas l'information nécessaire pour répondre",
+        "withMessage": "{{why}}\n\nIls ont demandé : {{message}}",
+        "existingLead": "Un prospect existant a écrit à nouveau",
+        "crmSaveFailed": "Le chatbot n'a pas pu enregistrer ce prospect dans le CRM",
+        "withLeadMessage": "{{why}}\n\nSon message : {{message}}",
+        "withAnswers": "{{why}}\n\nSes réponses :\n{{message}}"
+    },
+    "lastKind": {
+        "image": "Photo",
+        "video": "Vidéo",
+        "audio": "Audio",
+        "voice": "Message vocal",
+        "sticker": "Autocollant",
+        "document": "Document",
+        "location": "Position",
+        "contacts": "Fiche contact",
+        "other": "Pièce jointe",
+        "reaction": "A réagi {{emoji}}",
+        "reactionRemoved": "A retiré une réaction"
+    }
+}

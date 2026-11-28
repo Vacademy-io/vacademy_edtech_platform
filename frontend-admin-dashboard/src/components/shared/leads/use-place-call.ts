@@ -112,8 +112,13 @@ export function usePlaceCall({ invalidateKeys = [] }: UsePlaceCallOptions = {}) 
     const onSuccess = useCallback(
         (
             resp: PlaceCallResponse,
-            vars: { responseId: string; userId?: string; leadName?: string }
+            vars: { responseId?: string; userId?: string; leadName?: string }
         ) => {
+            // The lead row to file the disposition against: the one the caller
+            // knew, else the one the backend linked for a learner call. Neither
+            // exists for a learner with no lead row — that call skips the sheet
+            // rather than posting a status change against a blank target.
+            const dispositionResponseId = vars.responseId ?? resp.responseId ?? null;
             // Post-call providers (Airtel) emit no live progress feed — the call
             // outcome only exists once the provider exports its CDR (minutes after
             // hang-up) and our importer promotes the row. Don't fake a streaming
@@ -153,6 +158,7 @@ export function usePlaceCall({ invalidateKeys = [] }: UsePlaceCallOptions = {}) 
                     durationSeconds?: number | null
                 ) => {
                     if (dispositionFired || !DISPOSITION_STATUSES.has(status)) return;
+                    if (!dispositionResponseId) return;
                     dispositionFired = true;
                     void import('./post-call-disposition-sheet')
                         .then((m) =>
@@ -162,7 +168,7 @@ export function usePlaceCall({ invalidateKeys = [] }: UsePlaceCallOptions = {}) 
                                 durationSeconds: durationSeconds ?? null,
                                 leadUserId: vars.userId,
                                 leadName: vars.leadName,
-                                responseId: vars.responseId,
+                                responseId: dispositionResponseId,
                                 queryClient,
                             })
                         )
@@ -318,6 +324,7 @@ export function usePlaceCall({ invalidateKeys = [] }: UsePlaceCallOptions = {}) 
                 durationSeconds?: number | null
             ) => {
                 if (dispositionFired || !DISPOSITION_STATUSES.has(status)) return;
+                if (!dispositionResponseId) return;
                 dispositionFired = true;
                 void import('./post-call-disposition-sheet')
                     .then((m) =>
@@ -327,7 +334,7 @@ export function usePlaceCall({ invalidateKeys = [] }: UsePlaceCallOptions = {}) 
                             durationSeconds: durationSeconds ?? null,
                             leadUserId: vars.userId,
                             leadName: vars.leadName,
-                            responseId: vars.responseId,
+                            responseId: dispositionResponseId,
                             queryClient,
                         })
                     )
@@ -472,7 +479,9 @@ export function usePlaceCall({ invalidateKeys = [] }: UsePlaceCallOptions = {}) 
 
     return useMutation({
         mutationFn: (vars: {
-            responseId: string;
+            /** CRM lead row. Omit for a learner call — `userId` then identifies
+             *  the person and the backend resolves the rest. */
+            responseId?: string;
             userId?: string;
             preferredNumberId?: string;
             /** Lead's display name — shown on the post-call disposition sheet

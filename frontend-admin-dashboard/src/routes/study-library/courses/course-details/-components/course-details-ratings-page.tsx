@@ -1,5 +1,6 @@
 import { StarRatingComponent } from '@/components/common/star-rating-component';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { MyPagination } from '@/components/design-system/pagination';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -11,6 +12,7 @@ import { useInstituteDetailsStore } from '@/stores/students/students-list/useIns
 import { ProgressBar } from '@/components/ui/custom-progress-bar';
 import { ReviewItem } from './ReviewItem';
 import { Star as StarIcon } from '@phosphor-icons/react';
+import type { TFunction } from 'i18next';
 
 // Types for API Response
 interface User {
@@ -48,11 +50,11 @@ interface Review {
 }
 
 // Helper function to transform API data to Review format
-const transformRatingToReview = (rating: Rating): Review => {
+const transformRatingToReview = (rating: Rating, t: TFunction): Review => {
     return {
         id: rating.id,
         user: {
-            name: rating.user?.full_name || rating.user?.username || 'Unknown',
+            name: rating.user?.full_name || rating.user?.username || t('unknownUser'),
             avatarUrl: rating.user?.profile_pic_file_id || '',
         },
         createdAt: rating.created_at,
@@ -72,6 +74,7 @@ export function CourseDetailsRatingsComponent({
     currentLevel: string;
 }) {
     const router = useRouter();
+    const { t } = useTranslation('studyLibraryCourseDetailsRatingsPage');
     const courseId = router.state.location.search.courseId;
     const [page, setPage] = useState(0);
 
@@ -103,9 +106,9 @@ export function CourseDetailsRatingsComponent({
     });
 
     // Transform API data to reviews format and filter out deleted
-    const reviews: Review[] = (ratingData?.content?.map(transformRatingToReview) || []).filter(
-        (review: Review) => review.status !== 'DELETED'
-    );
+    const reviews: Review[] = (
+        ratingData?.content?.map((rating: Rating) => transformRatingToReview(rating, t)) || []
+    ).filter((review: Review) => review.status !== 'DELETED');
     const totalPages = ratingData?.totalPages || 0;
 
     const handlePageChange = (pageNo: number) => {
@@ -116,11 +119,9 @@ export function CourseDetailsRatingsComponent({
     if (ratingError || overallRatingError) {
         return (
             <div className="flex flex-col gap-5 bg-white p-8">
-                <h1 className="mb-2 text-2xl font-bold text-neutral-600">Ratings & Reviews</h1>
+                <h1 className="mb-2 text-2xl font-bold text-neutral-600">{t('title')}</h1>
                 <div className="text-center text-neutral-500">
-                    {!packageSessionId
-                        ? 'Unable to load ratings - missing course information'
-                        : 'Unable to load ratings. Please try again later.'}
+                    {!packageSessionId ? t('errorMissingCourse') : t('errorGeneric')}
                 </div>
             </div>
         );
@@ -136,13 +137,13 @@ export function CourseDetailsRatingsComponent({
                     <div className="flex w-full flex-col items-center justify-center gap-8 rounded-xl bg-neutral-50 p-6 md:flex-row">
                         <div className="flex w-full flex-col items-center justify-center gap-2 text-left">
                             <h1 className="mb-3 w-full text-center text-3xl font-bold text-neutral-700">
-                                Ratings & Reviews
+                                {t('title')}
                             </h1>
                             <h1 className="text-4xl font-bold text-neutral-800">
                                 {overallRatingData?.average_rating !== null &&
                                 overallRatingData?.average_rating !== undefined
                                     ? Number(overallRatingData.average_rating).toFixed(1)
-                                    : 'N/A'}
+                                    : t('notAvailable')}
                             </h1>
                             <StarRatingComponent
                                 score={
@@ -154,11 +155,13 @@ export function CourseDetailsRatingsComponent({
                                 starColor={true}
                             />
                             <span className="sm text-neutral-500">
-                                {overallRatingData?.total_reviews !== null &&
-                                overallRatingData?.total_reviews !== undefined
-                                    ? overallRatingData.total_reviews
-                                    : 0}{' '}
-                                reviews
+                                {t('reviewsCount', {
+                                    count:
+                                        overallRatingData?.total_reviews !== null &&
+                                        overallRatingData?.total_reviews !== undefined
+                                            ? overallRatingData.total_reviews
+                                            : 0,
+                                })}
                             </span>
                         </div>
                         <div className="flex w-full max-w-md flex-col gap-2">
@@ -197,7 +200,7 @@ export function CourseDetailsRatingsComponent({
             {/* User Reviews List */}
             <div className={`${reviews.length === 0 ? 'mt-0' : 'mt-4'} flex flex-col gap-6`}>
                 {reviews.length === 0 ? (
-                    <div className="text-center text-neutral-500">No reviews yet</div>
+                    <div className="text-center text-neutral-500">{t('noReviewsYet')}</div>
                 ) : (
                     reviews.map((review: Review) => (
                         <ReviewItem

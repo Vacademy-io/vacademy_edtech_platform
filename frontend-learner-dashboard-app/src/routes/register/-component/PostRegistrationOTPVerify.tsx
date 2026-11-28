@@ -24,6 +24,9 @@ import {
   type InstituteBranding,
 } from "@/components/common/institute-branding";
 import { useInstituteDetails } from "../live-class/-hooks/useInstituteDetails";
+import { notifyRegistrationVerified } from "../-services/open-registration-services";
+import AssessmentRegistrationCompleted from "./AssessmentRegistrationCompleted";
+import { useTranslation } from "react-i18next";
 
 interface Props {
   email: string;
@@ -38,6 +41,12 @@ interface Props {
    * placeholder here). Optional so the component still stands alone.
    */
   branding?: InstituteBranding;
+  /**
+   * Time left until the assessment starts, ticking every second (from the
+   * register page). When the OTP is verified before the start, the learner sees
+   * the countdown instead of the start page. Without it, the page opens as before.
+   */
+  timeLeft?: { days: number; hours: number; minutes: number; seconds: number };
 }
 
 const RESEND_COOLDOWN = 60;
@@ -48,13 +57,16 @@ const PostRegistrationOTPVerify = ({
   assessmentName,
   instituteId,
   branding: brandingFromParent,
+  timeLeft,
 }: Props) => {
+  const { t } = useTranslation("registrationA");
   const navigate = useNavigate();
   const { data: instituteDetails } = useInstituteDetails();
   const [otp, setOtp] = useState(Array(6).fill(""));
   const [isSending, setIsSending] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
   const [timer, setTimer] = useState(0);
+  const [verifiedBeforeStart, setVerifiedBeforeStart] = useState(false);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -84,10 +96,10 @@ const PostRegistrationOTPVerify = ({
     setIsSending(true);
     try {
       await axios.post(REQUEST_OTP, { email, institute_id: instituteId });
-      toast.success("OTP sent to " + email);
+      toast.success(t("otpVerify.toast.otpSentTo", { email }));
       startCooldown();
     } catch {
-      toast.error("Failed to send OTP. Please try again.");
+      toast.error(t("otpVerify.toast.sendFailed"));
     } finally {
       setIsSending(false);
     }
@@ -137,7 +149,7 @@ const PostRegistrationOTPVerify = ({
   const handleVerify = async () => {
     const code = otp.join("");
     if (code.length < 6) {
-      toast.error("Please enter the full 6-digit OTP");
+      toast.error(t("otpVerify.toast.enterFullOtp"));
       return;
     }
     setIsVerifying(true);
@@ -147,6 +159,21 @@ const PostRegistrationOTPVerify = ({
 
       await setTokenInStorage(TokenKey.accessToken, accessToken);
       await setTokenInStorage(TokenKey.refreshToken, refreshToken);
+      // Email verified: now the "You're registered" email may go out.
+      notifyRegistrationVerified(assessmentId);
+
+      // The start page only works once the test is live; before that, show the
+      // countdown (its button opens the test at the start time).
+      const notStartedYet =
+        !!timeLeft &&
+        (!!timeLeft.days ||
+          timeLeft.hours > 0 ||
+          timeLeft.minutes > 0 ||
+          timeLeft.seconds > 0);
+      if (notStartedYet) {
+        setVerifiedBeforeStart(true);
+        return;
+      }
 
       const decoded = await getTokenDecodedData(accessToken);
       const authorities = decoded?.authorities ?? {};
@@ -173,7 +200,7 @@ const PostRegistrationOTPVerify = ({
 
       navigate({ to: assessmentRoute, search: { isPublicAssessment: true } });
     } catch {
-      toast.error("Invalid OTP. Please try again.");
+      toast.error(t("otpVerify.toast.invalidOtp"));
       setOtp(Array(6).fill(""));
       inputRefs.current[0]?.focus();
     } finally {
@@ -182,6 +209,16 @@ const PostRegistrationOTPVerify = ({
   };
 
   const isComplete = otp.every((d) => d !== "");
+
+  if (verifiedBeforeStart && timeLeft)
+    return (
+      <AssessmentRegistrationCompleted
+        assessmentId={assessmentId}
+        assessmentName={assessmentName}
+        timeLeft={timeLeft}
+        autoOpenWhenLive
+      />
+    );
 
   return (
     <div className="flex min-h-screen w-full items-center justify-center bg-gradient-to-b from-primary-50/40 via-background to-background px-4 py-8">
@@ -193,16 +230,16 @@ const PostRegistrationOTPVerify = ({
           <InstituteBrandingComponent branding={branding} size="large" showName={false} />
 
           {/* Success + registration badge */}
-          <div className="flex flex-col items-center gap-3 text-center">
+          <div className="flex flex-col items-center gap-stack text-center">
             <span className="inline-flex items-center gap-1 rounded-full bg-success-50 border border-success-200 px-3 py-0.5 text-caption font-semibold uppercase tracking-wide text-success-700">
               <Sparkle size={12} weight="fill" />
-              Registration Completed
+              {t("common.registrationCompletedBadge")}
             </span>
             <h1 className="text-xl sm:text-2xl font-semibold text-neutral-900">
-              One last step!
+              {t("otpVerify.title")}
             </h1>
             <p className="text-sm text-neutral-500 max-w-xs">
-              Verify your email to access <span className="font-medium text-neutral-700">{assessmentName}</span>
+              {t("otpVerify.subtitle", { assessmentName })}
             </p>
           </div>
 
@@ -212,7 +249,7 @@ const PostRegistrationOTPVerify = ({
               <Envelope size={16} weight="duotone" className="text-primary-500" />
             </div>
             <div className="min-w-0">
-              <p className="text-xs font-medium text-neutral-500">OTP sent to</p>
+              <p className="text-xs font-medium text-neutral-500">{t("otpVerify.otpSentToLabel")}</p>
               <p className="truncate text-sm font-semibold text-neutral-800">{email}</p>
             </div>
             {isSending && (
@@ -253,15 +290,15 @@ const PostRegistrationOTPVerify = ({
             ) : (
               <ShieldCheck size={16} weight="bold" />
             )}
-            {isVerifying ? "Verifying…" : "Verify & Go to Assessment"}
+            {isVerifying ? t("otpVerify.verifying") : t("otpVerify.verify")}
           </MyButton>
 
           {/* Resend */}
           <div className="flex items-center gap-2 text-xs text-neutral-500">
             <CheckCircle size={13} className="text-success-500" weight="fill" />
-            <span>Didn't receive it?</span>
+            <span>{t("otpVerify.resendPrompt")}</span>
             {timer > 0 ? (
-              <span className="font-medium text-neutral-400">Resend in {timer}s</span>
+              <span className="font-medium text-neutral-400">{t("otpVerify.resendIn", { seconds: timer })}</span>
             ) : (
               <button
                 type="button"
@@ -269,7 +306,7 @@ const PostRegistrationOTPVerify = ({
                 disabled={isSending}
                 className="font-semibold text-primary-500 hover:text-primary-600 transition-colors disabled:opacity-50"
               >
-                Resend OTP
+                {t("common.resendOtp")}
               </button>
             )}
           </div>

@@ -27,6 +27,11 @@ import type {
     CsvChapterIndex,
     ExistingSnapshot,
 } from './types';
+import {
+    getTerminology,
+    getTerminologyPlural,
+} from '@/components/common/layout-container/sidebar/utils';
+import { ContentTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
 
 // Canonical name is bulkcontent.csv; manifest.csv still accepted as a fallback.
 export const MANIFEST_FILE_NAME = 'bulkcontent.csv';
@@ -87,6 +92,7 @@ const KIND_BY_TYPE: Record<string, BulkItemKind> = {
     photo: 'IMAGE',
     video: 'VIDEO_FILE',
     mp4: 'VIDEO_FILE',
+    scorm: 'SCORM',
     youtube: 'YOUTUBE',
     yt: 'YOUTUBE',
     link: 'EXTERNAL_LINK',
@@ -310,11 +316,15 @@ export const resolveManifest = async (args: ResolveArgs): Promise<CsvResolveResu
             return fail('Missing package_session_id, chapter_id, or file_name/url.');
         }
         if (!sectionContexts[psId]) {
-            return fail('This package session was not found among your courses.');
+            return fail(
+                `This package session was not found among your ${getTerminologyPlural(ContentTerms.Course, SystemTerms.Course).toLocaleLowerCase()}.`
+            );
         }
         const index = chapterIndexBySection[psId];
         if (!index) {
-            return fail('Could not read this course’s structure.');
+            return fail(
+                `Could not read this ${getTerminology(ContentTerms.Course, SystemTerms.Course).toLocaleLowerCase()}’s structure.`
+            );
         }
         const chapter = index[chapterId];
         if (!chapter) {

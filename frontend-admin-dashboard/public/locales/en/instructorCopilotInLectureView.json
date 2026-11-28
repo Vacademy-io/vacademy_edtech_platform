@@ -1,0 +1,19 @@
+{
+    "backButton": "Back to Lecture Modes",
+    "heading": "In Lecture",
+    "subtitle": "Live tools and recording",
+    "actions": {
+        "record": {
+            "title": "Record Live Lecture",
+            "description": "Record your session and get AI-generated notes instantly."
+        },
+        "upload": {
+            "title": "Upload Lecture",
+            "description": "Upload an existing audio recording for processing."
+        },
+        "volt": {
+            "title": "Run Live Interactive Presentation",
+            "description": "Engage students with real-time slides and quizzes."
+        }
+    }
+}

@@ -1,0 +1,50 @@
+{
+    "columns": {
+        "name": "اسم المؤسسة",
+        "email": "البريد الإلكتروني",
+        "phone": "الهاتف",
+        "address": "العنوان",
+        "city": "المدينة",
+        "state": "الولاية",
+        "pincode": "الرمز البريدي",
+        "status": "الحالة",
+        "learners": "المتعلمون",
+        "seats": "المقاعد",
+        "createdOn": "تاريخ الإنشاء",
+        "actions": "الإجراءات"
+    },
+    "csv": {
+        "name": "الاسم",
+        "admin": "المسؤول",
+        "email": "البريد الإلكتروني",
+        "phone": "الهاتف",
+        "address": "العنوان",
+        "city": "المدينة",
+        "state": "الولاية",
+        "pincode": "الرمز البريدي",
+        "status": "الحالة",
+        "learners": "المتعلمون",
+        "seatsUsed": "المقاعد المستخدمة",
+        "seatsTotal": "إجمالي المقاعد",
+        "inviteCode": "رمز الدعوة",
+        "createdOn": "تاريخ الإنشاء"
+    },
+    "fallback": {
+        "unknown": "غير معروف"
+    },
+    "seats": {
+        "percentUsedAriaLabel_zero": "لا نسبة من المقاعد مستخدمة",
+        "percentUsedAriaLabel_one": "{{percent}}% من المقاعد مستخدم",
+        "percentUsedAriaLabel_two": "{{percent}}% من المقاعد مستخدمة",
+        "percentUsedAriaLabel_few": "{{percent}}% من المقاعد مستخدمة",
+        "percentUsedAriaLabel_many": "{{percent}}% من المقاعد مستخدمة",
+        "percentUsedAriaLabel_other": "{{percent}}% من المقاعد مستخدمة"
+    },
+    "actions": {
+        "ariaLabel": "إجراءات {{name}}",
+        "thisRow": "هذا الصف",
+        "openDetails": "فتح التفاصيل",
+        "copyInviteLink": "نسخ رابط الدعوة",
+        "shareCredentials": "مشاركة بيانات الدخول"
+    }
+}

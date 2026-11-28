@@ -1,0 +1,13 @@
+{
+    "heading": "My plan & dues",
+    "planPayment": {
+        "label": "Plan payment",
+        "of": "of {{amount}}",
+        "percentPaid": "{{percent}}% paid"
+    },
+    "dues": {
+        "outstanding": "Outstanding",
+        "pendingInstallments": "Pending installments",
+        "nextDue": "Next due"
+    }
+}

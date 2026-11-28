@@ -1,0 +1,49 @@
+{
+    "description": "الإجازات التي تقدم بها موظفوك. الموافقة على إجازة تستهلك رصيد الموظف لنوع الإجازة هذا وتكتب سجل حضور ON_LEAVE لكل يوم، بحيث تبقى كشوف المرتبات والحضور متوافقين مع القرار.",
+    "filterAriaLabel": "تصفية طلبات الإجازة حسب الحالة",
+    "requestCount_zero": "لا توجد طلبات",
+    "requestCount_one": "طلب واحد",
+    "requestCount_two": "طلبان",
+    "requestCount_few": "{{count}} طلبات",
+    "requestCount_many": "{{count}} طلبًا",
+    "requestCount_other": "{{count}} طلب",
+    "table": {
+        "columns": {
+            "employee": "الموظف",
+            "leaveType": "نوع الإجازة",
+            "dates": "من → إلى",
+            "days": "الأيام",
+            "halfDay": "نصف يوم",
+            "reason": "السبب",
+            "status": "الحالة"
+        },
+        "halfDayFallback": "نصف يوم"
+    },
+    "actions": {
+        "review": "مراجعة",
+        "cancel": "إلغاء"
+    },
+    "errors": {
+        "loadFailed": "تعذّر تحميل طلبات الإجازة."
+    },
+    "empty": {
+        "pendingTitle": "لا شيء بانتظارك",
+        "pendingDescription": "تم البت في كل طلبات الإجازة. تظهر الطلبات الجديدة هنا فور تقديم الموظفين لها من تطبيقهم.",
+        "otherTitle": "لا توجد طلبات {{status}}",
+        "otherDescription": "جرّب حالة أخرى — لا تُدرج الطلبات إلا بعد أن يتقدم بها الموظف."
+    },
+    "cancelHint": "إلغاء إجازة موافَق عليها يعيد الأيام إلى الرصيد ويزيل سجل حضور ON_LEAVE الذي أنشأته.",
+    "toast": {
+        "cancelled": "تم إلغاء الإجازة"
+    },
+    "errorsToast": {
+        "cancelFailed": "تعذّر إلغاء هذه الإجازة."
+    },
+    "cancelDialog": {
+        "title": "هل تريد إلغاء هذه الإجازة الموافَق عليها؟",
+        "description": "سيستعيد {{employee}} الأيام في رصيد {{leaveType}}، وستُحذف سجلات حضور ON_LEAVE لهذه التواريخ. إذا كانت كشوف المرتبات قد أقفلت الشهر بالفعل، فسيرفض الخادم ذلك ويخبرك بالسبب.",
+        "leaveTypeFallback": "الإجازة",
+        "keepApproved": "إبقاؤها موافَقًا عليها",
+        "confirmCancel": "إلغاء الإجازة"
+    }
+}

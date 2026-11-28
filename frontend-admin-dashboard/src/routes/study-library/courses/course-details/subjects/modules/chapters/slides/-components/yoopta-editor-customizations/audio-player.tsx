@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
     YooptaPlugin,
     useYooptaEditor,
@@ -11,6 +12,7 @@ import { TokenKey } from '@/constants/auth/tokens';
 import { commitBlockProps } from './commitBlockProps';
 
 export function AudioPlayerBlock({ element, attributes, children, blockId }: PluginElementRenderProps) {
+    const { t } = useTranslation('studyLibraryAudioPlayer');
     const editor = useYooptaEditor();
     const isReadOnly = useYooptaReadOnly();
     const [audioUrl, setAudioUrl] = useState(element?.props?.audioUrl || '');
@@ -61,7 +63,7 @@ export function AudioPlayerBlock({ element, attributes, children, blockId }: Plu
 
     const handleFileUpload = async (file: File) => {
         if (!file.type.startsWith('audio/')) {
-            alert('Please select an audio file');
+            alert(t('selectAudioFile'));
             return;
         }
 
@@ -82,10 +84,10 @@ export function AudioPlayerBlock({ element, attributes, children, blockId }: Plu
                 true
             );
 
-            if (!fileId) throw new Error('Upload failed');
+            if (!fileId) throw new Error(t('uploadFailedError'));
 
             const publicUrl = await getPublicUrl(fileId);
-            if (!publicUrl) throw new Error('Failed to get URL');
+            if (!publicUrl) throw new Error(t('failedToGetUrl'));
 
             // Commit audioUrl and title in a single transform so both
             // land in block.value atomically — otherwise two separate
@@ -94,7 +96,7 @@ export function AudioPlayerBlock({ element, attributes, children, blockId }: Plu
             commitAudio({ audioUrl: publicUrl, title: nextTitle });
         } catch (error) {
             console.error('Audio upload failed:', error);
-            alert('Failed to upload audio file');
+            alert(t('uploadFailedAlert'));
         } finally {
             setIsUploading(false);
         }
@@ -140,7 +142,7 @@ export function AudioPlayerBlock({ element, attributes, children, blockId }: Plu
                 }}
             >
                 <span style={{ fontSize: '14px', fontWeight: 600, color: '#333' }}>
-                    Audio Player
+                    {t('audioPlayer')}
                 </span>
                 {audioUrl && !isReadOnly && (
                     <button
@@ -155,7 +157,7 @@ export function AudioPlayerBlock({ element, attributes, children, blockId }: Plu
                             cursor: 'pointer',
                         }}
                     >
-                        Replace
+                        {t('replace')}
                     </button>
                 )}
             </div>
@@ -168,7 +170,7 @@ export function AudioPlayerBlock({ element, attributes, children, blockId }: Plu
                         color: '#999',
                         fontSize: '14px',
                     }}>
-                        No audio uploaded
+                        {t('noAudioUploaded')}
                     </div>
                 ) : !audioUrl ? (
                     /* Upload area */
@@ -187,7 +189,7 @@ export function AudioPlayerBlock({ element, attributes, children, blockId }: Plu
                     >
                         {isUploading ? (
                             <div style={{ fontSize: '14px', color: '#666' }}>
-                                Uploading...
+                                {t('uploadingEllipsis')}
                             </div>
                         ) : (
                             <>
@@ -199,10 +201,10 @@ export function AudioPlayerBlock({ element, attributes, children, blockId }: Plu
                                     </svg>
                                 </div>
                                 <div style={{ fontSize: '14px', color: '#666' }}>
-                                    Click or drag audio file here
+                                    {t('clickOrDragHint')}
                                 </div>
                                 <div style={{ fontSize: '12px', color: '#999', marginTop: '4px' }}>
-                                    MP3, WAV, OGG, M4A supported
+                                    {t('supportedFormats')}
                                 </div>
                             </>
                         )}
@@ -228,7 +230,7 @@ export function AudioPlayerBlock({ element, attributes, children, blockId }: Plu
                                 value={title}
                                 onChange={(e) => commitAudio({ title: e.target.value })}
                                 onKeyDown={handleInputKeyDown}
-                                placeholder="Audio title (optional)"
+                                placeholder={t('titlePlaceholder')}
                                 style={{
                                     width: '100%',
                                     padding: '6px 10px',

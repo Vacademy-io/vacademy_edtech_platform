@@ -1,0 +1,200 @@
+/* =====================================================================
+   Institute UI axes — corners / density / gradient
+   =====================================================================
+   Three institute-controllable presentation axes, applied as data
+   attributes on <html> from THEME_SETTING (see utils/institute-theme-roles.ts).
+   They sit alongside — not inside — the existing skin classes
+   (.ui-play / .ui-cleaner-play / .ui-vibrant), so an institute can pick a
+   skin AND a corner style independently.
+
+   DEFAULTS ARE A NO-OP. Every axis's default value reproduces today's
+   look exactly, so an institute that never opens the Appearance tab sees
+   zero change. This mirrors the existing --nav-* convention in
+   theme-provider.tsx: wiring a component onto an axis token is invisible
+   until someone actually opts in.
+
+   SPECIFICITY NOTE (the same trap cleaner-play-theme.css documents):
+   `:root { --radius: 8px }` in index.css lives inside @layer base, which
+   Tailwind injects AFTER this file's @import. A plain :root selector here
+   has equal specificity (0,1,0) and would LOSE on source order. So every
+   override below is written `html[data-ui-*=...]` (0,1,1), which
+   unconditionally outranks :root regardless of layer order.
+
+   Scope note: .vsr (my-reports/report-card.css) deliberately declares its
+   own --radius: 14px. That is a printed-document stylesheet which must
+   match the generated PDF — it is intentionally NOT on these axes, and
+   should stay that way.
+   ===================================================================== */
+
+:root {
+  /* ---- Density -----------------------------------------------------
+     Consumed via the Tailwind aliases p-card / p-card-lg / gap-stack /
+     gap-section / h-control (see tailwind.config.js `spacing`).
+     Defaults reproduce the values these primitives hardcode today:
+     card p-4, large card p-6, stack gap-3, section gap-6, control h-9. */
+  --ui-pad-card: 1rem; /* p-4  */
+  --ui-pad-card-lg: 1.5rem; /* p-6  */
+  --ui-pad-page: 1rem; /* p-4  */
+  --ui-gap-stack: 0.75rem; /* gap-3 */
+  --ui-gap-section: 1.5rem; /* gap-6 */
+  --ui-control-h: 2.25rem; /* h-9  */
+
+  /* ---- Gradient ----------------------------------------------------
+     Consumed by .bg-app-gradient / .bg-app-surface-gradient below.
+     Default is a real brand gradient; "flat" collapses both stops to the
+     same color so a flattened surface stays legible (removing
+     background-image outright would strand white text on white). */
+  --ui-gradient-from: hsl(var(--primary-100));
+  --ui-gradient-to: hsl(var(--primary-50));
+
+  /* ---- Page wash --------------------------------------------------
+     Consumed by .bg-app-page-wash below, for full-page public surfaces.
+
+     Layered radials rather than one linear gradient, and that is the whole
+     point: `linear-gradient(to bottom right, …)` puts all of its colour in
+     the top-left corner and has faded to near-white by the middle of the
+     page — which is exactly where a centred form card sits, so the page
+     reads as "colour at the top, nothing behind the form". Three radials
+     (warm top-left, cool top-right, warm bottom) keep colour on all four
+     sides of the card.
+
+     Two hues on purpose: primary is the institute's brand, secondary is the
+     learner app's cool support scale, so the pair follows white-label
+     branding instead of hardcoding a palette. */
+  --ui-wash-base: hsl(var(--primary-50));
+  --ui-wash-warm: hsl(var(--primary-200) / 0.7);
+  --ui-wash-cool: hsl(var(--secondary-200) / 0.75);
+
+  /* ---- Play skin radii, expressed against --radius -------------------
+     At the default --radius: 8px these evaluate to 20 / 12 / 14px, i.e.
+     byte-identical to the literals play-theme.css shipped. Re-declaring
+     them here (rather than in play-theme.css) lets the Play skin follow
+     the corners axis instead of fighting it — play-theme.css has 35
+     `border-radius: !important` rules that would otherwise pin it. */
+  --play-radius-card: calc(var(--radius) + 12px);
+  --play-radius-card-sm: calc(var(--radius) + 4px);
+  --play-radius-btn: calc(var(--radius) + 6px);
+}
+
+/* =====================================================================
+   Axis 1 — Corners
+   ---------------------------------------------------------------------
+   Moves the single --radius seed. tailwind.config.js already derives the
+   whole rounded-sm/md/lg/xl/2xl family (and now bare `rounded`) from it,
+   so one variable repaints ~2,370 usages. rounded-full is deliberately
+   NOT on this axis: avatars and pills should stay circular at every
+   setting.
+   ===================================================================== */
+html[data-ui-corners='sharp'] {
+  --radius: 2px;
+}
+html[data-ui-corners='rounded'] {
+  --radius: 8px; /* default */
+}
+html[data-ui-corners='pill'] {
+  --radius: 16px;
+}
+
+/* =====================================================================
+   Axis 2 — Density
+   ---------------------------------------------------------------------
+   Card padding, stack/section rhythm and control height. Deliberately a
+   SMALL token set: the app has ~12,000 hand-written spacing utilities and
+   tokenizing all of them is neither safe nor necessary. Wiring the shared
+   primitives (card, button, input, dialog, badge) plus page shells covers
+   the great majority of perceived density.
+   ===================================================================== */
+html[data-ui-density='compact'] {
+  --ui-pad-card: 0.75rem;
+  --ui-pad-card-lg: 1rem;
+  --ui-pad-page: 0.75rem;
+  --ui-gap-stack: 0.5rem;
+  --ui-gap-section: 1rem;
+  --ui-control-h: 2rem;
+}
+html[data-ui-density='default'] {
+  --ui-pad-card: 1rem;
+  --ui-pad-card-lg: 1.5rem;
+  --ui-pad-page: 1rem;
+  --ui-gap-stack: 0.75rem;
+  --ui-gap-section: 1.5rem;
+  --ui-control-h: 2.25rem;
+}
+html[data-ui-density='comfortable'] {
+  --ui-pad-card: 1.5rem;
+  --ui-pad-card-lg: 2rem;
+  --ui-pad-page: 1.5rem;
+  --ui-gap-stack: 1rem;
+  --ui-gap-section: 2rem;
+  --ui-control-h: 2.5rem;
+}
+
+/* =====================================================================
+   Axis 3 — Gradient
+   ---------------------------------------------------------------------
+   Scoped ON PURPOSE to the .bg-app-* utilities below rather than applied
+   globally to [class*="bg-gradient-to-"].
+
+   A global `background-image: none` would hit all ~1,060 gradient sites at
+   once, but ~75% of the app's gradient stops are fixed Tailwind palette
+   families (from-blue-500, from-emerald-400 …) rather than brand tokens,
+   and many carry white text. Stripping the image there leaves white-on-
+   white. Collapsing the two stops of an opted-in, brand-driven utility is
+   the version that cannot break legibility.
+   ===================================================================== */
+html[data-ui-gradient='flat'] {
+  --ui-gradient-from: hsl(var(--primary-50));
+  --ui-gradient-to: hsl(var(--primary-50));
+  /* Transparent, not removed: --ui-wash-base still paints, so a flattened
+     page is one even tint rather than white-on-white. */
+  --ui-wash-warm: transparent;
+  --ui-wash-cool: transparent;
+}
+html[data-ui-gradient='subtle'] {
+  --ui-gradient-from: hsl(var(--primary-50));
+  --ui-gradient-to: hsl(var(--background));
+  --ui-wash-base: hsl(var(--background));
+  --ui-wash-warm: hsl(var(--primary-100) / 0.7);
+  --ui-wash-cool: hsl(var(--secondary-100) / 0.7);
+}
+html[data-ui-gradient='full'] {
+  --ui-gradient-from: hsl(var(--primary-100));
+  --ui-gradient-to: hsl(var(--primary-50));
+  --ui-wash-base: hsl(var(--primary-50));
+  --ui-wash-warm: hsl(var(--primary-200) / 0.7);
+  --ui-wash-cool: hsl(var(--secondary-200) / 0.75);
+}
+
+@layer utilities {
+  /* Brand-driven surface gradient. Responds to the gradient axis and to
+     the institute's brand color, unlike a hand-written
+     `bg-gradient-to-br from-blue-50 to-white`. */
+  .bg-app-gradient {
+    background-image: linear-gradient(
+      to bottom right,
+      var(--ui-gradient-from),
+      var(--ui-gradient-to)
+    );
+  }
+
+  /* Full-page wash for public, single-purpose pages (the audience response
+     form). Keeps brand colour on every side of a centred card instead of
+     stranding it in one corner — see --ui-wash-* above. */
+  .bg-app-page-wash {
+    background-color: var(--ui-wash-base);
+    background-image:
+      radial-gradient(60rem 42rem at 5% -8%, var(--ui-wash-warm), transparent 60%),
+      radial-gradient(52rem 38rem at 100% 6%, var(--ui-wash-cool), transparent 58%),
+      radial-gradient(64rem 44rem at 55% 106%, var(--ui-wash-warm), transparent 62%);
+    background-repeat: no-repeat;
+  }
+
+  /* Horizontal variant, for banner/hero bands. */
+  .bg-app-gradient-x {
+    background-image: linear-gradient(
+      to right,
+      var(--ui-gradient-from),
+      var(--ui-gradient-to)
+    );
+  }
+}

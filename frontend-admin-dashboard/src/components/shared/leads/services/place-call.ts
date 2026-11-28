@@ -3,7 +3,13 @@ import { TELEPHONY_CONNECT_CALL } from '@/constants/urls';
 
 export interface PlaceCallRequest {
     instituteId: string;
-    responseId: string;
+    /**
+     * audience_response id — present for CRM leads. Omitted when calling an
+     * enrolled learner from the LMS side-view, where there is no lead row; the
+     * backend then resolves the person (and their phone) from `userId` alone.
+     * At least one of the two is required.
+     */
+    responseId?: string;
     userId?: string;
     /**
      * Optional: id of the ExoPhone the counsellor explicitly picked at the
@@ -25,6 +31,13 @@ export interface PlaceCallResponse {
      * of a spinner that never advances. Absent → treat as true (legacy).
      */
     realtimeEvents?: boolean;
+    /**
+     * The lead row the call was filed under. Echoed back because a learner call
+     * sends no responseId, yet the backend links an existing lead row when the
+     * learner happens to have one — the disposition sheet needs that id (status
+     * change + follow-up both key off it). Absent → skip disposition capture.
+     */
+    responseId?: string | null;
 }
 
 /**

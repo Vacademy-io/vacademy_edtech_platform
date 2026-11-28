@@ -1,0 +1,10 @@
+{
+    "free": "مجاني",
+    "planStatus": "حالة الخطة",
+    "planLabel": "خطة {{plan}}",
+    "awaitingAdmin": "بانتظار المسؤول",
+    "noPlan": "لا توجد خطة",
+    "totalLearners": "إجمالي المتعلمين",
+    "totalSeats": "إجمالي المقاعد",
+    "adminOutstanding": "مستحقات المسؤول"
+}

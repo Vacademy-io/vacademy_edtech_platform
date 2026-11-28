@@ -1,0 +1,15 @@
+{
+    "heading": {
+        "uploadResponse": "Réponse du téléchargement",
+        "previewData": "Aperçu des données"
+    },
+    "buttons": {
+        "close": "Fermer",
+        "done": "Terminé"
+    },
+    "error": {
+        "uploadFailed": "Échec du téléchargement",
+        "checkDetails": "Consultez les détails de l'erreur pour plus d'informations",
+        "unknownError": "Erreur inconnue"
+    }
+}

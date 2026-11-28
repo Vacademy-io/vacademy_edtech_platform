@@ -1,0 +1,22 @@
+{
+    "status": {
+        "success": "सफल",
+        "failed": "विफल",
+        "created": "बनाया गया",
+        "unknownError": "अज्ञात त्रुटि"
+    },
+    "errors": {
+        "missingColumns": "आवश्यक कॉलम गायब हैं: {{columns}}। डाउनलोड किए गए टेम्पलेट की हेडर पंक्ति का उपयोग करें।",
+        "titleRequired": "शीर्षक आवश्यक है",
+        "startDateRequired": "start_date आवश्यक है",
+        "invalidStartDate": "अमान्य start_date (YYYY-MM-DD प्रारूप का उपयोग करें)",
+        "startTimeRequired": "start_time आवश्यक है",
+        "invalidStartTime": "अमान्य start_time (24 घंटे का HH:mm प्रारूप उपयोग करें)",
+        "durationRequired": "अवधि शून्य से अधिक होनी चाहिए",
+        "unknownPlatform": "अज्ञात या अक्षम प्लेटफ़ॉर्म \"{{platform}}\"। अनुमत: {{allowed}}",
+        "linkRequired": "प्लेटफ़ॉर्म \"{{platform}}\" के लिए लिंक आवश्यक है",
+        "invalidLink": "अमान्य लिंक URL",
+        "unknownBatchId": "अज्ञात बैच आईडी: {{id}}",
+        "failedToReadCsv": "CSV पढ़ने में विफल"
+    }
+}

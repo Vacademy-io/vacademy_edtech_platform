@@ -1,0 +1,73 @@
+{
+    "loading": "Chargement des détails de la demande…",
+    "loadError": "Échec du chargement des détails de la demande.",
+    "duplicateBanner": {
+        "message": "Il s'agit d'un prospect en double.",
+        "primaryLabel": "Principal : {{id}}…"
+    },
+    "header": {
+        "trackingId": "ID de suivi",
+        "copy": "Copier",
+        "copiedToast": "ID de suivi copié !",
+        "enquiryStatus": "Statut de la demande",
+        "overallStatus": "Statut global"
+    },
+    "sections": {
+        "child": {
+            "title": "Élève / Enfant",
+            "name": "Nom",
+            "dob": "Date de naissance",
+            "gender": "Genre",
+            "applyingForClass": "Classe demandée",
+            "academicYear": "Année académique",
+            "previousSchool": "École précédente"
+        },
+        "parent": {
+            "title": "Parent / Tuteur",
+            "name": "Nom",
+            "email": "E-mail",
+            "phone": "Téléphone",
+            "address": "Adresse",
+            "city": "Ville",
+            "pinCode": "Code postal"
+        },
+        "enquiryInfo": {
+            "title": "Informations sur la demande",
+            "mode": "Mode",
+            "referenceSource": "Source de référence",
+            "leadInterestScore": "Score d'intérêt du prospect",
+            "feeRangeExpectation": "Fourchette de frais attendue",
+            "transportRequirement": "Besoin de transport",
+            "currentStage": "Étape actuelle",
+            "createdAt": "Créé le",
+            "updatedAt": "Mis à jour le",
+            "notes": "Notes"
+        },
+        "campaign": {
+            "title": "Demande",
+            "enquiry": "Demande",
+            "source": "Source",
+            "classLevel": "Classe / Niveau",
+            "session": "Session"
+        },
+        "applicationStatus": {
+            "title": "Statut de la candidature",
+            "applied": "Candidature déposée",
+            "applicantId": "ID du candidat",
+            "assignedCounselor": "Conseiller assigné",
+            "yes": "Oui",
+            "no": "Non"
+        },
+        "customFields": {
+            "title": "Champs personnalisés"
+        }
+    },
+    "status": {
+        "NEW": "Nouveau",
+        "CONTACTED": "Contacté",
+        "QUALIFIED": "Qualifié",
+        "NOT_ELIGIBLE": "Non éligible",
+        "ENQUIRY": "Demande",
+        "APPLICATION": "Candidature"
+    }
+}

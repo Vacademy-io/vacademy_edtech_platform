@@ -1,0 +1,41 @@
+{
+    "sidebar": {
+        "stepLabel": "الخطوة {{number}}",
+        "done": "· تم"
+    },
+    "steps": {
+        "basicInfo": {
+            "label": "معلومات أساسية",
+            "description": "الاسم والجدولة والإعدادات"
+        },
+        "addQuestions": {
+            "label": "إضافة أسئلة",
+            "description": "رفع أو إنشاء الأسئلة"
+        },
+        "addParticipants": {
+            "label": "إضافة مشاركين",
+            "description": "اختر من يمكنه أداء هذا"
+        },
+        "accessControl": {
+            "label": "التحكم في الوصول",
+            "description": "أذونات الإدارة"
+        }
+    },
+    "examTypeLabel": {
+        "exam": "امتحان",
+        "mock": "اختبار تجريبي",
+        "practice": "اختبار تدريبي",
+        "survey": "استبيان",
+        "manualUploadExam": "امتحان برفع يدوي"
+    },
+    "header": {
+        "stepOf": "الخطوة {{current}} من {{total}}",
+        "completed": "{{count}} / {{total}} مكتمل"
+    },
+    "helmet": {
+        "titleSurvey": "إنشاء استبيان",
+        "titleAssessment": "إنشاء تقييم",
+        "descriptionSurvey": "هذه الصفحة مخصصة لإنشاء استبيان للطلاب عبر لوحة الإدارة.",
+        "descriptionAssessment": "هذه الصفحة مخصصة لإنشاء تقييم للطلاب عبر لوحة الإدارة."
+    }
+}

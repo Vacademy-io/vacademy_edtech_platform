@@ -3,6 +3,7 @@ import katex from 'katex';
 import 'katex/dist/katex.min.css';
 import mermaid from 'mermaid';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 import { MyButton } from '@/components/design-system/button';
 import { MyInput } from '@/components/design-system/input';
 import { UploadFileInS3, getPublicUrl } from '@/services/upload_file';
@@ -73,6 +74,7 @@ async function uploadToS3(file: File): Promise<string | null> {
 
 // ---------- Math (KaTeX) ----------
 export function MathBlockEditor({ payload, setPayload, readOnly }: BlockEditorProps<MathPayload>) {
+    const { t } = useTranslation('studyLibrarySimpleBlockEditors');
     const [editing, setEditing] = useState(false);
     const [draft, setDraft] = useState(payload.latex);
     const previewRef = useRef<HTMLDivElement>(null);
@@ -81,7 +83,7 @@ export function MathBlockEditor({ payload, setPayload, readOnly }: BlockEditorPr
         if (!previewRef.current) return;
         try {
             katex.render(
-                editing ? draft : payload.latex || '\\text{Click to add LaTeX}',
+                editing ? draft : payload.latex || `\\text{${t('math.clickToAdd')}}`,
                 previewRef.current,
                 {
                     displayMode: payload.displayMode,
@@ -91,10 +93,10 @@ export function MathBlockEditor({ payload, setPayload, readOnly }: BlockEditorPr
         } catch {
             /* katex renders errors inline with throwOnError:false */
         }
-    }, [payload.latex, payload.displayMode, draft, editing]);
+    }, [payload.latex, payload.displayMode, draft, editing, t]);
 
     return (
-        <BlockShell title="Math (LaTeX)" icon={<FunctionIcon size={14} />}>
+        <BlockShell title={t('math.title')} icon={<FunctionIcon size={14} />}>
             <div
                 ref={previewRef}
                 className={cn('min-h-8 py-1', payload.displayMode ? 'text-center' : 'text-left')}
@@ -118,7 +120,7 @@ export function MathBlockEditor({ payload, setPayload, readOnly }: BlockEditorPr
                                 setEditing(false);
                             }}
                         >
-                            Save
+                            {t('actions.save')}
                         </MyButton>
                         <MyButton
                             buttonType="secondary"
@@ -128,7 +130,7 @@ export function MathBlockEditor({ payload, setPayload, readOnly }: BlockEditorPr
                                 setEditing(false);
                             }}
                         >
-                            Cancel
+                            {t('actions.cancel')}
                         </MyButton>
                         <label className="ml-2 flex items-center gap-1 text-caption text-neutral-600">
                             <input
@@ -138,7 +140,7 @@ export function MathBlockEditor({ payload, setPayload, readOnly }: BlockEditorPr
                                     setPayload({ ...payload, displayMode: e.target.checked })
                                 }
                             />
-                            Display mode (centered)
+                            {t('math.displayModeLabel')}
                         </label>
                     </div>
                 </div>
@@ -154,6 +156,7 @@ export function MermaidBlockEditor({
     setPayload,
     readOnly,
 }: BlockEditorProps<MermaidPayload>) {
+    const { t } = useTranslation('studyLibrarySimpleBlockEditors');
     const [editing, setEditing] = useState(!payload.code);
     const [draft, setDraft] = useState(payload.code);
     const [svg, setSvg] = useState<string>('');
@@ -184,7 +187,7 @@ export function MermaidBlockEditor({
     }, [payload.code]);
 
     return (
-        <BlockShell title="Mermaid diagram">
+        <BlockShell title={t('mermaid.title')}>
             {svg && (
                 <div
                     className="overflow-x-auto"
@@ -211,7 +214,7 @@ export function MermaidBlockEditor({
                                 setEditing(false);
                             }}
                         >
-                            Render
+                            {t('mermaid.render')}
                         </MyButton>
                         {payload.code && (
                             <MyButton
@@ -222,7 +225,7 @@ export function MermaidBlockEditor({
                                     setEditing(false);
                                 }}
                             >
-                                Cancel
+                                {t('actions.cancel')}
                             </MyButton>
                         )}
                     </div>
@@ -238,11 +241,12 @@ export function AudioBlockEditor({
     setPayload,
     readOnly,
 }: BlockEditorProps<AudioPayload>) {
+    const { t } = useTranslation('studyLibrarySimpleBlockEditors');
     const [uploading, setUploading] = useState(false);
     const inputRef = useRef<HTMLInputElement>(null);
 
     return (
-        <BlockShell title="Audio" icon={<MusicNotes size={14} />}>
+        <BlockShell title={t('audio.title')} icon={<MusicNotes size={14} />}>
             {payload.title && (
                 <div className="mb-2 text-subtitle font-semibold text-neutral-700">
                     {payload.title}
@@ -252,7 +256,7 @@ export function AudioBlockEditor({
                 <audio controls src={payload.audioUrl} className="w-full" preload="metadata" />
             ) : (
                 <div className="py-2 text-center text-caption text-neutral-400">
-                    No audio uploaded
+                    {t('audio.noAudioUploaded')}
                 </div>
             )}
             {!readOnly && (
@@ -275,7 +279,7 @@ export function AudioBlockEditor({
                                     title: payload.title || file.name,
                                 });
                             } else {
-                                toast.error('Audio upload failed');
+                                toast.error(t('audio.uploadFailed'));
                             }
                         }}
                     />
@@ -287,14 +291,14 @@ export function AudioBlockEditor({
                     >
                         <UploadSimple size={14} className="mr-1" />
                         {uploading
-                            ? 'Uploading…'
+                            ? t('actions.uploading')
                             : payload.audioUrl
-                              ? 'Replace audio'
-                              : 'Upload audio'}
+                              ? t('audio.replace')
+                              : t('audio.upload')}
                     </MyButton>
                     <MyInput
                         inputType="text"
-                        inputPlaceholder="Title (optional)"
+                        inputPlaceholder={t('fields.titleOptional')}
                         input={payload.title}
                         onChangeFunction={(e) => setPayload({ ...payload, title: e.target.value })}
                         size="small"
@@ -307,11 +311,12 @@ export function AudioBlockEditor({
 
 // ---------- PDF ----------
 export function PdfBlockEditor({ payload, setPayload, readOnly }: BlockEditorProps<PdfPayload>) {
+    const { t } = useTranslation('studyLibrarySimpleBlockEditors');
     const [uploading, setUploading] = useState(false);
     const inputRef = useRef<HTMLInputElement>(null);
 
     return (
-        <BlockShell title="PDF" icon={<FilePdf size={14} />}>
+        <BlockShell title={t('pdf.title')} icon={<FilePdf size={14} />}>
             {payload.title && (
                 <div className="mb-2 text-subtitle font-semibold text-neutral-700">
                     {payload.title}
@@ -324,11 +329,11 @@ export function PdfBlockEditor({ payload, setPayload, readOnly }: BlockEditorPro
                     rel="noreferrer noopener"
                     className="text-caption text-primary-500 underline"
                 >
-                    Open PDF in new tab
+                    {t('pdf.openInNewTab')}
                 </a>
             ) : (
                 <div className="py-2 text-center text-caption text-neutral-400">
-                    No PDF uploaded
+                    {t('pdf.noPdfUploaded')}
                 </div>
             )}
             {!readOnly && (
@@ -351,7 +356,7 @@ export function PdfBlockEditor({ payload, setPayload, readOnly }: BlockEditorPro
                                     title: payload.title || file.name,
                                 });
                             } else {
-                                toast.error('PDF upload failed');
+                                toast.error(t('pdf.uploadFailed'));
                             }
                         }}
                     />
@@ -362,11 +367,15 @@ export function PdfBlockEditor({ payload, setPayload, readOnly }: BlockEditorPro
                         onClick={() => inputRef.current?.click()}
                     >
                         <UploadSimple size={14} className="mr-1" />
-                        {uploading ? 'Uploading…' : payload.pdfUrl ? 'Replace PDF' : 'Upload PDF'}
+                        {uploading
+                            ? t('actions.uploading')
+                            : payload.pdfUrl
+                              ? t('pdf.replace')
+                              : t('pdf.upload')}
                     </MyButton>
                     <MyInput
                         inputType="text"
-                        inputPlaceholder="Title (optional)"
+                        inputPlaceholder={t('fields.titleOptional')}
                         input={payload.title}
                         onChangeFunction={(e) => setPayload({ ...payload, title: e.target.value })}
                         size="small"
@@ -383,6 +392,7 @@ export function FillBlanksBlockEditor({
     setPayload,
     readOnly,
 }: BlockEditorProps<FillBlanksPayload>) {
+    const { t } = useTranslation('studyLibrarySimpleBlockEditors');
     const [editing, setEditing] = useState(!payload.sentence);
     const [draft, setDraft] = useState(payload.sentence);
 
@@ -402,13 +412,13 @@ export function FillBlanksBlockEditor({
     });
 
     return (
-        <BlockShell title="Fill in the Blanks" icon={<ListNumbers size={14} />}>
+        <BlockShell title={t('fillBlanks.title')} icon={<ListNumbers size={14} />}>
             <div className="leading-8" onClick={() => !readOnly && setEditing(true)}>
                 {payload.sentence ? (
                     preview
                 ) : (
                     <span className="text-caption text-neutral-400">
-                        Click to add a sentence — mark answers as {'{blank:answer}'}
+                        {t('fillBlanks.clickToAddSentence')}
                     </span>
                 )}
             </div>
@@ -417,7 +427,7 @@ export function FillBlanksBlockEditor({
                     <textarea
                         className="w-full rounded-md border border-neutral-300 p-2 text-body"
                         rows={3}
-                        placeholder="Water boils at {blank:100} degrees Celsius."
+                        placeholder={t('fillBlanks.sentencePlaceholder')}
                         value={draft}
                         onChange={(e) => setDraft(e.target.value)}
                     />
@@ -430,7 +440,7 @@ export function FillBlanksBlockEditor({
                                 setEditing(false);
                             }}
                         >
-                            Save
+                            {t('actions.save')}
                         </MyButton>
                         <MyButton
                             buttonType="secondary"
@@ -440,7 +450,7 @@ export function FillBlanksBlockEditor({
                                 setEditing(false);
                             }}
                         >
-                            Cancel
+                            {t('actions.cancel')}
                         </MyButton>
                     </div>
                 </div>
@@ -455,6 +465,7 @@ export function JupyterBlockEditor({
     setPayload,
     readOnly,
 }: BlockEditorProps<JupyterPayload>) {
+    const { t } = useTranslation('studyLibrarySimpleBlockEditors');
     const configured = payload.projectName && payload.contentUrl;
     const binderUrl = configured
         ? `https://mybinder.org/v2/gh/${payload.contentUrl.replace('https://github.com/', '')}/${payload.contentBranch}?labpath=${payload.notebookLocation}`
@@ -462,13 +473,17 @@ export function JupyterBlockEditor({
 
     return (
         <BlockShell
-            title={`Jupyter Notebook${payload.projectName ? `: ${payload.projectName}` : ''}`}
+            title={
+                payload.projectName
+                    ? t('jupyter.titleWithProject', { projectName: payload.projectName })
+                    : t('jupyter.title')
+            }
         >
             {!readOnly && (
                 <div className="mb-3 grid grid-cols-2 gap-2">
                     <MyInput
                         inputType="text"
-                        inputPlaceholder="Project name"
+                        inputPlaceholder={t('jupyter.fields.projectName')}
                         input={payload.projectName}
                         onChangeFunction={(e) =>
                             setPayload({ ...payload, projectName: e.target.value })
@@ -477,7 +492,7 @@ export function JupyterBlockEditor({
                     />
                     <MyInput
                         inputType="text"
-                        inputPlaceholder="GitHub repository URL"
+                        inputPlaceholder={t('jupyter.fields.repositoryUrl')}
                         input={payload.contentUrl}
                         onChangeFunction={(e) =>
                             setPayload({ ...payload, contentUrl: e.target.value })
@@ -486,7 +501,7 @@ export function JupyterBlockEditor({
                     />
                     <MyInput
                         inputType="text"
-                        inputPlaceholder="Branch (main)"
+                        inputPlaceholder={t('jupyter.fields.branch')}
                         input={payload.contentBranch}
                         onChangeFunction={(e) =>
                             setPayload({ ...payload, contentBranch: e.target.value || 'main' })
@@ -495,7 +510,7 @@ export function JupyterBlockEditor({
                     />
                     <MyInput
                         inputType="text"
-                        inputPlaceholder="Notebook location (root)"
+                        inputPlaceholder={t('jupyter.fields.notebookLocation')}
                         input={payload.notebookLocation}
                         onChangeFunction={(e) =>
                             setPayload({ ...payload, notebookLocation: e.target.value || 'root' })
@@ -521,7 +536,9 @@ export function JupyterBlockEditor({
                                     })
                                 }
                             >
-                                {payload.activeTab === 'preview' ? 'Hide preview' : 'Show preview'}
+                                {payload.activeTab === 'preview'
+                                    ? t('actions.hidePreview')
+                                    : t('actions.showPreview')}
                             </MyButton>
                         </div>
                     )}
@@ -529,13 +546,13 @@ export function JupyterBlockEditor({
                         <iframe
                             src={binderUrl}
                             className="h-96 w-full rounded-md border border-neutral-200"
-                            title="Jupyter Notebook Preview"
+                            title={t('jupyter.previewTitle')}
                         />
                     )}
                 </>
             ) : (
                 <div className="text-caption text-neutral-500">
-                    No notebook configured — project name and GitHub URL needed.
+                    {t('jupyter.notConfigured')}
                 </div>
             )}
         </BlockShell>
@@ -548,13 +565,14 @@ export function ScratchBlockEditor({
     setPayload,
     readOnly,
 }: BlockEditorProps<ScratchPayload>) {
+    const { t } = useTranslation('studyLibrarySimpleBlockEditors');
     return (
-        <BlockShell title="Scratch Project">
+        <BlockShell title={t('scratch.title')}>
             {!readOnly && (
                 <div className="mb-2 flex items-center gap-2">
                     <MyInput
                         inputType="text"
-                        inputPlaceholder="Scratch project ID"
+                        inputPlaceholder={t('scratch.fields.projectId')}
                         input={payload.scratchId}
                         onChangeFunction={(e) =>
                             setPayload({ ...payload, scratchId: e.target.value.trim() })
@@ -573,7 +591,9 @@ export function ScratchBlockEditor({
                                 })
                             }
                         >
-                            {payload.activeTab === 'preview' ? 'Hide preview' : 'Show preview'}
+                            {payload.activeTab === 'preview'
+                                ? t('actions.hidePreview')
+                                : t('actions.showPreview')}
                         </MyButton>
                     )}
                 </div>
@@ -583,13 +603,13 @@ export function ScratchBlockEditor({
                     <iframe
                         src={`https://scratch.mit.edu/projects/${payload.scratchId}/embed`}
                         className="h-96 w-full rounded-md border border-neutral-200 bg-white"
-                        title="Scratch Project"
+                        title={t('scratch.previewTitle')}
                         allowFullScreen
                     />
                 )
             ) : (
                 <div className="text-caption text-neutral-500">
-                    No Scratch project configured — project ID needed.
+                    {t('scratch.notConfigured')}
                 </div>
             )}
         </BlockShell>
@@ -598,10 +618,11 @@ export function ScratchBlockEditor({
 
 // ---------- Table of contents ----------
 export function TocBlockEditor() {
+    const { t } = useTranslation('studyLibrarySimpleBlockEditors');
     return (
-        <BlockShell title="Table of Contents">
+        <BlockShell title={t('toc.title')}>
             <div className="text-caption text-neutral-500">
-                Outline is auto-generated from document headings for learners.
+                {t('toc.description')}
             </div>
         </BlockShell>
     );

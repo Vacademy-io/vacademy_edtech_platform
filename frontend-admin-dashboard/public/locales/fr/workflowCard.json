@@ -1,0 +1,50 @@
+{
+    "unknownDate": "Inconnu",
+    "noDescription": "Aucune description disponible",
+    "type": "Type :",
+    "schedules": "Planifications",
+    "cronBadge": "CRON",
+    "lastRun": "dernière : {{time}}",
+    "nextRun": "prochaine : {{time}}",
+    "andMore_one": "et {{count}} de plus…",
+    "andMore_many": "et {{count}} de plus…",
+    "andMore_other": "et {{count}} de plus…",
+    "noScheduleAdded": "Aucune planification ajoutée",
+    "trigger": "Déclencheur",
+    "appliesTo": "S'applique à : {{type}}",
+    "noTriggerDetails": "Aucun détail de déclencheur",
+    "created": "Créé {{time}}",
+    "updated": "Mis à jour {{time}}",
+    "cron": {
+        "am": "AM",
+        "pm": "PM",
+        "everyDayAt": "Chaque jour à {{time}}",
+        "everyDaysAt": "Chaque {{days}} à {{time}}",
+        "onDayOfEveryMonthAt": "Le jour {{day}} de chaque mois à {{time}}",
+        "onDayOfMonthsAt": "Le jour {{day}} de {{months}} à {{time}}",
+        "everyDayOfMonthsAt": "Chaque jour de {{months}} à {{time}}",
+        "days": {
+            "sunday": "dimanche",
+            "monday": "lundi",
+            "tuesday": "mardi",
+            "wednesday": "mercredi",
+            "thursday": "jeudi",
+            "friday": "vendredi",
+            "saturday": "samedi"
+        },
+        "months": {
+            "january": "janvier",
+            "february": "février",
+            "march": "mars",
+            "april": "avril",
+            "may": "mai",
+            "june": "juin",
+            "july": "juillet",
+            "august": "août",
+            "september": "septembre",
+            "october": "octobre",
+            "november": "novembre",
+            "december": "décembre"
+        }
+    }
+}

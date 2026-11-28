@@ -1,0 +1,26 @@
+{
+    "title": "Enrollment Settings",
+    "requireApproval": {
+        "label": "Require Approval",
+        "description": "Enable if you want to review and approve enrollment requests"
+    },
+    "warning": "Students will see your message while their enrollment request is pending approval.",
+    "messageTemplate": {
+        "label": "Message Template",
+        "placeholder": "Select message template",
+        "options": {
+            "standard": "Standard Approval Message",
+            "review": "Custom Review Process",
+            "custom": "Custom Message"
+        }
+    },
+    "approvalMessage": {
+        "label": "Approval Message",
+        "placeholder": "Enter your custom message...",
+        "templates": {
+            "standard": "Thank you for your interest in our course. Your enrollment request is being reviewed by our team. We will notify you once your request has been approved.",
+            "review": "Your enrollment request has been received. Our team will review your application within 2 business days. You will receive an email notification with the decision."
+        }
+    },
+    "markdownHint": "You can use markdown formatting in your message."
+}

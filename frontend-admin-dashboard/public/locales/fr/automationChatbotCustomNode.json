@@ -1,0 +1,18 @@
+{
+    "fallback": {
+        "textMessage": "Message texte",
+        "anyMessage": "N'importe quel message",
+        "ai": "IA",
+        "noField": "Aucun champ choisi"
+    },
+    "branch": {
+        "default": "Par défaut",
+        "numbered": "Branche {{number}}",
+        "newLead": "Nouveau prospect",
+        "existingLead": "Prospect existant"
+    },
+    "saveToCrm": {
+        "setsStatus": "Statut → {{status}}",
+        "keepsStatus": "Statut inchangé"
+    }
+}

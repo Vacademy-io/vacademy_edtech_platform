@@ -1,0 +1,27 @@
+{
+    "heading": "Add {{learners}} to {{name}}",
+    "fields": {
+        "batch": "{{term}}",
+        "batchPlaceholder": "Select a {{term}}",
+        "search": "Search…",
+        "noMatch": "No match"
+    },
+    "noBatches": "No {{term}} is available to add learners to.",
+    "allBatchesHint": "This {{term}} has no courses of its own yet, so every batch of the institute is listed.",
+    "hint": "Learners already enrolled in the chosen batch are moved into this {{term}} instead of being enrolled twice. New learners get an account and are enrolled through this {{term}}, within its seat limit.",
+    "running": "Adding… {{done}} of {{total}}",
+    "buttons": {
+        "cancel": "Cancel",
+        "add_one": "Add 1 learner",
+        "add_other": "Add {{count}} learners",
+        "addMore": "Add more",
+        "done": "Done"
+    },
+    "errors": {
+        "requestFailed": "The request failed. Please try again."
+    },
+    "toasts": {
+        "done_one": "1 learner is now in {{name}}",
+        "done_other": "{{count}} learners are now in {{name}}"
+    }
+}

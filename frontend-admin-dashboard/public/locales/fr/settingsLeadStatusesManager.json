@@ -1,0 +1,48 @@
+{
+    "title": "Statuts des prospects",
+    "description": "Les étapes par lesquelles passe un prospect dans votre pipeline (par ex. Nouveau, Intéressé, Converti). Renommez, recolorez, réorganisez ou définissez un statut par défaut pour les nouveaux prospects. Les statuts ne peuvent pas être supprimés — les prospects conservent leur historique. Stockés dans la base de données afin que vous puissiez filtrer et générer des rapports sur eux.",
+    "loading": "Chargement des statuts…",
+    "empty": "Aucun statut pour l'instant. Ajoutez votre première étape de pipeline ci-dessous.",
+    "preview": {
+        "defaultBadge": "· par défaut"
+    },
+    "row": {
+        "changeColorTitle": "Changer la couleur",
+        "colorAriaLabel": "Couleur pour {{name}}",
+        "statusFallback": "statut",
+        "namePlaceholder": "Nom du statut (par ex. Intéressé)",
+        "defaultStatusAriaLabel": "Statut par défaut",
+        "setAsDefaultAriaLabel": "Définir par défaut",
+        "systemDefaultTitle": "Statut système par défaut — peut être renommé/recoloré",
+        "systemDefaultBadge": "Par défaut",
+        "showInFilterAriaLabel": "Afficher dans le filtre de statut",
+        "hideFromFilterAriaLabel": "Masquer du filtre de statut",
+        "showInFilterTitle": "Masqué du filtre de statut — cliquez pour l’afficher",
+        "hideFromFilterTitle": "Affiché dans le filtre de statut — cliquez pour le masquer"
+    },
+    "addStatus": "Ajouter un statut",
+    "footer": {
+        "hint": "Le statut marqué d'une étoile est appliqué aux nouveaux prospects.",
+        "saving": "Enregistrement…",
+        "save": "Enregistrer les statuts"
+    },
+    "toasts": {
+        "saveSuccess": "Statuts des prospects enregistrés",
+        "saveError": "Échec de l'enregistrement des statuts des prospects"
+    },
+    "admissionRule": {
+        "title": "Quand un prospect passe à {{status}} sans formation",
+        "description": "Choisissez ce qui se passe quand un membre de l’équipe passe un prospect à ce statut alors que la personne n’a encore ni formation ni plan de paiement ici. Les admissions sans formation ni frais faussent vos rapports de revenus. Les automatisations, les appels IA et les inscriptions ne sont jamais bloqués.",
+        "off": "Ne rien faire",
+        "offHint": "Aucune vérification. C’est le réglage par défaut.",
+        "warn": "Avertir d’abord",
+        "warnHint": "L’équipe voit une confirmation et peut quand même continuer.",
+        "block": "Exiger une formation ou un plan de paiement",
+        "blockHint": "L’équipe ne peut pas passer un prospect à {{status}} tant que la personne n’a ni formation ni plan de paiement.",
+        "save": "Enregistrer la règle",
+        "saved": "Règle d’admission enregistrée",
+        "saveFailed": "Impossible d’enregistrer la règle d’admission",
+        "loadFailed": "Impossible de charger ce réglage. Actualisez la page pour réessayer.",
+        "convertedFallback": "Converti"
+    }
+}

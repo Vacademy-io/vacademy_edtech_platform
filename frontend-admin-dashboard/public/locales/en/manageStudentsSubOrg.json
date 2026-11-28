@@ -1,0 +1,59 @@
+{
+    "emptyState": {
+        "title": "No {{term}} Associated",
+        "hint": "This learner is not linked to any {{term}}."
+    },
+    "picker": {
+        "label": "{{term}} for"
+    },
+    "error": {
+        "title": "Couldn't load {{term}} details",
+        "hint": "Something went wrong while fetching this {{term}}. Please try again.",
+        "toast": "Failed to fetch {{term}} details"
+    },
+    "role": {
+        "admin": "Admin",
+        "member": "Member"
+    },
+    "actions": {
+        "openManagementPortal": "Open Management Portal"
+    },
+    "credentials": {
+        "heading": "Admin Credentials",
+        "usernameLabel": "Username",
+        "passwordLabel": "Password",
+        "usernameCopied": "Username copied!",
+        "passwordCopied": "Password copied!"
+    },
+    "members": {
+        "heading_one": "Managed Member ({{count}})",
+        "heading_other": "Managed Members ({{count}})",
+        "emptyTitle": "No members found",
+        "emptyHint": "No learners are currently managed under this {{term}}."
+    },
+    "admins": {
+        "heading": "{{term}} Admins",
+        "emptyTitle": "No admins found",
+        "emptyHint": "No administrators are linked to this {{term}}."
+    },
+    "seats": {
+        "heading": "Seat limit",
+        "used": "seats used",
+        "left_one": "{{count}} seat left",
+        "left_other": "{{count}} seats left",
+        "full": "Limit reached",
+        "noLimit": "No limit",
+        "increase": "Increase limit",
+        "newLimitLabel": "New seat limit",
+        "save": "Save",
+        "saving": "Saving…",
+        "cancel": "Cancel",
+        "appliesToEachBatch": "Applies to every batch of this {{term}}.",
+        "toast": {
+            "invalid": "Enter a whole number greater than 0",
+            "mustIncrease": "New limit must be more than the current {{current}}",
+            "updated": "Seat limit set to {{count}}",
+            "failed": "Couldn't update the seat limit"
+        }
+    }
+}

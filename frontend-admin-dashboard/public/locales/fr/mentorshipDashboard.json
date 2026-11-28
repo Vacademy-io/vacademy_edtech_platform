@@ -1,0 +1,131 @@
+{
+    "loadError": "Impossible de charger les données de mentorat.",
+    "retry": "Réessayer",
+    "mentorFallback": "Mentor",
+    "learnerFallback": "Apprenant",
+    "viewAllSessions": "Voir toutes les sessions",
+    "viewAllMentors": "Voir tous les mentors",
+    "kpi": {
+        "mentors": {
+            "label": "Mentors",
+            "hint": "Dans votre équipe"
+        },
+        "studentsMentored": {
+            "label": "Étudiants accompagnés",
+            "hint_one": "{{count}} binôme actif",
+            "hint_many": "{{count}} de binômes actifs",
+            "hint_other": "{{count}} binômes actifs",
+            "detail_one": "{{count}} pairing · {{mentors}} mentors",
+            "detail_other": "{{count}} pairings · {{mentors}} mentors"
+        },
+        "sessionsAhead": {
+            "label": "Sessions à venir",
+            "hint": "7 prochains jours"
+        },
+        "averageRating": {
+            "label": "Note moyenne",
+            "hintRated_one": "D'après {{count}} mentor noté",
+            "hintRated_many": "D'après {{count}} de mentors notés",
+            "hintRated_other": "D'après {{count}} mentors notés",
+            "hintNone": "Aucune note pour le moment",
+            "detailRated_one": "From {{count}} rated mentor · {{ratings}} ratings",
+            "detailRated_other": "From {{count}} rated mentors · {{ratings}} ratings"
+        },
+        "requests": {
+            "label": "Requests waiting",
+            "detail": "Waiting for your decision"
+        }
+    },
+    "outcomes": {
+        "cardTitle": "Résultats des sessions",
+        "cardSubtitle": "Résumé des sessions depuis le début",
+        "empty": "Aucune session pour le moment. Les résultats apparaîtront ici dès que les mentors les enregistreront.",
+        "completed": "Terminées",
+        "noShows": "Absences",
+        "cancelled": "Annulées",
+        "awaitingReview": "En attente de révision",
+        "totalLabel": "sessions in total"
+    },
+    "workload": {
+        "cardTitle": "Charge des mentors",
+        "cardSubtitle": "Étudiants par mentor",
+        "empty": "Aucun mentor pour le moment.",
+        "countOfCap": "{{count}} / {{cap}}",
+        "fullSuffix": " · complet",
+        "noUpcoming": "aucune à venir",
+        "upcomingCount_one": "{{count}} à venir",
+        "upcomingCount_many": "{{count}} à venir",
+        "upcomingCount_other": "{{count}} à venir"
+    },
+    "attention": {
+        "cardTitle": "Nécessite votre attention",
+        "cardSubtitle": "Ce qui vous attend",
+        "allCaughtUp": "Tout est à jour",
+        "allCaughtUpDescription": "Aucune demande en attente et toutes les sessions sont enregistrées.",
+        "requestsTitle": "Demandes d'apprenants en attente",
+        "requestsDetail_one": "{{count}} apprenant attend d'être associé à un mentor",
+        "requestsDetail_many": "{{count}} d'apprenants attendent d'être associés à un mentor",
+        "requestsDetail_other": "{{count}} apprenants attendent d'être associés à un mentor",
+        "reviewRequests": "Examiner les demandes",
+        "awaitingTitle": "Sessions en attente de révision",
+        "awaitingDetail_one": "{{count}} session doit voir son résultat enregistré",
+        "awaitingDetail_many": "{{count}} de sessions doivent voir leur résultat enregistré",
+        "awaitingDetail_other": "{{count}} sessions doivent voir leur résultat enregistré",
+        "reviewSessions": "Examiner les sessions",
+        "fullTitle": "Mentors at their limit",
+        "fullDetail_one": "{{count}} mentor can’t take new {{learners}}",
+        "fullDetail_other": "{{count}} mentors can’t take new {{learners}}",
+        "noBookingTitle": "Mentors without a booking page",
+        "noBookingDetail_one": "{{count}} mentor can’t be booked by their {{learners}}",
+        "noBookingDetail_other": "{{count}} mentors can’t be booked by their {{learners}}",
+        "openMentors": "Open mentors"
+    },
+    "upcoming": {
+        "cardTitle": "Sessions à venir",
+        "cardSubtitle": "5 prochaines sessions",
+        "empty": "Rien de réservé pour le moment.",
+        "durationMinutes_one": "{{count}} min",
+        "durationMinutes_many": "{{count}} min",
+        "durationMinutes_other": "{{count}} min",
+        "linkReady": "Meet link ready",
+        "linkPending": "Link pending"
+    },
+    "hero": {
+        "eyebrow": "Mentorship · all time",
+        "unit": "sessions delivered",
+        "sub": "{{upcoming}} upcoming · {{awaiting}} waiting for their outcome to be recorded",
+        "today": "Sessions today",
+        "attendance": "Attendance",
+        "listed": "Listed in the directory"
+    },
+    "insights": {
+        "top": {
+            "title": "{{name}} has the happiest mentees",
+            "text_one": "★ {{rating}} from {{count}} rating — the best-rated mentor right now.",
+            "text_other": "★ {{rating}} from {{count}} ratings — the best-rated mentor right now."
+        },
+        "noShow": {
+            "title": "{{rate}}% of recorded sessions were no-shows",
+            "text_one": "{{count}} session where the {{learners}} didn’t turn up. A reminder the night before helps.",
+            "text_other": "{{count}} sessions where the {{learners}} didn’t turn up. A reminder the night before helps."
+        },
+        "full": {
+            "title_one": "{{count}} mentor is at their limit",
+            "title_other": "{{count}} mentors are at their limit",
+            "text": "Requests for them can’t be approved until the limit is raised or a mentee is unassigned."
+        },
+        "noBooking": {
+            "title_one": "{{count}} mentor has no booking page",
+            "title_other": "{{count}} mentors have no booking page",
+            "text": "Their {{learners}} can’t book a 1:1 with them yet."
+        }
+    },
+    "top": {
+        "cardTitle": "Top mentors",
+        "cardSubtitle": "By rating and number of ratings",
+        "empty": "No ratings yet. Mentors appear here once their sessions are rated.",
+        "rating": "★ {{rating}}",
+        "detail_one": "{{count}} rating · {{students}} {{learners}}",
+        "detail_other": "{{count}} ratings · {{students}} {{learners}}"
+    }
+}

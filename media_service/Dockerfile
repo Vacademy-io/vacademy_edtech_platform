@@ -33,7 +33,8 @@ WORKDIR /app
 # Copy the built jar file from the previous stage
 COPY --from=build /build/target/media_service.jar media_service.jar
 
-RUN apk add --no-cache msttcorefonts-installer fontconfig
+# libwebp-tools: cwebp and dwebp, used for the commerce image renditions (rendition/CwebpProcessCodec)
+RUN apk add --no-cache msttcorefonts-installer fontconfig libwebp-tools
 
 RUN update-ms-fonts
 

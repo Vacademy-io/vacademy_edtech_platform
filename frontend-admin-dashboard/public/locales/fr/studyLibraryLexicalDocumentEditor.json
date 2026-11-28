@@ -1,0 +1,44 @@
+{
+    "placeholder": "Cliquez ici pour commencer à écrire...",
+    "customBlocks": {
+        "image": { "title": "Image", "description": "Téléverser une image" },
+        "video": { "title": "Vidéo", "description": "Téléverser un fichier vidéo" },
+        "embed": { "title": "Intégration", "description": "YouTube, Vimeo, Loom ou toute URL" },
+        "file": { "title": "Fichier", "description": "Joindre un fichier téléchargeable" },
+        "callout": { "title": "Encadré", "description": "Encadré de remarque en surbrillance" },
+        "audio": { "title": "Audio", "description": "Téléverser un extrait audio" },
+        "pdfViewer": { "title": "Lecteur PDF", "description": "PDF intégré pour les apprenants" },
+        "math": { "title": "Maths (LaTeX)", "description": "Formule rendue avec KaTeX" },
+        "mermaid": {
+            "title": "Diagramme Mermaid",
+            "description": "Organigrammes, séquences et plus"
+        },
+        "fillBlanks": {
+            "title": "Texte à trous",
+            "description": "Exercice à texte lacunaire interactif"
+        },
+        "toc": {
+            "title": "Table des matières",
+            "description": "Générée automatiquement à partir des titres"
+        },
+        "jupyter": {
+            "title": "Notebook Jupyter",
+            "description": "Intégrer un notebook depuis GitHub"
+        },
+        "scratch": { "title": "Projet Scratch", "description": "Intégrer un projet Scratch" },
+        "flashcard": { "title": "Carte mémoire", "description": "Carte à retourner recto/verso" },
+        "tabs": { "title": "Onglets", "description": "Sections de contenu en onglets" },
+        "quiz": { "title": "Quiz", "description": "QCM ou vrai/faux en ligne" },
+        "timeline": { "title": "Chronologie", "description": "Chronologie étape par étape" },
+        "columns": { "title": "Colonnes", "description": "Mise en page côte à côte" },
+        "accordion": {
+            "title": "Accordéon",
+            "description": "Sections repliables — chacune prend en charge du contenu riche"
+        },
+        "code": { "title": "Code", "description": "Extrait de code avec coloration syntaxique" },
+        "codeEditor": {
+            "title": "Éditeur de code (exécutable)",
+            "description": "Exécuteur interactif pour les apprenants"
+        }
+    }
+}

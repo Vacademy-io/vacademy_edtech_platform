@@ -1,0 +1,12 @@
+{
+    "trigger": {
+        "label": "Exporter"
+    },
+    "settingsButton": "Paramètres d'exportation",
+    "close": "Fermer",
+    "letterhead": {
+        "upload": "En-tête",
+        "delete": "Supprimer l'en-tête"
+    },
+    "answerKeyToggle": "Avec corrigé"
+}

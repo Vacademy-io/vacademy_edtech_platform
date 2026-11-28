@@ -1,0 +1,107 @@
+{
+    "common": {
+        "onLabel": "Activé",
+        "offLabel": "Désactivé",
+        "inPlainWordsLabel": "En clair : ",
+        "hoursUnit_one": "{{count}} heure",
+        "hoursUnit_many": "{{count}} heures",
+        "hoursUnit_other": "{{count}} heures",
+        "hoursLabel": "heures",
+        "minutesUnit_one": "{{count}} minute",
+        "minutesUnit_many": "{{count}} minutes",
+        "minutesUnit_other": "{{count}} minutes",
+        "minutesLabel": "minutes",
+        "minAbbrev": "min",
+        "remind": "Rappeler",
+        "remove": "Supprimer"
+    },
+    "loading": "Chargement des paramètres de rappel…",
+    "tat": {
+        "title": "Délai de réponse aux nouveaux prospects (TAT)",
+        "description": "Assurez-vous que les nouveaux prospects sont contactés rapidement. Si le conseiller assigné ne les contacte pas à temps, il recevra un rappel. Choisissez comment il est notifié (e-mail, WhatsApp, dans l'application) sous <1>Paramètres → Automatisations</1>.",
+        "summary": {
+            "withRemindersPart1": "un nouveau prospect doit être contacté dans un délai de ",
+            "withRemindersPart2": ". Le conseiller reçoit un rappel ",
+            "withRemindersPart3": " avant l'échéance. S'il n'est toujours pas contacté, le prospect est marqué comme ",
+            "withRemindersPart4": ".",
+            "overdueLabel": "en retard",
+            "noRemindersPart1": "un nouveau prospect doit être contacté dans un délai de ",
+            "noRemindersPart2": ". S'il n'est toujours pas contacté, le prospect est marqué comme ",
+            "noRemindersPart3": ".",
+            "offhours": "Les prospects arrivés en dehors des heures de travail sont dus à {{time}} le jour ouvré suivant."
+        },
+        "responseWithin": {
+            "label": "Répondre à un nouveau prospect sous",
+            "hint": "Passé ce délai sans contact, le prospect est considéré en retard."
+        },
+        "earlyReminders": {
+            "title": "Rappels anticipés (facultatif)",
+            "description": "Prévenez le conseiller avant l'échéance. Ajoutez-en plusieurs pour le rappeler à nouveau à mesure que l'échéance approche.",
+            "beforeDeadlineLabel": "minutes avant l'échéance",
+            "addButton": "+ Ajouter un rappel anticipé"
+        },
+        "offhours": {
+            "label": "Prospects arrivés en dehors des heures de travail",
+            "hint": "Dû à cette heure le jour ouvré suivant."
+        }
+    },
+    "followup": {
+        "title": "Rappels de suivi (SLA)",
+        "description": "Aidez les conseillers à assurer le suivi. Une fois qu'ils ont contacté un prospect, ils recevront un rappel pour effectuer un nouveau suivi dans le délai que vous définissez. Le compteur redémarre chaque fois qu'ils enregistrent une nouvelle activité (appel, note, réunion).",
+        "within": {
+            "label": "Effectuer un nouveau suivi sous",
+            "hint": "Délai autorisé entre deux contacts avant que le prospect ne soit signalé."
+        },
+        "earlyReminder": {
+            "label": "Rappel anticipé",
+            "hint": "Prévenez le conseiller ce laps de temps avant l'échéance du suivi."
+        },
+        "summaryPart1": "après qu'un conseiller enregistre une activité sur un prospect, il dispose de ",
+        "summaryPart2": " pour effectuer un nouveau suivi, avec une alerte ",
+        "summaryPart3": " avant l'échéance. Le compteur redémarre à chaque action.",
+        "offhours": {
+            "label": "Activité enregistrée en dehors des heures de travail",
+            "hint": "Suivi dû à cette heure le jour ouvré suivant."
+        },
+        "summaryOffhours": "Si la dernière activité a eu lieu en dehors des heures de travail, le suivi est dû à {{time}} le jour ouvré suivant."
+    },
+    "footer": {
+        "triggerWorkflow": "Déclencher le workflow",
+        "save": "Enregistrer les paramètres de rappel",
+        "saving": "Enregistrement…",
+        "scopeLabel": "Paramètres des prospects"
+    },
+    "toasts": {
+        "saveSuccess": "Paramètres de rappel enregistrés",
+        "saveError": "Échec de l'enregistrement des paramètres de rappel"
+    },
+    "notifyRoles": {
+        "label": "Notifier quels rôles",
+        "description": "Ces rôles sont transmis à votre workflow afin qu'il puisse les notifier. Choisissez le message et le canal sous Paramètres → Automatisations.",
+        "removeAria": "Retirer {{name}}",
+        "placeholderEmpty": "Sélectionner les rôles à notifier…",
+        "placeholderMore": "Ajouter un autre rôle…",
+        "noRolesFound": "Aucun rôle trouvé pour cet établissement.",
+        "allRolesAdded": "Tous les rôles ont été ajoutés."
+    },
+    "workingHours": {
+        "title": "Heures de travail",
+        "description": "Les échéances TAT et de suivi suivent vos heures de travail. Un délai qui démarre pendant les heures de travail court pendant la durée définie ; un délai qui démarre en dehors est dû à une heure fixe le jour ouvré suivant.",
+        "days": "Jours ouvrés",
+        "hoursLabel": "Heures de travail",
+        "from": "De",
+        "to": "à",
+        "noDays": "Choisissez au moins un jour ouvré.",
+        "endBeforeStart": "Les heures de travail doivent se terminer après leur début.",
+        "timezoneNote": "Heures exprimées en {{tz}} (défini dans Paramètres → Langue).",
+        "dayShort": {
+            "1": "Lun",
+            "2": "Mar",
+            "3": "Mer",
+            "4": "Jeu",
+            "5": "Ven",
+            "6": "Sam",
+            "7": "Dim"
+        }
+    }
+}

@@ -1,0 +1,187 @@
+{
+    "loading": "Chargement des paramètres…",
+    "toast": {
+        "pushUnsupported": "Ce navigateur ne prend pas en charge les notifications push.",
+        "pushEnabled": "Notifications push activées sur cet appareil.",
+        "pushBlocked": "Notifications bloquées. Débloquez-les depuis l'icône de cadenas du navigateur, puis réessayez.",
+        "saveSuccess": "Paramètres de gestion des questions enregistrés",
+        "saveFailed": "Échec de l'enregistrement des paramètres de gestion des questions",
+        "duplicateType": "Clé de type de requête en double « {{key}} ». Renommez l'un des deux.",
+        "duplicateStatus": "Clé de statut « {{key}} » en double. Renommez l'un des deux."
+    },
+    "defaultAssignment": {
+        "title": "Attribution automatique par défaut",
+        "description": "Détermine qui est pré-assigné lorsqu'un apprenant pose une nouvelle question. S'applique uniquement aux nouvelles questions — les questions existantes conservent leurs assignataires actuels.",
+        "options": {
+            "subjectTeacher": {
+                "title": "Enseignant de la matière",
+                "description": "Attribution automatique aux enseignants associés à la matière de la question (correspondance la plus précise). Idéal pour les questions au niveau des diapositives où la matière est sans ambiguïté."
+            },
+            "batchTeacher": {
+                "title": "Enseignant du groupe",
+                "description": "Attribution automatique à tous les enseignants associés au groupe, quelle que soit la matière. Il s'agit du comportement historique."
+            },
+            "both": {
+                "title": "Les deux",
+                "description": "Union des enseignants associés à la matière et de ceux associés au groupe."
+            },
+            "none": {
+                "title": "Administrateurs uniquement",
+                "description": "Ignorer complètement les enseignants — attribuer chaque question aux administrateurs de votre établissement, qui sont notifiés puis la redirigent."
+            }
+        }
+    },
+    "fallback": {
+        "title": "Comportement de repli",
+        "description": "Que faire lorsqu'aucun enseignant n'est associé à la matière d'une question.",
+        "label": "Se replier sur les enseignants du groupe en l'absence d'enseignant de la matière",
+        "hint": "Si désactivé, les questions sans enseignant associé à la matière resteront non assignées et nécessiteront une intervention manuelle."
+    },
+    "subOrg": {
+        "title": "Routage {{label}}",
+        "description": "S'applique uniquement aux questions posées par un apprenant appartenant à un(e) {{labelLower}}. Son {{labelLower}} partage les cours et groupes de cet établissement, donc aucune des règles ci-dessus ne peut atteindre son personnel — la correspondance par enseignant de groupe ignore les lignes d'accès {{labelLower}} et les recherches de rôle s'effectuent sur cet établissement. Activez cette option pour les notifier également.",
+        "notifyLabel": "Notifier également le {{labelLower}} de l'apprenant",
+        "notifyHint": "Ils sont ajoutés comme assignataires en plus de ceux choisis par les règles ci-dessus, afin de recevoir l'e-mail, la notification push et l'alerte cloche, et la question apparaît dans leur boîte de réception.",
+        "whoReceives": "Qui la reçoit",
+        "recipients": {
+            "allTeam": {
+                "title": "Administrateurs et équipe {{label}}",
+                "description": "Toute personne ayant un accès actif au {{labelLower}} de l'apprenant — ses administrateurs ainsi que tous les membres d'équipe qui y sont rattachés."
+            },
+            "adminsOnly": {
+                "title": "Administrateurs {{label}} uniquement",
+                "description": "Uniquement les administrateurs du {{labelLower}} de l'apprenant. Plus discret, mais les membres de l'équipe ne verront pas la question tant qu'un administrateur ne l'aura pas assignée."
+            }
+        },
+        "notifyParentLabel": "Envoyer aussi un e-mail à l'équipe de cet établissement",
+        "notifyParentOn": "Activé : vos enseignants/administrateurs sont notifiés en plus du {{labelLower}}, exactement comme pour une question normale.",
+        "notifyParentOff": "Désactivé : seul le {{labelLower}} est notifié par e-mail. Votre propre équipe ne reçoit aucun e-mail, push ou cloche pour ces questions — mais elles restent visibles dans votre boîte de réception de gestion des questions, rien n'est donc caché."
+    },
+    "browserPush": {
+        "title": "Notifications push sur cet appareil",
+        "description": "Chaque administrateur/enseignant active le push sur son propre navigateur. Sans cette étape, les bascules push ci-dessous n'ont aucun effet pour cet utilisateur — le serveur envoie, le navigateur ignore silencieusement.",
+        "status": {
+            "granted": "Activées",
+            "denied": "Bloquées par le navigateur",
+            "unsupported": "Non prises en charge",
+            "default": "Pas encore activées"
+        },
+        "hint": {
+            "granted": "Cet appareil recevra les notifications push FCM pour les événements liés aux questions.",
+            "denied": "Cliquez sur l'icône de cadenas dans la barre d'adresse → Notifications → Autoriser, puis rechargez la page.",
+            "default": "Cliquez sur le bouton pour demander l'autorisation de notification.",
+            "unsupported": "Votre navigateur n'expose pas l'API Notification."
+        },
+        "alreadyEnabled": "Déjà activées",
+        "enableButton": "Activer le push"
+    },
+    "events": {
+        "raised": {
+            "title": "Lorsqu'une question est posée",
+            "description": "Notifie le ou les enseignants assignés. Le push est envoyé via le même pipeline FCM déjà utilisé ailleurs — les navigateurs n'ayant pas accordé l'autorisation de notification l'ignoreront silencieusement."
+        },
+        "resolved": {
+            "title": "Lorsqu'une question est résolue",
+            "description": "Notifie l'apprenant ayant posé la question."
+        }
+    },
+    "notificationCard": {
+        "push": {
+            "label": "Notification push",
+            "hint": "Activée par défaut. Utilise FCM — les destinataires doivent avoir accordé l'autorisation de notification et enregistré un jeton d'appareil."
+        },
+        "bell": {
+            "label": "Alerte cloche dans l'application",
+            "hint": "Activée par défaut. Affiche une entrée persistante dans la cloche de notification du destinataire — reste visible lorsque l'utilisateur revient dans l'application, même s'il a manqué le push."
+        },
+        "email": {
+            "label": "Notification par e-mail",
+            "hint": "Activée par défaut. Envoyée en même temps que le push — désactivez pour la supprimer. Utilise le modèle par défaut préconfiguré sauf si vous en choisissez un personnalisé ci-dessous."
+        },
+        "emailTemplate": {
+            "label": "Modèle d'e-mail",
+            "defaultOption": "Modèle par défaut (auto)",
+            "helpPrefix": "Laissez sur",
+            "helpEm": "Modèle par défaut (auto)",
+            "helpSuffix": "pour utiliser le modèle préconfiguré de l'établissement — il reprend automatiquement la couleur de thème, le nom et l'e-mail de support de votre établissement. Choisissez un modèle personnalisé uniquement si vous souhaitez un texte différent.",
+            "placeholdersLabel": "Espaces réservés disponibles :"
+        }
+    },
+    "queryTypes": {
+        "title": "Types de requêtes",
+        "description": "Les catégories qu'un apprenant peut choisir lorsqu'il pose une requête (par ex. Question, Problème technique, Problème de paiement). Chaque type est routé vers son propre gestionnaire par défaut — y compris le type Question intégré, que vous pouvez diriger vers un enseignant, un rôle ou du personnel spécifique. Le type Question ne peut pas être renommé ni supprimé.",
+        "namePlaceholder": "Nom du type (ex. Problème technique)",
+        "builtIn": "Intégré",
+        "removeType": "Supprimer le type",
+        "enabled": "Activé",
+        "learnerCanPick": "L'apprenant peut choisir",
+        "routeTo": "Router vers",
+        "followsDefault": "suit « Attribution automatique par défaut » ci-dessus",
+        "systemRoutingNote": "Ceci ne change que qui est automatiquement assigné et notifié. La visibilité dans la boîte de réception des enseignants suit toujours « Attribution automatique par défaut » ci-dessus.",
+        "staffHandlers": "Gestionnaires du personnel",
+        "loadingStaff": "Chargement du personnel…",
+        "noStaff": "Aucun membre du personnel actif trouvé. Ajoutez d'abord des membres d'équipe sous Équipes, puis choisissez-les ici.",
+        "nobodyPicked": "Personne n'est encore choisi — tant que vous n'ajoutez personne, ces requêtes reviennent aux administrateurs de l'établissement.",
+        "alsoAlwaysAssign": "Toujours assigner également",
+        "alsoAssignHint": "Ajouté en plus de « Router vers » — choisissez un enseignant et conservez tout de même ces personnes sur chaque requête de ce type.",
+        "rolesPlaceholder": "Rôles…",
+        "staffPlaceholder": "Personnel…",
+        "addType": "Ajouter un type de requête",
+        "assigneeSource": {
+            "default": "Attribution automatique par défaut (définie ci-dessus)",
+            "subjectTeacher": "Enseignant de la matière",
+            "batchTeacher": "Enseignant du groupe",
+            "role": "Un rôle",
+            "specificUsers": "Personnel spécifique",
+            "none": "Personne (aucune notification envoyée)"
+        },
+        "roles": {
+            "ADMIN": "Administrateur",
+            "TEACHER": "Enseignant",
+            "EVALUATOR": "Évaluateur",
+            "CONTENT CREATOR": "Créateur de contenu",
+            "ASSESSMENT CREATOR": "Créateur d'évaluations"
+        }
+    },
+    "learnerQuery": {
+        "title": "Prise en charge des requêtes des apprenants",
+        "description": "Permet aux apprenants de poser des requêtes en dehors d'un cours. Désactivé par défaut — l'activer n'affecte pas le flux de questions dans le cours. Les apprenants ne voient que les types que vous avez marqués « L'apprenant peut choisir » ci-dessus.",
+        "enableLabel": "Activer la prise en charge des requêtes des apprenants",
+        "enableHint": "Interrupteur principal pour les points d'entrée ci-dessous.",
+        "topbarLabel": "Afficher l'icône « ? » dans la barre supérieure",
+        "topbarHint": "Un bouton d'accès rapide en forme de point d'interrogation visible dans toute l'application apprenant.",
+        "dashboardLabel": "Afficher la carte « Poser une requête » sur le tableau de bord",
+        "dashboardHint": "Une carte d'aide sur l'écran d'accueil de l'apprenant.",
+        "guestLabel": "Autoriser les visiteurs non connectés à poser des requêtes",
+        "guestHint": "Ajoute un bouton « Besoin d'aide ? » à la page de connexion de l'apprenant. Les visiteurs laissent leur nom et leur e-mail — les réponses du personnel sont envoyées par e-mail à cette adresse."
+    },
+    "saveButton": {
+        "saving": "Enregistrement…",
+        "save": "Enregistrer les paramètres"
+    },
+    "statuses": {
+        "title": "Statuts des questions",
+        "description": "Les étapes qu'une question traverse côté personnel — En attente et Résolu sont intégrés ; ajoutez les vôtres (En cours, En attente de l'apprenant, Escaladé…). Chaque changement de statut et chaque remarque sont consignés dans l'historique de la question avec leur auteur.",
+        "namePlaceholder": "Nom du statut (ex. En cours)",
+        "builtIn": "Intégré",
+        "removeStatus": "Supprimer le statut",
+        "color": "Couleur du statut",
+        "kind": "Compte comme",
+        "kinds": {
+            "OPEN": "Ouvert",
+            "IN_PROGRESS": "En cours",
+            "RESOLVED": "Résolu"
+        },
+        "kindHint": {
+            "OPEN": "Les apprenants voient une question ouverte, sans réponse.",
+            "IN_PROGRESS": "Les apprenants voient que la question est en cours de traitement. Elle reste ouverte.",
+            "RESOLVED": "Passer ici résout la question : l'apprenant est notifié et elle quitte les listes en attente."
+        },
+        "learnerLabel": "L'apprenant voit",
+        "learnerLabelPlaceholder": "Identique à « {{label}} »",
+        "thisStatus": "ce statut",
+        "enabled": "Activé",
+        "addStatus": "Ajouter un statut",
+        "trailNote": "Les remarques internes et l'historique d'attribution/statut ne sont montrés qu'aux administrateurs et enseignants — les apprenants ne voient que le libellé ci-dessus."
+    }
+}

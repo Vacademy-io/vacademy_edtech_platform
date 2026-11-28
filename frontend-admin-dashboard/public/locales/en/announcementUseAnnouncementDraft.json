@@ -1,0 +1,19 @@
+{
+    "errors": {
+        "loadTags": "Could not load tags.",
+        "loadCustomFields": "Could not load custom fields.",
+        "loadSenders": "Could not load sender addresses.",
+        "loadEmailTemplates": "Could not load email templates.",
+        "loadWhatsappTemplates": "Could not load WhatsApp templates.",
+        "syncFailed": "Sync failed. Check the WhatsApp connection in Settings.",
+        "loadTemplate": "Could not load that template.",
+        "loadCampaigns": "Could not load campaigns."
+    },
+    "toast": {
+        "templateApplied": "Applied \"{{name}}\"",
+        "templateCachedCopy": "Loaded a cached copy of this template — reopen to get the latest.",
+        "templatesSynced_one": "Synced {{count}} template from Meta.",
+        "templatesSynced_other": "Synced {{count}} templates from Meta.",
+        "templatesUpToDate": "Templates are up to date."
+    }
+}

@@ -1,0 +1,25 @@
+{
+    "title": "Syllabus progress",
+    "description": "Let teachers mark how far each learner has got through the stage syllabus, week block by week block.",
+    "loadFailed": "Could not load this setting.",
+    "retry": "Try again",
+    "toggleLabel": "Track syllabus progress",
+    "teachers": {
+        "title": "What teachers do",
+        "point1": "Open Syllabus progress, pick their batch and see every learner against every week block.",
+        "point2": "Mark a week as not started, in progress, completed or skipped, and tick which points are done.",
+        "point3": "Add a short note, or mark a whole week for many learners at once."
+    },
+    "learners": {
+        "title": "What learners see",
+        "point1": "Their own progress for each week block of their stage, with the points done.",
+        "point2": "The teacher’s note for the week. Learners never see other learners’ progress."
+    },
+    "syllabusNote": "Week blocks and their points come from each stage’s syllabus. A batch shows up here once its stage has a syllabus.",
+    "offNote": "Switching this off hides the page and the learner view. Progress already marked is kept.",
+    "save": "Save",
+    "saving": "Saving…",
+    "saved": "Syllabus progress setting saved.",
+    "saveFailed": "Could not save the setting.",
+    "openPage": "Open Syllabus progress"
+}

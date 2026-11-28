@@ -20,6 +20,7 @@ import ReactFlow, {
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import { Plus, Trash, PencilSimple, UsersThree, User, Info, X } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { MyButton } from '@/components/design-system/button';
 import { toast } from 'sonner';
@@ -76,6 +77,7 @@ export function OrgChartCanvas({ instituteId }: Props) {
 }
 
 function Canvas({ instituteId }: Props) {
+    const { t } = useTranslation('manageInstituteOrgChartCanvas');
     const queryClient = useQueryClient();
     const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
     const [addOpen, setAddOpen] = useState(false);
@@ -160,14 +162,14 @@ function Canvas({ instituteId }: Props) {
             out.push({
                 mappingId: n.mapping_id,
                 userId: n.user_id,
-                name: u?.full_name || `User ${n.user_id.slice(0, 6)}`,
+                name: u?.full_name || t('unnamedUser', { id: n.user_id.slice(0, 6) }),
                 depth,
             });
             n.children?.forEach((c) => walk(c, depth + 1));
         };
         (chartQuery.data ?? []).forEach((n) => walk(n, 0));
         return out;
-    }, [chartQuery.data, userById]);
+    }, [chartQuery.data, userById, t]);
 
     // ── Mutations ────────────────────────────────────────────────
 
@@ -186,13 +188,13 @@ function Canvas({ instituteId }: Props) {
         onSuccess: (_data, vars) => {
             queryClient.invalidateQueries({ queryKey: ['org-team-chart', selectedTeamId] });
             const target = vars.parentUserId
-                ? userById.get(vars.parentUserId)?.full_name ?? 'that manager'
-                : 'top of team';
-            toast.success(`Moved under ${target}`);
+                ? userById.get(vars.parentUserId)?.full_name ?? t('toast.thatManager')
+                : t('toast.topOfTeam');
+            toast.success(t('toast.movedUnder', { target }));
         },
         onError: (e) => {
             const msg = (e as { response?: { data?: { ex?: string } } })?.response?.data?.ex;
-            toast.error(msg ?? 'Could not move this person');
+            toast.error(msg ?? t('toast.couldNotMove'));
             queryClient.invalidateQueries({ queryKey: ['org-team-chart', selectedTeamId] });
         },
     });
@@ -212,15 +214,15 @@ function Canvas({ instituteId }: Props) {
         onSuccess: (_data, vars) => {
             queryClient.invalidateQueries({ queryKey: ['org-team-chart', selectedTeamId] });
             queryClient.invalidateQueries({ queryKey: ['org-teams', instituteId] });
-            const addedName = userById.get(vars.userId)?.full_name ?? 'this person';
+            const addedName = userById.get(vars.userId)?.full_name ?? t('toast.thisPerson');
             const target = vars.parentUserId
-                ? userById.get(vars.parentUserId)?.full_name ?? 'their manager'
-                : 'top of team';
-            toast.success(`Added ${addedName} under ${target}`);
+                ? userById.get(vars.parentUserId)?.full_name ?? t('toast.theirManager')
+                : t('toast.topOfTeam');
+            toast.success(t('toast.addedUnder', { name: addedName, target }));
         },
         onError: (e) => {
             const msg = (e as { response?: { data?: { ex?: string } } })?.response?.data?.ex;
-            toast.error(msg ?? 'Could not add this person');
+            toast.error(msg ?? t('toast.couldNotAdd'));
         },
     });
 
@@ -229,20 +231,20 @@ function Canvas({ instituteId }: Props) {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['org-team-chart', selectedTeamId] });
             queryClient.invalidateQueries({ queryKey: ['org-teams', instituteId] });
-            toast.success('Removed from team');
+            toast.success(t('toast.removedFromTeam'));
         },
-        onError: () => toast.error('Could not remove this person'),
+        onError: () => toast.error(t('toast.couldNotRemove')),
     });
 
     const deleteTeamMutation = useMutation({
         mutationFn: (teamId: string) => deleteTeam(teamId),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['org-teams', instituteId] });
-            toast.success('Team deleted');
+            toast.success(t('toast.teamDeleted'));
         },
         onError: (e) => {
             const msg = (e as { response?: { data?: { ex?: string } } })?.response?.data?.ex;
-            toast.error(msg ?? 'Could not delete this team');
+            toast.error(msg ?? t('toast.couldNotDeleteTeam'));
         },
     });
 
@@ -255,23 +257,25 @@ function Canvas({ instituteId }: Props) {
 
     const ctxRef = useRef({
         userById,
-        selectedTeamName: selectedTeam?.name ?? 'this team',
+        selectedTeamName: selectedTeam?.name ?? t('toast.thisTeam'),
         removeMutate: removeMutation.mutate,
+        t,
     });
     ctxRef.current = {
         userById,
-        selectedTeamName: selectedTeam?.name ?? 'this team',
+        selectedTeamName: selectedTeam?.name ?? t('toast.thisTeam'),
         removeMutate: removeMutation.mutate,
+        t,
     };
 
     const handleEdit = useCallback((n: OrgChartNode) => setEditingNode(n), []);
     const handleRemove = useCallback((n: OrgChartNode) => {
-        const { userById: ub, selectedTeamName, removeMutate } = ctxRef.current;
+        const { userById: ub, selectedTeamName, removeMutate, t: tt } = ctxRef.current;
         const u = ub.get(n.user_id);
-        const name = u?.full_name || 'this person';
+        const name = u?.full_name || tt('toast.thisPerson');
         if (
             window.confirm(
-                `Remove ${name} from ${selectedTeamName}? Their memberships in other teams are not affected.`
+                tt('confirm.removePerson', { name, teamName: selectedTeamName })
             )
         ) {
             removeMutate(n.mapping_id);
@@ -393,10 +397,13 @@ function Canvas({ instituteId }: Props) {
                     const n = rfInstance?.getNode(r.id);
                     const userId = (n?.data as PersonNodeData | undefined)?.node.user_id;
                     const personName =
-                        (userId && ctx.userById.get(userId)?.full_name) || 'this person';
+                        (userId && ctx.userById.get(userId)?.full_name) || ctx.t('toast.thisPerson');
                     if (
                         window.confirm(
-                            `Remove ${personName} from ${ctx.selectedTeamName}? Their memberships in other teams are not affected.`
+                            ctx.t('confirm.removePerson', {
+                                name: personName,
+                                teamName: ctx.selectedTeamName,
+                            })
                         )
                     ) {
                         ctx.removeMutate(r.id);
@@ -441,7 +448,7 @@ function Canvas({ instituteId }: Props) {
             const userId = event.dataTransfer.getData(SIDEBAR_DRAG_MIME);
             if (!userId) return;
             if (placedUserIdsInTeam.has(userId)) {
-                toast.error('This person is already in this team');
+                toast.error(t('toast.alreadyInTeamError'));
                 return;
             }
             // Find which (if any) react-flow node is under the cursor.
@@ -498,7 +505,7 @@ function Canvas({ instituteId }: Props) {
         <div className="flex h-full flex-col">
             {/* ── Header ─────────────────────────────────────────── */}
             <div className="flex flex-wrap items-center gap-2 border-b border-neutral-200 px-3 py-2">
-                <span className="text-caption font-medium text-neutral-500">Showing team</span>
+                <span className="text-caption font-medium text-neutral-500">{t('header.showingTeam')}</span>
                 <select
                     className="min-w-44 rounded-md border border-neutral-300 px-3 py-1.5 text-body"
                     value={selectedTeamId ?? ''}
@@ -517,32 +524,35 @@ function Canvas({ instituteId }: Props) {
                             type="button"
                             onClick={() => setRenameOpen(true)}
                             className="inline-flex items-center gap-1 rounded-md border border-neutral-200 px-2 py-1 text-caption text-neutral-600 hover:bg-neutral-50 hover:text-neutral-800"
-                            title="Rename this team"
+                            title={t('header.renameTooltip')}
                         >
-                            <PencilSimple size={12} /> Rename
+                            <PencilSimple size={12} /> {t('header.rename')}
                         </button>
                         <button
                             type="button"
                             onClick={() => {
                                 if (
                                     window.confirm(
-                                        `Delete "${selectedTeam.name}" and remove all ${selectedTeam.member_count} members from it? Their memberships in other teams are not affected.`
+                                        t('confirm.deleteTeam', {
+                                            name: selectedTeam.name,
+                                            count: selectedTeam.member_count,
+                                        })
                                     )
                                 ) {
                                     deleteTeamMutation.mutate(selectedTeam.id);
                                 }
                             }}
                             className="inline-flex items-center gap-1 rounded-md border border-neutral-200 px-2 py-1 text-caption text-danger-600 hover:bg-danger-50"
-                            title="Delete this team"
+                            title={t('header.deleteTeamTooltip')}
                         >
-                            <Trash size={12} /> Delete team
+                            <Trash size={12} /> {t('header.deleteTeam')}
                         </button>
                     </>
                 )}
 
                 <div className="ml-auto flex items-center gap-2">
                     <MyButton buttonType="secondary" scale="small" onClick={() => setNewTeamOpen(true)}>
-                        <Plus size={14} className="mr-1" /> New team
+                        <Plus size={14} className="me-1" /> {t('header.newTeam')}
                     </MyButton>
                     <MyButton
                         buttonType="primary"
@@ -550,7 +560,7 @@ function Canvas({ instituteId }: Props) {
                         onClick={() => setAddOpen(true)}
                         disable={!selectedTeamId}
                     >
-                        <Plus size={14} className="mr-1" /> Add person
+                        <Plus size={14} className="me-1" /> {t('header.addPerson')}
                     </MyButton>
                 </div>
             </div>
@@ -560,11 +570,7 @@ function Canvas({ instituteId }: Props) {
                 <div className="flex items-start gap-2 border-b border-info-100 bg-primary-50 px-3 py-2 text-subtitle text-primary-800">
                     <Info size={16} className="mt-0.5 shrink-0 text-primary-600" />
                     <div className="flex-1">
-                        Drag a user from the left list onto an empty area to add them to the team,
-                        or drop them on a card to add them as that person’s report. Draw an arrow
-                        from the bottom dot of a card to the top dot of another to set reports-to.
-                        Click a card or arrow then press Delete to remove it. Click the pencil on a
-                        card to give them a position label (e.g. “Sales Head”).
+                        {t('banner.help')}
                     </div>
                     <button
                         type="button"
@@ -573,7 +579,7 @@ function Canvas({ instituteId }: Props) {
                             setHintDismissed(true);
                         }}
                         className="rounded p-0.5 hover:bg-primary-100"
-                        aria-label="Dismiss"
+                        aria-label={t('banner.dismiss')}
                     >
                         <X size={14} />
                     </button>
@@ -624,7 +630,7 @@ function Canvas({ instituteId }: Props) {
                         <MiniMap
                             pannable
                             zoomable
-                            ariaLabel="Org chart minimap"
+                            ariaLabel={t('canvas.minimapLabel')}
                             nodeColor="hsl(var(--primary-400))"
                             nodeStrokeColor="hsl(var(--primary-600))"
                             maskColor="hsl(var(--neutral-200) / 0.6)"
@@ -634,12 +640,12 @@ function Canvas({ instituteId }: Props) {
 
                     {chartQuery.isLoading && (
                         <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-neutral-50/80 text-subtitle text-neutral-500">
-                            Loading {selectedTeam?.name}…
+                            {t('canvas.loadingTeam', { name: selectedTeam?.name ?? '' })}
                         </div>
                     )}
                     {chartQuery.isError && (
                         <div className="pointer-events-none absolute inset-0 flex items-center justify-center text-subtitle text-danger-600">
-                            Could not load this team. Try refreshing.
+                            {t('canvas.loadError')}
                         </div>
                     )}
                     {!chartQuery.isLoading &&
@@ -656,7 +662,7 @@ function Canvas({ instituteId }: Props) {
                             <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-neutral-50/80">
                                 <div className="pointer-events-auto">
                                     <EmptyTeam
-                                        teamName={selectedTeam?.name ?? 'this team'}
+                                        teamName={selectedTeam?.name ?? t('toast.thisTeam')}
                                         onAdd={() => setAddOpen(true)}
                                     />
                                 </div>
@@ -694,7 +700,7 @@ function Canvas({ instituteId }: Props) {
                     open={addOpen}
                     onOpenChange={setAddOpen}
                     teamId={selectedTeamId}
-                    teamName={selectedTeam?.name ?? 'the team'}
+                    teamName={selectedTeam?.name ?? t('toast.thisTeam')}
                     eligibleUsers={(usersQuery.data ?? []).filter(
                         (u) => !placedUserIdsInTeam.has(u.id)
                     )}
@@ -715,7 +721,7 @@ function Canvas({ instituteId }: Props) {
                     node={editingNode}
                     name={
                         userById.get(editingNode.user_id)?.full_name ||
-                        `User ${editingNode.user_id.slice(0, 6)}`
+                        t('unnamedUser', { id: editingNode.user_id.slice(0, 6) })
                     }
                     peopleInTeam={peopleInTeam}
                     onSaved={() => {
@@ -742,6 +748,7 @@ function UserSidebar({
     onSearchChange: (s: string) => void;
     isLoading: boolean;
 }) {
+    const { t } = useTranslation('manageInstituteOrgChartCanvas');
     const q = search.trim().toLowerCase();
     const filtered = q
         ? users.filter(
@@ -755,23 +762,23 @@ function UserSidebar({
         <aside className="flex w-72 shrink-0 flex-col border-r border-neutral-200 bg-white">
             <div className="border-b border-neutral-100 p-3">
                 <div className="mb-2 text-caption font-medium text-neutral-500">
-                    Institute users
+                    {t('sidebar.heading')}
                 </div>
                 <input
                     className="w-full rounded-md border border-neutral-300 px-3 py-1.5 text-body"
-                    placeholder="Search by name or email…"
+                    placeholder={t('sidebar.searchPlaceholder')}
                     value={search}
                     onChange={(e) => onSearchChange(e.target.value)}
                 />
             </div>
             <div className="min-h-0 flex-1 overflow-auto">
                 {isLoading ? (
-                    <div className="p-4 text-caption text-neutral-500">Loading users…</div>
+                    <div className="p-4 text-caption text-neutral-500">{t('sidebar.loadingUsers')}</div>
                 ) : filtered.length === 0 ? (
                     <div className="p-4 text-caption text-neutral-500">
                         {users.length === 0
-                            ? 'No users in this institute yet.'
-                            : 'No one matches that search.'}
+                            ? t('sidebar.noUsers')
+                            : t('sidebar.noMatches')}
                     </div>
                 ) : (
                     <ul className="divide-y divide-neutral-100">
@@ -800,14 +807,14 @@ function UserSidebar({
                                     )}
                                     title={
                                         alreadyInTeam
-                                            ? 'Already in this team'
-                                            : 'Drag onto the canvas to add to this team'
+                                            ? t('sidebar.alreadyInTeamTooltip')
+                                            : t('sidebar.dragToAddTooltip')
                                     }
                                 >
                                     <SidebarAvatar name={u.full_name} />
                                     <div className="min-w-0 flex-1 leading-tight">
                                         <div className="truncate text-body font-medium text-neutral-900">
-                                            {u.full_name || 'Unnamed'}
+                                            {u.full_name || t('sidebar.unnamed')}
                                         </div>
                                         <div className="truncate text-caption text-neutral-500">
                                             {u.email ?? (u.roles ?? [])[0] ?? ''}
@@ -815,7 +822,7 @@ function UserSidebar({
                                     </div>
                                     {alreadyInTeam && (
                                         <span className="rounded bg-neutral-100 px-1.5 py-0.5 text-caption text-neutral-500">
-                                            in team
+                                            {t('sidebar.alreadyInTeamBadge')}
                                         </span>
                                     )}
                                 </li>
@@ -843,36 +850,36 @@ function SidebarAvatar({ name }: { name: string }) {
 // ─── Empty states ───────────────────────────────────────────────
 
 function NoTeamsHero({ onCreate }: { onCreate: () => void }) {
+    const { t } = useTranslation('manageInstituteOrgChartCanvas');
     return (
         <div className="mx-auto flex max-w-md flex-col items-center justify-center gap-3 p-12 text-center">
             <div className="flex size-16 items-center justify-center rounded-full bg-primary-50">
                 <UsersThree size={28} className="text-primary-600" />
             </div>
-            <h2 className="text-h2 font-medium text-neutral-900">Create your first team</h2>
+            <h2 className="text-h2 font-medium text-neutral-900">{t('emptyStates.noTeamsTitle')}</h2>
             <p className="max-w-md text-subtitle text-neutral-500">
-                Group your institute into teams like Sales, Counselling, or Engineering. Each team
-                can have its own reporting structure. People can belong to more than one team.
+                {t('emptyStates.noTeamsBody')}
             </p>
             <MyButton buttonType="primary" onClick={onCreate}>
-                + New team
+                {t('emptyStates.newTeamCta')}
             </MyButton>
         </div>
     );
 }
 
 function EmptyTeam({ teamName, onAdd }: { teamName: string; onAdd: () => void }) {
+    const { t } = useTranslation('manageInstituteOrgChartCanvas');
     return (
         <div className="mx-auto flex max-w-md flex-col items-center justify-center gap-3 p-8 text-center">
             <div className="flex size-14 items-center justify-center rounded-full bg-primary-50">
                 <UsersThree size={22} className="text-primary-600" />
             </div>
-            <h2 className="text-h3 font-medium text-neutral-900">{teamName} is empty</h2>
+            <h2 className="text-h3 font-medium text-neutral-900">{t('emptyStates.emptyTeamTitle', { teamName })}</h2>
             <p className="text-subtitle text-neutral-500">
-                Drag someone from the left, or add the first person, then connect cards to set who
-                reports to whom.
+                {t('emptyStates.emptyTeamBody')}
             </p>
             <MyButton buttonType="primary" onClick={onAdd}>
-                + Add the first person
+                {t('emptyStates.addFirstPersonCta')}
             </MyButton>
         </div>
     );
@@ -891,6 +898,7 @@ function NewTeamDialog({
     instituteId: string;
     onCreated: (team: OrgTeam) => void;
 }) {
+    const { t } = useTranslation('manageInstituteOrgChartCanvas');
     const [name, setName] = useState('');
     const [submitting, setSubmitting] = useState(false);
 
@@ -903,18 +911,18 @@ function NewTeamDialog({
 
     async function handleCreate() {
         if (!name.trim()) {
-            toast.error('Give the team a name');
+            toast.error(t('toast.giveTeamName'));
             return;
         }
         setSubmitting(true);
         try {
             const team = await createTeam({ institute_id: instituteId, name: name.trim() });
-            toast.success(`Created “${team.name}”`);
+            toast.success(t('toast.teamCreated', { name: team.name }));
             onCreated(team);
             onOpenChange(false);
         } catch (e) {
             const msg = (e as { response?: { data?: { ex?: string } } })?.response?.data?.ex;
-            toast.error(msg ?? 'Could not create team');
+            toast.error(msg ?? t('toast.couldNotCreateTeam'));
         } finally {
             setSubmitting(false);
         }
@@ -922,13 +930,13 @@ function NewTeamDialog({
 
     if (!open) return null;
     return (
-        <Modal title="New team" onClose={() => onOpenChange(false)}>
+        <Modal title={t('dialogs.newTeam.title')} onClose={() => onOpenChange(false)}>
             <div className="space-y-3">
-                <label className="block text-caption font-medium text-neutral-700">Team name</label>
+                <label className="block text-caption font-medium text-neutral-700">{t('dialogs.newTeam.label')}</label>
                 <input
                     autoFocus
                     className="w-full rounded-md border border-neutral-300 px-3 py-2 text-body"
-                    placeholder="e.g. Sales, Counselling, Engineering"
+                    placeholder={t('dialogs.newTeam.placeholder')}
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     maxLength={120}
@@ -936,10 +944,10 @@ function NewTeamDialog({
             </div>
             <div className="mt-4 flex justify-end gap-2">
                 <MyButton buttonType="secondary" onClick={() => onOpenChange(false)} disable={submitting}>
-                    Cancel
+                    {t('dialogs.newTeam.cancel')}
                 </MyButton>
                 <MyButton buttonType="primary" onClick={handleCreate} disable={submitting}>
-                    {submitting ? 'Creating…' : 'Create team'}
+                    {submitting ? t('dialogs.newTeam.creating') : t('dialogs.newTeam.create')}
                 </MyButton>
             </div>
         </Modal>
@@ -957,6 +965,7 @@ function RenameTeamDialog({
     team: OrgTeam;
     onRenamed: () => void;
 }) {
+    const { t } = useTranslation('manageInstituteOrgChartCanvas');
     const [name, setName] = useState(team.name);
     const [submitting, setSubmitting] = useState(false);
 
@@ -969,18 +978,18 @@ function RenameTeamDialog({
 
     async function handleSave() {
         if (!name.trim()) {
-            toast.error('Give the team a name');
+            toast.error(t('toast.giveTeamName'));
             return;
         }
         setSubmitting(true);
         try {
             await updateTeam(team.id, { name: name.trim() });
-            toast.success('Renamed');
+            toast.success(t('toast.renamed'));
             onRenamed();
             onOpenChange(false);
         } catch (e) {
             const msg = (e as { response?: { data?: { ex?: string } } })?.response?.data?.ex;
-            toast.error(msg ?? 'Could not rename team');
+            toast.error(msg ?? t('toast.couldNotRenameTeam'));
         } finally {
             setSubmitting(false);
         }
@@ -988,9 +997,9 @@ function RenameTeamDialog({
 
     if (!open) return null;
     return (
-        <Modal title={`Rename "${team.name}"`} onClose={() => onOpenChange(false)}>
+        <Modal title={t('dialogs.renameTeam.title', { name: team.name })} onClose={() => onOpenChange(false)}>
             <div className="space-y-3">
-                <label className="block text-caption font-medium text-neutral-700">Team name</label>
+                <label className="block text-caption font-medium text-neutral-700">{t('dialogs.renameTeam.label')}</label>
                 <input
                     autoFocus
                     className="w-full rounded-md border border-neutral-300 px-3 py-2 text-body"
@@ -1001,10 +1010,10 @@ function RenameTeamDialog({
             </div>
             <div className="mt-4 flex justify-end gap-2">
                 <MyButton buttonType="secondary" onClick={() => onOpenChange(false)} disable={submitting}>
-                    Cancel
+                    {t('dialogs.renameTeam.cancel')}
                 </MyButton>
                 <MyButton buttonType="primary" onClick={handleSave} disable={submitting}>
-                    {submitting ? 'Saving…' : 'Save'}
+                    {submitting ? t('dialogs.renameTeam.saving') : t('dialogs.renameTeam.save')}
                 </MyButton>
             </div>
         </Modal>
@@ -1020,6 +1029,7 @@ function Modal({
     onClose: () => void;
     children: React.ReactNode;
 }) {
+    const { t } = useTranslation('manageInstituteOrgChartCanvas');
     return (
         <div
             role="dialog"
@@ -1037,7 +1047,7 @@ function Modal({
                         type="button"
                         onClick={onClose}
                         className="rounded p-1 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700"
-                        aria-label="Close"
+                        aria-label={t('dialogs.close')}
                     >
                         <X size={16} />
                     </button>

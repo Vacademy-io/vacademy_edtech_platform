@@ -1,0 +1,15 @@
+{
+    "title": "Daily Message Funnel — Facebook Leads",
+    "subtitle": "Per-day sends & replies across the lead drip",
+    "kpis": {
+        "days": "Days",
+        "sent": "Sent",
+        "replied": "Replied",
+        "response": "Response"
+    },
+    "loading": "Loading…",
+    "emptyTitle": "No drip messages yet",
+    "emptyDescription": "No lead-journey WhatsApp messages were sent to Facebook leads in this period.",
+    "messagesByDayHeading": "Messages by Day",
+    "responseRateTrendHeading": "Response Rate Trend"
+}

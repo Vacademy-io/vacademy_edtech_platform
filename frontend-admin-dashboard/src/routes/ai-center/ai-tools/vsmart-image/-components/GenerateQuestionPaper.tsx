@@ -1,6 +1,7 @@
 import { getInstituteId } from '@/constants/helper';
 import { useFileUpload } from '@/hooks/use-file-upload';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
     handleGenerateAssessmentImage,
     handleQueryGetListIndividualTopics,
@@ -90,6 +91,10 @@ const GenerateAiQuestionFromImageComponent = ({
     form?: UseFormReturn<SectionFormType>;
     currentSectionIndex?: number;
 }) => {
+    const { t } = useTranslation([
+        'aiCenterVsmartImageGenerateQuestionPaper',
+        'aiCenterQuestionConfigPanel',
+    ]);
     const queryClient = useQueryClient();
     const instituteId = getInstituteId();
     const { uploadFile } = useFileUpload();
@@ -122,13 +127,13 @@ const GenerateAiQuestionFromImageComponent = ({
     useEffect(() => {
         if (!pendingTaskId || !Array.isArray(recentTasksData)) return;
         const match = recentTasksData.find(
-            (t: AITaskIndividualListInterface) => t.id === pendingTaskId
+            (task: AITaskIndividualListInterface) => task.id === pendingTaskId
         );
         if (!match) return;
         if (match.status === 'COMPLETED') {
             setReadyTask(match);
         } else if (match.status === 'FAILED') {
-            setErrorMessage("We couldn't finish this extraction. Want to try again?");
+            setErrorMessage(t('errors.extractionFailed'));
             setPendingTaskId(null);
         }
     }, [recentTasksData, pendingTaskId]);
@@ -170,7 +175,7 @@ const GenerateAiQuestionFromImageComponent = ({
             setLoader(false);
             setKey(null);
             setPhase('idle');
-            setErrorMessage("We couldn't extract questions from this image. Try a clearer photo?");
+            setErrorMessage(t('errors.generateFailed'));
         },
     });
 
@@ -186,7 +191,7 @@ const GenerateAiQuestionFromImageComponent = ({
         setPhase('generating');
         generateAssessmentMutation.mutate({
             pdfId: uploadedFilePDFId,
-            userPrompt: buildQuestionPrompt(numQuestions, questionType, difficulty, language),
+            userPrompt: buildQuestionPrompt(t, numQuestions, questionType, difficulty, language),
             taskName: getRandomTaskName(),
             taskId: '',
         });
@@ -195,7 +200,7 @@ const GenerateAiQuestionFromImageComponent = ({
     const processFile = async (file: File) => {
         const ext = file.name.split('.').pop()?.toLowerCase() ?? '';
         if (!ACCEPTED_EXTENSIONS.includes(ext)) {
-            setErrorMessage(`We can't read .${ext} files. Try JPG or PNG.`);
+            setErrorMessage(t('errors.unsupportedFormat', { ext }));
             return;
         }
         setErrorMessage(null);
@@ -212,7 +217,7 @@ const GenerateAiQuestionFromImageComponent = ({
                 sourceId: 'STUDENTS',
             });
             if (!fileId) {
-                setErrorMessage("Upload didn't complete. Want to try again?");
+                setErrorMessage(t('errors.uploadFailed'));
                 resetFile();
                 return;
             }
@@ -222,12 +227,12 @@ const GenerateAiQuestionFromImageComponent = ({
                 setUploadedFilePDFId(response.pdf_id);
                 setPhase('ready');
             } else {
-                setErrorMessage("We couldn't read this image. Try a clearer one?");
+                setErrorMessage(t('errors.processFailed'));
                 resetFile();
             }
         } catch (err) {
             console.error(err);
-            setErrorMessage('Something went wrong reading your image. Try again?');
+            setErrorMessage(t('errors.readFailed'));
             resetFile();
         }
     };
@@ -249,23 +254,20 @@ const GenerateAiQuestionFromImageComponent = ({
     const isWorking = phase === 'uploading' || phase === 'processing' || phase === 'generating';
     const workingLabel =
         phase === 'uploading'
-            ? 'Reading your photo…'
+            ? t('workingLabel.uploading')
             : phase === 'processing'
-              ? 'Looking at the questions…'
+              ? t('workingLabel.processing')
               : phase === 'generating'
-                ? 'Pulling questions out — usually takes ~30 seconds.'
+                ? t('workingLabel.generating')
                 : '';
 
     return (
         <div className="flex w-full flex-col gap-8 px-4 pb-12 sm:px-8">
             <header className="flex flex-col gap-1">
                 <h1 className="text-2xl font-semibold text-gray-900 sm:text-3xl">
-                    Questions from a Photo
+                    {t('header.title')}
                 </h1>
-                <p className="text-sm text-gray-500">
-                    Snap or upload a photo of a printed question paper. We&apos;ll turn it into
-                    an editable digital set.
-                </p>
+                <p className="text-sm text-gray-500">{t('header.subtitle')}</p>
             </header>
 
             {!fileChosen ? (
@@ -288,11 +290,9 @@ const GenerateAiQuestionFromImageComponent = ({
                     </div>
                     <div className="flex flex-col gap-1">
                         <p className="text-base font-medium text-gray-900">
-                            Drop a photo here, or click to choose
+                            {t('dropzone.instruction')}
                         </p>
-                        <p className="text-xs text-neutral-500">
-                            JPG or PNG — clear photos work best, even handwritten ones.
-                        </p>
+                        <p className="text-xs text-neutral-500">{t('dropzone.hint')}</p>
                     </div>
                 </div>
             ) : (
@@ -307,11 +307,11 @@ const GenerateAiQuestionFromImageComponent = ({
                                     {fileName}
                                 </span>
                                 <span className="text-xs text-neutral-500">
-                                    {phase === 'uploading' && 'Uploading…'}
-                                    {phase === 'processing' && 'Reading…'}
-                                    {phase === 'ready' && 'Ready to extract'}
-                                    {phase === 'generating' && 'Extracting questions'}
-                                    {phase === 'done' && 'Done'}
+                                    {phase === 'uploading' && t('fileCard.status.uploading')}
+                                    {phase === 'processing' && t('fileCard.status.processing')}
+                                    {phase === 'ready' && t('fileCard.status.ready')}
+                                    {phase === 'generating' && t('fileCard.status.generating')}
+                                    {phase === 'done' && t('fileCard.status.done')}
                                 </span>
                             </div>
                         </div>
@@ -320,7 +320,7 @@ const GenerateAiQuestionFromImageComponent = ({
                                 type="button"
                                 onClick={resetFile}
                                 className="rounded-md p-1.5 text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-700"
-                                aria-label="Remove file"
+                                aria-label={t('fileCard.removeAriaLabel')}
                             >
                                 <X size={18} />
                             </button>
@@ -332,7 +332,7 @@ const GenerateAiQuestionFromImageComponent = ({
                             readyTask={readyTask}
                             openPreview={openPreviewDialog}
                             setOpenPreview={setOpenPreviewDialog}
-                            heading="Vsmart Image"
+                            heading={t('productName')}
                             sectionsForm={form}
                             currentSectionIndex={currentSectionIndex}
                             onDraftAnother={() => {
@@ -348,8 +348,8 @@ const GenerateAiQuestionFromImageComponent = ({
                         />
                     ) : phase === 'generating' || (pendingTaskId && !readyTask) ? (
                         <GeneratingState
-                            title="Pulling questions out"
-                            subtitle="Reading your photo and digitizing each question. Usually ~30 seconds."
+                            title={t('generatingState.title')}
+                            subtitle={t('generatingState.subtitle')}
                         />
                     ) : isWorking ? (
                         <div className="flex items-center gap-3 rounded-xl border border-blue-100 bg-blue-50 p-4">
@@ -367,7 +367,7 @@ const GenerateAiQuestionFromImageComponent = ({
                             language={language}
                             setLanguage={setLanguage}
                             onSubmit={handleGenerate}
-                            ctaLabel="Extract questions"
+                            ctaLabel={t('questionConfig.ctaLabel')}
                         />
                     ) : null}
                 </div>
@@ -390,13 +390,13 @@ const GenerateAiQuestionFromImageComponent = ({
             <RecentFilesPanel
                 tasks={recentTasks}
                 onOpenAll={() => setEnableTasksDialog(true)}
-                title="Your recent extractions"
-                emptyHint="Your extracted question sets will appear here. Drop a photo above to start."
-                fallbackLabel="Untitled extraction"
+                title={t('recentFiles.title')}
+                emptyHint={t('recentFiles.emptyHint')}
+                fallbackLabel={t('recentFiles.fallbackLabel')}
             />
 
             <AITasksList
-                heading="Vsmart Image"
+                heading={t('productName')}
                 enableDialog={enableTasksDialog}
                 setEnableDialog={setEnableTasksDialog}
                 sectionsForm={form}

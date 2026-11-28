@@ -1,0 +1,41 @@
+{
+    "validation": {
+        "buttonTextRequired": "Le texte du bouton est requis",
+        "buttonTextMaxLength": "Le texte du bouton doit comporter 50 caractères maximum",
+        "invalidUrl": "URL invalide",
+        "invalidHexColor": "Format de couleur hexadécimale invalide",
+        "hoursRange": "Les heures doivent être comprises entre 0 et 24",
+        "minutesRange": "Les minutes doivent être comprises entre 0 et 59",
+        "classNameMaxLength": "Le nom de la classe doit comporter 100 caractères maximum",
+        "titleMinLength": "Le titre doit comporter au moins 1 caractère",
+        "startTimeRequired": "L'heure de début est requise",
+        "invalidDate": "Date invalide",
+        "endDateRequired": "La date de fin est requise",
+        "timeZoneRequired": "Le fuseau horaire est requis",
+        "mustBeNumber": "Doit être un nombre",
+        "durationRequired": "La durée est requise",
+        "liveClassLinkRequired": "Le lien du cours en direct est requis",
+        "durationGreaterThanZero": "La durée doit être supérieure à zéro.",
+        "endDateRequiredRecurring": "La date de fin est requise pour les réunions récurrentes.",
+        "endDateAfterStartDate": "La date de fin doit être postérieure à la date de début.",
+        "enterValidUrl": "Saisissez une URL valide",
+        "selectTime": "Sélectionner l'heure",
+        "fieldLabelRequired": "Le libellé du champ est requis",
+        "fieldLabelTooLong": "Le libellé du champ est trop long",
+        "paidClassPriceRequired": "Saisissez un prix supérieur à 0 pour un cours en direct payant.",
+        "paidClassCurrencyRequired": "Sélectionnez une devise pour le cours en direct payant.",
+        "emailOrPhoneRequired": "Gardez l'e-mail ou le numéro de téléphone obligatoire — une inscription a besoin de l'un des deux pour identifier l'apprenant.",
+        "fieldStaysRequired": "« {{label}} » doit rester obligatoire {{why}}.",
+        "fieldRequiredGeneric": "Ce formulaire a besoin d'un champ {{role}} obligatoire {{why}}.",
+        "roleName": {
+            "phone": "Numéro de téléphone",
+            "email": "E-mail"
+        },
+        "whyReason": {
+            "whatsappOtp": "tant que la vérification OTP WhatsApp est activée, ou désactivez cette vérification",
+            "emailOtp": "tant que la vérification OTP par e-mail est activée, ou désactivez cette vérification",
+            "paidClass": "sur un cours payant — la facture est établie et envoyée par e-mail"
+        },
+        "selectAudienceList": "Sélectionnez au moins une liste d'audience, ou désactivez le bouton."
+    }
+}

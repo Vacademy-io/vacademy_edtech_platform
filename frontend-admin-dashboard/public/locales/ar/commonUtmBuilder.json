@@ -1,0 +1,68 @@
+{
+    "menuItem": "إنشاء رابط UTM",
+    "title": "إنشاء رابط UTM",
+    "subtitle": "أضف وسوم UTM إلى رابط {{surface}} ليُنسب ترافيك الحملة في تقاريرك.",
+    "subtitleFor": "أضف وسوم UTM إلى رابط {{surface}} الخاص بـ «{{name}}» ليُنسب ترافيك الحملة في تقاريرك.",
+    "surface": {
+        "AUDIENCE": "نموذج الجمهور",
+        "LIVE_SESSION": "الجلسة المباشرة",
+        "ASSESSMENT": "التقييم",
+        "ENROLL_INVITE": "دعوة التسجيل",
+        "PRODUCT_PAGE": "صفحة المنتج",
+        "CATALOGUE": "موقع الكتالوج",
+        "CUSTOM": "أي صفحة"
+    },
+    "destination": {
+        "label": "الوجهة",
+        "missing": "لا يوجد رابط قابل للمشاركة بعد."
+    },
+    "fields": {
+        "utm_source": {
+            "label": "المصدر",
+            "placeholder": "whatsapp",
+            "hint": "من أين يأتي الزوار — المنصة أو الشريك."
+        },
+        "utm_medium": {
+            "label": "الوسيط",
+            "placeholder": "social",
+            "hint": "كيف يصلهم الرابط — social أو cpc أو email أو sms أو qr."
+        },
+        "utm_campaign": {
+            "label": "الحملة",
+            "placeholder": "diwali-2026",
+            "hint": "اسم الحملة. استخدم القيمة نفسها في كل روابط الحملة."
+        },
+        "utm_content": {
+            "label": "المحتوى",
+            "placeholder": "story-cta",
+            "hint": "اختياري. يميّز بين نسختين من الإعلان أو المنشور نفسه."
+        },
+        "utm_term": {
+            "label": "الكلمة المفتاحية",
+            "placeholder": "neet-coaching",
+            "hint": "اختياري. الكلمة المفتاحية المدفوعة التي اشتُري هذا الرابط عليها."
+        }
+    },
+    "preview": {
+        "label": "الرابط الناتج",
+        "empty": "أدخل المصدر والوسيط لإنشاء الرابط."
+    },
+    "validation": {
+        "sourceMediumRequired": "المصدر والوسيط مطلوبان معًا — بدونهما تُحتسب الزيارة ترافيكًا مباشرًا.",
+        "campaignRequired": "تشترط مؤسستك اسم حملة على كل رابط يتم إنشاؤه."
+    },
+    "actions": {
+        "copy": "نسخ الرابط",
+        "copied": "تم النسخ",
+        "open": "فتح",
+        "showQr": "رمز QR",
+        "hideQr": "إخفاء QR",
+        "downloadQr": "تنزيل QR",
+        "reset": "إعادة تعيين"
+    },
+    "toast": {
+        "copied": "تم نسخ رابط UTM",
+        "copyFailed": "تعذّر نسخ الرابط. حدّده وانسخه يدويًا.",
+        "qrFailed": "تعذّر إنشاء صورة QR."
+    }
+}

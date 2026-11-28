@@ -1,0 +1,8 @@
+{
+    "noDoubtsHere": "Aucune question ici",
+    "emptyState": {
+        "all": "Aucune question n'a encore été ajoutée pour ce contenu.",
+        "resolved": "Aucune question n'a encore été marquée comme résolue.",
+        "other": "Toutes les questions sont actuellement résolues, ou aucune n'a été ajoutée."
+    }
+}

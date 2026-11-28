@@ -11,7 +11,11 @@ import {
     startOfMonth,
     startOfWeek,
     subMonths,
+    type Locale,
 } from 'date-fns';
+import { ar, enUS, fr, hi } from 'date-fns/locale';
+import type { TFunction } from 'i18next';
+import { useTranslation } from 'react-i18next';
 import { CaretLeft, CaretRight, Clock, EnvelopeSimple, VideoCamera } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { MyButton } from '@/components/design-system/button';
@@ -20,14 +24,14 @@ import { DashboardLoader } from '@/components/core/dashboard-loader';
 import { BookingInstanceDTO, BookingInstanceStatus } from '../-types/meetings-types';
 import { parseUtc } from '../-utils/meetings-utils';
 
-const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const DATE_FNS_LOCALES: Record<string, Locale> = { en: enUS, ar, fr, hi };
 const MAX_CHIPS = 3;
 
 const dayKeyOf = (d: Date): string =>
     `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
-const chipTitle = (b: BookingInstanceDTO): string =>
-    b.invitee_name || b.booking_page_title || 'Meeting';
+const chipTitle = (b: BookingInstanceDTO, t: TFunction): string =>
+    b.invitee_name || b.booking_page_title || t('untitledMeeting');
 
 /** Status → chip styling for the day-details dialog. */
 const STATUS_CHIP: Record<string, string> = {
@@ -39,6 +43,18 @@ const STATUS_CHIP: Record<string, string> = {
 
 const statusChipClass = (status: BookingInstanceStatus): string =>
     STATUS_CHIP[status] ?? 'bg-neutral-100 text-neutral-500';
+
+const STATUS_KEY: Record<string, string> = {
+    CONFIRMED: 'status.confirmed',
+    PENDING: 'status.pending',
+    COMPLETED: 'status.completed',
+    NO_SHOW: 'status.noShow',
+    CANCELLED: 'status.cancelled',
+    RESCHEDULED: 'status.rescheduled',
+};
+
+const statusLabel = (status: BookingInstanceStatus, t: TFunction): string =>
+    t(STATUS_KEY[status] ?? status, status);
 
 interface MeetingsCalendarProps {
     bookings: BookingInstanceDTO[];
@@ -55,6 +71,8 @@ export const MeetingsCalendar = ({
     onMonthChange,
     isLoading,
 }: MeetingsCalendarProps) => {
+    const { t, i18n } = useTranslation('meetingsMeetingsCalendar');
+    const dateFnsLocale = DATE_FNS_LOCALES[i18n.language] ?? enUS;
     // Day the admin clicked — its meetings open in a details dialog.
     const [selectedDay, setSelectedDay] = useState<Date | null>(null);
     const gridStart = startOfWeek(startOfMonth(month), { weekStartsOn: 0 });
@@ -62,6 +80,17 @@ export const MeetingsCalendar = ({
     const days = useMemo(
         () => eachDayOfInterval({ start: gridStart, end: gridEnd }),
         [gridStart, gridEnd]
+    );
+
+    // Locale-correct weekday abbreviations for the header row (Sun..Sat), derived
+    // from date-fns' own locale data rather than a hardcoded English list.
+    const weekdayLabels = useMemo(
+        () =>
+            eachDayOfInterval({
+                start: startOfWeek(new Date(), { weekStartsOn: 0 }),
+                end: endOfWeek(new Date(), { weekStartsOn: 0 }),
+            }).map((d) => format(d, 'EEE', { locale: dateFnsLocale })),
+        [dateFnsLocale]
     );
 
     const byDay = useMemo(() => {
@@ -85,7 +114,7 @@ export const MeetingsCalendar = ({
             {/* Month toolbar */}
             <div className="flex items-center justify-between gap-3 border-b border-neutral-100 px-4 py-3">
                 <h2 className="text-base font-semibold text-neutral-800">
-                    {format(month, 'MMMM yyyy')}
+                    {format(month, 'MMMM yyyy', { locale: dateFnsLocale })}
                 </h2>
                 <div className="flex items-center gap-2">
                     <MyButton
@@ -94,7 +123,7 @@ export const MeetingsCalendar = ({
                         scale="small"
                         layoutVariant="icon"
                         onClick={() => onMonthChange(subMonths(month, 1))}
-                        aria-label="Previous month"
+                        aria-label={t('previousMonth')}
                     >
                         <CaretLeft size={16} />
                     </MyButton>
@@ -104,7 +133,7 @@ export const MeetingsCalendar = ({
                         scale="small"
                         onClick={() => onMonthChange(new Date())}
                     >
-                        Today
+                        {t('today')}
                     </MyButton>
                     <MyButton
                         type="button"
@@ -112,7 +141,7 @@ export const MeetingsCalendar = ({
                         scale="small"
                         layoutVariant="icon"
                         onClick={() => onMonthChange(addMonths(month, 1))}
-                        aria-label="Next month"
+                        aria-label={t('nextMonth')}
                     >
                         <CaretRight size={16} />
                     </MyButton>
@@ -121,9 +150,9 @@ export const MeetingsCalendar = ({
 
             {/* Weekday header */}
             <div className="grid grid-cols-7 border-b border-neutral-100">
-                {WEEKDAYS.map((d) => (
+                {weekdayLabels.map((d, idx) => (
                     <div
-                        key={d}
+                        key={idx}
                         className="px-2 py-2 text-center text-caption font-medium uppercase tracking-wide text-neutral-400"
                     >
                         {d}
@@ -149,7 +178,12 @@ export const MeetingsCalendar = ({
                                 tabIndex={clickable ? 0 : undefined}
                                 aria-label={
                                     clickable
-                                        ? `View ${items.length} meeting${items.length === 1 ? '' : 's'} on ${format(day, 'd MMMM yyyy')}`
+                                        ? t('dayAriaLabel', {
+                                              count: items.length,
+                                              date: format(day, 'd MMMM yyyy', {
+                                                  locale: dateFnsLocale,
+                                              }),
+                                          })
                                         : undefined
                                 }
                                 onClick={clickable ? () => setSelectedDay(day) : undefined}
@@ -181,7 +215,7 @@ export const MeetingsCalendar = ({
                                                   : 'text-neutral-300'
                                         )}
                                     >
-                                        {format(day, 'd')}
+                                        {format(day, 'd', { locale: dateFnsLocale })}
                                     </span>
                                 </div>
                                 <div className="flex flex-col gap-1">
@@ -193,7 +227,8 @@ export const MeetingsCalendar = ({
                                                     <VideoCamera size={11} className="shrink-0" />
                                                 )}
                                                 <span className="truncate">
-                                                    {format(start, 'h:mm a')} · {chipTitle(b)}
+                                                    {format(start, 'h:mm a', { locale: dateFnsLocale })} ·{' '}
+                                                    {chipTitle(b, t)}
                                                 </span>
                                             </span>
                                         );
@@ -204,7 +239,7 @@ export const MeetingsCalendar = ({
                                                 target="_blank"
                                                 rel="noopener noreferrer"
                                                 onClick={(e) => e.stopPropagation()}
-                                                title={`${format(start, 'h:mm a')} — ${chipTitle(b)}`}
+                                                title={`${format(start, 'h:mm a', { locale: dateFnsLocale })} — ${chipTitle(b, t)}`}
                                                 className="truncate rounded bg-primary-50 px-1.5 py-0.5 text-caption text-primary-700 hover:bg-primary-100"
                                             >
                                                 {chip}
@@ -212,7 +247,7 @@ export const MeetingsCalendar = ({
                                         ) : (
                                             <span
                                                 key={b.id}
-                                                title={`${format(start, 'h:mm a')} — ${chipTitle(b)}`}
+                                                title={`${format(start, 'h:mm a', { locale: dateFnsLocale })} — ${chipTitle(b, t)}`}
                                                 className="truncate rounded bg-neutral-100 px-1.5 py-0.5 text-caption text-neutral-600"
                                             >
                                                 {chip}
@@ -221,7 +256,7 @@ export const MeetingsCalendar = ({
                                     })}
                                     {items.length > MAX_CHIPS && (
                                         <span className="px-1 text-caption text-neutral-400">
-                                            +{items.length - MAX_CHIPS} more
+                                            {t('moreCount', { count: items.length - MAX_CHIPS })}
                                         </span>
                                     )}
                                 </div>
@@ -233,7 +268,11 @@ export const MeetingsCalendar = ({
 
             {/* Day details: every meeting of the clicked day, with time, invitee and join link. */}
             <MyDialog
-                heading={selectedDay ? format(selectedDay, 'EEEE, d MMMM yyyy') : ''}
+                heading={
+                    selectedDay
+                        ? format(selectedDay, 'EEEE, d MMMM yyyy', { locale: dateFnsLocale })
+                        : ''
+                }
                 open={!!selectedDay}
                 onOpenChange={(o) => {
                     if (!o) setSelectedDay(null);
@@ -251,7 +290,7 @@ export const MeetingsCalendar = ({
                             >
                                 <div className="flex flex-wrap items-center justify-between gap-2">
                                     <span className="text-body font-semibold text-neutral-700">
-                                        {chipTitle(b)}
+                                        {chipTitle(b, t)}
                                     </span>
                                     <span
                                         className={cn(
@@ -259,7 +298,7 @@ export const MeetingsCalendar = ({
                                             statusChipClass(b.status)
                                         )}
                                     >
-                                        {b.status}
+                                        {statusLabel(b.status, t)}
                                     </span>
                                 </div>
                                 {b.booking_page_title && b.invitee_name && (
@@ -270,7 +309,8 @@ export const MeetingsCalendar = ({
                                 <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-caption text-neutral-500">
                                     <span className="flex items-center gap-1">
                                         <Clock size={14} />
-                                        {format(start, 'h:mm a')} – {format(end, 'h:mm a')}
+                                        {format(start, 'h:mm a', { locale: dateFnsLocale })} –{' '}
+                                        {format(end, 'h:mm a', { locale: dateFnsLocale })}
                                     </span>
                                     {b.invitee_email && (
                                         <span className="flex items-center gap-1">
@@ -286,7 +326,7 @@ export const MeetingsCalendar = ({
                                         rel="noopener noreferrer"
                                         className="flex w-fit items-center gap-1.5 text-caption font-medium text-primary-500 hover:text-primary-600"
                                     >
-                                        <VideoCamera size={14} /> Join meeting
+                                        <VideoCamera size={14} /> {t('joinMeeting')}
                                     </a>
                                 )}
                             </div>

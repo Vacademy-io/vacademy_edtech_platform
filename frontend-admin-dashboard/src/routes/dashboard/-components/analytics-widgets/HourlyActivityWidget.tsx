@@ -1,6 +1,7 @@
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { motion } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { fetchAnalyticsEngagementTrends } from '../../-services/dashboard-services';
 import { useTheme } from '@/providers/theme/theme-provider';
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, Cell } from 'recharts';
@@ -11,6 +12,7 @@ interface HourlyActivityWidgetProps {
 }
 
 export default function HourlyActivityWidget({ instituteId }: HourlyActivityWidgetProps) {
+    const { t, i18n } = useTranslation('dashboardHourlyActivityWidget');
     const { primaryColor } = useTheme();
 
     const { data, isLoading, error } = useQuery({
@@ -40,24 +42,39 @@ export default function HourlyActivityWidget({ instituteId }: HourlyActivityWidg
         })) || [];
 
     function formatHour(hour: number) {
-        if (hour === 0) return '12 AM';
-        if (hour < 12) return `${hour} AM`;
-        if (hour === 12) return '12 PM';
-        return `${hour - 12} PM`;
+        if (hour === 0) return t('time.am', { hour: 12 });
+        if (hour < 12) return t('time.am', { hour });
+        if (hour === 12) return t('time.pm', { hour: 12 });
+        return t('time.pm', { hour: hour - 12 });
     }
 
     function getBarColor(period: string) {
         switch (period) {
             case 'night':
-                return '#6366F1'; // Indigo
+                return 'hsl(var(--info-600))'; // Blue
             case 'morning':
-                return '#F59E0B'; // Amber
+                return 'hsl(var(--warning-500))'; // Amber
             case 'afternoon':
-                return '#EF4444'; // Red
+                return 'hsl(var(--danger-600))'; // Red
             case 'evening':
-                return '#8B5CF6'; // Purple
+                return 'hsl(var(--primary-500))'; // Brand accent
             default:
-                return '#6B7280'; // Gray
+                return 'hsl(var(--muted-foreground))'; // Gray
+        }
+    }
+
+    function getPeriodLabel(period: string) {
+        switch (period) {
+            case 'night':
+                return t('period.night');
+            case 'morning':
+                return t('period.morning');
+            case 'afternoon':
+                return t('period.afternoon');
+            case 'evening':
+                return t('period.evening');
+            default:
+                return period;
         }
     }
 
@@ -73,10 +90,14 @@ export default function HourlyActivityWidget({ instituteId }: HourlyActivityWidg
                 <div className="rounded-lg border bg-white p-3 shadow-lg">
                     <p className="font-semibold text-gray-800">{data.timeLabel}</p>
                     <p className="text-sm text-gray-600">
-                        Activity: {data.activity.toLocaleString()}
+                        {t('tooltip.activity', { value: data.activity.toLocaleString(i18n.language) })}
                     </p>
-                    <p className="text-sm text-gray-600">Users: {data.users.toLocaleString()}</p>
-                    <p className="text-primary-600 text-sm font-medium capitalize">{data.period}</p>
+                    <p className="text-sm text-gray-600">
+                        {t('tooltip.users', { value: data.users.toLocaleString(i18n.language) })}
+                    </p>
+                    <p className="text-primary-600 text-sm font-medium capitalize">
+                        {getPeriodLabel(data.period)}
+                    </p>
                 </div>
             );
         }
@@ -103,10 +124,10 @@ export default function HourlyActivityWidget({ instituteId }: HourlyActivityWidg
                         </motion.div>
                         <div className="flex-1">
                             <CardTitle className="text-lg font-bold text-gray-800">
-                                Hourly Activity
+                                {t('header.title')}
                             </CardTitle>
                             <CardDescription className="text-sm text-gray-600">
-                                Activity distribution throughout the day
+                                {t('header.subtitle')}
                             </CardDescription>
                         </div>
                         {peakHour && (
@@ -116,7 +137,7 @@ export default function HourlyActivityWidget({ instituteId }: HourlyActivityWidg
                                 transition={{ delay: 1 }}
                                 className="text-right"
                             >
-                                <div className="text-xs text-gray-500">Peak Hour</div>
+                                <div className="text-xs text-gray-500">{t('peakHour.label')}</div>
                                 <div className="text-lg font-bold text-amber-700">
                                     {peakHour.timeLabel}
                                 </div>
@@ -137,12 +158,12 @@ export default function HourlyActivityWidget({ instituteId }: HourlyActivityWidg
                     ) : error ? (
                         <div className="py-8 text-center text-red-500">
                             <Clock size={32} className="mx-auto mb-2 opacity-50" />
-                            <p className="text-sm">Failed to load hourly data</p>
+                            <p className="text-sm">{t('error.message')}</p>
                         </div>
                     ) : hourlyData.length === 0 ? (
                         <div className="py-8 text-center text-gray-500">
                             <Clock size={32} className="mx-auto mb-2 opacity-50" />
-                            <p className="text-sm">No hourly data available</p>
+                            <p className="text-sm">{t('empty.message')}</p>
                         </div>
                     ) : (
                         <div className="space-y-4">
@@ -229,7 +250,7 @@ export default function HourlyActivityWidget({ instituteId }: HourlyActivityWidg
                                                 {totalActivity}
                                             </div>
                                             <div className="text-xs capitalize text-gray-600">
-                                                {p.period}
+                                                {getPeriodLabel(p.period)}
                                             </div>
                                         </motion.div>
                                     );

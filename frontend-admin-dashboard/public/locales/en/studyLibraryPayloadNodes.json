@@ -1,0 +1,13 @@
+{
+    "flashcard": {
+        "front": "FRONT",
+        "back": "BACK"
+    },
+    "quiz": {
+        "label": "QUIZ"
+    },
+    "multiLangCode": {
+        "editorHeading": "{{language}} Code Editor",
+        "outputLabel": "Output:"
+    }
+}

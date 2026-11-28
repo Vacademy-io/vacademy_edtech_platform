@@ -1,0 +1,15 @@
+{
+    "unpublishSuccess": "स्लाइड सफलतापूर्वक अप्रकाशित की गई!",
+    "errorUnpublishQuestion": "प्रश्न स्लाइड को अप्रकाशित करने में त्रुटि",
+    "errorUnpublishGeneric": "स्लाइड को अप्रकाशित करने में त्रुटि",
+    "errorVideoDataMissing": "वीडियो स्लाइड डेटा गायब है।",
+    "quizUnpublishSuccess": "क्विज़ सफलतापूर्वक अप्रकाशित की गई!",
+    "errorUnpublishQuiz": "क्विज़ अप्रकाशित करने में विफल",
+    "errorAudioDataMissing": "ऑडियो स्लाइड डेटा गायब है।",
+    "errorScormDataMissing": "SCORM स्लाइड डेटा गायब है।",
+    "scormUnpublishSuccess": "SCORM स्लाइड सफलतापूर्वक अप्रकाशित की गई!",
+    "errorUnpublishScorm": "SCORM स्लाइड को अप्रकाशित करने में त्रुटि",
+    "errorAssessmentDataMissing": "असेसमेंट स्लाइड डेटा गायब है।",
+    "assessmentUnpublishSuccess": "असेसमेंट स्लाइड सफलतापूर्वक अप्रकाशित की गई!",
+    "errorUnpublishAssessment": "असेसमेंट स्लाइड को अप्रकाशित करने में त्रुटि"
+}

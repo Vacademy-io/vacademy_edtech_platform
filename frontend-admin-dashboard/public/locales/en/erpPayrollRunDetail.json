@@ -1,0 +1,15 @@
+{
+    "backToRuns": "All payroll runs",
+    "fallbackHeading": "Payroll run",
+    "fallbackRunType": "Regular",
+    "errors": {
+        "loadFailed": "Could not load this payroll run."
+    },
+    "tabs": {
+        "entries_one": "Entry ({{count}})",
+        "entries_other": "Entries ({{count}})",
+        "errors": "Errors",
+        "payslips": "Payslips",
+        "bankFile": "Bank file"
+    }
+}

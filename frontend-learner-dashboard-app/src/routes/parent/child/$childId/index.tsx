@@ -155,7 +155,7 @@ function ChildHome() {
         </div>
 
         {/* ── At-a-glance info rows ── */}
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-stack">
           <ParentInfoRow
             icon={CheckCircle}
             title={t("info.attendance")}

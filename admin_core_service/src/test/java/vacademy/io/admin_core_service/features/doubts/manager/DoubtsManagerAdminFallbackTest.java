@@ -19,6 +19,8 @@ import vacademy.io.admin_core_service.features.institute.service.setting.Institu
 import vacademy.io.admin_core_service.features.slide.service.SlideMetaDataService;
 import vacademy.io.admin_core_service.features.suborg.service.SubOrgStaffLookupService;
 import vacademy.io.admin_core_service.features.workflow.service.WorkflowTriggerService;
+import vacademy.io.common.auth.dto.UserServiceDTO;
+import vacademy.io.common.auth.model.CustomUserDetails;
 
 import java.util.HashMap;
 import java.util.List;
@@ -74,6 +76,15 @@ class DoubtsManagerAdminFallbackTest {
     @Mock private SubOrgStaffLookupService subOrgStaffLookupService;
 
     @InjectMocks private DoubtsManager manager;
+
+    /** The learner raising the doubt — doubts/create raises it as the authenticated caller. */
+    private static CustomUserDetails learner() {
+        UserServiceDTO dto = new UserServiceDTO();
+        dto.setUserId(LEARNER);
+        dto.setUsername(LEARNER);
+        dto.setAuthorities(List.of("STUDENT"));
+        return new CustomUserDetails(dto);
+    }
 
     private DoubtsDto slideDoubtRequest(String type) {
         return DoubtsDto.builder()
@@ -134,7 +145,7 @@ class DoubtsManagerAdminFallbackTest {
         wireSetting("NONE", null);
         when(authService.getUserIdsByRole(INST, ADMIN_ROLE)).thenReturn(List.of(ADMIN_A, ADMIN_B));
 
-        manager.updateOrCreateDoubt(null, null, slideDoubtRequest("DOUBT"));
+        manager.updateOrCreateDoubt(learner(), null, slideDoubtRequest("DOUBT"));
 
         assertEquals(List.of(ADMIN_A, ADMIN_B), captureRaisedRecipients());
         // NONE means "skip teachers" — the faculty cascade must not run at all.
@@ -150,7 +161,7 @@ class DoubtsManagerAdminFallbackTest {
                 .thenThrow(new RuntimeException("auth_service timeout"))
                 .thenReturn(List.of(ADMIN_A));
 
-        manager.updateOrCreateDoubt(null, null, slideDoubtRequest("DOUBT"));
+        manager.updateOrCreateDoubt(learner(), null, slideDoubtRequest("DOUBT"));
 
         assertEquals(List.of(ADMIN_A), captureRaisedRecipients());
         verify(authService, times(2)).getUserIdsByRole(INST, ADMIN_ROLE);
@@ -165,7 +176,7 @@ class DoubtsManagerAdminFallbackTest {
                 .thenReturn(List.of())
                 .thenReturn(List.of(ADMIN_A));
 
-        manager.updateOrCreateDoubt(null, null, slideDoubtRequest("DOUBT"));
+        manager.updateOrCreateDoubt(learner(), null, slideDoubtRequest("DOUBT"));
 
         assertEquals(List.of(ADMIN_A), captureRaisedRecipients());
         verify(authService, times(2)).getUserIdsByRole(INST, ADMIN_ROLE);
@@ -178,7 +189,7 @@ class DoubtsManagerAdminFallbackTest {
         wireSetting("NONE", null);
         when(authService.getUserIdsByRole(INST, ADMIN_ROLE)).thenReturn(List.of());
 
-        manager.updateOrCreateDoubt(null, null, slideDoubtRequest("DOUBT"));
+        manager.updateOrCreateDoubt(learner(), null, slideDoubtRequest("DOUBT"));
 
         verify(doubtNotificationService, never()).notifyDoubtRaised(any(), any(), any());
         verify(authService, times(2)).getUserIdsByRole(INST, ADMIN_ROLE);
@@ -190,7 +201,7 @@ class DoubtsManagerAdminFallbackTest {
         wireCommon();
         wireSetting("BATCH_TEACHER", List.of(queryType("TECHNICAL", "NONE")));
 
-        manager.updateOrCreateDoubt(null, null, slideDoubtRequest("TECHNICAL"));
+        manager.updateOrCreateDoubt(learner(), null, slideDoubtRequest("TECHNICAL"));
 
         verify(doubtNotificationService, never()).notifyDoubtRaised(any(), any(), any());
         // Unlike the global NONE, this path deliberately skips the admin safety net entirely.
@@ -205,7 +216,7 @@ class DoubtsManagerAdminFallbackTest {
         when(authService.getUserIdsByRole(INST, "EVALUATOR")).thenReturn(List.of());
         when(authService.getUserIdsByRole(INST, ADMIN_ROLE)).thenReturn(List.of(ADMIN_A));
 
-        manager.updateOrCreateDoubt(null, null, slideDoubtRequest("SUPPORT"));
+        manager.updateOrCreateDoubt(learner(), null, slideDoubtRequest("SUPPORT"));
 
         assertEquals(List.of(ADMIN_A), captureRaisedRecipients());
     }
@@ -218,7 +229,7 @@ class DoubtsManagerAdminFallbackTest {
         wireSetting("BATCH_TEACHER", List.of(queryTypeWithRole("PAYMENT", ADMIN_ROLE)));
         when(authService.getUserIdsByRole(INST, ADMIN_ROLE)).thenReturn(List.of());
 
-        manager.updateOrCreateDoubt(null, null, slideDoubtRequest("PAYMENT"));
+        manager.updateOrCreateDoubt(learner(), null, slideDoubtRequest("PAYMENT"));
 
         verify(doubtNotificationService, never()).notifyDoubtRaised(any(), any(), any());
         // ROLE=ADMIN + resolveAdminFallback would be the same call twice; with retries that is 4

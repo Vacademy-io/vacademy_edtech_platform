@@ -22,6 +22,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Component
@@ -30,28 +31,14 @@ public class PackageSessionScheduler {
 
     private final PackageSessionEnrolmentService enrolmentService;
     private final UserPlanRepository userPlanRepository;
+
+    /** Paused memberships (docs/ENROLMENT_BREAKS.md) are skipped. Optional: absent = nothing skipped. */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private vacademy.io.admin_core_service.features.enrolment_break.service.EnrolmentBreakGuard enrolmentBreakGuard;
     private final WorkflowTriggerService workflowTriggerService;
     private final WorkflowExecutionRepository workflowExecutionRepository;
     private final RenewalChargeService renewalChargeService;
     private final PaymentSettingService paymentSettingService;
-
-    /**
-     * Pre-existing manual-trigger entry point for enrolment-policy actions
-     * (expire / graduate active UserPlans). Currently invoked only from
-     * {@code TestEnrollMentController} — intentionally not auto-scheduled
-     * because it sweeps the WHOLE user_plan table. The scheduled path is
-     * {@link #processPackageSessionRenewals()}, which scopes the sweep to
-     * institutes that opted in via PAYMENT_SETTING.
-     */
-    public void processPackageSessionExpiries() {
-        log.info("Starting PackageSessionScheduler job...");
-        try {
-            enrolmentService.processActiveEnrollments();
-        } catch (Exception e) {
-            log.error("Error during scheduled package session processing", e);
-        }
-        log.info("PackageSessionScheduler job finished.");
-    }
 
     // ─── Institute-gated renewal/expiry scan ───────────────────────────────
     //
@@ -80,6 +67,44 @@ public class PackageSessionScheduler {
             log.error("[PackageSessionRenew] Institute-gated enrolment-policy scan failed", e);
         }
         log.info("[PackageSessionRenew] Scan finished.");
+    }
+
+    // ─── Paid-but-not-enrolled integrity check ─────────────────────────────
+    //
+    // A learner whose plan is ACTIVE and who has paid must hold an enrolment. When that
+    // stops being true, nothing visibly breaks on our side: the plan reads ACTIVE, the
+    // payment reads PAID, finance reconciles — and the learner quietly sits in no batch,
+    // receives no class links and shows in no member list. That is exactly how 2026-10-04
+    // went unnoticed until the client reported it (one learner, Rs 7,200, 22 hours).
+    //
+    // The write-side holes are closed (enrolment, renewal and stacked-promotion paths all
+    // ensure the enrolment now), so this is a net for the paths we have not thought of.
+    // Deliberately report-only: it logs at ERROR so the condition surfaces the next morning
+    // without a scheduler silently mutating learner access.
+
+    /** Runs daily at 04:30, right after the enrolment-policy sweep. */
+    @Scheduled(cron = "0 30 4 * * ?")
+    @SchedulerLock(name = "PaidWithoutEnrollmentCheck", lockAtMostFor = "PT20M", lockAtLeastFor = "PT1M")
+    public void reportPaidPlansWithoutEnrollment() {
+        try {
+            List<UserPlan> orphans = userPlanRepository.findPaidActivePlansWithoutEnrollment();
+            // A paused learner's access is switched off on purpose (enrolment break): not an orphan.
+            if (enrolmentBreakGuard != null && !orphans.isEmpty()) {
+                orphans = orphans.stream().filter(p -> !enrolmentBreakGuard.isPlanPaused(p.getId()))
+                        .collect(Collectors.toList());
+            }
+            if (orphans.isEmpty()) {
+                log.info("[PaidWithoutEnrollment] Clean — every paid ACTIVE plan has an enrolment");
+                return;
+            }
+            log.error("[PaidWithoutEnrollment] {} paid ACTIVE plan(s) hold NO enrolment — the learner "
+                    + "paid and has no access: {}", orphans.size(),
+                    orphans.stream()
+                            .map(p -> p.getId() + " (user " + p.getUserId() + ")")
+                            .collect(Collectors.joining(", ")));
+        } catch (Exception e) {
+            log.error("[PaidWithoutEnrollment] Integrity check failed", e);
+        }
     }
 
     // ─── Membership-expiry workflow trigger ────────────────────────────────
@@ -146,6 +171,11 @@ public class PackageSessionScheduler {
                 log.debug("[MembershipExpiry] Skipping plan {} — no institute resolvable", plan.getId());
                 continue;
             }
+            if (enrolmentBreakGuard != null
+                    && enrolmentBreakGuard.isFeeHeldForPlan(instituteId, plan.getUserId(), plan.getId())) {
+                log.debug("[MembershipExpiry] Skipping plan {} — learner on a break (fee reminders stopped)", plan.getId());
+                continue;
+            }
 
             // Application-level dedup against the EVENT_BASED key format
             // produced by EventBasedKeyGenerator:
@@ -193,15 +223,40 @@ public class PackageSessionScheduler {
     // hours AFTER the reminder scan so the "expiring soon" nudge always precedes
     // the charge. Narrowly scoped to plans with auto_renewal_enabled = true
     // (see UserPlanRepository.findDueForRenewal), so it can never touch a
-    // pre-existing / non-autopay plan — unlike processActiveEnrollments, which
-    // stays manual to avoid activating dormant destructive expiry behaviour.
+    // pre-existing / non-autopay plan. Expiry processing is separate and runs only
+    // for opted-in institutes (processPackageSessionRenewals above).
+    //
+    // ShedLock: the per-plan claim (claimForRenewal) protects a SUCCESSFUL charge
+    // from being repeated, but a FAILED charge is re-armed for tomorrow at once,
+    // which makes the plan claimable again by the next replica seconds later. With
+    // 4 replicas and no lock, 22 due plans produced 52 Razorpay orders on
+    // 2026-09-19 — every refused plan was presented up to four times in one
+    // minute. One replica runs the sweep; the others find the lock and skip.
 
-    /** Runs daily at 11:00 (after the 09:00 reminder scan). */
-    @Scheduled(cron = "0 0 11 * * ?")
+    /**
+     * Runs daily at 15:00 IST (09:30 UTC, still after the 09:00 UTC reminder scan).
+     * The hour is deliberate for UPI Autopay: the issuing bank sends the customer a
+     * pre-debit notification and executes the debit roughly 24 h after we present
+     * the charge, so presenting at 15:00 on the day BEFORE the due date (see
+     * {@code AUTOPAY_SETTING.CHARGE_LEAD_DAYS}) lands the money on the due date itself.
+     * Pinned to Asia/Kolkata so a pod timezone change cannot move it.
+     */
+    @Scheduled(cron = "0 0 15 * * ?", zone = "Asia/Kolkata")
+    @SchedulerLock(name = "RenewalChargeSweep", lockAtMostFor = "PT50M", lockAtLeastFor = "PT2M")
     public void emitRenewalCharges() {
-        log.info("[RenewalCharge] Starting autopay charge scan...");
+        // Institute-gated, like the 04:00 policy scan -- but on its OWN flag
+        // (PAYMENT_SETTING.autopayChargeSchedulerEnabled), because this job presents money to
+        // the gateway rather than sending notifications. Until an institute is explicitly
+        // opted in, nothing here is charged for it, whatever its plans have armed.
+        List<String> instituteIds = paymentSettingService.getInstituteIdsWithAutopayChargeEnabled();
+        if (instituteIds.isEmpty()) {
+            log.info("[RenewalCharge] No institutes have authorised the autopay charge sweep — skipping");
+            return;
+        }
+        log.info("[RenewalCharge] Starting autopay charge scan for {} opted-in institute(s)...",
+                instituteIds.size());
         try {
-            renewalChargeService.processDueRenewals();
+            renewalChargeService.processDueRenewals(instituteIds);
         } catch (Exception e) {
             log.error("[RenewalCharge] Autopay charge scan failed", e);
         }

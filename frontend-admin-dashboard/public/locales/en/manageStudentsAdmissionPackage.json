@@ -1,0 +1,132 @@
+{
+    "package": "Package",
+    "toggle": {
+        "label": "Enroll as a package",
+        "hint": "Charge these courses together: one discount on the total, one installment schedule, one payment at admission and one admission receipt."
+    },
+    "total": "Package total",
+    "discount": {
+        "heading": "Package discount",
+        "type": "Type",
+        "none": "No discount",
+        "flat": "Flat ₹ off",
+        "percentage": "% of total",
+        "value": "Value",
+        "reason": "Reason",
+        "reasonPlaceholder": "e.g. Admission offer",
+        "splitLabel": "Split the discount over the installments",
+        "split": {
+            "EVEN": "Equally",
+            "FIRST": "First installment",
+            "LAST": "Last installment",
+            "CUSTOM": "Custom"
+        },
+        "byFee": "Each course's share of the discount is in proportion to its fee."
+    },
+    "summary": "{{total}} − {{off}} discount = {{net}} for the package",
+    "schedule": {
+        "heading": "Package installments",
+        "hint": "Each installment is split across the courses in proportion to their fees; each course gets its own matching installments."
+    },
+    "payment": {
+        "heading": "Payment at admission",
+        "skip": "Don't record a payment now",
+        "offline": "Record an offline payment",
+        "amount": "Amount",
+        "amountHint": "First installment {{first}} · package total {{net}}",
+        "receiptHint": "One admission receipt lists every course in the package."
+    },
+    "errors": {
+        "blocked": "Some courses cannot be part of a package (see above).",
+        "loading": "Loading the courses' fees…",
+        "paymentAmount": "Enter the amount paid at admission.",
+        "paymentTooMuch": "The payment is more than the package total ({{net}})."
+    },
+    "preview": {
+        "heading": "Admission package",
+        "course": "Course",
+        "fee": "Fee",
+        "discount": "Discount",
+        "toPay": "To pay",
+        "paidNow": "Paid now",
+        "total": "Package",
+        "installments": "Installments: {{list}}",
+        "receipt": "One admission receipt will list all these courses."
+    },
+    "side": {
+        "heading_one": "Admission package · {{count}} course",
+        "heading_other": "Admission package · {{count}} courses",
+        "net": "Net {{amount}}",
+        "paid": "Paid {{amount}}",
+        "outstanding": "Outstanding {{amount}}",
+        "nextDue": "Next installment {{amount}} due {{date}}",
+        "left": "{{amount}} left",
+        "discountReason": "Discount: {{reason}}",
+        "installments": "Package installments",
+        "recordPayment": "+ Record package payment",
+        "courses": {
+            "course": "Course",
+            "fee": "Fee",
+            "discount": "Discount",
+            "paid": "Paid",
+            "left": "Left",
+            "total": "Package"
+        },
+        "status": {
+            "PAID": "Paid",
+            "PARTIAL_PAID": "Part paid",
+            "OVERDUE": "Overdue",
+            "DUE": "Due",
+            "STOPPED": "Stopped"
+        },
+        "pay": {
+            "heading": "Package payment",
+            "note": "Settles the package installments earliest first; a part-payment is shared between the courses by what each owes.",
+            "amount": "Amount",
+            "date": "Date",
+            "next": "Next installment {{amount}}",
+            "all": "All dues {{amount}}",
+            "tooMuch": "More than is still owed on the package ({{amount}}).",
+            "split": "Goes to",
+            "previewError": "Could not work out the split.",
+            "receipt": "One receipt for the package",
+            "cancel": "Cancel",
+            "saving": "Saving…",
+            "submit": "Record {{amount}}",
+            "amountError": "Enter a positive amount",
+            "success": "Recorded {{amount}} on the package",
+            "error": "Could not record the payment"
+        },
+        "item": {
+            "pay": "Pay this installment",
+            "move": "Change date",
+            "split": "Split",
+            "payHeading": "Pay the {{date}} installment",
+            "coversEarlier_one": "Includes {{count}} earlier installment still open: payments clear the oldest first. Shared between the courses by what each owes.",
+            "coversEarlier_other": "Includes {{count}} earlier installments still open: payments clear the oldest first. Shared between the courses by what each owes.",
+            "amount": "Edit amount",
+            "stop": "Stop dues"
+        },
+        "change": {
+            "moveHeading": "Change the due date",
+            "moveHint": "Moves this installment on every course in the package.",
+            "splitHeading": "Move part of the {{amount}} unpaid to a later date",
+            "splitHint": "Shared between the courses by what each owes on this installment. The package total does not change.",
+            "amount": "Amount to move",
+            "dueDate": "New due date",
+            "newDueDate": "Due on",
+            "save": "Save",
+            "amountError": "Enter an amount up to {{amount}}",
+            "dateError": "Pick a different date",
+            "moveSuccess": "Installment moved on every course",
+            "splitSuccess": "{{amount}} moved to the new date",
+            "error": "Could not change the installment",
+            "newAmountError": "Enter an amount of at least {{amount}} (already paid)",
+            "amountSuccess": "Installment set to {{amount}} on every course",
+            "amountHeading": "Change the amount",
+            "amountHint": "Changes this installment on every course: each keeps what it has paid ({{paid}}) and the rest is shared by what each owes. The package total changes by the difference.",
+            "newAmount": "New amount"
+        },
+        "stoppedFact": "Dues stopped: {{amount}} · {{reason}}"
+    }
+}

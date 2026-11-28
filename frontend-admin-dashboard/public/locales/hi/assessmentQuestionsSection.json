@@ -1,0 +1,46 @@
+{
+    "sectionInfo": {
+        "descriptionTitle": "सेक्शन विवरण"
+    },
+    "stats": {
+        "sectionDuration": {
+            "label": "सेक्शन अवधि",
+            "value": "{{duration}} मिनट"
+        },
+        "avgMarksPerQuestion": "औसत अंक / प्रश्न",
+        "totalMarks": "कुल अंक",
+        "negativeMarking": "नकारात्मक अंकन"
+    },
+    "badges": {
+        "partialMarking": "आंशिक अंकन",
+        "cutoffMarks": "कटऑफ अंक",
+        "problemRandomization": "प्रश्न रैंडमाइज़ेशन"
+    },
+    "table": {
+        "heading": {
+            "survey": "सर्वे प्रश्न",
+            "adaptiveMarking": "एडेप्टिव अंकन नियम"
+        },
+        "columns": {
+            "index": "#",
+            "question": "प्रश्न",
+            "type": "प्रकार",
+            "marks": "अंक",
+            "penalty": "पेनल्टी",
+            "criteria": "मानदंड",
+            "time": "समय"
+        },
+        "criteriaNotSet": "सेट नहीं है"
+    },
+    "toasts": {
+        "invalidCriteriaFormat": "मानदंड का पूर्वावलोकन नहीं हो सका। डेटा फ़ॉर्मेट अमान्य है।"
+    },
+    "accordion": {
+        "questionCount_one": "{{count}} प्रश्न",
+        "questionCount_other": "{{count}} प्रश्न",
+        "mcqSingle": "MCQ · सिंगल {{count}}",
+        "mcqMultiple": "MCQ · मल्टीपल {{count}}",
+        "total": "कुल {{count}}"
+    },
+    "sectionTotal": "सेक्शन कुल"
+}

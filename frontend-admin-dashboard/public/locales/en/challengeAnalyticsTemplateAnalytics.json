@@ -1,0 +1,57 @@
+{
+    "emptyState": {
+        "title": "Template Analytics",
+        "message": "No template data available"
+    },
+    "header": {
+        "title": "Day-wise Template Analytics",
+        "subtitle": "Messages and engagement by day and template"
+    },
+    "viewToggle": {
+        "chart": "Chart View",
+        "table": "Table View"
+    },
+    "summary": {
+        "totalDays": "Total Days",
+        "messagesSent": "Messages Sent",
+        "responses": "Responses",
+        "usersReached": "Users Reached",
+        "responseRate": "Response Rate"
+    },
+    "tabs": {
+        "messagesByDay": "Messages by Day",
+        "usersByDay": "Users by Day",
+        "combinedView": "Combined View"
+    },
+    "tooltip": {
+        "outgoing": "Outgoing: {{value}}",
+        "incoming": "Incoming: {{value}}",
+        "uniqueUsersOut": "Unique Users (Out): {{value}}",
+        "uniqueUsersIn": "Unique Users (In): {{value}}"
+    },
+    "series": {
+        "outgoingMessages": "Outgoing Messages",
+        "incomingMessages": "Incoming Messages",
+        "uniqueUsersOutgoing": "Unique Users (Outgoing)",
+        "uniqueUsersIncoming": "Unique Users (Incoming)",
+        "messagesSent": "Messages Sent",
+        "responses": "Responses",
+        "responseRatePercent": "Response Rate (%)"
+    },
+    "table": {
+        "day": "Day",
+        "outgoingUsers": "Outgoing Users",
+        "outgoingMessages": "Outgoing Messages",
+        "incomingUsers": "Incoming Users",
+        "incomingMessages": "Incoming Messages",
+        "responseRate": "Response Rate",
+        "templates": "Templates"
+    },
+    "dayLabel": "Day {{number}}",
+    "outgoingTemplates": "Outgoing Templates",
+    "incomingTemplatesResponses": "Incoming Templates (Responses)",
+    "usersCount_one": "{{count}} user",
+    "usersCount_other": "{{count}} users",
+    "messagesCount_one": "{{count}} message",
+    "messagesCount_other": "{{count}} messages"
+}

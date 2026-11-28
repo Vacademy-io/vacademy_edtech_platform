@@ -16,6 +16,7 @@ export interface PackageType {
   id: string;
   package_name: string;
   thumbnail_file_id: string;
+  package_type?: string | null;
 }
 
 export interface BatchData {
@@ -44,6 +45,15 @@ export const getSesssionId = async (): Promise<string | undefined> => {
   }
 };
 
+/** Shipping and deposits are enrolments only for the payment plumbing; nobody attends them. */
+export const withoutChargePackages = <T extends { package_dto?: { package_type?: string | null } }>(
+  batches: T[],
+): T[] =>
+  batches.filter(
+    (batch) =>
+      !["DELIVERY_CHARGE", "SECURITY_DEPOSIT"].includes(batch.package_dto?.package_type ?? ""),
+  );
+
 export const fetchBatches = async () => {
   const INSTITUTE_ID = await getInstituteId();
   const sessionId = await getSesssionId();
@@ -54,7 +64,7 @@ export const fetchBatches = async () => {
   const response = await authenticatedAxiosInstance.get(GET_BATCH_LIST, {
     params,
   });
-  return response.data;
+  return Array.isArray(response.data) ? withoutChargePackages(response.data) : response.data;
 };
 
 export const useGetBatchesQuery = () => {

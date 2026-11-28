@@ -1,0 +1,19 @@
+{
+    "classMaterials": "مواد الفصل",
+    "uploadPdf": "تحميل PDF",
+    "addVideo": "إضافة فيديو",
+    "noMaterialsYet": "لم تتم إضافة أي مواد للفصل بعد. حمّل ملف PDF أو أضف فيديو لربطه بأحد الفصول.",
+    "titleLabel": "العنوان",
+    "uploadFile": "تحميل ملف",
+    "youtubeUrl": "رابط يوتيوب",
+    "invalidYoutubeUrl": "أدخل رابط يوتيوب صالحًا",
+    "uploadingEllipsis": "جارٍ التحميل…",
+    "add": "إضافة",
+    "cancel": "إلغاء",
+    "couldNotResolveInstitute": "تعذّر تحديد مؤسستك.",
+    "couldNotUploadPdf": "تعذّر تحميل ملف PDF.",
+    "couldNotUploadVideo": "تعذّر تحميل الفيديو.",
+    "couldNotAddMaterial": "تعذّرت إضافة هذه المادة.",
+    "sessionFallback": "الجلسة",
+    "defaultTitle": "{{label}} – ملاحظات ({{formatted}})"
+}

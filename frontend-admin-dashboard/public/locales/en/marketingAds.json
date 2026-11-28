@@ -1,0 +1,157 @@
+{
+    "ads": {
+        "navTitle": "Ad performance",
+        "title": "All ad accounts",
+        "subtitle": "Spend from your Meta and Google ads next to the enquiries and admissions they brought in.",
+        "mixedCurrency": "Your ad accounts bill in more than one currency, so spend totals may mix currencies (shown in {{currency}}).",
+        "sync": {
+            "now": "Sync now",
+            "syncing": "Syncing…",
+            "lastSynced": "Last synced {{time}}",
+            "never": "Not synced yet"
+        },
+        "states": {
+            "errorTitle": "Something went wrong",
+            "retry": "Try again",
+            "accountsError": "We couldn’t load your ad accounts.",
+            "reportError": "We couldn’t load ad performance for this period."
+        },
+        "accounts": {
+            "chipAria": "{{name}} — account options",
+            "reconnectBadge": "Reconnect",
+            "syncErrorBadge": "Sync failed",
+            "firstSync": "Fetching data…",
+            "lastSynced": "Last synced {{time}}",
+            "neverSynced": "Not synced yet",
+            "reconnect": "Reconnect",
+            "syncThis": "Sync this account",
+            "disconnect": "Disconnect",
+            "disconnectTitle": "Disconnect {{name}}?",
+            "disconnectBody": "We’ll stop fetching spend from this account. Spend already fetched stays in your history, and you can connect it again any time.",
+            "keep": "Keep connected"
+        },
+        "range": {
+            "7d": "Last 7 days",
+            "30d": "Last 30 days",
+            "season": "Season",
+            "custom": "Custom",
+            "from": "From",
+            "to": "To"
+        },
+        "kpi": {
+            "spend": "Total spend",
+            "spendCaption_one": "Across {{count}} ad account",
+            "spendCaption_other": "Across {{count}} ad accounts",
+            "enquiries": "Enquiries",
+            "enquiriesCaption": "Landed in Admission CRM",
+            "costPerEnquiry": "Cost per enquiry",
+            "costPerEnquiryCaption": "Blended",
+            "admissions": "Admissions",
+            "admissionsCaption": "Cost per admission {{amount}}",
+            "admissionsCaptionEmpty": "No admissions from ads yet"
+        },
+        "chart": {
+            "title": {
+                "enquiries": "Enquiries by day",
+                "spend": "Spend by day",
+                "admissions": "Admissions by day"
+            },
+            "titleWeekly": {
+                "enquiries": "Enquiries by week",
+                "spend": "Spend by week",
+                "admissions": "Admissions by week"
+            },
+            "metric": {
+                "enquiries": "Enquiries",
+                "spend": "Spend",
+                "admissions": "Admissions"
+            },
+            "total": "Total",
+            "weekOf": "Week of {{day}}",
+            "emptyTitle": "Nothing to show for this period",
+            "emptyHint": "Try a longer period, or check that your campaigns were running.",
+            "syncingTitle": "Fetching your ad data",
+            "syncingHint": "The first sync of a new account can take a few minutes. This page updates on its own."
+        },
+        "suggestion": {
+            "title": "Agent suggestion",
+            "sentence": "{{best}} has the lowest cost per admission ({{bestCost}}). Consider moving {{amount}} from {{worst}} to it this week.",
+            "best": "Lowest",
+            "worst": "Highest",
+            "perAdmission": "{{amount}} / admission",
+            "noAdmissions": "No admissions yet",
+            "trackedNote": "Every enquiry is tracked to admission in the CRM.",
+            "openManager": {
+                "META": "Open Meta Ads Manager",
+                "GOOGLE": "Open Google Ads",
+                "YOUTUBE": "Open Google Ads"
+            },
+            "adviceOnly": "Advice only — we never change your budgets.",
+            "empty": "Not enough admissions yet to compare channels."
+        },
+        "table": {
+            "title": "Performance by platform",
+            "subtitleHint": "Click a row to see its campaigns.",
+            "account": "Ad account",
+            "spend": "Spend",
+            "clicks": "Clicks",
+            "enquiries": "Enquiries",
+            "costPerEnquiry": "Cost / enquiry",
+            "admissions": "Admissions",
+            "empty": "No spend or enquiries from ads in this period.",
+            "subtitle": {
+                "META": "Facebook + Instagram lead forms",
+                "GOOGLE": "Search, Performance Max and Display",
+                "YOUTUBE": "In-stream · video campaigns"
+            },
+            "otherCampaign": "Other / not matched",
+            "otherCampaignHint": "Enquiries we couldn’t tie to a campaign",
+            "noCampaigns": "No campaign activity in this period.",
+            "showAll_one": "Show {{count}} campaign",
+            "showAll_other": "Show all {{count}} campaigns",
+            "showFewer": "Show fewer",
+            "expandAria": "Show {{platform}} campaigns",
+            "collapseAria": "Hide {{platform}} campaigns",
+            "notFromAds": "Not from ads: {{enquiries}} enquiries, {{admissions}} admissions"
+        },
+        "channel": {
+            "META": "Meta",
+            "SEARCH": "Search",
+            "PERFORMANCE_MAX": "Performance Max",
+            "DISPLAY": "Display",
+            "VIDEO": "Video",
+            "DEMAND_GEN": "Demand Gen",
+            "DISCOVERY": "Discovery",
+            "SHOPPING": "Shopping",
+            "MULTI_CHANNEL": "App",
+            "SMART": "Smart",
+            "LOCAL": "Local",
+            "LOCAL_SERVICES": "Local Services",
+            "HOTEL": "Hotel",
+            "TRAVEL": "Travel"
+        },
+        "empty": {
+            "title": "Connect your ad accounts",
+            "body": "See what you spend on Meta and Google ads next to the enquiries and admissions each one brings in — and where your next rupee works hardest. We only read spend; we never change your campaigns.",
+            "meta": {
+                "hint": "Facebook and Instagram ads",
+                "point1": "Daily spend, clicks and lead-form leads per campaign",
+                "point2": "Lead-form enquiries matched to their campaign"
+            },
+            "google": {
+                "hint": "Search, Performance Max, Display and YouTube",
+                "point1": "Daily spend and clicks per campaign and channel",
+                "point2": "YouTube video campaigns shown as their own platform"
+            },
+            "connect": "Connect {{platform}}",
+            "opening": "Opening sign-in…",
+            "youtubeNote": "YouTube Ads are included with Google Ads."
+        },
+        "reconnect": {
+            "title_one": "{{platform}}: {{count}} account needs reconnecting",
+            "title_other": "{{platform}}: {{count}} accounts need reconnecting",
+            "hint": "Spend stops updating until you sign in again. Your history is kept.",
+            "button": "Reconnect"
+        }
+    }
+}

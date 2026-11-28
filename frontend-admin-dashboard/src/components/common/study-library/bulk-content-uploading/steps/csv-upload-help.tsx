@@ -10,6 +10,11 @@ import { useStudyLibraryStore } from '@/stores/study-library/use-study-library-s
 import { downloadBlob } from '../sample-zip';
 import { generateChapterReferenceCsv } from '../chapter-reference';
 import { useBulkContentUploadingStore } from '../use-bulk-content-uploading-store';
+import {
+    getTerminology,
+    getTerminologyPlural,
+} from '@/components/common/layout-container/sidebar/utils';
+import { ContentTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
 
 const EXAMPLE_CSV = [
     'bulkcontent.csv',
@@ -34,7 +39,9 @@ export const CsvUploadHelp = () => {
     const handleDownload = async () => {
         if (downloading) return;
         if (pickCourses && courseIds.length === 0) {
-            toast.error('Select at least one course');
+            toast.error(
+                `Select at least one ${getTerminology(ContentTerms.Course, SystemTerms.Course).toLocaleLowerCase()}`
+            );
             return;
         }
         setDownloading(true);
@@ -65,7 +72,12 @@ export const CsvUploadHelp = () => {
                 <h4 className="text-subtitle font-semibold text-neutral-700">bulkcontent.csv</h4>
                 <p className="mt-1 text-caption text-neutral-500">
                     Put a <span className="font-mono">bulkcontent.csv</span> in the zip — one row
-                    per file, saying which chapter it belongs to.
+                    per file, saying which{' '}
+                    {getTerminology(
+                        ContentTerms.Chapters,
+                        SystemTerms.Chapters
+                    ).toLocaleLowerCase()}{' '}
+                    it belongs to.
                 </p>
             </div>
 
@@ -91,7 +103,11 @@ export const CsvUploadHelp = () => {
             <div className="rounded-md border border-neutral-100 bg-neutral-50 p-3">
                 <label className="flex items-center justify-between gap-4">
                     <span className="text-caption font-medium text-neutral-700">
-                        Limit reference to specific courses
+                        Limit reference to specific{' '}
+                        {getTerminologyPlural(
+                            ContentTerms.Course,
+                            SystemTerms.Course
+                        ).toLocaleLowerCase()}
                     </span>
                     <Switch checked={pickCourses} onCheckedChange={setPickCourses} />
                 </label>
@@ -100,7 +116,7 @@ export const CsvUploadHelp = () => {
                         options={courseOptions}
                         selected={courseIds}
                         onChange={setCourseIds}
-                        placeholder="Select courses…"
+                        placeholder={`Select ${getTerminologyPlural(ContentTerms.Course, SystemTerms.Course).toLocaleLowerCase()}…`}
                         className="mt-2"
                     />
                 )}
@@ -121,7 +137,7 @@ export const CsvUploadHelp = () => {
                     ? progress
                         ? `Building… ${progress.done}/${progress.total}`
                         : 'Building…'
-                    : 'Download chapter reference (ids + skeleton)'}
+                    : `Download ${getTerminology(ContentTerms.Chapters, SystemTerms.Chapters).toLocaleLowerCase()} reference (ids + skeleton)`}
             </MyButton>
         </div>
     );

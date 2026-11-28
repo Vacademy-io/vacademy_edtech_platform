@@ -1,0 +1,5 @@
+{
+    "oauthFailed": "فشلت عملية OAuth. جارٍ إعادة التوجيه إلى تسجيل الدخول...",
+    "oauthProcessingFailed": "فشلت معالجة OAuth. جارٍ إعادة التوجيه إلى تسجيل الدخول...",
+    "handlingOauthRedirect": "جارٍ معالجة إعادة توجيه OAuth..."
+}

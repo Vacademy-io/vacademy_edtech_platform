@@ -1,0 +1,35 @@
+{
+    "loading": "Loading payment modes…",
+    "modeLabel": "How was it paid?",
+    "subModeLabel": "Via",
+    "referenceLabel": "Reference",
+    "referencePlaceholder": "e.g. UPI ref, UTR, cheque number",
+    "dateLabel": "Payment date",
+    "notesLabel": "Notes",
+    "extra": {
+        "cheque_date": "Cheque date",
+        "bank_name": "Bank",
+        "payer_name": "Paid by"
+    },
+    "proof": {
+        "attach": "Attach proof",
+        "replace": "Replace proof",
+        "uploading": "Uploading…",
+        "attached": "Proof attached",
+        "remove": "Remove"
+    },
+    "errors": {
+        "modeRequired": "Choose how the payment was made.",
+        "referenceRequired": "Enter the reference for this payment mode.",
+        "proofRequired": "Attach proof of payment for this mode.",
+        "subModeRequired": "Choose an option for this payment mode.",
+        "fieldRequired": "Fill in all the fields marked *.",
+        "numberingRequired": "Choose the {{label}}."
+    },
+    "modePlaceholder": "Select payment mode",
+    "subModePlaceholder": "Select",
+    "selectPlaceholder": "Select",
+    "notSpecified": "Not specified",
+    "numberingLabel": "Receipt series",
+    "numberingHint": "Picks the receipt number series. Asked once per course; later installments use the same."
+}

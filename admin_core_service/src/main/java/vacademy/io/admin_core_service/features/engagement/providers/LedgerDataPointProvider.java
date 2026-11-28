@@ -1,9 +1,12 @@
 package vacademy.io.admin_core_service.features.engagement.providers;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import vacademy.io.admin_core_service.features.engagement.client.EngagementInternalClients;
+import vacademy.io.admin_core_service.features.engagement.service.EngagementAutomatedReply;
 import vacademy.io.admin_core_service.features.engagement.spi.DataPointProvider;
 import vacademy.io.admin_core_service.features.engagement.spi.DataPointSpec;
 import vacademy.io.admin_core_service.features.engagement.spi.FetchContext;
@@ -24,6 +27,10 @@ import java.util.Map;
 public class LedgerDataPointProvider implements DataPointProvider {
 
     private final EngagementInternalClients clients;
+
+    /** B5: the contact-limit window; the ledger then also counts touches from every system. */
+    @Value("${engagement.contact.window-days:7}")
+    private int contactWindowDays = 7;
 
     @Override public String key() { return "ledger"; }
     @Override public boolean alwaysOn() { return true; }
@@ -50,11 +57,25 @@ public class LedgerDataPointProvider implements DataPointProvider {
             if (s.getEmail() != null) m.put("email", s.getEmail());
             reqSubjects.add(m);
         }
-        JsonNode resp = clients.ledgerBatch(ctx.getInstituteId(), reqSubjects, ctx.getRecentWindowDays());
+        JsonNode resp = clients.ledgerBatch(ctx.getInstituteId(), reqSubjects, ctx.getRecentWindowDays(), contactWindowDays);
         JsonNode bySubject = resp.path("bySubject");
         Map<String, JsonNode> out = new HashMap<>();
-        bySubject.fields().forEachRemaining(e -> out.put(e.getKey(), e.getValue()));
+        bySubject.fields().forEachRemaining(e -> {
+            withoutAutomatedReply(e.getValue().get("whatsapp"));
+            out.put(e.getKey(), e.getValue());
+        });
         return out;
+    }
+
+    /**
+     * A bot's greeting is not the person replying: every reader of the ledger (the wake, the inbox-only
+     * rule for people who replied, the send-time rule, the model's prompt) then sees no reply.
+     */
+    private static void withoutAutomatedReply(JsonNode whatsapp) {
+        if (whatsapp instanceof ObjectNode channel
+                && EngagementAutomatedReply.isAutomated(channel.path("lastReplyText").asText(null))) {
+            channel.remove(List.of("lastReplyAt", "lastReplyText", "windowOpenUntil"));
+        }
     }
 
     @Override
@@ -63,6 +84,13 @@ public class LedgerDataPointProvider implements DataPointProvider {
         StringBuilder sb = new StringBuilder("LEDGER:");
         appendChannel(sb, "whatsapp", p.get("whatsapp"));
         appendChannel(sb, "email", p.get("email"));
+        JsonNode contact = p.get("contact");
+        if (contact != null && !contact.isNull()) {
+            // Every system together (engine, workflows, announcements, chatbot), so the brain does
+            // not add to a week that is already busy.
+            sb.append(" [all systems: touches in the last ").append(contactWindowDays).append(" days=")
+              .append(contact.path("touches").asLong(0)).append("]");
+        }
         return sb.toString();
     }
 

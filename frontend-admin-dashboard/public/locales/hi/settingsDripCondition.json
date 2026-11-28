@@ -1,0 +1,79 @@
+{
+    "dialog": {
+        "title": {
+            "add": "ड्रिप शर्त जोड़ें",
+            "edit": "ड्रिप शर्त संपादित करें"
+        },
+        "description": "विशिष्ट पैकेज, अध्यायों या स्लाइड्स के लिए सामग्री रिलीज़ नियम कॉन्फ़िगर करें।"
+    },
+    "footer": {
+        "cancel": "रद्द करें",
+        "addCondition": "शर्त जोड़ें",
+        "saveChanges": "परिवर्तन सहेजें"
+    },
+    "basicSettings": {
+        "level": {
+            "label": "सामग्री स्तर",
+            "placeholder": "स्तर चुनें",
+            "package": "पैकेज (टेम्पलेट)"
+        },
+        "levelId": {
+            "packageLabel": "पैकेज",
+            "idLabel": "{{term}} आईडी",
+            "packagePlaceholder": "पैकेज चुनें",
+            "idPlaceholder": "आईडी दर्ज करें"
+        },
+        "target": {
+            "label": "इस पर लागू करें",
+            "placeholder": "लक्ष्य चुनें",
+            "allItems": "सभी {{term}}",
+            "hint": "यह ड्रिप शर्त पैकेज के भीतर इस प्रकार की सभी वस्तुओं पर एक टेम्पलेट के रूप में लागू होगी।"
+        },
+        "behavior": {
+            "label": "व्यवहार",
+            "placeholder": "व्यवहार चुनें",
+            "lock": "लॉक - दिखाई देता है लेकिन पहुँच योग्य नहीं",
+            "hide": "छिपाएं - पूरी तरह छिपा हुआ",
+            "both": "दोनों - क्रमिक अनलॉक"
+        },
+        "enabled": {
+            "label": "शर्त सक्षम करें",
+            "hint": "इस ड्रिप शर्त को सक्रिय करें"
+        }
+    },
+    "rules": {
+        "title": "नियम",
+        "hint": "सामग्री अनलॉक होने के लिए सभी नियम पूरे होने चाहिए",
+        "addPlaceholder": "नियम जोड़ें",
+        "types": {
+            "dateBased": "तिथि-आधारित",
+            "completionBased": "पूर्णता-आधारित",
+            "prerequisite": "पूर्वापेक्षा",
+            "sequential": "क्रमिक"
+        },
+        "empty": "अभी तक कोई नियम नहीं जोड़ा गया। जारी रखने के लिए कम से कम एक नियम जोड़ें।"
+    },
+    "ruleEditor": {
+        "dateBased": {
+            "label": "अनलॉक तिथि और समय"
+        },
+        "completionBased": {
+            "metricLabel": "मीट्रिक प्रकार",
+            "averageOfAll": "सभी आइटम का औसत",
+            "averageOfLastN": "अंतिम N आइटम का औसत",
+            "countLabel": "आइटम की संख्या (N)",
+            "thresholdLabel": "सीमा (%)"
+        },
+        "prerequisite": {
+            "typeLabel": "पूर्वापेक्षा प्रकार",
+            "requiredItems": "आवश्यक {{term}}",
+            "itemIdsLabel": "आइटम आईडी (अल्पविराम से अलग)",
+            "itemIdsPlaceholder": "chapter-1, chapter-2, chapter-3",
+            "thresholdLabel": "पूर्णता सीमा (%)"
+        },
+        "sequential": {
+            "thresholdLabel": "पूर्णता सीमा (%)",
+            "hint": "पिछला आइटम इस सीमा तक पूरा होना चाहिए"
+        }
+    }
+}

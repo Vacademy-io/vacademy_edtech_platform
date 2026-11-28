@@ -1,0 +1,30 @@
+{
+    "description": "Un cycle par mois et par type de cycle. Un cycle ne calcule rien tant qu'il n'est pas traité, et ne paie personne tant qu'il n'est pas approuvé et marqué payé.",
+    "yearPlaceholder": "Année",
+    "actions": {
+        "newPayrollRun": "Nouveau cycle de paie",
+        "open": "Ouvrir"
+    },
+    "table": {
+        "columns": {
+            "period": "Période",
+            "type": "Type",
+            "status": "Statut",
+            "employees": "Employés",
+            "totalNetPay": "Salaire net total",
+            "processed": "Traité",
+            "approved": "Approuvé"
+        },
+        "defaultRunType": "Régulier",
+        "processedByLabel": "par la paie",
+        "approvedByLabel": "par la finance"
+    },
+    "errors": {
+        "loadFailed": "Impossible de charger les cycles de paie pour cette année."
+    },
+    "empty": {
+        "title": "Aucun cycle de paie en {{year}}",
+        "adminDescription": "Créez un cycle pour le mois que vous voulez payer. Les structures salariales doivent d'abord être attribuées, sinon les employés se retrouveront dans les erreurs du cycle.",
+        "staffDescription": "Rien n'a encore été exécuté pour cette année. Un administrateur RH crée les cycles de paie."
+    }
+}

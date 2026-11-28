@@ -16,4 +16,12 @@ import lombok.NoArgsConstructor;
 public class TemplateAlternativesRequest {
     private String feedback;
     private Integer count;
+    /** What the templates are for ("first touch", "missed class"); optional. */
+    private String purpose;
+    /** en | hi | hinglish; null = the engine's language. */
+    private String language;
+    /** For REGENERATE / MORE_LIKE_THIS: the proposal to replace or imitate. */
+    private String basedOnId;
+    /** NEW (default) | REGENERATE (replace one draft) | MORE_LIKE_THIS. */
+    private String mode;
 }

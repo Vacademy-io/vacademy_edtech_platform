@@ -76,4 +76,17 @@ public class AdminCreateInvoiceRequestDTO {
      * doesn't match the invoice actually being edited. Ignored by the create path.
      */
     private String editingInvoiceId;
+
+    /**
+     * Optional admin discount on the invoice (ad-hoc % / flat with a reason, or an
+     * existing coupon). Applied as a DISCOUNT line on the pre-tax subtotal; the admin
+     * who created the invoice is recorded as the one who granted it.
+     */
+    private vacademy.io.common.payment.dto.AdminDiscountRequestDTO adminDiscount;
+
+    /**
+     * Optional product this invoice pays for: a renewal of a membership the learner holds, or an
+     * enrolment in a new course. Applied once the invoice is paid. Single-learner invoices only.
+     */
+    private InvoiceProductLinkDTO productLink;
 }

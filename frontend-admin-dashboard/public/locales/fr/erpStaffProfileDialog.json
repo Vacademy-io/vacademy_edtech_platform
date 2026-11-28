@@ -1,0 +1,23 @@
+{
+    "heading": "Créer un profil RH",
+    "cancel": "Annuler",
+    "createProfile": "Créer le profil",
+    "creating": "Création en cours…",
+    "noDepartment": "Aucun service",
+    "noDesignation": "Aucun poste",
+    "thisPerson": "cette personne",
+    "fields": {
+        "employeeCodeLabel": "Code employé",
+        "employeeCodePlaceholder": "Laissez vide pour que les RH en attribuent un",
+        "joinDateLabel": "Date d'entrée",
+        "departmentLabel": "Service",
+        "designationLabel": "Poste"
+    },
+    "toasts": {
+        "created": "Profil RH créé pour {{name}}"
+    },
+    "errors": {
+        "joinDateRequired": "Choisissez la date d'entrée",
+        "createFailed": "Impossible de créer un profil RH pour {{name}}"
+    }
+}

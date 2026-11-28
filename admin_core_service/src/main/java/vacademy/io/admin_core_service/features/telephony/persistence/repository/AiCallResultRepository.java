@@ -19,6 +19,13 @@ public interface AiCallResultRepository extends JpaRepository<AiCallResult, Stri
     java.util.List<AiCallResult> findTop12ByCampaignIdAndInstituteIdOrderByCreatedAtDesc(
             String campaignId, String instituteId);
 
+    /** The human follow-up verdict of one call, corrected after the analyser wrote it. */
+    @Modifying
+    @Transactional
+    @Query(value = "UPDATE ai_call_result SET follow_up = :followUp, follow_up_gist = :gist, updated_at = now() WHERE id = :id",
+            nativeQuery = true)
+    int updateFollowUp(@Param("id") String id, @Param("followUp") String followUp, @Param("gist") String gist);
+
     /** Idempotency lookup: a re-POST of the same call updates the existing row. */
     Optional<AiCallResult> findByProviderAndCallUuid(String provider, String callUuid);
 

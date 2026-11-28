@@ -1,0 +1,65 @@
+{
+    "father": {
+        "sectionLabel": "Père",
+        "sectionHeading": "Détails",
+        "name": {
+            "label": "Nom du père",
+            "placeholder": "Saisir le nom du père"
+        },
+        "mobile": {
+            "label": "Numéro de mobile"
+        },
+        "email": {
+            "label": "Adresse e-mail",
+            "placeholder": "Saisir l'e-mail"
+        },
+        "aadhaar": {
+            "label": "N° Aadhaar"
+        },
+        "qualification": {
+            "label": "Qualification",
+            "placeholder": "Saisir la qualification"
+        },
+        "occupation": {
+            "label": "Profession",
+            "placeholder": "Saisir la profession"
+        }
+    },
+    "mother": {
+        "sectionLabel": "Mère",
+        "sectionHeading": "Détails",
+        "name": {
+            "label": "Nom de la mère",
+            "placeholder": "Saisir le nom de la mère"
+        },
+        "mobile": {
+            "label": "Numéro de mobile"
+        },
+        "email": {
+            "label": "Adresse e-mail",
+            "placeholder": "Saisir l'e-mail"
+        },
+        "aadhaar": {
+            "label": "N° Aadhaar"
+        },
+        "qualification": {
+            "label": "Qualification",
+            "placeholder": "Saisir la qualification"
+        },
+        "occupation": {
+            "label": "Profession",
+            "placeholder": "Saisir la profession"
+        }
+    },
+    "guardian": {
+        "sectionLabel": "Tuteur",
+        "sectionHeading": "Détails",
+        "name": {
+            "label": "Nom du tuteur",
+            "placeholder": "Saisir le nom du tuteur"
+        },
+        "mobile": {
+            "label": "Mobile du tuteur"
+        }
+    }
+}

@@ -21,7 +21,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { CalendarIcon } from 'lucide-react';
+import { CalendarBlank as CalendarIcon } from '@phosphor-icons/react';
 import { format, parseISO } from 'date-fns';
 import { cn } from '@/lib/utils';
 
@@ -158,6 +158,7 @@ export const StepThreeForm = ({
                     payment_option_id: paymentOptionId,
                     package_session_ids: packageSessionIds,
                     payment_plans: paymentPlans, // Store payment plans for Step 4
+                    payment_option_type: firstElement?.payment_option?.type || undefined,
                 },
                 { shouldValidate: true }
             ); // Trigger validation after setting values

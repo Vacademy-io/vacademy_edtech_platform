@@ -40,27 +40,57 @@ export interface AdminActivityLogPage {
 export interface AdminActivityLogFilters {
     startDate?: number;
     endDate?: number;
-    actorId?: string;
-    entityType?: string;
+    /** Actors to include. Empty/undefined means every actor. */
+    actorIds?: string[];
+    /** Resources to include. Empty/undefined means every resource. */
+    entityTypes?: string[];
     entityId?: string;
-    action?: string;
+    /** Activities to include. Empty/undefined means every activity. */
+    actions?: string[];
     page?: number;
     size?: number;
 }
 
+/**
+ * Multi-value filters travel as ONE comma-separated param (`actorId=a,b,c`),
+ * never as repeated `actorId[]=` keys: the ingress rejects raw brackets in a
+ * query string with a 400 before the request reaches the service. The backend
+ * splits on commas and falls back to a plain equality when there is one value.
+ */
+const csvParam = (values: string[] | undefined): string | undefined => {
+    if (!values || values.length === 0) return undefined;
+    const cleaned = values.map((v) => v.trim()).filter(Boolean);
+    return cleaned.length > 0 ? cleaned.join(',') : undefined;
+};
+
+const toQueryParams = (
+    filters: Omit<AdminActivityLogFilters, 'page' | 'size'>
+): Record<string, string | number> => {
+    const params: Record<string, string | number> = {};
+    if (filters.startDate !== undefined) params.startDate = filters.startDate;
+    if (filters.endDate !== undefined) params.endDate = filters.endDate;
+
+    const actorId = csvParam(filters.actorIds);
+    if (actorId) params.actorId = actorId;
+
+    const entityType = csvParam(filters.entityTypes);
+    if (entityType) params.entityType = entityType;
+
+    const action = csvParam(filters.actions);
+    if (action) params.action = action;
+
+    if (filters.entityId) params.entityId = filters.entityId;
+    return params;
+};
+
 const fetchActivityLogs = async (
     filters: AdminActivityLogFilters
 ): Promise<AdminActivityLogPage> => {
-    const params: Record<string, string | number> = {
+    const params = {
+        ...toQueryParams(filters),
         page: filters.page ?? 0,
         size: filters.size ?? 20,
     };
-    if (filters.startDate !== undefined) params.startDate = filters.startDate;
-    if (filters.endDate !== undefined) params.endDate = filters.endDate;
-    if (filters.actorId) params.actorId = filters.actorId;
-    if (filters.entityType) params.entityType = filters.entityType;
-    if (filters.entityId) params.entityId = filters.entityId;
-    if (filters.action) params.action = filters.action;
 
     const response = await authenticatedAxiosInstance.get<AdminActivityLogPage>(
         ADMIN_ACTIVITY_LOGS_LIST,
@@ -100,26 +130,17 @@ export const useActivityLogById = (id: string | null) =>
 export const exportActivityLogsCsv = async (
     filters: Omit<AdminActivityLogFilters, 'page' | 'size'>
 ): Promise<void> => {
-    const params: Record<string, string | number> = {};
-    if (filters.startDate !== undefined) params.startDate = filters.startDate;
-    if (filters.endDate !== undefined) params.endDate = filters.endDate;
-    if (filters.actorId) params.actorId = filters.actorId;
-    if (filters.entityType) params.entityType = filters.entityType;
-    if (filters.entityId) params.entityId = filters.entityId;
-    if (filters.action) params.action = filters.action;
-
-    const response = await authenticatedAxiosInstance.get<Blob>(
-        ADMIN_ACTIVITY_LOGS_EXPORT_CSV,
-        { params, responseType: 'blob' }
-    );
+    const response = await authenticatedAxiosInstance.get<Blob>(ADMIN_ACTIVITY_LOGS_EXPORT_CSV, {
+        params: toQueryParams(filters),
+        responseType: 'blob',
+    });
 
     // Prefer the filename the backend hints at via Content-Disposition; fall
     // back to a sensible date-stamped name.
     const disposition = response.headers['content-disposition'] as string | undefined;
     const match = disposition?.match(/filename="?([^"]+)"?/);
     const filename =
-        match?.[1] ||
-        `admin-activity-logs-${new Date().toISOString().slice(0, 10)}.csv`;
+        match?.[1] || `admin-activity-logs-${new Date().toISOString().slice(0, 10)}.csv`;
 
     const url = window.URL.createObjectURL(response.data);
     const link = document.createElement('a');

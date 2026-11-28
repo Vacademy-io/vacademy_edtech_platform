@@ -1,9 +1,10 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { MyButton } from '@/components/design-system/button';
 import { Plus, PencilSimpleLine, DownloadSimple, VideoCamera } from '@phosphor-icons/react';
 import { useNavigate } from '@tanstack/react-router';
-import { useUpcomingSessions } from '@/routes/study-library/live-session/-hooks/useLiveSessions';
+import { useDashboardUpcomingSessions } from '../-hooks/useDashboardSources';
 import { useLiveSessionStore } from '@/routes/study-library/live-session/schedule/-store/sessionIdstore';
 import {
     getSessionBySessionId,
@@ -23,7 +24,7 @@ import {
 } from '@/routes/study-library/live-session/-hooks/useSessionDetails';
 import { useLiveSessionReport } from '@/routes/study-library/live-session/-hooks/useLiveSessionReport';
 import {
-    registrationColumns,
+    buildRegistrationColumns,
     REGISTRATION_WIDTH,
     RegistrationTableData,
 } from '@/routes/study-library/live-session/-constants/reportTable';
@@ -40,7 +41,7 @@ import Papa from 'papaparse';
 import { toast } from 'sonner';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import {
-    reportColumns,
+    buildReportColumns,
     REPORT_WIDTH,
     ReportTableData,
 } from '@/routes/study-library/live-session/-constants/reportTable';
@@ -54,8 +55,15 @@ interface LiveClassesWidgetProps {
 }
 
 const LiveClassesWidget: React.FC<LiveClassesWidgetProps> = ({ instituteId }) => {
+    const { t } = useTranslation('dashboardLiveClassesWidget');
+    // Column headers are translated, so the definitions are built from the
+    // report-table namespace (same pattern as live-session-card).
+    const { t: tReportTable } = useTranslation('studyLibraryLiveSessionReportTable');
+    const registrationColumns = buildRegistrationColumns(tReportTable);
+    const reportColumns = buildReportColumns(tReportTable);
     const navigate = useNavigate();
-    const { data: upcomingData } = useUpcomingSessions(instituteId);
+    // Shared with the KPI band's "classes today" so the list is fetched once per load.
+    const { data: upcomingData } = useDashboardUpcomingSessions(instituteId);
     const queryClient = useQueryClient();
     const {
         mutateAsync: fetchReport,
@@ -122,7 +130,7 @@ const LiveClassesWidget: React.FC<LiveClassesWidgetProps> = ({ instituteId }) =>
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
         setIsRegistrationExporting(false);
-        toast.success('Registrations downloaded successfully.');
+        toast.success(t('csvExport.registrationsDownloaded'));
     };
 
     const handleExportAttendance = () => {
@@ -130,7 +138,12 @@ const LiveClassesWidget: React.FC<LiveClassesWidgetProps> = ({ instituteId }) =>
         const csvData = tableAttendanceData.content.map((item) => ({
             index: item.index,
             username: item.username,
-            attendanceStatus: item.attendanceStatus === 'PRESENT' ? 'Present' : item.attendanceStatus === 'ABSENT' ? 'Absent' : 'Unmarked',
+            attendanceStatus:
+                item.attendanceStatus === 'PRESENT'
+                    ? t('csvExport.attendanceStatus.present')
+                    : item.attendanceStatus === 'ABSENT'
+                      ? t('csvExport.attendanceStatus.absent')
+                      : t('csvExport.attendanceStatus.unmarked'),
         }));
         const csv = Papa.unparse(csvData);
         const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -143,7 +156,7 @@ const LiveClassesWidget: React.FC<LiveClassesWidgetProps> = ({ instituteId }) =>
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
         setIsAttendanceExporting(false);
-        toast.success('Attendance report downloaded successfully.');
+        toast.success(t('csvExport.attendanceDownloaded'));
     };
 
     const [dialogOpen, setDialogOpen] = React.useState(false);
@@ -268,10 +281,10 @@ const LiveClassesWidget: React.FC<LiveClassesWidgetProps> = ({ instituteId }) =>
                                     SystemTerms.LiveSession
                                 )}
                             </CardTitle>
-                            <CardDescription className="line-clamp-1 text-[11px] text-neutral-500 sm:text-xs">
+                            <CardDescription className="line-clamp-1 text-2xs text-neutral-500 sm:text-xs">
                                 {sessions.length > 0
-                                    ? `${sessions.length} upcoming session${sessions.length === 1 ? '' : 's'}`
-                                    : 'No upcoming sessions scheduled'}
+                                    ? t('header.upcomingSessionsCount', { count: sessions.length })
+                                    : t('header.noUpcomingSessions')}
                             </CardDescription>
                         </div>
                     </div>
@@ -284,7 +297,7 @@ const LiveClassesWidget: React.FC<LiveClassesWidgetProps> = ({ instituteId }) =>
                         className="shrink-0 text-xs sm:text-sm"
                     >
                         <Plus size={14} className="mr-1" />
-                        Add
+                        {t('header.addButton')}
                     </MyButton>
                 </div>
             </CardHeader>
@@ -297,13 +310,13 @@ const LiveClassesWidget: React.FC<LiveClassesWidgetProps> = ({ instituteId }) =>
                                 weight="duotone"
                                 className="text-neutral-300"
                             />
-                            <div className="text-[11px] text-neutral-500">
-                                No{' '}
-                                {getTerminologyPlural(
-                                    ContentTerms.LiveSession,
-                                    SystemTerms.LiveSession
-                                ).toLowerCase()}{' '}
-                                scheduled yet
+                            <div className="text-2xs text-neutral-500">
+                                {t('emptyState.noSessionsScheduledYet', {
+                                    term: getTerminologyPlural(
+                                        ContentTerms.LiveSession,
+                                        SystemTerms.LiveSession
+                                    ).toLowerCase(),
+                                })}
                             </div>
                         </div>
                     )}
@@ -320,8 +333,8 @@ const LiveClassesWidget: React.FC<LiveClassesWidgetProps> = ({ instituteId }) =>
                                 {/* Header row with time and dropdown */}
                                 <div className="flex items-start justify-between">
                                     <div className="flex flex-col">
-                                        <span className="text-[10px] uppercase tracking-wide text-neutral-500">
-                                            Upcoming
+                                        <span className="text-2xs uppercase tracking-wide text-neutral-500">
+                                            {t('sessionCard.upcomingLabel')}
                                         </span>
                                         <span className="text-base font-semibold text-primary-600">
                                             {time}
@@ -340,7 +353,7 @@ const LiveClassesWidget: React.FC<LiveClassesWidgetProps> = ({ instituteId }) =>
                                             <DropdownMenuItem
                                                 onClick={(e) => handleDeleteClick(session, e)}
                                             >
-                                                Delete Session
+                                                {t('sessionCard.deleteSession')}
                                             </DropdownMenuItem>
                                             <DropdownMenuItem
                                                 onClick={(e) => {
@@ -348,7 +361,7 @@ const LiveClassesWidget: React.FC<LiveClassesWidgetProps> = ({ instituteId }) =>
                                                     handleViewRegistrations(session);
                                                 }}
                                             >
-                                                View Participant Details
+                                                {t('sessionCard.viewParticipantDetails')}
                                             </DropdownMenuItem>
                                         </DropdownMenuContent>
                                     </DropdownMenu>
@@ -380,7 +393,7 @@ const LiveClassesWidget: React.FC<LiveClassesWidgetProps> = ({ instituteId }) =>
                     })}
                     {remainingCount > 0 && (
                         <div className="self-start text-xs text-neutral-500">
-                            +{remainingCount} More
+                            {t('moreCount', { count: remainingCount })}
                         </div>
                     )}
                 </div>
@@ -390,8 +403,8 @@ const LiveClassesWidget: React.FC<LiveClassesWidgetProps> = ({ instituteId }) =>
             <MyDialog
                 open={dialogOpen}
                 onOpenChange={setDialogOpen}
-                heading="Participant Details"
-                className="w-[95vw] max-w-4xl sm:w-[80vw]"
+                heading={t('participantDialog.heading')}
+                className="w-dialog-xl"
             >
                 <div className="flex h-full flex-col gap-3 p-2 text-sm sm:p-4">
                     <div className="mt-2 h-full rounded-lg sm:mt-4">
@@ -407,7 +420,7 @@ const LiveClassesWidget: React.FC<LiveClassesWidgetProps> = ({ instituteId }) =>
                                                 : 'border-none bg-transparent'
                                         }`}
                                     >
-                                        Registered Users
+                                        {t('participantDialog.tabs.registeredUsers')}
                                     </TabsTrigger>
                                     <TabsTrigger
                                         key={'Attendance'}
@@ -418,7 +431,7 @@ const LiveClassesWidget: React.FC<LiveClassesWidgetProps> = ({ instituteId }) =>
                                                 : 'border-none bg-transparent'
                                         }`}
                                     >
-                                        Attendance
+                                        {t('participantDialog.tabs.attendance')}
                                     </TabsTrigger>
                                 </TabsList>
                             </div>
@@ -430,7 +443,7 @@ const LiveClassesWidget: React.FC<LiveClassesWidgetProps> = ({ instituteId }) =>
                                     <>
                                         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                                             <h3 className="mb-1 text-base font-semibold sm:mb-2 sm:text-lg">
-                                                Registrations
+                                                {t('participantDialog.registration.title')}
                                             </h3>
                                             <MyButton
                                                 type="button"
@@ -447,7 +460,7 @@ const LiveClassesWidget: React.FC<LiveClassesWidgetProps> = ({ instituteId }) =>
                                                             size={16}
                                                             className="mr-1 sm:mr-2 sm:size-5"
                                                         />
-                                                        Export
+                                                        {t('participantDialog.registration.exportButton')}
                                                     </>
                                                 )}
                                             </MyButton>
@@ -459,7 +472,7 @@ const LiveClassesWidget: React.FC<LiveClassesWidgetProps> = ({ instituteId }) =>
                                             error={reportError as Error | null}
                                             columnWidths={REGISTRATION_WIDTH}
                                             currentPage={1}
-                                            className="!h-[60vh] !w-full sm:!h-[70%]"
+                                            className={`!h-[60vh] !w-full sm:!h-[70%]` /* design-lint-ignore: viewport-relative table height inside dialog tab, no fixed-size token fits a scrollable table area */}
                                         />
                                     </>
                                 )}
@@ -471,7 +484,7 @@ const LiveClassesWidget: React.FC<LiveClassesWidgetProps> = ({ instituteId }) =>
                                     <>
                                         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                                             <h3 className="mb-1 text-base font-semibold sm:mb-2 sm:text-lg">
-                                                Attendance
+                                                {t('participantDialog.attendance.title')}
                                             </h3>
                                             <MyButton
                                                 type="button"
@@ -488,7 +501,7 @@ const LiveClassesWidget: React.FC<LiveClassesWidgetProps> = ({ instituteId }) =>
                                                             size={16}
                                                             className="mr-1 sm:mr-2 sm:size-5"
                                                         />
-                                                        Export
+                                                        {t('participantDialog.attendance.exportButton')}
                                                     </>
                                                 )}
                                             </MyButton>
@@ -500,7 +513,7 @@ const LiveClassesWidget: React.FC<LiveClassesWidgetProps> = ({ instituteId }) =>
                                             error={reportError as Error | null}
                                             columnWidths={REPORT_WIDTH}
                                             currentPage={1}
-                                            className="!h-[60vh] !w-full sm:!h-[70%]"
+                                            className={`!h-[60vh] !w-full sm:!h-[70%]` /* design-lint-ignore: viewport-relative table height inside dialog tab, no fixed-size token fits a scrollable table area */}
                                         />
                                     </>
                                 )}
@@ -512,14 +525,14 @@ const LiveClassesWidget: React.FC<LiveClassesWidgetProps> = ({ instituteId }) =>
 
             {/* Confirm delete dialog */}
             <MyDialog
-                heading="Attendance Report"
+                heading={t('deleteDialog.heading')}
                 open={openDeleteDialog}
                 onOpenChange={() => setOpenDeleteDialog(!openDeleteDialog)}
-                className="w-[95vw] max-w-md sm:w-fit sm:max-w-4xl"
+                className="w-dialog-md max-w-md sm:w-fit sm:max-w-4xl"
             >
                 <div className="flex h-full flex-col gap-3 p-3 sm:p-4">
                     <div className="text-sm sm:text-lg">
-                        Do you want to delete every class for this session
+                        {t('deleteDialog.confirmMessage')}
                     </div>
                     <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
                         <MyButton
@@ -528,7 +541,7 @@ const LiveClassesWidget: React.FC<LiveClassesWidgetProps> = ({ instituteId }) =>
                             }}
                             className="w-full sm:w-auto"
                         >
-                            Yes
+                            {t('deleteDialog.yes')}
                         </MyButton>
                         <MyButton
                             onClick={(e) => {
@@ -536,7 +549,7 @@ const LiveClassesWidget: React.FC<LiveClassesWidgetProps> = ({ instituteId }) =>
                             }}
                             className="w-full sm:w-auto"
                         >
-                            No
+                            {t('deleteDialog.no')}
                         </MyButton>
                     </div>
                 </div>

@@ -1,0 +1,134 @@
+{
+    "package": "Forfait",
+    "toggle": {
+        "label": "Inscrire en forfait",
+        "hint": "Facturer ces cours ensemble : une remise sur le total, un échéancier, un paiement à l’inscription et un reçu d’inscription."
+    },
+    "total": "Total du forfait",
+    "discount": {
+        "heading": "Remise du forfait",
+        "type": "Type",
+        "none": "Aucune remise",
+        "flat": "Montant fixe (₹)",
+        "percentage": "% du total",
+        "value": "Valeur",
+        "reason": "Motif",
+        "reasonPlaceholder": "ex. Offre d’inscription",
+        "splitLabel": "Répartir la remise sur les échéances",
+        "split": {
+            "EVEN": "À parts égales",
+            "FIRST": "Première échéance",
+            "LAST": "Dernière échéance",
+            "CUSTOM": "Personnalisée"
+        },
+        "byFee": "Chaque cours reçoit une part de la remise proportionnelle à ses frais."
+    },
+    "summary": "{{total}} − {{off}} de remise = {{net}} pour le forfait",
+    "schedule": {
+        "heading": "Échéances du forfait",
+        "hint": "Chaque échéance est répartie entre les cours selon leurs frais ; chaque cours reçoit ses propres échéances correspondantes."
+    },
+    "payment": {
+        "heading": "Paiement à l’inscription",
+        "skip": "Ne pas enregistrer de paiement",
+        "offline": "Enregistrer un paiement hors ligne",
+        "amount": "Montant",
+        "amountHint": "Première échéance {{first}} · total du forfait {{net}}",
+        "receiptHint": "Un seul reçu d’inscription liste tous les cours du forfait."
+    },
+    "errors": {
+        "blocked": "Certains cours ne peuvent pas faire partie d’un forfait (voir ci-dessus).",
+        "loading": "Chargement des frais des cours…",
+        "paymentAmount": "Saisissez le montant payé à l’inscription.",
+        "paymentTooMuch": "Le paiement dépasse le total du forfait ({{net}})."
+    },
+    "preview": {
+        "heading": "Forfait d’inscription",
+        "course": "Cours",
+        "fee": "Frais",
+        "discount": "Remise",
+        "toPay": "À payer",
+        "paidNow": "Payé",
+        "total": "Forfait",
+        "installments": "Échéances : {{list}}",
+        "receipt": "Un seul reçu d’inscription listera tous ces cours."
+    },
+    "side": {
+        "heading_one": "Forfait d’inscription · {{count}} cours",
+        "heading_many": "Forfait d’inscription · {{count}} cours",
+        "heading_other": "Forfait d’inscription · {{count}} cours",
+        "net": "Net {{amount}}",
+        "paid": "Payé {{amount}}",
+        "outstanding": "Reste dû {{amount}}",
+        "nextDue": "Prochaine échéance {{amount}} le {{date}}",
+        "left": "{{amount}} restant",
+        "discountReason": "Remise : {{reason}}",
+        "installments": "Échéances du forfait",
+        "recordPayment": "+ Enregistrer un paiement du forfait",
+        "courses": {
+            "course": "Cours",
+            "fee": "Frais",
+            "discount": "Remise",
+            "paid": "Payé",
+            "left": "Reste",
+            "total": "Forfait"
+        },
+        "status": {
+            "PAID": "Payé",
+            "PARTIAL_PAID": "Payé en partie",
+            "OVERDUE": "En retard",
+            "DUE": "À payer",
+            "STOPPED": "Arrêtée"
+        },
+        "pay": {
+            "heading": "Paiement du forfait",
+            "note": "Règle les échéances du forfait de la plus ancienne à la plus récente ; un paiement partiel est réparti entre les cours selon ce que chacun doit.",
+            "amount": "Montant",
+            "date": "Date",
+            "next": "Prochaine échéance {{amount}}",
+            "all": "Tout le reste dû {{amount}}",
+            "tooMuch": "Plus que le reste dû du forfait ({{amount}}).",
+            "split": "Réparti sur",
+            "previewError": "Impossible de calculer la répartition.",
+            "receipt": "Un seul reçu pour le forfait",
+            "cancel": "Annuler",
+            "saving": "Enregistrement…",
+            "submit": "Enregistrer {{amount}}",
+            "amountError": "Saisissez un montant positif",
+            "success": "{{amount}} enregistré sur le forfait",
+            "error": "Le paiement n’a pas pu être enregistré"
+        },
+        "item": {
+            "pay": "Payer cette échéance",
+            "move": "Changer la date",
+            "split": "Scinder",
+            "payHeading": "Paiement de l'échéance du {{date}}",
+            "coversEarlier_one": "Inclut {{count}} échéance antérieure encore ouverte : les paiements soldent d'abord la plus ancienne. Réparti entre les cours selon ce que chacun doit.",
+            "coversEarlier_many": "Inclut {{count}} échéances antérieures encore ouvertes : les paiements soldent d'abord la plus ancienne. Réparti entre les cours selon ce que chacun doit.",
+            "coversEarlier_other": "Inclut {{count}} échéances antérieures encore ouvertes : les paiements soldent d'abord la plus ancienne. Réparti entre les cours selon ce que chacun doit.",
+            "amount": "Modifier le montant",
+            "stop": "Arrêter les échéances"
+        },
+        "change": {
+            "moveHeading": "Changer la date d'échéance",
+            "moveHint": "Déplace cette échéance sur tous les cours du forfait.",
+            "splitHeading": "Reporter une partie des {{amount}} impayés à une date ultérieure",
+            "splitHint": "Réparti entre les cours selon ce que chacun doit sur cette échéance. Le total du forfait ne change pas.",
+            "amount": "Montant à reporter",
+            "dueDate": "Nouvelle échéance",
+            "newDueDate": "Dû le",
+            "save": "Enregistrer",
+            "amountError": "Saisissez un montant jusqu'à {{amount}}",
+            "dateError": "Choisissez une autre date",
+            "moveSuccess": "Échéance déplacée sur tous les cours",
+            "splitSuccess": "{{amount}} reporté à la nouvelle date",
+            "error": "Impossible de modifier l'échéance",
+            "newAmountError": "Saisissez au moins {{amount}} (déjà payé)",
+            "amountSuccess": "Échéance fixée à {{amount}} sur tous les cours",
+            "amountHeading": "Modifier le montant",
+            "amountHint": "Modifie cette échéance sur tous les cours : chacun garde ce qu'il a payé ({{paid}}) et le reste est réparti selon ce que chacun doit. Le total du forfait change de la différence.",
+            "newAmount": "Nouveau montant"
+        },
+        "stoppedFact": "Échéances arrêtées : {{amount}} · {{reason}}"
+    }
+}

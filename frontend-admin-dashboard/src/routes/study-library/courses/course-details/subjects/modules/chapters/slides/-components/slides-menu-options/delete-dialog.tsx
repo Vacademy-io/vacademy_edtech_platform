@@ -6,6 +6,7 @@ import { TokenKey } from '@/constants/auth/tokens';
 import { getTokenDecodedData, getTokenFromCookie } from '@/lib/auth/sessionUtility';
 import { useRouter } from '@tanstack/react-router';
 import { Dispatch, SetStateAction, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { useContentStore } from '../../-stores/chapter-sidebar-store';
 import { useSlidesMutations } from '../../-hooks/use-slides';
@@ -20,6 +21,7 @@ interface DeleteProps {
 }
 
 export const DeleteDialog = ({ openDialog, setOpenDialog }: DeleteProps) => {
+    const { t } = useTranslation('studyLibraryDeleteDialog');
     const router = useRouter();
     const searchParams = router.state.location.search;
     const chapterId: string = searchParams.chapterId || '';
@@ -62,20 +64,18 @@ export const DeleteDialog = ({ openDialog, setOpenDialog }: DeleteProps) => {
             if (linkedAssessmentId && alsoDeleteAssessment) {
                 try {
                     await handleDeleteAssessment(linkedAssessmentId, INSTITUTE_ID || undefined);
-                    toast.success('Slide and assessment deleted successfully!');
+                    toast.success(t('slideAndAssessmentDeleted'));
                 } catch (assessmentError) {
                     console.error('Error deleting linked assessment:', assessmentError);
-                    toast.warning(
-                        'Slide deleted, but the assessment could not be removed from the Assessments tab.'
-                    );
+                    toast.warning(t('assessmentDeleteFailed'));
                 }
             } else {
-                toast.success('Slide deleted successfully!');
+                toast.success(t('slideDeleted'));
             }
             setOpenDialog(null);
         } catch (error) {
             console.error('Error deleting slide:', error);
-            toast.error('Failed to delete the slide');
+            toast.error(t('slideDeleteFailed'));
         } finally {
             setIsDeleting(false);
         }
@@ -83,13 +83,13 @@ export const DeleteDialog = ({ openDialog, setOpenDialog }: DeleteProps) => {
 
     return (
         <MyDialog
-            heading="Delete"
+            heading={t('delete')}
             dialogWidth="w-[400px]"
             open={openDialog == 'delete'}
             onOpenChange={() => setOpenDialog(null)}
         >
             <div className="flex w-full flex-col gap-6">
-                <p>Are you sure you want to delete this?</p>
+                <p>{t('confirmDelete')}</p>
 
                 {linkedAssessmentId && (
                     <div className="flex flex-col gap-2 rounded-md border border-warning-200 bg-warning-50 p-3">
@@ -104,30 +104,27 @@ export const DeleteDialog = ({ openDialog, setOpenDialog }: DeleteProps) => {
                                 htmlFor="delete-linked-assessment"
                                 className="cursor-pointer text-sm"
                             >
-                                Also delete this assessment from the{' '}
-                                <span className="font-semibold">Assessments tab</span>
+                                {t('alsoDeleteAssessmentPrefix')}{' '}
+                                <span className="font-semibold">{t('assessmentsTab')}</span>
                             </label>
                         </div>
                         {alsoDeleteAssessment && otherSlideCount > 0 && (
                             <p className="flex items-start gap-1.5 ps-6 text-caption text-warning-700">
                                 <Info size={14} className="mt-0.5 shrink-0" />
-                                This assessment also backs {otherSlideCount} other{' '}
-                                {otherSlideCount === 1 ? 'slide' : 'slides'} (from a copied
-                                chapter or course). Deleting it will break{' '}
-                                {otherSlideCount === 1 ? 'that slide' : 'those slides'} too.
+                                {t('otherSlidesWarning', { count: otherSlideCount })}
                             </p>
                         )}
                         {!alsoDeleteAssessment && (
                             <p className="flex items-start gap-1.5 ps-6 text-caption text-warning-700">
                                 <Info size={14} className="mt-0.5 shrink-0" />
-                                The assessment stays live for learners in the Assessments tab.
+                                {t('assessmentStaysLive')}
                             </p>
                         )}
                     </div>
                 )}
 
                 <MyButton onClick={handleDeleteSlide} disable={isDeleting}>
-                    {isDeleting ? 'Deleting…' : 'Delete'}
+                    {isDeleting ? t('deletingEllipsis') : t('delete')}
                 </MyButton>
             </div>
         </MyDialog>

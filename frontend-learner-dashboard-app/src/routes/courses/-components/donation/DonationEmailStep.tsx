@@ -1,4 +1,5 @@
 import { Envelope } from "@phosphor-icons/react";
+import { useTranslation } from "react-i18next";
 
 interface DonationEmailStepProps {
   amount: number;
@@ -15,14 +16,15 @@ export const DonationEmailStep = ({
   onEmailChange,
   onBack
 }: DonationEmailStepProps) => {
+  const { t } = useTranslation("coursesRouteA");
   return (
     <>
       <div className="mb-2 bg-white border border-neutral-300 rounded-lg p-3">
         <div className="flex items-center justify-between mb-2">
-          <span className="font-semibold text-gray-700">Donation Summary</span>
+          <span className="font-semibold text-gray-700">{t("donation.summary.title")}</span>
         </div>
         <div className="flex items-center justify-between text-sm mb-1">
-          <span className="text-gray-600">Amount:</span>
+          <span className="text-gray-600">{t("donation.summary.amountLabel")}</span>
           <span className="font-semibold text-gray-900">${amount}</span>
         </div>
         <button
@@ -30,13 +32,13 @@ export const DonationEmailStep = ({
           onClick={onBack}
           style={{ boxShadow: 'none', textDecoration: 'none' }}
         >
-          Edit
+          {t("donation.summary.editButton")}
         </button>
       </div>
-      
+
       <div className="mb-2">
         <label className="block text-xs text-gray-600 mb-1" htmlFor="donation-email">
-          Your Email
+          {t("donation.emailStep.emailLabel")}
         </label>
         <div className="relative">
           <span className="absolute start-3 top-1/2 -translate-y-1/2 text-gray-400">
@@ -50,11 +52,11 @@ export const DonationEmailStep = ({
             }`}
             value={email}
             onChange={(e) => onEmailChange(e.target.value)}
-            placeholder={validationError ? validationError : "you@example.com"}
+            placeholder={validationError ? validationError : t("donation.emailStep.emailPlaceholder")}
           />
         </div>
         <p className="text-caption text-gray-400 mt-1">
-          We'll send your receipt to this email address
+          {t("donation.emailStep.receiptNote")}
         </p>
       </div>
     </>

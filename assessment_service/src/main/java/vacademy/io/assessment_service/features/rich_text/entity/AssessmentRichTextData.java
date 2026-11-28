@@ -29,8 +29,19 @@ public class AssessmentRichTextData {
     private String content;
 
     // Static method to create entity from DTO
+    //
+    // A NEW row with no content is stored empty: `content` is NOT NULL, and one
+    // blank field (a question text, an explanation, an option) used to fail the
+    // whole paper with a 511. An existing row (id set) is left as it was, so an
+    // edit that omits content can't blank text that's already saved.
     public static AssessmentRichTextData fromDTO(AssessmentRichTextDataDTO dto) {
         if (dto == null) return null;
+        if (dto.getId() == null) {
+            return new AssessmentRichTextData(
+                    null,
+                    dto.getType() != null ? dto.getType() : "HTML",
+                    dto.getContent() != null ? dto.getContent() : "");
+        }
         return new AssessmentRichTextData(dto.getId(), dto.getType(), dto.getContent());
     }
 

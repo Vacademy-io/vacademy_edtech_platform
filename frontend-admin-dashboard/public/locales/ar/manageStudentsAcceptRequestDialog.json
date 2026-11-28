@@ -1,0 +1,23 @@
+{
+    "dialog": {
+        "title": "قبول الطلب",
+        "confirmText": "هل أنت متأكد أنك تريد قبول الطلب الخاص بـ {{name}}؟",
+        "paymentPendingBulk_zero": "*ملاحظة: لا يوجد طلاب ({{count}}) بانتظار الدفع",
+        "paymentPendingBulk_one": "*ملاحظة: الدفع ما زال معلقًا لطالب واحد ({{count}})",
+        "paymentPendingBulk_two": "*ملاحظة: الدفع ما زال معلقًا لطالبَين ({{count}})",
+        "paymentPendingBulk_few": "*ملاحظة: الدفع ما زال معلقًا لـ {{count}} طلاب",
+        "paymentPendingBulk_many": "*ملاحظة: الدفع ما زال معلقًا لـ {{count}} طالبًا",
+        "paymentPendingBulk_other": "*ملاحظة: الدفع ما زال معلقًا لـ {{count}} طالب",
+        "paymentPendingSingle": "*ملاحظة: الدفع ما زال معلقًا لهذا الطالب",
+        "emailNotice": "سيؤدي هذا إلى قبول الطلب للطلاب المحددين عبر البريد الإلكتروني."
+    },
+    "buttons": {
+        "cancel": "إلغاء",
+        "accept": "قبول الطلب"
+    },
+    "toasts": {
+        "acceptSuccess": "تم قبول الطلب بنجاح",
+        "acceptFailed": "فشل قبول الطلب",
+        "unexpectedError": "حدث خطأ غير متوقع"
+    }
+}

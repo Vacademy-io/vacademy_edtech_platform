@@ -1,0 +1,34 @@
+{
+    "card": {
+        "title": "Numéros de téléphone du journal d'appels — {{role}}",
+        "description": {
+            "part1": "Contrôle si un utilisateur ayant le rôle",
+            "part2": "voit les numéros de téléphone complets sur Prospects → Journal d'appels et dans l'export des appels. Il s'agit d'un choix d'affichage propre à cette page — le panneau du prospect, Prospects récents et les autres vues de prospects continuent d'afficher les coordonnées du prospect dans tous les cas."
+        }
+    },
+    "modes": {
+        "full": {
+            "title": "Afficher les numéros complets",
+            "description": "Le tableau du journal d'appels, l'export CSV/Excel et les détails de chaque appel affichent le numéro de téléphone complet, afin qu'il puisse être lu directement sur la ligne et copié."
+        },
+        "masked": {
+            "title": "Masquer tout sauf les 4 derniers chiffres",
+            "description": "Les numéros s'affichent sous la forme *******1234 dans le journal d'appels et son export. Les lignes restent identifiables, mais les chiffres ne peuvent pas être lus ni copiés depuis cette page. C'est le réglage par défaut."
+        }
+    },
+    "radioGroup": {
+        "ariaLabel": "Visibilité des numéros de téléphone du journal d'appels"
+    },
+    "unconfigured": {
+        "message": "Non configuré — chaque rôle, y compris les administrateurs, affiche des numéros masqués jusqu'à ce que quelqu'un choisisse autre chose ici. Sélectionnez « Afficher les numéros complets » pour désactiver le masquage pour ce rôle."
+    },
+    "status": {
+        "loading": "Chargement du réglage actuel…",
+        "saving": "Enregistrement…",
+        "saved": "Enregistré",
+        "unsavedChanges": "Modifications non enregistrées…"
+    },
+    "toasts": {
+        "saveFailed": "Échec de l'enregistrement de la visibilité des numéros de téléphone"
+    }
+}

@@ -1,5 +1,5 @@
 import { useMemo, useRef, useEffect, useState } from 'react';
-import { useInstituteDetailsStore } from '@/stores/students/students-list/useInstituteDetailsStore';
+import { useTranslation } from 'react-i18next';
 import { Input } from '@/components/ui/input';
 import { ExportSettings } from '@/components/common/export-offline/contexts/export-settings-context';
 import { Question } from '@/components/common/export-offline/types/question';
@@ -8,13 +8,19 @@ import { useSuspenseQuery } from '@tanstack/react-query';
 import { handleGetQuestionPaperById } from '../../-utils/question-paper-services';
 import { DashboardLoader } from '@/components/core/dashboard-loader';
 import { convertQuestionsToExportSchema } from '../../-utils/helper';
+import {
+    PaperTitleBlock,
+    totalMarksOf,
+} from '@/components/common/export-offline/preview/paper-title-block';
 
 interface PaperSetProps {
     questionPaperId: string;
     settings: ExportSettings;
+    title?: string;
 }
 
-export function PaperSetQuestions({ questionPaperId, settings }: PaperSetProps) {
+export function PaperSetQuestions({ questionPaperId, settings, title }: PaperSetProps) {
+    const { t } = useTranslation('assessmentPaperSetQuestions');
     const { data: questionsData, isLoading } = useSuspenseQuery(
         handleGetQuestionPaperById(questionPaperId)
     );
@@ -28,7 +34,6 @@ export function PaperSetQuestions({ questionPaperId, settings }: PaperSetProps) 
         instructionsHeight: 0,
         questions: [] as number[],
     });
-    const { instituteDetails } = useInstituteDetailsStore();
 
     const initialHeaderRef = useRef<HTMLDivElement>(null);
     const instructionsRef = useRef<HTMLDivElement>(null);
@@ -64,23 +69,19 @@ export function PaperSetQuestions({ questionPaperId, settings }: PaperSetProps) 
         setHeights(newHeights);
     }, [settings]);
 
+    // Name / Roll No. blanks are for the copy a student writes on, not the key
+    const showCustomFields = settings.includeCustomInputFields && !settings.exportSolutionKey;
+
     const renderHeader = () => (
         <div ref={initialHeaderRef} className="mb-6">
-            {settings.showInstitutionLetterhead && (
-                <div className="mb-6 border-b pb-4 text-center">
-                    {settings.customLetterheadImage ? (
-                        <img
-                            src={settings.customLetterheadImage}
-                            alt="Letterhead"
-                            className="mx-auto mb-2 max-h-24"
-                        />
-                    ) : (
-                        <h1 className="text-2xl font-bold">{instituteDetails?.institute_name}</h1>
-                    )}
-                </div>
-            )}
+            <PaperTitleBlock
+                settings={settings}
+                title={title}
+                totalMarks={totalMarksOf(convertedQuestions)}
+                questionCount={convertedQuestions.length}
+            />
 
-            {settings.includeCustomInputFields && settings.customFields && (
+            {showCustomFields && settings.customFields && (
                 <div className="mb-6 space-y-4">
                     {settings.customFields
                         .filter((field) => field.enabled)
@@ -120,7 +121,7 @@ export function PaperSetQuestions({ questionPaperId, settings }: PaperSetProps) 
 
     const renderRoughWork = () => (
         <div className="mt-auto">
-            <h3 className="mb-2 text-lg font-semibold">Space for Rough Work</h3>
+            <h3 className="mb-2 text-lg font-semibold">{t('roughWork.heading')}</h3>
             <div
                 className="rounded-lg border-t-2 border-dashed"
                 style={{ height: `${ROUGH_WORK_HEIGHT}mm` }}
@@ -206,6 +207,7 @@ export function PaperSetQuestions({ questionPaperId, settings }: PaperSetProps) 
                             questionNumber={questionIndex + 1}
                             showMarks={settings.showMarksPerQuestion}
                             showCheckboxes={settings.showCheckboxesBeforeOptions}
+                            showAnswers={settings.exportSolutionKey}
                             answerSpacing={settings.answerSpacings?.[question.question_id] || 10}
                         />
                     </div>
@@ -235,6 +237,7 @@ export function PaperSetQuestions({ questionPaperId, settings }: PaperSetProps) 
                                 questionNumber={questionIndex + 1}
                                 showMarks={settings.showMarksPerQuestion}
                                 showCheckboxes={settings.showCheckboxesBeforeOptions}
+                                showAnswers={settings.exportSolutionKey}
                                 answerSpacing={
                                     settings.answerSpacings?.[question.question_id] || 10
                                 }
@@ -291,6 +294,7 @@ export function PaperSetQuestions({ questionPaperId, settings }: PaperSetProps) 
                                 questionNumber={questionIndex + 1}
                                 showMarks={settings.showMarksPerQuestion}
                                 showCheckboxes={settings.showCheckboxesBeforeOptions}
+                                showAnswers={settings.exportSolutionKey}
                                 answerSpacing={
                                     settings.answerSpacings?.[question.question_id] || 10
                                 }

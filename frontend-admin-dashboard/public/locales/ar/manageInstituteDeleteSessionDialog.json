@@ -1,0 +1,11 @@
+{
+    "heading": "حذف {{session}}",
+    "attention": "تنبيه",
+    "confirmMessage": "سيتم حذف جميع البيانات الموجودة في {{session}}. هل أنت متأكد أنك تريد حذف {{session}}",
+    "no": "لا",
+    "yes": "نعم",
+    "toast": {
+        "deleted": " تم حذف {{session}} بنجاح!",
+        "deleteFailed": "فشل حذف {{session}}"
+    }
+}

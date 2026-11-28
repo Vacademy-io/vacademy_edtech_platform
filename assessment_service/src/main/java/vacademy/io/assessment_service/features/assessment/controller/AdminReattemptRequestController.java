@@ -18,7 +18,7 @@ import vacademy.io.common.auth.model.CustomUserDetails;
 
 import java.util.List;
 
-/** The admin inbox for learner reattempt / time-extension requests. */
+/** The admin inbox for learner reattempt / time-extension requests and problem reports. */
 @RestController
 @RequestMapping("/assessment-service/admin/reattempt-request/v1")
 public class AdminReattemptRequestController {
@@ -29,25 +29,37 @@ public class AdminReattemptRequestController {
     /**
      * @param assessmentId optional — omit for the institute-wide inbox
      * @param status       optional, repeatable; defaults to every status
+     * @param type         optional, repeatable (REATTEMPT, TIME_INCREASE, PROBLEM_REPORT);
+     *                     defaults to every type
      */
     @GetMapping("/list")
     public ResponseEntity<Page<ReattemptRequestDto>> list(@RequestAttribute("user") CustomUserDetails user,
                                                           @RequestParam("instituteId") String instituteId,
                                                           @RequestParam(value = "assessmentId", required = false) String assessmentId,
                                                           @RequestParam(value = "status", required = false) List<String> status,
+                                                          @RequestParam(value = "type", required = false) List<String> type,
                                                           @RequestParam(value = "page", defaultValue = "0") int page,
                                                           @RequestParam(value = "size", defaultValue = "25") int size) {
-        return ResponseEntity.ok(reattemptRequestManager.listForAdmin(instituteId, assessmentId, status, page, size));
+        return ResponseEntity.ok(reattemptRequestManager.listForAdmin(instituteId, assessmentId, status, type, page, size));
     }
 
-    /** Badge count for the admin nav — the "system alert" that requests are waiting. */
+    /**
+     * Badge count for the admin nav — the "system alert" that requests are waiting.
+     *
+     * @param assessmentId optional — omit for the institute-wide badge, pass it for a badge that
+     *                     sits on one assessment's tab
+     */
     @GetMapping("/pending-count")
     public ResponseEntity<Long> pendingCount(@RequestAttribute("user") CustomUserDetails user,
-                                              @RequestParam("instituteId") String instituteId) {
-        return ResponseEntity.ok(reattemptRequestManager.pendingCount(instituteId));
+                                              @RequestParam("instituteId") String instituteId,
+                                              @RequestParam(value = "assessmentId", required = false) String assessmentId) {
+        return ResponseEntity.ok(reattemptRequestManager.pendingCount(instituteId, assessmentId));
     }
 
-    /** Approve (granting {@code granted_count} attempts) or reject one request. */
+    /**
+     * Approve (granting {@code granted_count} attempts, or adding {@code granted_minutes} to the
+     * live attempt) or reject one request; mark a problem report RESOLVED.
+     */
     @PostMapping("/{requestId}/review")
     public ResponseEntity<ReattemptRequestDto> review(@RequestAttribute("user") CustomUserDetails user,
                                                        @PathVariable("requestId") String requestId,

@@ -1,0 +1,7 @@
+{
+    "toast": {
+        "uploadSuccess": "تم تحميل ملف CSV بنجاح",
+        "uploadFailed": "فشل تحميل بيانات الطلاب",
+        "unexpectedError": "حدث خطأ غير متوقع"
+    }
+}

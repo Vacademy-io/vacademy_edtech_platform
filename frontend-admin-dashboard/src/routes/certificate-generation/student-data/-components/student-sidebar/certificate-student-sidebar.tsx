@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import {
     CertificateStudentData,
     CertificateGenerationSession,
@@ -20,6 +21,8 @@ interface CertificateStudentSidebarProps {
 }
 
 export const CertificateStudentSidebar = ({ student, session }: CertificateStudentSidebarProps) => {
+    const { t } = useTranslation('certificateGenerationCertificateStudentSidebar');
+
     if (!student) {
         return (
             <SidebarContent className="p-0">
@@ -28,7 +31,7 @@ export const CertificateStudentSidebar = ({ student, session }: CertificateStude
                         <div className="mx-auto mb-3 w-fit rounded-full bg-neutral-100 p-3">
                             <User className="size-5 text-neutral-400" />
                         </div>
-                        <p className="text-sm text-neutral-500">Select a student to view details</p>
+                        <p className="text-sm text-neutral-500">{t('selectStudentPrompt')}</p>
                     </div>
                 </div>
             </SidebarContent>
@@ -60,7 +63,9 @@ export const CertificateStudentSidebar = ({ student, session }: CertificateStude
             </div>
             <div className="min-w-0 flex-1">
                 <p className="mb-1 text-xs font-medium text-neutral-500">{label}</p>
-                <p className="break-words text-sm text-neutral-700">{value || 'Not available'}</p>
+                <p className="break-words text-sm text-neutral-700">
+                    {value || t('notAvailable')}
+                </p>
             </div>
         </div>
     );
@@ -89,30 +94,30 @@ export const CertificateStudentSidebar = ({ student, session }: CertificateStude
                     <div>
                         <h4 className="mb-3 flex items-center gap-2 text-sm font-semibold text-neutral-700">
                             <GraduationCap className="size-4" />
-                            Basic Information
+                            {t('basicInformation')}
                         </h4>
                         <div className="space-y-2">
                             <StudentField
                                 icon={Hash}
-                                label="Enrollment Number"
+                                label={t('enrollmentNumber')}
                                 value={student.institute_enrollment_id}
                                 className="bg-neutral-50"
                             />
                             <StudentField
                                 icon={EnvelopeSimple}
-                                label="Email"
+                                label={t('email')}
                                 value={student.email}
                                 className="bg-neutral-50"
                             />
                             <StudentField
                                 icon={Phone}
-                                label="Phone Number"
+                                label={t('phoneNumber')}
                                 value={student.mobile_number}
                                 className="bg-neutral-50"
                             />
                             <StudentField
                                 icon={Calendar}
-                                label="Package Session"
+                                label={t('packageSession')}
                                 value={student.package_session_id}
                                 className="bg-neutral-50"
                             />
@@ -124,11 +129,10 @@ export const CertificateStudentSidebar = ({ student, session }: CertificateStude
                         <div>
                             <h4 className="mb-3 flex items-center gap-2 text-sm font-semibold text-neutral-700">
                                 <FileCsv className="size-4" />
-                                Dynamic Data
+                                {t('dynamicData')}
                                 {dynamicFields.length > 0 && (
                                     <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs text-blue-700">
-                                        {dynamicFields.length} field
-                                        {dynamicFields.length > 1 ? 's' : ''}
+                                        {t('dynamicFieldsCount', { count: dynamicFields.length })}
                                     </span>
                                 )}
                             </h4>
@@ -175,15 +179,16 @@ export const CertificateStudentSidebar = ({ student, session }: CertificateStude
                                                         {key.replace(/_/g, ' ')}
                                                     </p>
                                                     <p className="break-words text-sm text-blue-800">
-                                                        {value?.toString() || 'Empty'}
+                                                        {value?.toString() || t('empty')}
                                                     </p>
                                                     <p className="mt-1 text-xs text-blue-600">
-                                                        Type:{' '}
-                                                        {isNumber
-                                                            ? 'Number'
-                                                            : isDate
-                                                              ? 'Date'
-                                                              : 'Text'}
+                                                        {t('typeLabel', {
+                                                            type: isNumber
+                                                                ? t('typeNumber')
+                                                                : isDate
+                                                                  ? t('typeDate')
+                                                                  : t('typeText'),
+                                                        })}
                                                     </p>
                                                 </div>
                                             </div>
@@ -196,7 +201,7 @@ export const CertificateStudentSidebar = ({ student, session }: CertificateStude
                                         <FileCsv className="size-4 text-neutral-400" />
                                     </div>
                                     <p className="text-xs text-neutral-500">
-                                        No dynamic fields found for this student
+                                        {t('noDynamicFields')}
                                     </p>
                                 </div>
                             ) : (
@@ -205,10 +210,10 @@ export const CertificateStudentSidebar = ({ student, session }: CertificateStude
                                         <FileCsv className="size-4 text-yellow-600" />
                                     </div>
                                     <p className="mb-1 text-xs font-medium text-yellow-700">
-                                        No CSV Data
+                                        {t('noCsvData')}
                                     </p>
                                     <p className="text-xs text-neutral-500">
-                                        This student was not found in the uploaded CSV
+                                        {t('studentNotFoundInCsv')}
                                     </p>
                                 </div>
                             )}
@@ -218,21 +223,21 @@ export const CertificateStudentSidebar = ({ student, session }: CertificateStude
                     {/* Data Summary */}
                     <div className="rounded-lg bg-gradient-to-br from-neutral-50 to-neutral-100 p-4">
                         <h5 className="mb-2 text-xs font-semibold text-neutral-600">
-                            Data Summary
+                            {t('dataSummary')}
                         </h5>
                         <div className="space-y-1.5 text-xs">
                             <div className="flex justify-between">
-                                <span className="text-neutral-500">Basic Fields:</span>
+                                <span className="text-neutral-500">{t('basicFields')}</span>
                                 <span className="font-medium text-neutral-700">4</span>
                             </div>
                             <div className="flex justify-between">
-                                <span className="text-neutral-500">Dynamic Fields:</span>
+                                <span className="text-neutral-500">{t('dynamicFields')}</span>
                                 <span className="font-medium text-neutral-700">
                                     {dynamicFields.length}
                                 </span>
                             </div>
                             <div className="flex justify-between">
-                                <span className="text-neutral-500">Total Fields:</span>
+                                <span className="text-neutral-500">{t('totalFields')}</span>
                                 <span className="font-semibold text-neutral-700">
                                     {4 + dynamicFields.length}
                                 </span>

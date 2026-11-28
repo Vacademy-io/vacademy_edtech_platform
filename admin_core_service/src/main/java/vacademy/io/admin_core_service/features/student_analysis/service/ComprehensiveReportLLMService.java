@@ -3,18 +3,16 @@ package vacademy.io.admin_core_service.features.student_analysis.service;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
-import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 import reactor.util.retry.Retry;
 import vacademy.io.admin_core_service.features.ai_models.service.AIModelRegistryService;
+import vacademy.io.admin_core_service.features.ai_models.service.LlmGatewayRouter;
 import vacademy.io.admin_core_service.features.ai_usage.enums.ApiProvider;
 import vacademy.io.admin_core_service.features.ai_usage.enums.RequestType;
 import vacademy.io.admin_core_service.features.ai_usage.service.AiTokenUsageService;
 import vacademy.io.admin_core_service.features.credits.client.CreditClient;
+import vacademy.io.admin_core_service.features.credits.client.MeteringFields;
 import vacademy.io.admin_core_service.features.student_analysis.dto.comprehensive.AiInsightsSection;
 import vacademy.io.admin_core_service.features.student_analysis.dto.comprehensive.ComprehensiveStudentReport;
 import vacademy.io.admin_core_service.features.student_analysis.dto.comprehensive.NarrativeSection;
@@ -43,38 +41,35 @@ import java.util.UUID;
 @Service
 public class ComprehensiveReportLLMService {
 
-    private static final String API_URL = "https://openrouter.ai";
     // Narration asks for a large JSON (all insights + 6 rich-markdown narrative fields). On slow
     // free-tier OpenRouter models this routinely exceeds a tight timeout, causing the whole
     // ai_insights (and narrative) to fall back to deterministic text. This is a background @Async
     // job with no user waiting synchronously, so a generous per-request timeout is safe.
-    private static final int RESPONSE_TIMEOUT_SECONDS = 170;
+    // GLM timed out at 170 s on this prompt (reasoning at its default effort); the router now
+    // sends effort low with output headroom, and the ceiling is raised for the GLM flip.
+    private static final int RESPONSE_TIMEOUT_SECONDS = 240;
     private static final int MAX_RETRIES_PER_MODEL = 2;
 
-    private final WebClient webClient;
     private final ObjectMapper objectMapper;
     private final AIModelRegistryService aiModelRegistryService;
     private final AiTokenUsageService aiTokenUsageService;
     private final SubjectResolver subjectResolver;
     private final CreditClient creditClient;
+    private final LlmGatewayRouter gatewayRouter;
 
     public ComprehensiveReportLLMService(
-            @Value("${openrouter.api.key}") String apiKey,
             ObjectMapper objectMapper,
             AIModelRegistryService aiModelRegistryService,
             AiTokenUsageService aiTokenUsageService,
             SubjectResolver subjectResolver,
-            CreditClient creditClient) {
+            CreditClient creditClient,
+            LlmGatewayRouter gatewayRouter) {
         this.objectMapper = objectMapper;
         this.aiModelRegistryService = aiModelRegistryService;
         this.aiTokenUsageService = aiTokenUsageService;
         this.subjectResolver = subjectResolver;
         this.creditClient = creditClient;
-        this.webClient = WebClient.builder()
-                .baseUrl(API_URL)
-                .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + apiKey)
-                .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-                .build();
+        this.gatewayRouter = gatewayRouter;
     }
 
     /**
@@ -82,8 +77,8 @@ public class ComprehensiveReportLLMService {
      * Returns {@code null} on complete failure so the processor can still persist
      * the deterministic section without blocking.
      */
-    public Mono<AiInsightsSection> narrate(ComprehensiveStudentReport facts, String userId, String instituteId) {
-        log.info("[ComprehensiveReportLLM] Generating ai_insights for userId={}", userId);
+    public Mono<AiInsightsSection> narrate(ComprehensiveStudentReport facts, ChargeContext ctx) {
+        log.info("[ComprehensiveReportLLM] Generating ai_insights for userId={}", ctx.studentUserId());
 
         // §13.2 rule: try dedicated key first, fall back to "analytics" read-only
         List<String> modelPriority = aiModelRegistryService.getModelPriority("student_report");
@@ -97,7 +92,7 @@ public class ComprehensiveReportLLMService {
         }
 
         String prompt = buildPrompt(facts);
-        return tryModelsWithFallback(prompt, modelPriority, 0, userId, instituteId);
+        return tryModelsWithFallback(prompt, modelPriority, 0, ctx);
     }
 
     /**
@@ -111,11 +106,11 @@ public class ComprehensiveReportLLMService {
      * Percentage is always recomputed in Java from the returned marks, never trusted from the LLM.
      */
     public Mono<List<SubjectMarksSection.SubjectMarks>> clusterSubjectMarks(
-            List<SubjectMarksSection.GradedItem> items, String userId, String instituteId) {
+            List<SubjectMarksSection.GradedItem> items, ChargeContext ctx) {
         if (items == null || items.isEmpty()) {
             return Mono.just(List.of());
         }
-        log.info("[ComprehensiveReportLLM] Clustering {} graded items into subjects for userId={}", items.size(), userId);
+        log.info("[ComprehensiveReportLLM] Clustering {} graded items into subjects for userId={}", items.size(), ctx.studentUserId());
 
         List<String> modelPriority = aiModelRegistryService.getModelPriority("student_report");
         if (modelPriority == null || modelPriority.isEmpty()) {
@@ -127,28 +122,28 @@ public class ComprehensiveReportLLMService {
         }
 
         String prompt = buildSubjectMarksPrompt(items);
-        return trySubjectMarksModelsWithFallback(prompt, modelPriority, 0, userId, instituteId);
+        return trySubjectMarksModelsWithFallback(prompt, modelPriority, 0, ctx);
     }
 
     private Mono<List<SubjectMarksSection.SubjectMarks>> trySubjectMarksModelsWithFallback(
-            String prompt, List<String> models, int idx, String userId, String instituteId) {
+            String prompt, List<String> models, int idx, ChargeContext ctx) {
         if (idx >= models.size()) {
             return Mono.error(new RuntimeException("All LLM models failed for subject-marks clustering. Tried: " + models));
         }
         String model = models.get(idx);
-        return generateSubjectMarksWithModel(prompt, model, userId, instituteId)
+        return generateSubjectMarksWithModel(prompt, model, ctx)
                 .retryWhen(Retry.fixedDelay(MAX_RETRIES_PER_MODEL, Duration.ofSeconds(2))
                         .doBeforeRetry(s -> log.warn("[ComprehensiveReportLLM] Subject-marks retry {}/{} for model={}",
                                 s.totalRetries() + 1, MAX_RETRIES_PER_MODEL, model))
                         .onRetryExhaustedThrow((spec, signal) -> signal.failure()))
                 .onErrorResume(err -> {
                     log.error("[ComprehensiveReportLLM] Subject-marks model {} failed: {}. Trying next.", model, err.getMessage());
-                    return trySubjectMarksModelsWithFallback(prompt, models, idx + 1, userId, instituteId);
+                    return trySubjectMarksModelsWithFallback(prompt, models, idx + 1, ctx);
                 });
     }
 
     private Mono<List<SubjectMarksSection.SubjectMarks>> generateSubjectMarksWithModel(
-            String prompt, String model, String userId, String instituteId) {
+            String prompt, String model, ChargeContext ctx) {
         Map<String, Object> payload = Map.of(
                 "model", model,
                 "messages", List.of(
@@ -160,13 +155,10 @@ public class ComprehensiveReportLLMService {
                         Map.of("role", "user", "content", prompt)),
                 "response_format", Map.of("type", "json_object"));
 
-        return webClient.post()
-                .uri("/api/v1/chat/completions")
-                .bodyValue(payload)
-                .retrieve()
-                .bodyToMono(String.class)
-                .timeout(Duration.ofSeconds(RESPONSE_TIMEOUT_SECONDS))
-                .doOnNext(response -> logTokenUsage(response, model, userId, instituteId))
+        // Isoquant for routed models (one OpenRouter try on a gateway failure); GLM gets
+        // reasoning headroom + effort low. Charged under the registry id below.
+        return gatewayRouter.callModel(model, payload, Duration.ofSeconds(RESPONSE_TIMEOUT_SECONDS), null)
+                .doOnNext(response -> logTokenUsage(response, model, ctx, "subject clustering"))
                 .flatMap(response -> parseSubjectMarks(response, model));
     }
 
@@ -257,26 +249,33 @@ public class ComprehensiveReportLLMService {
         }
     }
 
+    /**
+     * Who a report's AI spend is charged to — carried to every model call so each
+     * credit_transactions row names the institute, the learner the report is about, the admin
+     * who generated it (null for a system-run report) and the report itself (process id).
+     */
+    public record ChargeContext(String instituteId, String studentUserId, String actorUserId, String processId) {}
+
     // ── model retry / fallback ────────────────────────────────────────────────
 
     private Mono<AiInsightsSection> tryModelsWithFallback(
-            String prompt, List<String> models, int idx, String userId, String instituteId) {
+            String prompt, List<String> models, int idx, ChargeContext ctx) {
         if (idx >= models.size()) {
             return Mono.error(new RuntimeException("All LLM models failed for student_report. Tried: " + models));
         }
         String model = models.get(idx);
-        return generateWithModel(prompt, model, userId, instituteId)
+        return generateWithModel(prompt, model, ctx)
                 .retryWhen(Retry.fixedDelay(MAX_RETRIES_PER_MODEL, Duration.ofSeconds(2))
                         .doBeforeRetry(s -> log.warn("[ComprehensiveReportLLM] Retry {}/{} for model={}",
                                 s.totalRetries() + 1, MAX_RETRIES_PER_MODEL, model))
                         .onRetryExhaustedThrow((spec, signal) -> signal.failure()))
                 .onErrorResume(err -> {
                     log.error("[ComprehensiveReportLLM] Model {} failed: {}. Trying next.", model, err.getMessage());
-                    return tryModelsWithFallback(prompt, models, idx + 1, userId, instituteId);
+                    return tryModelsWithFallback(prompt, models, idx + 1, ctx);
                 });
     }
 
-    private Mono<AiInsightsSection> generateWithModel(String prompt, String model, String userId, String instituteId) {
+    private Mono<AiInsightsSection> generateWithModel(String prompt, String model, ChargeContext ctx) {
         Map<String, Object> payload = Map.of(
                 "model", model,
                 "messages", List.of(
@@ -288,17 +287,14 @@ public class ComprehensiveReportLLMService {
                         Map.of("role", "user", "content", prompt)),
                 "response_format", Map.of("type", "json_object"));
 
-        return webClient.post()
-                .uri("/api/v1/chat/completions")
-                .bodyValue(payload)
-                .retrieve()
-                .bodyToMono(String.class)
-                .timeout(Duration.ofSeconds(RESPONSE_TIMEOUT_SECONDS))
-                .doOnNext(response -> logTokenUsage(response, model, userId, instituteId))
+        // Isoquant for routed models (one OpenRouter try on a gateway failure); GLM gets
+        // reasoning headroom + effort low. Charged under the registry id below.
+        return gatewayRouter.callModel(model, payload, Duration.ofSeconds(RESPONSE_TIMEOUT_SECONDS), null)
+                .doOnNext(response -> logTokenUsage(response, model, ctx, "narrative"))
                 .flatMap(response -> parseInsights(response, model));
     }
 
-    private void logTokenUsage(String body, String model, String userId, String instituteId) {
+    private void logTokenUsage(String body, String model, ChargeContext ctx, String purpose) {
         try {
             JsonNode root = objectMapper.readTree(body);
             JsonNode usage = root.get("usage");
@@ -306,17 +302,36 @@ public class ComprehensiveReportLLMService {
                 int prompt = usage.has("prompt_tokens") ? usage.get("prompt_tokens").asInt() : 0;
                 int completion = usage.has("completion_tokens") ? usage.get("completion_tokens").asInt() : 0;
                 UUID userUuid = null;
-                try { if (userId != null) userUuid = UUID.fromString(userId); } catch (IllegalArgumentException ignored) {}
+                try { if (ctx.studentUserId() != null) userUuid = UUID.fromString(ctx.studentUserId()); } catch (IllegalArgumentException ignored) {}
                 UUID instituteUuid = null;
-                try { if (instituteId != null) instituteUuid = UUID.fromString(instituteId); } catch (IllegalArgumentException ignored) {}
+                try { if (ctx.instituteId() != null) instituteUuid = UUID.fromString(ctx.instituteId()); } catch (IllegalArgumentException ignored) {}
                 aiTokenUsageService.recordUsageAsync(ApiProvider.OPENAI, RequestType.ANALYTICS, model, prompt, completion, instituteUuid, userUuid);
-                if (instituteId != null && !instituteId.isBlank()) {
-                    creditClient.deductCreditsAsync(instituteId, "analytics", model, prompt, completion, null);
+                if (ctx.instituteId() != null && !ctx.instituteId().isBlank()) {
+                    // Attributed charge: the ledger row names the admin who ran the report (user_id),
+                    // the learner it is about (subject_user_id) and the report (batch_id = process id),
+                    // so one report's cost is SUM(amount) WHERE batch_id = <process id>. The plain
+                    // deduct carried none of that and, without allow_negative, a low balance could
+                    // silently drop the charge for tokens already spent at the provider.
+                    creditClient.deductAttributedTokenUsageAsync(ctx.instituteId(), "analytics", model, prompt, completion,
+                            null, ctx.actorUserId(), ctx.actorUserId() != null ? "ADMIN" : "SYSTEM",
+                            ctx.studentUserId(), "Student progress report (" + purpose + ")", ctx.processId(),
+                            reportMetering(ctx, purpose));
                 }
             }
         } catch (Exception e) {
             log.warn("[ComprehensiveReportLLM] Token usage logging failed: {}", e.getMessage());
         }
+    }
+
+    /** Usage-metering fields for one report charge: the admin who ran it, or the system. */
+    static MeteringFields reportMetering(ChargeContext ctx, String purpose) {
+        Map<String, Object> context = new HashMap<>();
+        if (ctx.processId() != null) context.put("process_id", ctx.processId());
+        if (purpose != null) context.put("purpose", purpose);
+        MeteringFields.MeteringFieldsBuilder b = ctx.actorUserId() != null
+                ? MeteringFields.user("student_report", MeteringFields.SURFACE_ADMIN_APP)
+                : MeteringFields.system("student_report");
+        return b.usageContext(context).build();
     }
 
     private Mono<AiInsightsSection> parseInsights(String body, String model) {
@@ -333,14 +348,14 @@ public class ComprehensiveReportLLMService {
             JsonNode parsed = objectMapper.readTree(content);
 
             AiInsightsSection insights = AiInsightsSection.builder()
-                    .summary(parsed.path("summary").asText(null))
+                    .summary(plainText(parsed.path("summary").asText(null)))
                     .crossDomainInsights(parseStringList(parsed.path("cross_domain_insights")))
                     .strengthsMap(parseTopicMap(parsed.path("strengths")))
                     .weaknessesMap(parseTopicMap(parsed.path("weaknesses")))
                     .recommendations(parseRecommendations(parsed.path("recommendations")))
                     .sectionCommentary(parseSectionCommentary(parsed.path("section_commentary")))
-                    .parentSummary(parsed.path("parent_summary").asText(null))
-                    .overviewOneLine(parsed.path("overview_one_line").asText(null))
+                    .parentSummary(plainText(parsed.path("parent_summary").asText(null)))
+                    .overviewOneLine(plainText(parsed.path("overview_one_line").asText(null)))
                     .narrative(parseNarrative(parsed.path("narrative")))
                     .build();
 
@@ -405,6 +420,9 @@ public class ComprehensiveReportLLMService {
                        The map value is a 0-100 confidence: use the topic's own accuracy / completion_percentage / score_percentage
                        when available, otherwise your best qualitative rating consistent with the facts.
                        Classification: strength if the value is >= 60, weakness/area-to-improve if < 60.
+                       Each subject/topic goes in EXACTLY ONE of the two maps, never both — rate it on its overall
+                       score (e.g. academics.subject_performance / subject_marks percentage), not on one good or bad test.
+                       Keys are subject/topic names, never individual assessment titles.
                        Aim for 3-6 strengths and 2-6 areas to improve whenever the data supports it, and ALWAYS return at
                        least one of each when any subject/topic data exists. Use the real subject/topic names from the facts
                        (never invent topics that aren't present).
@@ -416,9 +434,12 @@ public class ComprehensiveReportLLMService {
                        Each must name the specific area it addresses (a weak topic/subject, a misconception, low attendance, pending assignments, etc.)
                        and a clear action the student/parent can take. Always produce at least 3 when any weakness or gap exists.
                     9. "section_commentary" is optional; include only for sections where you have a genuine observation.
+                    PLAIN TEXT: "summary", "parent_summary", "overview_one_line", "cross_domain_insights" and every
+                       "recommendations" field are rendered as plain text — NO Markdown in them (no **, no #, no backticks).
                     10. "narrative" is a deep written analysis in RICH MARKDOWN (the parent-facing detail view). Each field:
                         - Use `###` sub-headers and put a blank line (\\n\\n) before every header, table, and list so it renders cleanly.
                         - Use Markdown tables to compare data and **bold** for key metrics; keep it readable, not a wall of text.
+                        - Never put a `#` header inside a list item — write "- **Mathematics:** ..." instead of "- ## Mathematics: ...".
                         - Ground every claim in the facts above; do NOT invent numbers.
                         Fields:
                         - "learning_frequency": consistency & gaps in engagement (use study_habits / login facts).
@@ -462,7 +483,7 @@ public class ComprehensiveReportLLMService {
     private List<String> parseStringList(JsonNode node) {
         List<String> list = new ArrayList<>();
         if (node.isArray()) {
-            node.forEach(n -> list.add(n.asText()));
+            node.forEach(n -> list.add(plainText(n.asText())));
         }
         return list;
     }
@@ -481,8 +502,8 @@ public class ComprehensiveReportLLMService {
             for (JsonNode r : node) {
                 recs.add(AiInsightsSection.RecommendationItem.builder()
                         .priority(r.path("priority").asText("MEDIUM"))
-                        .area(r.path("area").asText(null))
-                        .suggestion(r.path("suggestion").asText(null))
+                        .area(plainText(r.path("area").asText(null)))
+                        .suggestion(plainText(r.path("suggestion").asText(null)))
                         .build());
             }
         }
@@ -521,6 +542,23 @@ public class ComprehensiveReportLLMService {
         JsonNode v = node.path(field);
         if (v.isMissingNode() || v.isNull()) return null;
         String s = v.asText();
-        return (s == null || s.isBlank()) ? null : s;
+        if (s == null || s.isBlank()) return null;
+        // "- ## Mathematics: ..." renders as a raw "##" in the PDF and a heading inside a bullet on
+        // the web — demote a header that opens a list item to bold.
+        return s.replaceAll("(?m)^(\\s*[-*]\\s+)#{1,6}\\s*([^:\\n]+:)", "$1**$2**")
+                .replaceAll("(?m)^(\\s*[-*]\\s+)#{1,6}\\s*", "$1");
+    }
+
+    /**
+     * Strips Markdown the model sometimes emits into plain-text fields despite the prompt
+     * ("**70.5%**", "## Title") — these fields are rendered verbatim, so the markers would show.
+     */
+    static String plainText(String s) {
+        if (s == null) return null;
+        return s.replaceAll("\\*\\*(.+?)\\*\\*", "$1")
+                .replaceAll("__(.+?)__", "$1")
+                .replaceAll("`([^`]*)`", "$1")
+                .replaceAll("(?m)^\\s*#{1,6}\\s+", "")
+                .trim();
     }
 }

@@ -1,0 +1,123 @@
+{
+    "sections": {
+        "basicInformation": "मूल जानकारी",
+        "demographics": "जनसांख्यिकी",
+        "identification": "पहचान",
+        "healthInformation": "स्वास्थ्य जानकारी"
+    },
+    "fields": {
+        "fullName": {
+            "label": "पूरा नाम",
+            "hint": "(जन्म प्रमाण पत्र के अनुसार)",
+            "placeholder": "छात्र का पूरा नाम दर्ज करें"
+        },
+        "dateOfBirth": {
+            "label": "जन्म तिथि"
+        },
+        "gender": {
+            "label": "लिंग"
+        },
+        "nationality": {
+            "label": "राष्ट्रीयता",
+            "placeholder": "राष्ट्रीयता चुनें"
+        },
+        "religion": {
+            "label": "धर्म",
+            "placeholder": "चुनें"
+        },
+        "category": {
+            "label": "श्रेणी",
+            "placeholder": "चुनें"
+        },
+        "bloodGroup": {
+            "label": "ब्लड ग्रुप",
+            "placeholder": "चुनें"
+        },
+        "motherTongue": {
+            "label": "मातृभाषा",
+            "placeholder": "चुनें"
+        },
+        "languagesKnown": {
+            "label": "ज्ञात भाषाएं",
+            "placeholder": "जैसे, अंग्रेज़ी, हिंदी, मराठी"
+        },
+        "idType": {
+            "label": "पहचान पत्र प्रकार",
+            "placeholder": "पहचान पत्र प्रकार चुनें"
+        },
+        "idNumber": {
+            "label": "पहचान पत्र संख्या",
+            "placeholder": "पहचान पत्र संख्या दर्ज करें"
+        },
+        "aadhaarNumber": "आधार संख्या",
+        "medicalConditions": {
+            "label": "चिकित्सीय स्थिति / एलर्जी (यदि कोई हो)",
+            "placeholder": "जैसे, अस्थमा, मधुमेह, खाद्य एलर्जी आदि"
+        },
+        "dietaryRestrictions": {
+            "label": "आहार संबंधी प्रतिबंध",
+            "placeholder": "जैसे, शाकाहारी, नट्स न हो, आदि"
+        }
+    },
+    "genderLabels": {
+        "male": "पुरुष",
+        "female": "महिला",
+        "other": "अन्य"
+    },
+    "nationalityOptions": {
+        "indian": "भारतीय",
+        "other": "अन्य"
+    },
+    "religionOptions": {
+        "hindu": "हिंदू",
+        "muslim": "मुस्लिम",
+        "christian": "ईसाई",
+        "sikh": "सिख",
+        "jain": "जैन",
+        "buddhist": "बौद्ध",
+        "other": "अन्य"
+    },
+    "categoryOptions": {
+        "general": "सामान्य",
+        "obc": "OBC",
+        "sc": "SC",
+        "st": "ST",
+        "ews": "EWS"
+    },
+    "bloodGroupOptions": {
+        "aPositive": "A+",
+        "aNegative": "A-",
+        "bPositive": "B+",
+        "bNegative": "B-",
+        "oPositive": "O+",
+        "oNegative": "O-",
+        "abPositive": "AB+",
+        "abNegative": "AB-"
+    },
+    "motherTongueOptions": {
+        "hindi": "हिंदी",
+        "english": "अंग्रेज़ी",
+        "gujarati": "गुजराती",
+        "marathi": "मराठी",
+        "tamil": "तमिल",
+        "telugu": "तेलुगु",
+        "kannada": "कन्नड़",
+        "bengali": "बंगाली",
+        "malayalam": "मलयालम",
+        "punjabi": "पंजाबी",
+        "odia": "ओड़िया",
+        "urdu": "उर्दू",
+        "other": "अन्य"
+    },
+    "checkboxLanguages": {
+        "hindi": "हिंदी",
+        "english": "अंग्रेज़ी",
+        "regional": "क्षेत्रीय"
+    },
+    "idTypeOptions": {
+        "aadhaarCard": "आधार कार्ड",
+        "birthCertificate": "जन्म प्रमाण पत्र",
+        "passport": "पासपोर्ट",
+        "other": "अन्य"
+    }
+}

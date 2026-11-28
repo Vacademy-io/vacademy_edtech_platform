@@ -18,6 +18,8 @@ export interface UserRolesDataEntry {
     gender: string | null;
     password: string | null;
     profile_pic_file_id: string | null;
+    author_subtitle?: string | null;
+    author_description?: string | null;
     roles: Role[];
     root_user: boolean;
     status: string;

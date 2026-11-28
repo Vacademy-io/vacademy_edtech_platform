@@ -1,0 +1,6 @@
+{
+    "validation": {
+        "nameRequired": "Le nom est requis",
+        "invalidEmail": "Adresse e-mail invalide"
+    }
+}

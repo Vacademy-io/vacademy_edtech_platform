@@ -1,0 +1,4 @@
+{
+    "providerModelFallback": "{{provider}} Model",
+    "defaultModelFallback": "Default Model"
+}

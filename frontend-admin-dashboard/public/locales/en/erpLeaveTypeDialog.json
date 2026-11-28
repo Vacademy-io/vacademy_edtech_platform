@@ -1,0 +1,81 @@
+{
+    "dialog": {
+        "editHeading": "Edit leave type",
+        "addHeading": "Add leave type"
+    },
+    "info": {
+        "paidType": "A paid type draws on a balance, so it needs a policy to give employees a quota.",
+        "unpaidType": "An unpaid type is treated as loss of pay by payroll: the days are deducted from salary and no balance is needed, so it does not require a policy."
+    },
+    "fields": {
+        "name": {
+            "label": "Name",
+            "placeholder": "Casual leave"
+        },
+        "code": {
+            "label": "Code",
+            "placeholder": "CASUAL",
+            "description": "Identifier used by policies, balances and payroll."
+        },
+        "minDays": {
+            "label": "Minimum days per application",
+            "placeholder": "0.5",
+            "description": "0.5 lets employees take a half day."
+        },
+        "maxConsecutiveDays": {
+            "label": "Maximum consecutive days",
+            "placeholder": "5",
+            "description": "Leave blank for no limit."
+        },
+        "applicableGender": {
+            "label": "Applicable to"
+        },
+        "status": {
+            "label": "Status"
+        },
+        "maxCarryForward": {
+            "label": "Maximum days carried forward",
+            "placeholder": "10",
+            "description": "The most the year-end process will carry into the next year. Anything above it lapses, or is encashed when the type is encashable."
+        },
+        "description": {
+            "label": "Description",
+            "placeholder": "When employees should use this leave, so the next admin doesn't have to guess."
+        }
+    },
+    "checkboxes": {
+        "paidLeave": "Paid leave",
+        "carriesForward": "Carries forward",
+        "encashable": "Encashable",
+        "requiresDocument": "Requires a document"
+    },
+    "actions": {
+        "cancel": "Cancel",
+        "saving": "Saving…",
+        "saveChanges": "Save changes",
+        "createLeaveType": "Create leave type"
+    },
+    "toast": {
+        "updated": "Leave type updated",
+        "created": "Leave type created"
+    },
+    "errors": {
+        "saveFailed": "Could not save the leave type."
+    },
+    "validation": {
+        "nameRequired": "Give the leave type a name",
+        "codeMinLength": "Codes are at least 2 characters",
+        "codeFormat": "Uppercase letters, digits and underscores only — no spaces (e.g. CASUAL, SICK, COMP_OFF)",
+        "genderRequired": "Pick who this applies to",
+        "statusRequired": "Pick a status",
+        "descriptionMaxLength": "Keep the description under 500 characters",
+        "mustBePositiveDays": "{{label}} must be a positive number of days",
+        "mustBeWholeDays": "{{label}} must be a whole number of days",
+        "codeClash": "Another leave type already uses this code"
+    },
+    "labels": {
+        "carryForwardCap": "Carry-forward cap",
+        "minimumDays": "Minimum days",
+        "maximumConsecutiveDays": "Maximum consecutive days"
+    }
+}

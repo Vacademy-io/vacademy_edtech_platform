@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 import {
     Dialog,
     DialogContent,
@@ -46,6 +47,7 @@ export function AddPersonDialog({
     peopleInTeam,
     onAdded,
 }: Props) {
+    const { t } = useTranslation('manageInstituteAddPersonDialog');
     const [search, setSearch] = useState('');
     const [picked, setPicked] = useState<InstituteUser | null>(null);
     const [parentUserId, setParentUserId] = useState<string>('');
@@ -81,15 +83,21 @@ export function AddPersonDialog({
         },
         onSuccess: () => {
             const where = parentUserId
-                ? peopleInTeam.find((p) => p.userId === parentUserId)?.name ?? 'their manager'
-                : 'top of team';
-            toast.success(`Added ${picked?.full_name ?? 'member'} under ${where}`);
+                ? (peopleInTeam.find((p) => p.userId === parentUserId)?.name ??
+                  t('toast.theirManager'))
+                : t('toast.topOfTeam');
+            toast.success(
+                t('toast.addedUnder', {
+                    name: picked?.full_name ?? t('toast.defaultMember'),
+                    where,
+                })
+            );
             onAdded();
             onOpenChange(false);
         },
         onError: (e) => {
             const msg = (e as { response?: { data?: { ex?: string } } })?.response?.data?.ex;
-            toast.error(msg ?? 'Could not add this person');
+            toast.error(msg ?? t('toast.addFailed'));
         },
     });
 
@@ -105,12 +113,10 @@ export function AddPersonDialog({
             <DialogContent className="max-w-lg">
                 <DialogHeader>
                     <DialogTitle className="text-h3">
-                        Add a person to {teamName}
+                        {t('dialog.titleAddPersonTo', { teamName })}
                     </DialogTitle>
                     <p className="text-subtitle text-neutral-500">
-                        {picked
-                            ? 'Give this position a label like "Sales Head" and pick who they report to. You can change both later by clicking the pencil on the card.'
-                            : 'Pick someone from your institute.'}
+                        {picked ? t('dialog.descriptionPicked') : t('dialog.descriptionUnpicked')}
                     </p>
                 </DialogHeader>
 
@@ -124,7 +130,7 @@ export function AddPersonDialog({
                             <input
                                 autoFocus
                                 className="w-full rounded-md border border-neutral-300 py-2 pl-9 pr-3 text-body"
-                                placeholder="Search by name or email…"
+                                placeholder={t('search.placeholder')}
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
                             />
@@ -133,8 +139,8 @@ export function AddPersonDialog({
                             {filtered.length === 0 ? (
                                 <div className="p-6 text-center text-subtitle text-neutral-500">
                                     {eligibleUsers.length === 0
-                                        ? 'Everyone in the institute is already in this team.'
-                                        : 'No one matches that search.'}
+                                        ? t('search.emptyAllInTeam')
+                                        : t('search.emptyNoMatch')}
                                 </div>
                             ) : (
                                 <ul>
@@ -148,7 +154,7 @@ export function AddPersonDialog({
                                                 <Avatar name={u.full_name} />
                                                 <div className="min-w-0 flex-1">
                                                     <div className="truncate text-body font-medium text-neutral-900">
-                                                        {u.full_name || 'Unnamed'}
+                                                        {u.full_name || t('common.unnamed')}
                                                     </div>
                                                     <div className="truncate text-caption text-neutral-500">
                                                         {u.email ?? (u.roles ?? [])[0] ?? ''}
@@ -167,7 +173,7 @@ export function AddPersonDialog({
                             <Avatar name={picked.full_name} />
                             <div className="min-w-0 flex-1">
                                 <div className="truncate text-body font-medium text-neutral-900">
-                                    {picked.full_name || 'Unnamed'}
+                                    {picked.full_name || t('common.unnamed')}
                                 </div>
                                 <div className="truncate text-caption text-neutral-500">
                                     {picked.email ?? (picked.roles ?? [])[0] ?? ''}
@@ -182,38 +188,42 @@ export function AddPersonDialog({
                                     setRoleLabel('');
                                 }}
                             >
-                                Change
+                                {t('common.change')}
                             </MyButton>
                         </div>
 
                         <div>
                             <label className="mb-1 block text-caption font-medium text-neutral-700">
-                                Position label{' '}
-                                <span className="text-neutral-400">(optional)</span>
+                                {t('form.positionLabel')}{' '}
+                                <span className="text-neutral-400">
+                                    {t('common.optionalSuffix')}
+                                </span>
                             </label>
                             <input
                                 className="w-full rounded-md border border-neutral-300 px-3 py-2 text-body"
-                                placeholder="e.g. Sales Head, Counsellor Lead"
+                                placeholder={t('form.positionLabelPlaceholder')}
                                 value={roleLabel}
                                 onChange={(e) => setRoleLabel(e.target.value)}
                                 maxLength={100}
                             />
                             <p className="mt-1 text-caption text-neutral-500">
-                                Shown under their name in the chart. You can edit it
-                                anytime by clicking the pencil icon on the card.
+                                {t('form.positionLabelHelp')}
                             </p>
                         </div>
 
                         <div>
                             <label className="mb-1 block text-caption font-medium text-neutral-700">
-                                Reports to <span className="text-neutral-400">(optional)</span>
+                                {t('form.reportsToLabel')}{' '}
+                                <span className="text-neutral-400">
+                                    {t('common.optionalSuffix')}
+                                </span>
                             </label>
                             <select
                                 className="w-full rounded-md border border-neutral-300 px-3 py-2 text-body"
                                 value={parentUserId}
                                 onChange={(e) => setParentUserId(e.target.value)}
                             >
-                                <option value="">No manager — top of team</option>
+                                <option value="">{t('form.noManagerOption')}</option>
                                 {peopleInTeam.map((p) => (
                                     <option key={p.mappingId} value={p.userId}>
                                         {'  '.repeat(p.depth)}
@@ -223,8 +233,7 @@ export function AddPersonDialog({
                                 ))}
                             </select>
                             <p className="mt-1 text-caption text-neutral-500">
-                                You can also draw an arrow between cards on the chart to
-                                set this later.
+                                {t('form.reportsToHelp')}
                             </p>
                         </div>
                     </div>
@@ -236,14 +245,14 @@ export function AddPersonDialog({
                         onClick={() => onOpenChange(false)}
                         disable={submitting}
                     >
-                        Cancel
+                        {t('common.cancel')}
                     </MyButton>
                     <MyButton
                         buttonType="primary"
                         onClick={handleSubmit}
                         disable={!picked || submitting}
                     >
-                        {submitting ? 'Adding…' : 'Add to team'}
+                        {submitting ? t('common.adding') : t('common.addToTeam')}
                     </MyButton>
                 </DialogFooter>
             </DialogContent>

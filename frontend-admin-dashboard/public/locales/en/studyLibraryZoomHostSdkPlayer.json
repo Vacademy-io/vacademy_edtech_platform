@@ -1,0 +1,14 @@
+{
+    "stillProvisioning": "This Zoom meeting is still being set up. Try again in a moment, or use \"Provision now\" on the session page.",
+    "loadFailed": "Could not load the Zoom meeting. Check your connection and try again.",
+    "notReadyToHost": "This Zoom meeting is not ready to host yet — it may still be getting set up on Zoom. Refresh in a moment, or re-check the Zoom account if it persists.",
+    "missingZak": "Cannot start this meeting as host: Zoom did not issue a host start-token (ZAK). Reconnect Zoom in Settings → Live Session — remove the app in your Zoom account first so the consent screen reappears, then approve the ZAK scope (user_zak:read / user:read:zak).",
+    "joinFailed": "Could not start the Zoom meeting ({{code}}).",
+    "joinErrorFallback": "join error",
+    "initFailed": "Could not initialise the Zoom meeting ({{code}}).",
+    "initErrorFallback": "init error",
+    "startFailed": "Failed to start the Zoom meeting.",
+    "refreshOrRetry": "Please refresh the page or try again.",
+    "preparingMeeting": "Preparing meeting…",
+    "startingAsHost": "Starting meeting as host…"
+}

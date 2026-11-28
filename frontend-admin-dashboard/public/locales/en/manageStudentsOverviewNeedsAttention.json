@@ -1,0 +1,24 @@
+{
+    "heading": "Needs attention",
+    "allClear": "All clear — nothing needs attention right now.",
+    "items": {
+        "tnc": {
+            "title": "Terms & Conditions not signed",
+            "description": "Required before the first class"
+        },
+        "outstanding": {
+            "title": "₹{{amount}} outstanding",
+            "description": "Unpaid invoices on file"
+        },
+        "behind": {
+            "title_one": "Behind on {{count}} course",
+            "title_other": "Behind on {{count}} courses",
+            "description": "Active enrolments below 25% progress"
+        }
+    },
+    "actions": {
+        "send": "Send",
+        "collect": "Collect",
+        "review": "Review"
+    }
+}

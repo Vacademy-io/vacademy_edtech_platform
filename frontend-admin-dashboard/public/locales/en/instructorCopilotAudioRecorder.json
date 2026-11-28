@@ -1,0 +1,12 @@
+{
+    "status": {
+        "paused": "Paused",
+        "recording": "Recording..."
+    },
+    "startRecording": "Start Recording",
+    "pause": "Pause",
+    "resume": "Resume",
+    "stop": "Stop",
+    "reset": "Reset",
+    "transcriptionHeading": "Real-time Transcription"
+}

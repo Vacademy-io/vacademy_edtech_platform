@@ -1,0 +1,46 @@
+{
+  "title": "Téléchargements de ressources gratuites",
+  "days": "{{count}} jours",
+  "unnamed": "Prospect sans nom",
+  "more": "+{{count}} de plus",
+  "error": "Impossible de charger les téléchargements.",
+  "retry": "Réessayer",
+  "columns": {
+    "lead": "Prospect",
+    "freebies": "Ressources",
+    "took": "Ce qu'il a pris",
+    "last": "Dernier téléchargement"
+  },
+  "empty": {
+    "title": "Aucune ressource téléchargée pour l'instant",
+    "body": "Chaque fichier ouvert depuis une section Ressources de votre site apparaît ici, avec le nom du prospect."
+  },
+  "stats": {
+    "downloads": "Téléchargements et vues",
+    "leads": "Prospects ayant téléchargé",
+    "files": "Ressources téléchargées"
+  },
+  "top": {
+    "title": "Ressources les plus prises",
+    "hint": "Cliquez pour voir qui l'a prise.",
+    "counts": "{{downloads}} · {{leads}} prospects"
+  },
+  "leads": {
+    "title": "Qui a téléchargé quoi",
+    "filteredBy": "Seulement : {{name}}",
+    "search": "Rechercher nom, téléphone ou e-mail",
+    "noneYet": "Les téléchargements viennent de visiteurs qui n'ont pas encore rempli de formulaire.",
+    "noMatch": "Aucun prospect ne correspond.",
+    "capped": "Affichage des 500 prospects les plus actifs."
+  },
+  "summary": "{{downloads}} téléchargements par {{leads}} prospects",
+  "kind": {
+    "youtube": "Vidéo YouTube",
+    "drive": "Google Drive",
+    "pdf": "PDF",
+    "link": "Lien"
+  },
+  "leadCard": {
+    "title": "Ressources prises"
+  }
+}

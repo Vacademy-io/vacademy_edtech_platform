@@ -1,0 +1,12 @@
+{
+    "menu": {
+        "sendWhatsApp": "Envoyer un rappel sur WhatsApp",
+        "sendEmail": "Envoyer un rappel par e-mail",
+        "removeParticipants": "Retirer des participants"
+    },
+    "actionInfo": {
+        "selectedStudents_one": "{{count}} étudiant",
+        "selectedStudents_many": "{{count}} étudiants",
+        "selectedStudents_other": "{{count}} étudiants"
+    }
+}

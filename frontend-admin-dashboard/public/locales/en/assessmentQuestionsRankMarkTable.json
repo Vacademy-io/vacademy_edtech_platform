@@ -1,0 +1,8 @@
+{
+    "columns": {
+        "rank": "Rank",
+        "marks": "Marks",
+        "percentile": "Percentile",
+        "participants": "No. of Participants"
+    }
+}

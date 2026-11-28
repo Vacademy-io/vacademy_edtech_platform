@@ -1,0 +1,31 @@
+{
+    "title": "إعدادات فيديو الذكاء الاصطناعي",
+    "appliesTo": "ينطبق على صفحات فيديو الذكاء الاصطناعي والشرائح والقصة المصورة",
+    "language": "اللغة",
+    "videoModel": "نموذج الفيديو",
+    "autoRecommended": "تلقائي (موصى به)",
+    "loading": "جارٍ التحميل...",
+    "audioQuality": "جودة الصوت",
+    "audioQualityStandard": "قياسية (مشمولة)",
+    "audioQualityPremium": "مميزة (ضعف الرصيد)",
+    "voiceGender": "جنس الصوت",
+    "genderFemale": "أنثى",
+    "genderMale": "ذكر",
+    "voice": "الصوت",
+    "auto": "تلقائي",
+    "autoBestForLanguage": "تلقائي (الأنسب للغة)",
+    "videoDuration": "مدة الفيديو",
+    "qualityTierLabel": "مستوى الجودة",
+    "durationLabel": {
+        "oneToTwoMinutes": "1-2 دقيقة",
+        "twoToThreeMinutes": "2-3 دقائق",
+        "threeToFiveMinutes": "3-5 دقائق",
+        "fiveToEightMinutes": "5-8 دقائق"
+    },
+    "qualityTier": {
+        "free": "مجانية (الأسرع، جودة أساسية)",
+        "standard": "قياسية",
+        "premium": "مميزة",
+        "ultra": "فائقة (أفضل جودة)"
+    }
+}

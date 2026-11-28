@@ -1,0 +1,98 @@
+{
+    "filters": {
+        "searchPlaceholder": "Rechercher par nom de lien",
+        "allStatuses": "Tous les statuts",
+        "allTypes": "Tous les types",
+        "active": "Actif",
+        "inactive": "Inactif",
+        "paid": "Payant",
+        "free": "Gratuit"
+    },
+    "actions": {
+        "createLink": "Créer un lien d'inscription",
+        "edit": "Modifier",
+        "view": "Voir"
+    },
+    "table": {
+        "name": "Nom",
+        "link": "Lien",
+        "status": "Statut",
+        "registrations": "Inscriptions",
+        "created": "Créé le",
+        "actions": "Actions",
+        "attemptsSuffix_one": "{{count}} tentative",
+        "attemptsSuffix_many": "{{count}} de tentatives",
+        "attemptsSuffix_other": "{{count}} tentatives"
+    },
+    "empty": {
+        "noMatchFilters": "Aucun lien d'inscription ne correspond à vos filtres.",
+        "noLinksYet": "Aucun lien d'inscription pour le moment.",
+        "createOneHint": "Créez-en un pour permettre aux organisations de s'inscrire elles-mêmes en tant que {{term}}."
+    },
+    "badge": {
+        "kyc": "KYC"
+    },
+    "link": {
+        "copyTitle": "Copier le lien d'inscription",
+        "toggleStatusAria": "Basculer le statut de {{name}}"
+    },
+    "toast": {
+        "linkActivated": "Lien d'inscription activé",
+        "linkDeactivated": "Lien d'inscription désactivé",
+        "updateStatusFailed": "Échec de la mise à jour du statut",
+        "loadDetailFailed": "Échec du chargement des détails du lien d'inscription",
+        "linkCopied": "Lien d'inscription copié",
+        "noRegistrationsToExport": "Aucune inscription à exporter.",
+        "exportedCount_one": "{{count}} inscription exportée.",
+        "exportedCount_many": "{{count}} d'inscriptions exportées.",
+        "exportedCount_other": "{{count}} inscriptions exportées.",
+        "exportFailed": "Échec de l'exportation des inscriptions."
+    },
+    "dialog": {
+        "heading": "Inscriptions — {{name}}",
+        "headingDefault": "Inscriptions",
+        "searchPlaceholder": "Rechercher une organisation, un admin ou un e-mail",
+        "cityLabel": "Ville",
+        "stateLabel": "État",
+        "pincodeLabel": "Code postal",
+        "searchCityPlaceholder": "Rechercher une ville…",
+        "searchStatePlaceholder": "Rechercher un état…",
+        "searchPincodePlaceholder": "Rechercher un code postal…",
+        "searchFieldPlaceholder": "Rechercher {{field}}…",
+        "registrationCount_one": "{{count}} inscription",
+        "registrationCount_many": "{{count}} d'inscriptions",
+        "registrationCount_other": "{{count}} inscriptions",
+        "filteredSuffix": " · filtré",
+        "clear": "Effacer",
+        "exportCsv": "Exporter en CSV",
+        "noMatchFilters": "Aucune inscription ne correspond à ces filtres.",
+        "noRegistrationsYet": "Aucune inscription via ce lien pour le moment.",
+        "table": {
+            "organization": "Organisation",
+            "admin": "Admin",
+            "email": "E-mail",
+            "phone": "Téléphone",
+            "city": "Ville",
+            "state": "État",
+            "pincode": "Code postal",
+            "seats": "Places",
+            "status": "Statut",
+            "kyc": "KYC",
+            "date": "Date"
+        }
+    },
+    "csv": {
+        "organization": "Organisation",
+        "admin": "Admin",
+        "email": "E-mail",
+        "phone": "Téléphone",
+        "city": "Ville",
+        "state": "État",
+        "pincode": "Code postal",
+        "seatsUsed": "Places utilisées",
+        "seatsTotal": "Places totales",
+        "status": "Statut",
+        "kyc": "KYC",
+        "registeredOn": "Inscrit le"
+    }
+}

@@ -1,0 +1,30 @@
+{
+    "activityStats": "Activity Stats",
+    "trackEngagementSubtitle": "Track student engagement and submissions",
+    "downloadAllSubmissions": "Download all submissions (CSV)",
+    "downloading": "Downloading...",
+    "downloadCsv": "Download CSV",
+    "participants": "Participants",
+    "avgTime": "Avg. Time",
+    "onThisPage": "On This Page",
+    "searchPlaceholder": "Search by name, email or phone...",
+    "failedToLoad": "Failed to load activity data",
+    "noMatchesFound": "No matches found",
+    "noActivityYet": "No student activity yet",
+    "tryDifferentSearch": "Try a different search term",
+    "activityWillAppear": "Activity will appear once students start engaging",
+    "lateSubmissionTooltip": "Submitted after the assignment's end date",
+    "late": "Late",
+    "checked": "Checked",
+    "pendingReview": "Pending Review",
+    "viewActivity": "View Activity",
+    "time": {
+        "justNow": "Just now",
+        "minutesAgo_one": "{{count}}m ago",
+        "minutesAgo_other": "{{count}}m ago",
+        "hoursAgo_one": "{{count}}h ago",
+        "hoursAgo_other": "{{count}}h ago",
+        "daysAgo_one": "{{count}}d ago",
+        "daysAgo_other": "{{count}}d ago"
+    }
+}

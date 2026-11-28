@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/toast';
 import { toast } from '@/hooks/use-toast';
 import { WarningCircle } from '@phosphor-icons/react';
+import i18n from '@/i18n';
 
 export function CustomToaster() {
     const { toasts } = useToast();
@@ -46,7 +47,7 @@ export function CustomToaster() {
 
 export const showErrorToast = (description: string) => {
     toast({
-        title: 'Error',
+        title: i18n.t('loginMyToaster:errorTitle'),
         description: description,
     });
 };

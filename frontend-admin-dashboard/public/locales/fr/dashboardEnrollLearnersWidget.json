@@ -1,0 +1,15 @@
+{
+    "header": {
+        "title": "Inscrire des {{term}}",
+        "description": "Gérer l'inscription et les invitations des {{term}}"
+    },
+    "badges": {
+        "learnerCount": "{{count}} {{term}}",
+        "batchCount": "{{count}} {{term}}"
+    },
+    "actions": {
+        "inviteNew": "Inviter de nouveaux {{term}}",
+        "manageList": "Gérer la liste des {{term}}",
+        "enrollmentRequests": "Demandes d'inscription"
+    }
+}

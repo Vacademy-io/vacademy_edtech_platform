@@ -1,0 +1,32 @@
+{
+    "offlineAvailabilityFor": "Disponibilité hors ligne - {{name}}",
+    "loadingEllipsis": "Chargement…",
+    "canLearnersDownload": "Les apprenants peuvent-ils télécharger ce/cette {{node}} pour une utilisation hors ligne ?",
+    "inheritDefault": "Hériter (par défaut)",
+    "inheritDescription": "Suit le paramètre par défaut du parent / du cours",
+    "allow": "Autoriser",
+    "allowDescription": "Téléchargeable, sauf si un parent est bloqué",
+    "block": "Bloquer",
+    "blockDescription": "Jamais téléchargeable",
+    "onlineOnlyWarningSlide_one": "{{online}} des {{total}} élément de cette section est diffusé ou interactif (YouTube/Vimeo/Drive/intégrations, évaluations) et ne peut jamais être téléchargé — les apprenants verront « Connexion Internet requise » dessus, quel que soit ce paramètre.",
+    "onlineOnlyWarningSlide_many": "{{online}} des {{total}} d'éléments de cette section sont diffusés ou interactifs (YouTube/Vimeo/Drive/intégrations, évaluations) et ne peuvent jamais être téléchargés — les apprenants verront « Connexion Internet requise » dessus, quel que soit ce paramètre.",
+    "onlineOnlyWarningSlide_other": "{{online}} des {{total}} éléments de cette section sont diffusés ou interactifs (YouTube/Vimeo/Drive/intégrations, évaluations) et ne peuvent jamais être téléchargés — les apprenants verront « Connexion Internet requise » dessus, quel que soit ce paramètre.",
+    "onlineOnlyWarningSection_one": "{{online}} des {{total}} élément de cette section sont diffusés ou interactifs (YouTube/Vimeo/Drive/intégrations, évaluations) et ne peuvent jamais être téléchargés — les apprenants verront « Connexion Internet requise » dessus, quel que soit ce paramètre.",
+    "onlineOnlyWarningSection_many": "{{online}} des {{total}} d'éléments de cette section sont diffusés ou interactifs (YouTube/Vimeo/Drive/intégrations, évaluations) et ne peuvent jamais être téléchargés — les apprenants verront « Connexion Internet requise » dessus, quel que soit ce paramètre.",
+    "onlineOnlyWarningSection_other": "{{online}} des {{total}} éléments de cette section sont diffusés ou interactifs (YouTube/Vimeo/Drive/intégrations, évaluations) et ne peuvent jamais être téléchargés — les apprenants verront « Connexion Internet requise » dessus, quel que soit ce paramètre.",
+    "noPreviewWarning": "Impossible de charger un aperçu du contenu pour ce lot — le paramètre sera tout de même enregistré.",
+    "cancel": "Annuler",
+    "savingEllipsis": "Enregistrement…",
+    "save": "Enregistrer",
+    "loadFailed": "Échec du chargement de la disponibilité hors ligne",
+    "saved": "Disponibilité hors ligne enregistrée",
+    "saveFailed": "Échec de l'enregistrement de la disponibilité hors ligne",
+    "nodeLabel": {
+        "package": "cours (tous les lots)",
+        "packageSession": "lot",
+        "subject": "matière",
+        "module": "module",
+        "chapter": "chapitre",
+        "slide": "diapositive"
+    }
+}

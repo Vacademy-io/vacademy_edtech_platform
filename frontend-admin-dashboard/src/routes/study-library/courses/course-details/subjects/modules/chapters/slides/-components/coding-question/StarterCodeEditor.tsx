@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import Editor from '@monaco-editor/react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -13,6 +14,7 @@ interface Props {
 }
 
 export function StarterCodeEditor({ question, onChange, disabled }: Props) {
+    const { t } = useTranslation('studyLibraryStarterCodeEditor');
     const langs = useMemo<LangId[]>(
         () =>
             question.allowedLanguages.length ? question.allowedLanguages : (['python'] as LangId[]),
@@ -39,10 +41,7 @@ export function StarterCodeEditor({ question, onChange, disabled }: Props) {
     return (
         <div className="space-y-2">
             <div className="flex items-center justify-between">
-                <p className="text-xs text-muted-foreground">
-                    Code shown to learners when they open the question. Leave blank for an empty
-                    editor.
-                </p>
+                <p className="text-xs text-muted-foreground">{t('description')}</p>
                 <Button
                     variant="outline"
                     size="sm"
@@ -50,7 +49,7 @@ export function StarterCodeEditor({ question, onChange, disabled }: Props) {
                     disabled={disabled}
                 >
                     <RotateCcw className="mr-1 size-3" />
-                    Reset to default
+                    {t('resetToDefault')}
                 </Button>
             </div>
 

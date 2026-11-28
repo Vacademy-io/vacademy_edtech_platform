@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+<head>
+<meta charset="UTF-8"/>
+<title>{{title}} {{number}}</title>
+<style>
+@page { size: A4; margin: 14mm 12mm 16mm 12mm; }
+body { font-family: 'DejaVu Sans', sans-serif; font-size: 9pt; color: #111111; }
+h1 { font-size: 14pt; margin: 0 0 2mm 0; text-align: center; letter-spacing: 1px; }
+.sub { text-align: center; font-size: 8pt; color: #444444; margin-bottom: 4mm; }
+table { width: 100%; border-collapse: collapse; }
+.head td { vertical-align: top; padding: 0 0 3mm 0; }
+.box { border: 1px solid #999999; padding: 2mm; }
+.label { font-size: 7.5pt; color: #555555; text-transform: uppercase; }
+.name { font-size: 10.5pt; font-weight: bold; }
+.grid th, .grid td { border: 1px solid #999999; padding: 1.4mm 1.6mm; }
+.grid th { background: #eeeeee; font-size: 8pt; text-align: left; }
+.grid { page-break-inside: auto; }
+.grid tr { page-break-inside: avoid; }
+.num { text-align: right; white-space: nowrap; }
+.small { font-size: 8pt; color: #333333; }
+.gap { height: 4mm; }
+.totals td { padding: 1mm 1.6mm; }
+.totals .grand td { border-top: 1px solid #111111; font-weight: bold; font-size: 10.5pt; }
+.words { margin-top: 2mm; }
+.note { margin-top: 3mm; font-size: 8pt; color: #333333; }
+.cancelled { border: 2px solid #aa0000; color: #aa0000; text-align: center; font-weight: bold; padding: 2mm; margin-bottom: 3mm; }
+.foot { margin-top: 8mm; font-size: 7.5pt; color: #555555; text-align: center; }
+</style>
+</head>
+<body>
+{{cancelled_block}}
+<h1>{{title}}</h1>
+<div class="sub">{{subtitle}}</div>
+
+<table class="head">
+<tr>
+<td style="width: 58%; padding-right: 3mm;">
+  <div class="box">
+    <div class="label">Sold by</div>
+    <div class="name">{{seller_name}}</div>
+    <div>{{seller_address}}</div>
+    {{seller_tax_lines}}
+  </div>
+</td>
+<td style="width: 42%;">
+  <div class="box">
+    <table>
+      {{document_facts}}
+    </table>
+  </div>
+</td>
+</tr>
+<tr>
+<td style="padding-right: 3mm;">
+  <div class="box">
+    <div class="label">Billed to</div>
+    <div class="name">{{buyer_name}}</div>
+    {{buyer_lines}}
+  </div>
+</td>
+<td>
+  <div class="box">
+    <div class="label">Shipped to</div>
+    {{ship_to}}
+  </div>
+</td>
+</tr>
+</table>
+
+<table class="grid">
+<thead>
+<tr>{{line_header}}</tr>
+</thead>
+<tbody>
+{{line_rows}}
+</tbody>
+</table>
+
+<div class="gap"></div>
+
+<table>
+<tr>
+<td style="width: 58%; vertical-align: top; padding-right: 3mm;">
+  {{tax_tables}}
+  <div class="words"><span class="label">Amount in words</span><br/>{{amount_in_words}}</div>
+  {{notes}}
+</td>
+<td style="width: 42%; vertical-align: top;">
+  <table class="totals">
+    {{total_rows}}
+  </table>
+</td>
+</tr>
+</table>
+
+<div class="foot">{{footer}}</div>
+</body>
+</html>

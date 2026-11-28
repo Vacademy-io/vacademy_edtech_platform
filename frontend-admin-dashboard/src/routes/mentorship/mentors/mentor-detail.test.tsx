@@ -23,6 +23,8 @@ vi.mock('@/routes/mentorship/-hooks/use-mentorship', () => ({
     useCreateNote: () => ({ mutateAsync: vi.fn() }),
     useScheduleSession: () => ({ mutateAsync: vi.fn(), isPending: false }),
     useMentorSlots: () => ({ data: { slots: [] }, isLoading: false, isError: false, refetch: vi.fn() }),
+    // The Students tab now carries its own "Assign students" dialog.
+    useAssignMentees: () => ({ mutateAsync: vi.fn(), isPending: false }),
 }));
 // The view links back to the list and the student rows open a chat; the test has no
 // router around it.
@@ -178,6 +180,33 @@ describe('MentorDetailView', () => {
         fireEvent.click(screen.getByRole('button', { name: /^Students/ }));
         expect(screen.getByText('Riya Sharma')).toBeInTheDocument();
         expect(screen.getByText('Auto-assigned')).toBeInTheDocument();
+    });
+
+    it('offers an assign action from the empty Students tab', () => {
+        // It used to say "assign students from the mentor list" and give no way to
+        // get there — a dead end on the screen an admin lands on.
+        useMentorMenteesMock.mockReturnValue({ ...idle, data: [] });
+        open();
+        fireEvent.click(screen.getByRole('button', { name: /^Students/ }));
+        expect(screen.getByRole('button', { name: /Assign students/ })).toBeInTheDocument();
+    });
+
+    it('keeps the assign action once the mentor has a roster', () => {
+        useMentorMenteesMock.mockReturnValue({
+            ...idle,
+            data: [
+                {
+                    assignment_id: 'a1',
+                    mentor_id: 'm1',
+                    student_user_id: 'stu-1',
+                    name: 'Riya Sharma',
+                    assignment_method: 'MANUAL',
+                },
+            ],
+        });
+        open();
+        fireEvent.click(screen.getByRole('button', { name: /^Students/ }));
+        expect(screen.getByRole('button', { name: /Assign students/ })).toBeInTheDocument();
     });
 
     const withOneMentee = () => {

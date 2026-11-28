@@ -1,0 +1,4 @@
+{
+    "noProfileNote": "Not linked to an employee record — <0>create one in Staff Coverage</0>",
+    "unratedNote": "No rate set — add <0>teaching_rate_per_session</0> or <1>teaching_rate_per_hour</1> to this employee's custom fields"
+}

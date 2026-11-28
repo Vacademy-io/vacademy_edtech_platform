@@ -1,0 +1,10 @@
+{
+    "sendReminder": "إرسال تذكير",
+    "removeParticipants": "إزالة المشاركين",
+    "studentsCount_zero": "لا يوجد طلاب ({{count}})",
+    "studentsCount_one": "طالب واحد ({{count}})",
+    "studentsCount_two": "طالبان ({{count}})",
+    "studentsCount_few": "{{count}} طلاب",
+    "studentsCount_many": "{{count}} طالبًا",
+    "studentsCount_other": "{{count}} طالب"
+}

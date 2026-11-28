@@ -1,0 +1,19 @@
+{
+    "errors": {
+        "formNotInitialized": "النموذج غير مهيأ بشكل صحيح",
+        "noQuestions": "الرجاء إضافة سؤال لعرض تفاصيل السؤال"
+    },
+    "settings": {
+        "title": "إعدادات الأسئلة",
+        "numericalType": "النوع العددي",
+        "decimalPrecisionPlaceholder": "دقة الأرقام العشرية"
+    },
+    "comprehensionText": "نص الاستيعاب",
+    "question": {
+        "label": "السؤال"
+    },
+    "defaults": {
+        "answer": "الإجابة:",
+        "explanation": "الشرح:"
+    }
+}

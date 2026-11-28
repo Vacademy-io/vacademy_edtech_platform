@@ -1,0 +1,63 @@
+{
+    "form16": {
+        "employeeLabel": "الموظف",
+        "employeePickerPlaceholder": "اختر موظفًا",
+        "empty": {
+            "title": "اختر موظفًا",
+            "description": "يُصدر النموذج 16 الجزء ب لكل موظف عن السنة المالية."
+        },
+        "errors": {
+            "loadFailed": "تعذّر إعداد النموذج 16 لهذا الموظف.",
+            "downloadFailed": "تعذّر تنزيل النموذج 16."
+        },
+        "incompleteYearNotice": "السنة المالية غير مكتملة — الأرقام السنوية تقديرية حتى تتم معالجة رواتب مارس.",
+        "stats": {
+            "grossSalary": "الراتب الإجمالي",
+            "totalExemptions": "إجمالي الإعفاءات",
+            "taxableIncome": "الدخل الخاضع للضريبة",
+            "tdsDeducted": "الضريبة المقتطعة"
+        },
+        "card": {
+            "regime": "النظام الضريبي",
+            "pan": "رقم PAN",
+            "deductorTan": "رقم TAN للجهة الخاصمة",
+            "totalTaxLiability": "إجمالي الالتزام الضريبي"
+        },
+        "table": {
+            "month": "الشهر",
+            "incomePaid": "الدخل المدفوع",
+            "tds": "الضريبة المقتطعة"
+        },
+        "toast": {
+            "downloaded": "تم تنزيل النموذج 16"
+        },
+        "actions": {
+            "preparing": "جارٍ التحضير…",
+            "downloadPdf": "تنزيل PDF"
+        }
+    },
+    "form24q": {
+        "errors": {
+            "loadFailed": "تعذّر إعداد بيانات النموذج 24Q."
+        },
+        "reconciliation": {
+            "mismatch": "الضريبة المقتطعة لا تطابق الإيصالات المسجلة",
+            "matched": "الضريبة المقتطعة تطابق الإيصالات المسجلة",
+            "deducted": "المقتطع:",
+            "deposited": "المودع:",
+            "mismatchHint": "سجّل الإيصال المفقود في سجل الإيصالات، أو تحقق مما إذا كان الإيداع قد تم مقابل ربع سنة مختلف."
+        },
+        "stats": {
+            "deductees": "الجهات المخصوم منها",
+            "challans": "الإيصالات",
+            "deductorTan": "رقم TAN للجهة الخاصمة"
+        },
+        "table": {
+            "employee": "الموظف",
+            "pan": "رقم PAN",
+            "month": "الشهر",
+            "incomePaid": "الدخل المدفوع",
+            "tds": "الضريبة المقتطعة"
+        }
+    }
+}

@@ -1,0 +1,12 @@
+{
+    "columns": {
+        "name": "नाम",
+        "enrollmentNumber": "नामांकन संख्या",
+        "collegeSchool": "कॉलेज/स्कूल",
+        "gender": "लिंग",
+        "mobileNumber": "मोबाइल नंबर",
+        "emailId": "ईमेल आईडी",
+        "city": "शहर",
+        "state": "राज्य"
+    }
+}

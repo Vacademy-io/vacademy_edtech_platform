@@ -1,0 +1,24 @@
+{
+    "toast": {
+        "removeSuccess": "تمت إزالة المعلم من هذه الدفعة",
+        "removeFailed": "فشل في إزالة المعلم."
+    },
+    "table": {
+        "name": "الاسم",
+        "status": "الحالة",
+        "active": "نشط",
+        "actions": "الإجراءات"
+    },
+    "removeFromBatchTitle": "إزالة من هذه الدفعة",
+    "dialog": {
+        "title": "إزالة المعلم",
+        "description": "هل تريد إزالة <strong>{{name}}</strong> من هذه الدفعة؟ لن يعد بإمكانه التدريس هنا.",
+        "cancel": "إلغاء",
+        "removing": "جارٍ الإزالة...",
+        "remove": "إزالة"
+    },
+    "errors": {
+        "forbidden": "ليس لديك إذن لتحميل المعلمين لهذه الدفعة.",
+        "loadFailed": "خطأ في تحميل المعلمين"
+    }
+}

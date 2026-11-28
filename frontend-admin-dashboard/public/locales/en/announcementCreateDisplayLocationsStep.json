@@ -1,0 +1,6 @@
+{
+    "title": "Where should this appear?",
+    "description": "Pick one or more places inside the product. This is separate from how it is delivered.",
+    "blockedTooltip": "Your role cannot send to {{label}}.",
+    "settingsTitle": "{{label}} settings"
+}

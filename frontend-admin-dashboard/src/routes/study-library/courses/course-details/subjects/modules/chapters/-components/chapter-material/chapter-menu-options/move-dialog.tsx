@@ -12,6 +12,7 @@ import { useSelectedSessionStore } from '@/stores/study-library/selected-session
 import { ChapterWithSlides } from '@/stores/study-library/use-modules-with-chapters-store';
 import { useRouter } from '@tanstack/react-router';
 import { Dispatch, SetStateAction, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 interface MoveTo {
@@ -21,6 +22,7 @@ interface MoveTo {
 }
 
 export const MoveToDialog = ({ openDialog, setOpenDialog, chapter }: MoveTo) => {
+    const { t } = useTranslation('studyLibraryMoveDialog');
     const moveChapterMutation = useMoveChapter();
     const copyChapterMutation = useCopyChapter();
     const { getPackageSessionId } = useInstituteDetailsStore();
@@ -74,10 +76,8 @@ export const MoveToDialog = ({ openDialog, setOpenDialog, chapter }: MoveTo) => 
         if (failed.length === 0) {
             toast.success(
                 destinations.length === 1
-                    ? 'Chapter moved successfully'
-                    : `Chapter moved, with copies in ${destinations.length - 1} more ${
-                          destinations.length === 2 ? 'location' : 'locations'
-                      }`
+                    ? t('movedSuccessfully')
+                    : t('movedWithCopies', { count: destinations.length - 1 })
             );
             setOpenDialog(null);
             return;
@@ -86,9 +86,10 @@ export const MoveToDialog = ({ openDialog, setOpenDialog, chapter }: MoveTo) => 
             // The chapter has left its original batch, so this dialog's source is
             // stale — close instead of offering a retry that would move it again.
             toast.warning(
-                `Chapter moved, but ${failed.length} ${
-                    failed.length === 1 ? 'copy' : 'copies'
-                } failed: ${failed.map((d) => d.label).join(', ')}`
+                t('movedWithFailedCopies', {
+                    count: failed.length,
+                    locations: failed.map((d) => d.label).join(', '),
+                })
             );
             setOpenDialog(null);
             return;
@@ -96,27 +97,27 @@ export const MoveToDialog = ({ openDialog, setOpenDialog, chapter }: MoveTo) => 
         // Nothing moved — the chapter is still in place, so retrying the failed
         // destinations from here is safe.
         if (done === 0) {
-            toast.error('Failed to move chapter');
+            toast.error(t('moveFailed'));
         } else {
-            toast.warning(`${done} of ${destinations.length} locations done. Retry the rest below.`);
+            toast.warning(t('partialMoveSummary', { done, total: destinations.length }));
         }
         return failed;
     };
 
     return (
         <MyDialog
-            heading="Move to"
+            heading={t('moveTo')}
             dialogWidth="max-w-2xl"
             open={openDialog == 'move'}
             onOpenChange={() => setOpenDialog(null)}
         >
             <CopyMoveDestinationPicker
                 leaf="module"
-                submitLabel="Move"
-                busyLabel="Moving…"
+                submitLabel={t('move')}
+                busyLabel={t('moving')}
                 isSubmitting={isSubmitting}
                 onSubmit={handleMoveChapter}
-                multiHint="A chapter lives in one place: the extra locations get a copy, and the chapter is removed from its current one."
+                multiHint={t('multiHint')}
             />
         </MyDialog>
     );

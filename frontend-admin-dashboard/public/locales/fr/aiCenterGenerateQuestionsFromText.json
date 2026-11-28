@@ -1,0 +1,72 @@
+{
+    "header": {
+        "title": "Questions à partir d'un sujet",
+        "subtitle": "Indiquez-nous le sujet et ce que les élèves doivent apprendre. Nous préparerons une série de questions que vous pourrez modifier avant de les envoyer."
+    },
+    "sections": {
+        "topic": "Quel est le sujet ?",
+        "audience": "Pour qui, et combien de questions ?"
+    },
+    "fields": {
+        "topicName": {
+            "label": "Nom du sujet",
+            "placeholder": "ex. Photosynthèse",
+            "error": "Veuillez donner un nom au sujet."
+        },
+        "learningGoal": {
+            "label": "Que doivent apprendre les élèves ?",
+            "placeholder": "ex. tester la compréhension du processus de photosynthèse, des facteurs qui l'influencent et de son importance dans les écosystèmes",
+            "error": "Veuillez décrire ce que les questions doivent couvrir."
+        },
+        "classLevel": {
+            "label": "Classe",
+            "placeholder": "ex. 8e année",
+            "error": "Veuillez indiquer une classe"
+        },
+        "numQuestions": {
+            "label": "Nombre de questions",
+            "placeholder": "10",
+            "error": "Combien de questions souhaitez-vous ?"
+        },
+        "questionType": {
+            "label": "Type de question"
+        },
+        "language": {
+            "label": "Langue"
+        }
+    },
+    "questionTypes": {
+        "mcq": "QCM",
+        "trueFalse": "Vrai/Faux",
+        "numeric": "Numérique",
+        "shortAnswer": "Réponse courte",
+        "mixed": "Mixte"
+    },
+    "languages": {
+        "english": "Anglais",
+        "hindi": "Hindi"
+    },
+    "errors": {
+        "generateFailed": "Nous n'avons pas pu rédiger de questions à partir de cela. Voulez-vous réessayer ?",
+        "taskFailed": "Nous n'avons pas pu terminer ce brouillon. Voulez-vous réessayer ?"
+    },
+    "progress": {
+        "title": "Rédaction de vos questions en cours",
+        "subtitle": "Création de questions sur votre sujet. Cela prend généralement environ 30 secondes."
+    },
+    "result": {
+        "heading": "Voici ce que nous avons préparé pour vous",
+        "aiGeneratedBadge": "Généré par l'IA",
+        "description": "Vérifiez et ajustez les questions avant de les enregistrer ou de les exporter. L'enseignant a toujours le dernier mot.",
+        "draftAnother": "Rédiger un autre brouillon"
+    },
+    "actions": {
+        "draftQuestions": "Rédiger mes questions"
+    },
+    "taskListHeading": "Vsmart Topics",
+    "recentDrafts": {
+        "title": "Vos brouillons récents",
+        "fallbackLabel": "Brouillon basé sur un sujet",
+        "emptyHint": "Vos brouillons basés sur un sujet apparaîtront ici. Renseignez le sujet ci-dessus et créez votre premier brouillon."
+    }
+}

@@ -1,0 +1,17 @@
+{
+    "leadSourceLabel": "Lead source:",
+    "selectSourcePlaceholder": "Select source",
+    "zohoForms": "Zoho Forms",
+    "facebookLeads": "Facebook Leads",
+    "startDate": "Start Date",
+    "endDate": "End Date",
+    "to": "to",
+    "quick": "Quick:",
+    "last7Days": "Last 7 Days",
+    "last14Days": "Last 14 Days",
+    "last30Days": "Last 30 Days",
+    "last90Days": "Last 90 Days",
+    "thisMonth": "This Month",
+    "lastMonth": "Last Month",
+    "refresh": "Refresh"
+}

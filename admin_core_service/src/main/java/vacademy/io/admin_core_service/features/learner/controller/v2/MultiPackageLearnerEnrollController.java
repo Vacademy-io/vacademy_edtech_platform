@@ -8,8 +8,15 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import vacademy.io.admin_core_service.features.learner.dto.v2.MultiPackageLearnerEnrollRequestDTO;
 import vacademy.io.admin_core_service.features.learner.service.MultiPackageLearnerEnrollService;
+import vacademy.io.admin_core_service.features.learner.service.PublicEnrollRoleGuard;
 import vacademy.io.common.auth.dto.learner.LearnerEnrollResponseDTO;
+import vacademy.io.common.exceptions.ForbiddenException;
 
+/**
+ * Public (no login) multi-item checkout: the learner storefront. A MANUAL enrollment skips
+ * payment and forces it PAID, so it is refused here and only accepted on the admin endpoint
+ * ({@link AdminMultiPackageLearnerEnrollController}), which needs an institute admin's login.
+ */
 @RestController
 @RequestMapping("/admin-core-service/v2/learner/enroll")
 public class MultiPackageLearnerEnrollController {
@@ -17,9 +24,17 @@ public class MultiPackageLearnerEnrollController {
     @Autowired
     private MultiPackageLearnerEnrollService multiPackageLearnerEnrollService;
 
+    @Autowired
+    private PublicEnrollRoleGuard publicEnrollRoleGuard;
+
     @PostMapping
     public ResponseEntity<LearnerEnrollResponseDTO> enrollMultiPackage(
             @RequestBody MultiPackageLearnerEnrollRequestDTO request) {
+        if ("MANUAL".equalsIgnoreCase(request.getEnrollmentType())) {
+            throw new ForbiddenException("Manual enrollment needs an admin login");
+        }
+        // No login on this route: the body's role names never reach auth-service as written.
+        publicEnrollRoleGuard.restrictToLearnerRoles(request.getUser(), request.getInstituteId());
         return ResponseEntity.ok(multiPackageLearnerEnrollService.enrollMultiPackage(request));
     }
 }

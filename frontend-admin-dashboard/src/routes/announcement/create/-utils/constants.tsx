@@ -12,8 +12,18 @@ import {
     UsersThree,
     WhatsappLogo,
 } from '@phosphor-icons/react';
+import type { TFunction } from 'i18next';
 import type { MediumType, ModeType } from '@/services/announcement';
 import type { ModeSettings, SectionDefinition } from '../-types';
+
+/**
+ * Namespace for this module's translated display strings — see
+ * public/locales/en/announcementCreateConstants.json. Every consumer
+ * resolves keys against this namespace explicitly (fully-qualified
+ * `${NS}:key` lookups), since each is normally bound to its OWN component
+ * namespace via its own `useTranslation` call.
+ */
+const NS = 'announcementCreateConstants';
 
 export const FORM_SECTIONS: SectionDefinition[] = [
     { id: 'basics', title: 'Basic Information', caption: 'Title and message' },
@@ -86,6 +96,15 @@ export const MODE_META: ModeMeta[] = [
     },
 ];
 
+/** Translated equivalent of {@link MODE_META}, for components rendering these labels to users. */
+export function buildModeMeta(t: TFunction): ModeMeta[] {
+    return MODE_META.map((meta) => ({
+        ...meta,
+        label: t(`${NS}:modes.${meta.type}.label`),
+        description: t(`${NS}:modes.${meta.type}.description`),
+    }));
+}
+
 export interface MediumMeta {
     type: MediumType;
     label: string;
@@ -114,6 +133,15 @@ export const MEDIUM_META: MediumMeta[] = [
     },
 ];
 
+/** Translated equivalent of {@link MEDIUM_META}, for components rendering these labels to users. */
+export function buildMediumMeta(t: TFunction): MediumMeta[] {
+    return MEDIUM_META.map((meta) => ({
+        ...meta,
+        label: t(`${NS}:mediums.${meta.type}.label`),
+        description: t(`${NS}:mediums.${meta.type}.description`),
+    }));
+}
+
 /** Announcement presets — the two shapes almost every announcement takes. */
 export const ANNOUNCEMENT_PRESETS = [
     {
@@ -133,6 +161,15 @@ export const ANNOUNCEMENT_PRESETS = [
         Icon: PushPin,
     },
 ];
+
+/** Translated equivalent of {@link ANNOUNCEMENT_PRESETS}, for components rendering these labels to users. */
+export function buildAnnouncementPresets(t: TFunction) {
+    return ANNOUNCEMENT_PRESETS.map((preset) => ({
+        ...preset,
+        label: t(`${NS}:presets.${preset.id}.label`),
+        description: t(`${NS}:presets.${preset.id}.description`),
+    }));
+}
 
 export function defaultModeSettings(mode: ModeType): ModeSettings {
     switch (mode) {
@@ -194,6 +231,20 @@ export const WHATSAPP_VALUE_SOURCES = [
         group: 'Recipient',
     },
     { value: 'RECIPIENT_ID', label: 'User id', token: '{{student_id}}', group: 'Recipient' },
+    // Referral: the recipient's own link and code. A recipient without one is marked failed
+    // rather than sent a blank link.
+    {
+        value: 'REFERRAL_SHORT_LINK',
+        label: 'Referral link (short)',
+        token: '{{short_referral_link}}',
+        group: 'Referral',
+    },
+    {
+        value: 'REFERRAL_CODE',
+        label: 'Referral code',
+        token: '{{referral_code}}',
+        group: 'Referral',
+    },
     // Announcement
     {
         value: 'ANNOUNCEMENT_TITLE',
@@ -214,13 +265,29 @@ export const WHATSAPP_VALUE_SOURCES = [
     { value: 'CUSTOM', label: 'Custom text…', token: '', group: 'General' },
 ] as const;
 
-export const WHATSAPP_VALUE_GROUPS = ['Recipient', 'Announcement', 'General'] as const;
+/** Translated equivalent of {@link WHATSAPP_VALUE_SOURCES}, for components rendering these labels to users. */
+export function buildWhatsAppValueSources(t: TFunction) {
+    return WHATSAPP_VALUE_SOURCES.map((source) => ({
+        ...source,
+        label: t(`${NS}:whatsappValues.${source.value}`),
+    }));
+}
+
+export const WHATSAPP_VALUE_GROUPS = ['Recipient', 'Referral', 'Announcement', 'General'] as const;
 
 export const CRON_PRESETS = [
     { id: 'DAILY_9', label: 'Every day, 9:00 AM', expression: '0 0 9 * * ?' },
     { id: 'MON_9', label: 'Every Monday, 9:00 AM', expression: '0 0 9 ? * MON' },
     { id: 'HOURLY', label: 'Every hour', expression: '0 0 * * * ?' },
 ];
+
+/** Translated equivalent of {@link CRON_PRESETS}, for components rendering these labels to users. */
+export function buildCronPresets(t: TFunction) {
+    return CRON_PRESETS.map((preset) => ({
+        ...preset,
+        label: t(`${NS}:cronPresets.${preset.id}`),
+    }));
+}
 
 export const DEVICE_PRESETS = {
     mobile: { label: 'Mobile', width: 390 },

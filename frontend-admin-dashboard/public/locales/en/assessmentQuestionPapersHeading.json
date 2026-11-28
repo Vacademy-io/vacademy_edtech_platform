@@ -1,0 +1,10 @@
+{
+    "heading": "Question Paper Access & Management",
+    "description": "Quickly access and manage all question papers across classes and subjects. Easily browse and organize papers to support smooth exam preparation.",
+    "addQuestionPaper": "Add Question Paper",
+    "createManually": "Create Manually",
+    "createQuestionPaperManually": "Create Question Paper Manually",
+    "uploadFromDevice": "Upload from Device",
+    "uploadQuestionPaperFromDevice": "Upload Question Paper From Device",
+    "generateWithAi": "Generate with AI"
+}

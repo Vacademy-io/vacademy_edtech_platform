@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import katex from 'katex';
 import 'katex/dist/katex.min.css';
+import { sanitizeRichHtml } from '@/lib/sanitize-html';
 
 interface RichContentRendererProps {
     html: string;
@@ -64,7 +65,7 @@ export const RichContentRenderer = ({ html, className = '' }: RichContentRendere
         <div
             ref={containerRef}
             className={className}
-            dangerouslySetInnerHTML={{ __html: html || '' }}
+            dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(html) }}
         />
     );
 };

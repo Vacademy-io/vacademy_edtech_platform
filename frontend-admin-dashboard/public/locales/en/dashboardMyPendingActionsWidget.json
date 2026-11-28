@@ -1,0 +1,23 @@
+{
+    "heading": {
+        "title": "Pending Actions",
+        "description": "Items waiting on you right now"
+    },
+    "error": "Couldn't load pending actions.",
+    "partialError": "Some items couldn't load.",
+    "empty": {
+        "title": "All clear",
+        "description": "Nothing needs your attention right now."
+    },
+    "actionType": {
+        "overduePayment": "Overdue payment",
+        "pendingApproval": "Pending approval",
+        "unreadAlert": "Unread alert"
+    },
+    "age": {
+        "now": "now",
+        "lessThanHour": "<1h",
+        "hoursFormat": "{{hours}}h",
+        "daysFormat": "{{days}}d"
+    }
+}

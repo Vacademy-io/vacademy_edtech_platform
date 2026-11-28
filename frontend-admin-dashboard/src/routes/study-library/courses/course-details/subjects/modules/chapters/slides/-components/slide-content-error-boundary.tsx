@@ -2,6 +2,12 @@ import { Component, ReactNode } from 'react';
 import * as Sentry from '@sentry/react';
 import { WarningCircle } from '@phosphor-icons/react';
 import { MyButton } from '@/components/design-system/button';
+import i18n from '@/i18n';
+
+// Class component: useTranslation() (a hook) isn't available here. Use the
+// shared i18next singleton directly with a fixed namespace — same pattern as
+// YooptaEditorWrapperSafe.
+const NAMESPACE = 'studyLibrarySlideContentErrorBoundary';
 
 interface SlideContentErrorBoundaryProps {
     children: ReactNode;
@@ -78,19 +84,18 @@ export class SlideContentErrorBoundary extends Component<
                             <WarningCircle size={28} className="text-danger-500" />
                         </div>
                         <h3 className="mb-2 text-lg font-semibold text-neutral-600">
-                            This slide couldn&apos;t be displayed
+                            {i18n.t('title', { ns: NAMESPACE })}
                         </h3>
                         <p className="mb-4 text-sm text-neutral-400">
-                            Its content appears to be corrupted. Select another slide from the
-                            sidebar to continue, or try again.
+                            {i18n.t('description', { ns: NAMESPACE })}
                         </p>
                         <MyButton buttonType="secondary" scale="medium" onClick={this.handleReset}>
-                            Try again
+                            {i18n.t('tryAgain', { ns: NAMESPACE })}
                         </MyButton>
                         {process.env.NODE_ENV === 'development' && this.state.error && (
-                            <details className="mt-4 text-left">
+                            <details className="mt-4 text-start">
                                 <summary className="cursor-pointer text-xs text-neutral-400">
-                                    Error details
+                                    {i18n.t('errorDetails', { ns: NAMESPACE })}
                                 </summary>
                                 <pre className="mt-2 overflow-auto text-xs text-danger-600">
                                     {this.state.error.message}

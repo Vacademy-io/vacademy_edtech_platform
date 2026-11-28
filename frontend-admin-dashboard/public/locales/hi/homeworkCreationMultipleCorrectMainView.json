@@ -1,0 +1,17 @@
+{
+    "emptyState": "प्रश्न का विवरण देखने के लिए कृपया एक प्रश्न जोड़ें",
+    "settings": {
+        "title": "प्रश्न सेटिंग्स",
+        "questionType": "प्रश्न प्रकार",
+        "marks": "अंक",
+        "negativeMarking": "नकारात्मक अंकन",
+        "timeLimit": "समय सीमा",
+        "hrs": "घंटे",
+        "min": "मिनट"
+    },
+    "question": "प्रश्न {{number}}",
+    "answer": "उत्तर:",
+    "addOption": "विकल्प जोड़ें",
+    "removeOption": "विकल्प हटाएं",
+    "explanation": "स्पष्टीकरण:"
+}

@@ -1,17 +1,18 @@
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
     Check,
-    ChevronDown,
-    ChevronRight,
+    CaretDown,
+    CaretRight,
     Clipboard,
-    Code2,
+    Code,
     Copy,
-    ExternalLink,
+    ArrowSquareOut,
     Terminal,
-} from 'lucide-react';
+} from '@phosphor-icons/react';
 import { toast } from 'sonner';
 import type { PipelineState, PipelineEventLogEntry } from './-utils/derive-pipeline-state';
 import type {
@@ -61,6 +62,7 @@ export function DeveloperAuditSheet({
     eventLog,
     apiKey,
 }: DeveloperAuditSheetProps) {
+    const { t } = useTranslation('videoApiStudioDeveloperAuditSheet');
     const ratio = useEffectiveCreditRatio();
     const meta = statusResp?.metadata ?? null;
     // Memoize the empty-object fallback so `sel`'s identity is stable when
@@ -121,9 +123,9 @@ export function DeveloperAuditSheet({
     const handleCopyAuditJson = async () => {
         try {
             await navigator.clipboard.writeText(auditJson);
-            toast.success('Audit JSON copied to clipboard');
+            toast.success(t('sheet.copySuccess'));
         } catch {
-            toast.error('Copy failed');
+            toast.error(t('sheet.copyError'));
         }
     };
 
@@ -133,33 +135,33 @@ export function DeveloperAuditSheet({
                 <SheetHeader className="space-y-2 border-b pb-3">
                     <SheetTitle className="flex items-center gap-2 text-base">
                         <Terminal className="size-4" />
-                        Developer audit
+                        {t('sheet.title')}
                         <Badge
                             variant="outline"
-                            className="ml-2 h-5 border-amber-200 bg-amber-50 text-[10px] text-amber-700"
+                            className="ms-2 h-5 border-amber-200 bg-amber-50 text-2xs text-amber-700"
                         >
-                            internal
+                            {t('sheet.internalBadge')}
                         </Badge>
                     </SheetTitle>
-                    <div className="flex flex-wrap items-center gap-2 text-[11px]">
+                    <div className="flex flex-wrap items-center gap-2 text-2xs">
                         <CopyChip label={state.videoId} value={state.videoId} mono />
-                        <Badge variant="outline" className="h-5 text-[10px]">
-                            pipeline {state.pipelineVersion}
+                        <Badge variant="outline" className="h-5 text-2xs">
+                            {t('sheet.pipelineBadge', { version: state.pipelineVersion })}
                         </Badge>
-                        <Badge variant="outline" className="h-5 text-[10px]">
+                        <Badge variant="outline" className="h-5 text-2xs">
                             {state.status}
                         </Badge>
                         {sel.quality_tier && (
-                            <Badge variant="outline" className="h-5 text-[10px]">
+                            <Badge variant="outline" className="h-5 text-2xs">
                                 {sel.quality_tier}
                             </Badge>
                         )}
                         {sel.target_stage && sel.target_stage !== 'HTML' && (
                             <Badge
                                 variant="outline"
-                                className="h-5 border-purple-200 bg-purple-50 text-[10px] text-purple-700"
+                                className="h-5 border-purple-200 bg-purple-50 text-2xs text-purple-700"
                             >
-                                target: {sel.target_stage}
+                                {t('sheet.targetBadge', { stage: sel.target_stage })}
                             </Badge>
                         )}
                         {state.stats.elapsedMs != null && (
@@ -172,23 +174,23 @@ export function DeveloperAuditSheet({
                         variant="outline"
                         size="sm"
                         onClick={handleCopyAuditJson}
-                        className="h-7 w-full justify-center gap-1.5 text-[11px]"
+                        className="h-7 w-full justify-center gap-1.5 text-2xs"
                     >
                         <Clipboard className="size-3" />
-                        Copy full audit as JSON
+                        {t('sheet.copyAuditButton')}
                     </Button>
                 </SheetHeader>
 
                 <div className="mt-4 space-y-3">
-                    <Section title="Configuration" defaultOpen>
+                    <Section title={t('section.configuration')} defaultOpen>
                         <ConfigurationSection sel={sel} state={state} />
                     </Section>
 
-                    <Section title="Routing decisions">
+                    <Section title={t('section.routingDecisions')}>
                         <RoutingSection meta={meta} />
                     </Section>
 
-                    <Section title="Models & costs">
+                    <Section title={t('section.modelsAndCosts')}>
                         <ModelsSection
                             state={state}
                             sel={sel}
@@ -197,15 +199,15 @@ export function DeveloperAuditSheet({
                         />
                     </Section>
 
-                    <Section title="Pipeline path" defaultOpen>
+                    <Section title={t('section.pipelinePath')} defaultOpen>
                         <PipelinePathSection eventLog={eventLog} state={state} meta={meta} />
                     </Section>
 
-                    <Section title={`Per-shot ledger (${state.scenes.length})`}>
+                    <Section title={t('section.perShotLedger', { count: state.scenes.length })}>
                         <PerShotLedger state={state} />
                     </Section>
 
-                    <Section title="Artifacts & curl">
+                    <Section title={t('section.artifactsAndCurl')}>
                         <ArtifactsSection
                             state={state}
                             statusResp={statusResp}
@@ -214,7 +216,7 @@ export function DeveloperAuditSheet({
                         />
                     </Section>
 
-                    <Section title="Raw JSON">
+                    <Section title={t('section.rawJson')}>
                         <RawJsonSection label="state (PipelineState)" value={state} />
                         {statusResp && (
                             <RawJsonSection label="/status payload" value={statusResp} />
@@ -249,9 +251,9 @@ function Section({
                 className="flex w-full items-center gap-1.5 px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-foreground hover:bg-muted/40"
             >
                 {open ? (
-                    <ChevronDown className="size-3.5 text-muted-foreground" />
+                    <CaretDown className="size-3.5 text-muted-foreground" />
                 ) : (
-                    <ChevronRight className="size-3.5 text-muted-foreground" />
+                    <CaretRight className="size-3.5 text-muted-foreground" />
                 )}
                 {title}
             </button>
@@ -301,12 +303,11 @@ function ConfigurationSection({
 }
 
 function RoutingSection({ meta }: { meta: VideoStatusMetadata | null | undefined }) {
+    const { t } = useTranslation('videoApiStudioDeveloperAuditSheet');
     const intent = meta?.intent_outcomes;
     if (!intent) {
         return (
-            <p className="text-xs text-muted-foreground">
-                No intent-routing snapshot persisted (older video).
-            </p>
+            <p className="text-xs text-muted-foreground">{t('routing.noSnapshot')}</p>
         );
     }
     const tools = intent.tools_enabled ?? [];
@@ -317,22 +318,22 @@ function RoutingSection({ meta }: { meta: VideoStatusMetadata | null | undefined
             <div className="flex flex-wrap gap-1">
                 <span className="text-muted-foreground">tools_enabled:</span>
                 {tools.length === 0 ? (
-                    <span className="text-muted-foreground">none</span>
+                    <span className="text-muted-foreground">{t('routing.none')}</span>
                 ) : (
-                    tools.map((t) => (
+                    tools.map((tool) => (
                         <Badge
-                            key={t}
+                            key={tool}
                             variant="outline"
-                            className="h-5 bg-blue-50 text-[10px] text-blue-700"
+                            className="h-5 bg-blue-50 text-2xs text-blue-700"
                         >
-                            {t}
+                            {tool}
                         </Badge>
                     ))
                 )}
             </div>
             {scrape && (
                 <div className="rounded border bg-muted/20 p-2">
-                    <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    <div className="mb-1 text-2xs font-semibold uppercase tracking-wider text-muted-foreground">
                         scrape_url
                     </div>
                     <KvGrid
@@ -349,7 +350,7 @@ function RoutingSection({ meta }: { meta: VideoStatusMetadata | null | undefined
             )}
             {search && (
                 <div className="rounded border bg-muted/20 p-2">
-                    <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    <div className="mb-1 text-2xs font-semibold uppercase tracking-wider text-muted-foreground">
                         web_search
                     </div>
                     <KvGrid
@@ -377,6 +378,7 @@ function ModelsSection({
     aiVideoTotals: { credits: number; usd: number; shots: number };
     ratio: number;
 }) {
+    const { t } = useTranslation(['videoApiStudioDeveloperAuditSheet', 'videoApiStudioCredits']);
     const cum = state.stats.cumulativeTokens;
     const tu = state.stats.tokenUsage;
     const totalTokens = cum?.total_tokens ?? tu?.total_tokens;
@@ -397,7 +399,7 @@ function ModelsSection({
                     [
                         'estimated_cost_credits',
                         cost != null
-                            ? formatCredits(usdToCredits(cost, ratio), { precision: 2 })
+                            ? formatCredits(usdToCredits(cost, ratio), { precision: 2, t })
                             : undefined,
                     ],
                     ['image_count', numStr(tu?.image_count)],
@@ -408,15 +410,15 @@ function ModelsSection({
             />
             {aiVideoTotals.shots > 0 && (
                 <div className="rounded border border-violet-200 bg-violet-50/40 p-2">
-                    <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-violet-700">
-                        AI video (Veo)
+                    <div className="mb-1 text-2xs font-semibold uppercase tracking-wider text-violet-700">
+                        {t('models.aiVideoHeading')}
                     </div>
                     <KvGrid
                         rows={[
                             ['shots', String(aiVideoTotals.shots)],
                             [
                                 'cost_credits',
-                                formatCredits(aiVideoTotals.credits, { precision: 1 }),
+                                formatCredits(aiVideoTotals.credits, { precision: 1, t }),
                             ],
                             ['cost_usd', `$${aiVideoTotals.usd.toFixed(3)}`],
                         ]}
@@ -436,6 +438,7 @@ function PipelinePathSection({
     state: PipelineState;
     meta: VideoStatusMetadata | null | undefined;
 }) {
+    const { t } = useTranslation('videoApiStudioDeveloperAuditSheet');
     if (!eventLog || eventLog.length === 0) {
         // History-loaded runs: synthesize a coarse path from the persisted
         // state. We can't know exact event timing, but we can list the
@@ -443,7 +446,7 @@ function PipelinePathSection({
         return <SynthesizedPath state={state} meta={meta} />;
     }
     return (
-        <ol className="space-y-0.5 text-[11px]">
+        <ol className="space-y-0.5 text-2xs">
             {eventLog.map((e, i) => (
                 <li
                     key={i}
@@ -453,45 +456,45 @@ function PipelinePathSection({
                         {formatRelMs(e.tsMs)}
                     </span>
                     <span
-                        className={`shrink-0 rounded px-1 text-[9px] font-medium uppercase tracking-wider ${eventTypeChip(
+                        className={`shrink-0 rounded px-1 text-2xs font-medium uppercase tracking-wider ${eventTypeChip(
                             e.eventType
                         )}`}
                     >
                         {e.eventType}
                     </span>
                     {e.subStage && (
-                        <span className="shrink-0 font-mono text-[10px] text-foreground">
+                        <span className="shrink-0 font-mono text-2xs text-foreground">
                             {e.subStage}
                         </span>
                     )}
                     {e.stage && (
-                        <span className="shrink-0 rounded bg-slate-100 px-1 text-[9px] font-medium text-slate-700">
+                        <span className="shrink-0 rounded bg-slate-100 px-1 text-2xs font-medium text-slate-700">
                             {e.stage}
                         </span>
                     )}
                     {e.shotIndex != null && (
-                        <span className="shrink-0 font-mono text-[10px] text-muted-foreground">
-                            shot {e.shotIndex}
+                        <span className="shrink-0 font-mono text-2xs text-muted-foreground">
+                            {t('pipelinePath.shotIndex', { index: e.shotIndex })}
                         </span>
                     )}
                     {e.shotCount != null && (
-                        <span className="shrink-0 font-mono text-[10px] text-muted-foreground">
-                            ({e.shotCount} shots)
+                        <span className="shrink-0 font-mono text-2xs text-muted-foreground">
+                            {t('pipelinePath.shotCount', { count: e.shotCount })}
                         </span>
                     )}
                     {e.message && (
-                        <span className="min-w-0 flex-1 truncate text-[10px] text-muted-foreground">
+                        <span className="min-w-0 flex-1 truncate text-2xs text-muted-foreground">
                             {e.message}
                         </span>
                     )}
                     {e.tokenDelta?.prompt_tokens != null && (
-                        <span className="shrink-0 font-mono text-[9px] tabular-nums text-amber-700">
+                        <span className="shrink-0 font-mono text-2xs tabular-nums text-amber-700">
                             +{e.tokenDelta.prompt_tokens}p/
                             {e.tokenDelta.completion_tokens ?? 0}c
                         </span>
                     )}
                     {e.error && (
-                        <span className="shrink-0 text-[10px] text-red-700">{e.error}</span>
+                        <span className="shrink-0 text-2xs text-red-700">{e.error}</span>
                     )}
                 </li>
             ))}
@@ -506,6 +509,7 @@ function SynthesizedPath({
     state: PipelineState;
     meta: VideoStatusMetadata | null | undefined;
 }) {
+    const { t } = useTranslation('videoApiStudioDeveloperAuditSheet');
     const items: Array<{ stage: string; status: string }> = [];
     items.push({ stage: 'Pitch', status: 'wrapped' });
     if (state.research) items.push({ stage: 'Research', status: state.research.state });
@@ -523,16 +527,18 @@ function SynthesizedPath({
         items.push({ stage: 'Narration', status: state.narration.state });
         items.push({ stage: 'Storyboard', status: state.storyboard.state });
     }
-    items.push({ stage: `Filming (${state.scenes.length} shots)`, status: state.filming.state });
+    items.push({
+        stage: t('synthesizedPath.filmingStage', { count: state.scenes.length }),
+        status: state.filming.state,
+    });
     if (state.talent) items.push({ stage: 'Talent', status: state.talent.state });
     if (state.score) items.push({ stage: 'Score', status: state.score.state });
     items.push({ stage: 'Final Cut', status: state.finalCut.state });
 
     return (
-        <div className="space-y-1.5 text-[11px]">
-            <p className="text-[10px] italic text-muted-foreground">
-                No live event log for this run (loaded from history). Path synthesized from
-                persisted state.
+        <div className="space-y-1.5 text-2xs">
+            <p className="text-2xs italic text-muted-foreground">
+                {t('synthesizedPath.noLiveLog')}
             </p>
             <ol className="space-y-0.5">
                 {items.map((it, i) => (
@@ -542,7 +548,7 @@ function SynthesizedPath({
                         </span>
                         <span className="text-foreground">{it.stage}</span>
                         <span
-                            className={`ml-auto rounded px-1 text-[9px] font-medium uppercase tracking-wider ${statusChip(it.status)}`}
+                            className={`ml-auto rounded px-1 text-2xs font-medium uppercase tracking-wider ${statusChip(it.status)}`}
                         >
                             {it.status}
                         </span>
@@ -551,8 +557,10 @@ function SynthesizedPath({
             </ol>
             {meta?.user_selections?.target_stage &&
                 meta.user_selections.target_stage !== 'HTML' && (
-                    <p className="text-[10px] text-purple-700">
-                        Review-mode run — stopped at {meta.user_selections.target_stage}.
+                    <p className="text-2xs text-purple-700">
+                        {t('synthesizedPath.reviewModeStopped', {
+                            stage: meta.user_selections.target_stage,
+                        })}
                     </p>
                 )}
         </div>
@@ -560,23 +568,32 @@ function SynthesizedPath({
 }
 
 function PerShotLedger({ state }: { state: PipelineState }) {
+    const { t } = useTranslation('videoApiStudioDeveloperAuditSheet');
     if (state.scenes.length === 0) {
-        return <p className="text-xs text-muted-foreground">No per-shot data yet.</p>;
+        return <p className="text-xs text-muted-foreground">{t('shotLedger.empty')}</p>;
     }
     return (
         <div className="overflow-x-auto">
-            <table className="w-full text-[10px]">
+            <table className="w-full text-2xs">
                 <thead className="text-muted-foreground">
                     <tr className="border-b">
                         <th className="text-left font-medium">#</th>
-                        <th className="text-left font-medium">type</th>
-                        <th className="text-left font-medium">intent</th>
-                        <th className="text-left font-medium">bg</th>
-                        <th className="text-left font-medium">audio</th>
-                        <th className="text-right font-medium">dur</th>
-                        <th className="text-right font-medium">words</th>
-                        <th className="text-right font-medium">veo cr</th>
-                        <th className="text-left font-medium">veo req</th>
+                        <th className="text-start font-medium">{t('shotLedger.header.type')}</th>
+                        <th className="text-start font-medium">{t('shotLedger.header.intent')}</th>
+                        <th className="text-start font-medium">
+                            {t('shotLedger.header.background')}
+                        </th>
+                        <th className="text-start font-medium">{t('shotLedger.header.audio')}</th>
+                        <th className="text-end font-medium">
+                            {t('shotLedger.header.duration')}
+                        </th>
+                        <th className="text-end font-medium">{t('shotLedger.header.words')}</th>
+                        <th className="text-end font-medium">
+                            {t('shotLedger.header.veoCredits')}
+                        </th>
+                        <th className="text-start font-medium">
+                            {t('shotLedger.header.veoRequest')}
+                        </th>
                     </tr>
                 </thead>
                 <tbody>
@@ -599,9 +616,13 @@ function PerShotLedger({ state }: { state: PipelineState }) {
                                 </td>
                                 <td className="py-0.5">
                                     {s.audioPolicy === 'intrinsic_only' ? (
-                                        <span className="text-amber-700">intrinsic</span>
+                                        <span className="text-amber-700">
+                                            {t('shotLedger.audioPolicy.intrinsic')}
+                                        </span>
                                     ) : (
-                                        <span className="text-muted-foreground">narrate</span>
+                                        <span className="text-muted-foreground">
+                                            {t('shotLedger.audioPolicy.narrate')}
+                                        </span>
                                     )}
                                 </td>
                                 <td className="py-0.5 text-right font-mono tabular-nums text-muted-foreground">
@@ -618,7 +639,7 @@ function PerShotLedger({ state }: { state: PipelineState }) {
                                           })
                                         : '—'}
                                 </td>
-                                <td className="truncate py-0.5 font-mono text-[9px] text-muted-foreground">
+                                <td className="truncate py-0.5 font-mono text-2xs text-muted-foreground">
                                     {s.aiVideoRequestId ? (
                                         <CopyChip
                                             label={truncate(s.aiVideoRequestId, 12)}
@@ -650,6 +671,7 @@ function ArtifactsSection({
     timelineJson?: TimelineJson | null;
     apiKey?: string;
 }) {
+    const { t } = useTranslation('videoApiStudioDeveloperAuditSheet');
     const a = state.artifactUrls;
     const baseStatus = '/external/video/v1/status';
     const baseUrls = '/external/video/v1/urls';
@@ -670,22 +692,22 @@ function ArtifactsSection({
                 <UrlRow label="avatar.json" url={statusResp.s3_urls.avatar} />
             )}
             {shotMetaCount > 0 && (
-                <p className="text-[10px] text-muted-foreground">
-                    timeline.meta.shots[] has {shotMetaCount} per-shot entries
+                <p className="text-2xs text-muted-foreground">
+                    {t('artifacts.shotMetaCount', { count: shotMetaCount })}
                 </p>
             )}
 
-            <div className="mt-2 space-y-1.5 rounded border bg-slate-900 p-2 text-[10px] text-slate-100">
+            <div className="mt-2 space-y-1.5 rounded border bg-slate-900 p-2 text-2xs text-slate-100">
                 <div className="flex items-center justify-between gap-2">
                     <span className="font-mono text-slate-400">curl /status</span>
                     <CopyButton value={curl(baseStatus)} />
                 </div>
-                <pre className="overflow-x-auto font-mono text-[10px]">{curl(baseStatus)}</pre>
+                <pre className="overflow-x-auto font-mono text-2xs">{curl(baseStatus)}</pre>
                 <div className="flex items-center justify-between gap-2 pt-1">
                     <span className="font-mono text-slate-400">curl /urls</span>
                     <CopyButton value={curl(baseUrls)} />
                 </div>
-                <pre className="overflow-x-auto font-mono text-[10px]">{curl(baseUrls)}</pre>
+                <pre className="overflow-x-auto font-mono text-2xs">{curl(baseUrls)}</pre>
             </div>
         </div>
     );
@@ -699,9 +721,9 @@ function RawJsonSection({ label, value }: { label: string; value: unknown }) {
             <button
                 type="button"
                 onClick={() => setOpen((v) => !v)}
-                className="flex w-full items-center gap-1.5 text-left font-mono text-[10px] text-muted-foreground hover:text-foreground"
+                className="flex w-full items-center gap-1.5 text-start font-mono text-2xs text-muted-foreground hover:text-foreground"
             >
-                {open ? <ChevronDown className="size-3" /> : <ChevronRight className="size-3" />}
+                {open ? <CaretDown className="size-3" /> : <CaretRight className="size-3" />}
                 {label}{' '}
                 <span className="text-muted-foreground/60">
                     ({(json.length / 1024).toFixed(1)}kb)
@@ -711,7 +733,7 @@ function RawJsonSection({ label, value }: { label: string; value: unknown }) {
                 </span>
             </button>
             {open && (
-                <pre className="mt-1 max-h-72 overflow-auto rounded border bg-slate-900 p-2 font-mono text-[9px] leading-relaxed text-slate-100">
+                <pre className="mt-1 max-h-72 overflow-auto rounded border bg-slate-900 p-2 font-mono text-2xs leading-relaxed text-slate-100">
                     {json}
                 </pre>
             )}
@@ -722,10 +744,12 @@ function RawJsonSection({ label, value }: { label: string; value: unknown }) {
 // ── Atoms ────────────────────────────────────────────────────────────────
 
 function KvGrid({ rows }: { rows: Array<[string, string | undefined | null]> }) {
+    const { t } = useTranslation('videoApiStudioDeveloperAuditSheet');
     const filled = rows.filter(([, v]) => v != null && v !== '');
-    if (filled.length === 0) return <p className="text-xs text-muted-foreground">(none)</p>;
+    if (filled.length === 0)
+        return <p className="text-xs text-muted-foreground">{t('kvGrid.empty')}</p>;
     return (
-        <div className="grid grid-cols-[max-content_1fr] gap-x-3 gap-y-0.5 text-[11px]">
+        <div className="grid grid-cols-[max-content_1fr] gap-x-3 gap-y-0.5 text-2xs">
             {filled.map(([k, v]) => (
                 <div key={k} className="contents">
                     <span className="font-mono text-muted-foreground">{k}</span>
@@ -749,6 +773,7 @@ function CopyChip({
     mono?: boolean;
     tiny?: boolean;
 }) {
+    const { t } = useTranslation('videoApiStudioDeveloperAuditSheet');
     const [copied, setCopied] = useState(false);
     const handleClick = async (e: React.MouseEvent) => {
         e.stopPropagation();
@@ -764,12 +789,12 @@ function CopyChip({
         <button
             type="button"
             onClick={handleClick}
-            title={`Copy: ${value}`}
+            title={t('copy.copyTitle', { value })}
             className={`inline-flex items-center gap-1 rounded border px-1.5 ${
                 tiny ? 'py-0' : 'py-0.5'
             } ${
                 mono ? 'font-mono' : ''
-            } ${tiny ? 'text-[9px]' : 'text-[10px]'} bg-card text-foreground hover:bg-muted`}
+            } ${tiny ? 'text-2xs' : 'text-2xs'} bg-card text-foreground hover:bg-muted`}
         >
             {label}
             {copied ? (
@@ -782,6 +807,7 @@ function CopyChip({
 }
 
 function CopyButton({ value, small }: { value: string; small?: boolean }) {
+    const { t } = useTranslation('videoApiStudioDeveloperAuditSheet');
     const [copied, setCopied] = useState(false);
     const handleClick = async (e: React.MouseEvent) => {
         e.stopPropagation();
@@ -800,7 +826,7 @@ function CopyButton({ value, small }: { value: string; small?: boolean }) {
             className={`inline-flex items-center gap-1 rounded text-slate-300 hover:text-slate-100 ${
                 small ? 'p-0.5' : 'px-1.5 py-0.5'
             }`}
-            title="Copy"
+            title={t('copy.copyButtonTitle')}
         >
             {copied ? <Check className="size-3 text-green-400" /> : <Copy className="size-3" />}
         </button>
@@ -808,30 +834,33 @@ function CopyButton({ value, small }: { value: string; small?: boolean }) {
 }
 
 function UrlRow({ label, url }: { label: string; url?: string }) {
+    const { t } = useTranslation('videoApiStudioDeveloperAuditSheet');
     if (!url)
         return (
             <div className="flex items-center gap-2 rounded border border-dashed bg-muted/10 px-2 py-1">
-                <Code2 className="size-3 text-muted-foreground/40" />
-                <span className="font-mono text-[10px] text-muted-foreground">{label}</span>
-                <span className="ml-auto text-[10px] text-muted-foreground/60">not present</span>
+                <Code className="size-3 text-muted-foreground/40" />
+                <span className="font-mono text-2xs text-muted-foreground">{label}</span>
+                <span className="ml-auto text-2xs text-muted-foreground/60">
+                    {t('urlRow.notPresent')}
+                </span>
             </div>
         );
     return (
         <div className="flex items-center gap-2 rounded border bg-card px-2 py-1">
-            <Code2 className="size-3 text-muted-foreground" />
-            <span className="font-mono text-[10px] text-foreground">{label}</span>
-            <span className="ml-2 min-w-0 truncate font-mono text-[9px] text-muted-foreground">
+            <Code className="size-3 text-muted-foreground" />
+            <span className="font-mono text-2xs text-foreground">{label}</span>
+            <span className="ms-2 min-w-0 truncate font-mono text-2xs text-muted-foreground">
                 {url}
             </span>
-            <CopyChip label="copy" value={url} tiny />
+            <CopyChip label={t('urlRow.copyLabel')} value={url} tiny />
             <a
                 href={url}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="ml-1 text-muted-foreground hover:text-blue-600"
-                title="Open in new tab"
+                title={t('urlRow.openInNewTab')}
             >
-                <ExternalLink className="size-3" />
+                <ArrowSquareOut className="size-3" />
             </a>
         </div>
     );

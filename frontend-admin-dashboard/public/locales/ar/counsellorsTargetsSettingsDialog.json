@@ -1,0 +1,48 @@
+{
+    "periods": {
+        "week": "أسبوعي (متكرر)",
+        "month": "شهري (متكرر)",
+        "custom": "نطاق تاريخ مخصص"
+    },
+    "title": "تحديد أهداف المرشدين",
+    "metric": "المقياس",
+    "timeline": "الجدول الزمني",
+    "from": "من",
+    "to": "إلى",
+    "applyToAll": {
+        "label": "تطبيق على الكل ({{count}}):",
+        "button": "تطبيق على الكل",
+        "placeholder": "مثال: 50"
+    },
+    "toast": {
+        "invalidBulkValue": "أدخل رقمًا صالحًا للتطبيق على الجميع",
+        "pickDateRange": "اختر أولاً نطاق تاريخ مخصص",
+        "appliedSuccess_zero": "لم يُطبّق على أي مرشد",
+        "appliedSuccess_one": "تم التطبيق على مرشد واحد",
+        "appliedSuccess_two": "تم التطبيق على مرشدين",
+        "appliedSuccess_few": "تم التطبيق على {{count}} مرشدين",
+        "appliedSuccess_many": "تم التطبيق على {{count}} مرشدًا",
+        "appliedSuccess_other": "تم التطبيق على {{count}} مرشد",
+        "applyError": "تعذر تطبيق الأهداف",
+        "noChanges": "لا توجد تغييرات لحفظها",
+        "savedSuccess_zero": "لم يتم حفظ أي هدف",
+        "savedSuccess_one": "تم حفظ هدف واحد",
+        "savedSuccess_two": "تم حفظ هدفين",
+        "savedSuccess_few": "تم حفظ {{count}} أهداف",
+        "savedSuccess_many": "تم حفظ {{count}} هدفًا",
+        "savedSuccess_other": "تم حفظ {{count}} هدف",
+        "saveError": "تعذر حفظ الأهداف"
+    },
+    "list": {
+        "customIncomplete": "اختر نطاق تاريخ مخصص لتعديل الأهداف.",
+        "loading": "جارٍ تحميل الأهداف الحالية…",
+        "empty": "لا يوجد مرشدون لتحديد أهداف لهم.",
+        "unnamed": "بدون اسم",
+        "noValuePlaceholder": "—"
+    },
+    "footer": {
+        "close": "إغلاق",
+        "save": "حفظ التغييرات",
+        "saving": "جارٍ الحفظ…"
+    }
+}

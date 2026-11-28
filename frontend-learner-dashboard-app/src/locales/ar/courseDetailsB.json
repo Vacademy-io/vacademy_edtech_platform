@@ -1,0 +1,68 @@
+{
+    "courseEnrollment": {
+        "configuration": {
+            "title": "إعدادات {{course}}",
+            "previewBadge": "وضع معاينة {{course}}",
+            "previewDescription": "تصفح هيكل {{course}}. سجّل للوصول إلى {{slides}} والمواد.",
+            "selectSession": "اختر {{session}}",
+            "selectLevel": "اختر {{level}}",
+            "noSessionsTitleAll": "لا يوجد {{session}} متاح لهذا {{course}}",
+            "noSessionsTitleEnrolled": "أنت غير مسجل في أي {{session}} لهذا {{course}}",
+            "noSessionsDescriptionAll": "قد لا يحتوي هذا {{course}} على أي {{session}} نشط تم تكوينه.",
+            "noSessionsDescriptionEnrolled": "يرجى التواصل مع {{teacher}} أو {{admin}} الخاص بك للتسجيل."
+        },
+        "certificate": {
+            "title": "الشهادة متاحة",
+            "description": "يمكنك الآن عرض شهادتك أو تنزيلها.",
+            "viewButton": "عرض الشهادة"
+        },
+        "enrollButton": "سجّل"
+    },
+    "courseSidebar": {
+        "overviewTitle": "نظرة عامة على {{course}}",
+        "errorLoadingCounts": "خطأ في تحميل عدد {{slides}}"
+    },
+    "chapterPath": {
+        "emptyModule": "لا يوجد شيء لتعلمه هنا بعد. تحقق مرة أخرى قريبًا!",
+        "slideState": {
+            "completed": "مكتمل",
+            "current": "التالي",
+            "locked": "مقفل",
+            "upcoming": "لم يبدأ"
+        },
+        "slideAriaLabel": "{{title}} — {{state}}",
+        "enrollToStart": "سجّل لبدء التعلم",
+        "locked": "مقفل",
+        "start": "ابدأ",
+        "chapterTitle": "{{chapter}}: {{name}}",
+        "moduleComplete": "اكتمل {{module}}!",
+        "finishLine": "خط النهاية",
+        "previousModule": "{{module}} السابق",
+        "nextModule": "{{module}} التالي",
+        "moduleProgress": "{{module}} {{current}} من {{total}}",
+        "noSlidesYet": "لا يحتوي هذا {{module}} على أي {{slides}} بعد."
+    },
+    "courseContent": {
+        "whatYoullLearn": "ما ستتعلمه",
+        "aboutThisCourse": "حول هذا {{course}}",
+        "whoShouldJoin": "من يجب أن ينضم",
+        "instructorsHeading": "{{teacher}}"
+    },
+    "videoPlayer": {
+        "vimeoTitle": "مشغل فيديو Vimeo",
+        "youtubeTitle": "مشغل فيديو YouTube",
+        "unsupported": "متصفحك لا يدعم علامة الفيديو."
+    },
+    "certificateGeneration": {
+        "toast": {
+            "successTitle": "تم إنشاء الشهادة بنجاح!",
+            "successDescription": "يمكنك الآن عرض شهادتك.",
+            "error": "فشل إنشاء الشهادة. يرجى المحاولة مرة أخرى لاحقًا."
+        }
+    },
+    "enrollmentActions": {
+        "toast": {
+            "updateFailed": "فشل تحديث حالة التسجيل. يرجى تحديث الصفحة."
+        }
+    }
+}

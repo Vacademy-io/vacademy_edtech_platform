@@ -1,0 +1,36 @@
+{
+    "title": "सहभागिता लीडरबोर्ड",
+    "subtitle": "सहभागिता के अनुसार शीर्ष उपयोगकर्ता",
+    "allCenters": "सभी केंद्र",
+    "emptyStateFiltered": "केंद्र \"{{center}}\" के लिए कोई लीडरबोर्ड डेटा नहीं है",
+    "emptyStateDefault": "कोई लीडरबोर्ड डेटा उपलब्ध नहीं है",
+    "totalUsers_one": "कुल {{count}} उपयोगकर्ता",
+    "totalUsers_other": "कुल {{count}} उपयोगकर्ता",
+    "exportCsv": "CSV निर्यात करें",
+    "table": {
+        "rank": "रैंक",
+        "user": "उपयोगकर्ता",
+        "contact": "संपर्क",
+        "outgoing": "आउटगोइंग",
+        "incoming": "इनकमिंग",
+        "total": "कुल",
+        "score": "स्कोर",
+        "anonymous": "अज्ञात",
+        "childLabel": "बच्चा: {{name}}"
+    },
+    "csv": {
+        "rank": "रैंक",
+        "name": "नाम",
+        "email": "ईमेल",
+        "phone": "फ़ोन",
+        "center": "केंद्र",
+        "totalMessages": "कुल संदेश",
+        "engagementScore": "सहभागिता स्कोर",
+        "notAvailable": "उपलब्ध नहीं"
+    },
+    "pagination": {
+        "pageOf": "पृष्ठ {{current}} में से {{total}}",
+        "previous": "पिछला",
+        "next": "अगला"
+    }
+}

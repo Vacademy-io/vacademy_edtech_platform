@@ -1,0 +1,20 @@
+{
+    "typeSection": {
+        "title": "Announcement type",
+        "description": "A starting point — you can change where it appears and how it is delivered later."
+    },
+    "messageSection": {
+        "title": "Message",
+        "description": "What people will read. The title doubles as the email subject unless you override it."
+    },
+    "titleLabel": "Title",
+    "titlePlaceholder": "e.g. New batch starting from Monday",
+    "previewTextLabel": "Preview text",
+    "previewTextPlaceholder": "The line shown in the inbox, before the email is opened",
+    "previewTextHint": "Inboxes fall back to the first line of your content when this is empty.",
+    "contentLabel": "Content",
+    "richTextTab": "Rich text",
+    "htmlTab": "HTML",
+    "editorPlaceholder": "Write the announcement…",
+    "sourcePlaceholder": "Paste or edit the raw HTML…"
+}

@@ -1,4 +1,6 @@
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Check, Sparkle, Lightbulb } from '@phosphor-icons/react';
@@ -10,14 +12,22 @@ interface CreativeConceptDecisionProps {
     onSubmit: (answer: DecisionAnswer) => void;
 }
 
-// Order + labels for the concept fields the planner emits.
-const FIELDS: Array<{ key: string; label: string; hint: string }> = [
-    { key: 'controlling_idea', label: 'Controlling idea', hint: 'the one argument the video makes' },
-    { key: 'tonal_register', label: 'Tone', hint: 'e.g. confident, playful, documentary' },
-    { key: 'emotional_arc', label: 'Emotional arc', hint: 'from → to' },
-    { key: 'visual_metaphor', label: 'Visual metaphor', hint: 'the animatable idea' },
-    { key: 'signature_device', label: 'Signature device', hint: 'a recurring visual gesture' },
-];
+// Order of the concept fields the planner emits (keys are payload field names, not translated).
+const FIELD_KEYS = [
+    'controlling_idea',
+    'tonal_register',
+    'emotional_arc',
+    'visual_metaphor',
+    'signature_device',
+] as const;
+
+// Translated label + hint for the concept fields the planner emits.
+const buildFields = (t: TFunction): Array<{ key: string; label: string; hint: string }> =>
+    FIELD_KEYS.map((key) => ({
+        key,
+        label: t(`fields.${key}.label`),
+        hint: t(`fields.${key}.hint`),
+    }));
 
 /**
  * Creative-direction gate. Shows the AI's creative DNA for the video; the user
@@ -26,10 +36,13 @@ const FIELDS: Array<{ key: string; label: string; hint: string }> = [
  * (metaphor / signature device) that the per-shot HTML stage still reads.
  */
 export function CreativeConceptDecision({ decision, isSubmitting, onSubmit }: CreativeConceptDecisionProps) {
+    const { t } = useTranslation('videoApiStudioCreativeConceptDecision');
+    const fields = useMemo(() => buildFields(t), [t]);
+
     const initial = useMemo<Record<string, string>>(() => {
         const c = (decision.payload?.concept as Record<string, unknown>) ?? {};
         const out: Record<string, string> = {};
-        for (const f of FIELDS) out[f.key] = c[f.key] != null ? String(c[f.key]) : '';
+        for (const key of FIELD_KEYS) out[key] = c[key] != null ? String(c[key]) : '';
         return out;
     }, [decision.payload]);
 
@@ -61,7 +74,7 @@ export function CreativeConceptDecision({ decision, isSubmitting, onSubmit }: Cr
         const alt = alternatives[dirIdx - 1];
         if (!alt) return;
         const next: Record<string, string> = {};
-        for (const f of FIELDS) next[f.key] = alt[f.key] != null ? String(alt[f.key]) : '';
+        for (const key of FIELD_KEYS) next[key] = alt[key] != null ? String(alt[key]) : '';
         setVals(next);
         setDirty(true);
     };
@@ -80,13 +93,16 @@ export function CreativeConceptDecision({ decision, isSubmitting, onSubmit }: Cr
                 <span className="flex size-7 items-center justify-center rounded-md bg-violet-100 dark:bg-violet-900/30">
                     <Lightbulb className="size-4 text-violet-600" />
                 </span>
-                Creative direction
+                {t('header.title')}
             </div>
 
             {alternatives.length > 0 && (
                 <div className="grid gap-2 border-b bg-violet-50/50 p-3 dark:bg-violet-950/20 sm:grid-cols-3">
                     {[
-                        { ...Object.fromEntries(FIELDS.map((f) => [f.key, initial[f.key]])), why_this_works: 'The draft direction.' },
+                        {
+                            ...Object.fromEntries(FIELD_KEYS.map((key) => [key, initial[key]])),
+                            why_this_works: t('directions.draftWhyThisWorks'),
+                        },
                         ...alternatives,
                     ].map((dir, i) => (
                         <button
@@ -101,7 +117,9 @@ export function CreativeConceptDecision({ decision, isSubmitting, onSubmit }: Cr
                             }`}
                         >
                             <p className="text-xs font-semibold text-foreground">
-                                {i === 0 ? 'Direction A · draft' : `Direction ${String.fromCharCode(65 + i)}`}
+                                {i === 0
+                                    ? t('directions.draftLabel', { letter: 'A' })
+                                    : t('directions.label', { letter: String.fromCharCode(65 + i) })}
                                 {dir.tonal_register ? (
                                     <span className="ml-1 font-normal text-muted-foreground">
                                         · {String(dir.tonal_register)}
@@ -122,7 +140,7 @@ export function CreativeConceptDecision({ decision, isSubmitting, onSubmit }: Cr
             )}
 
             <div className="space-y-3 p-4">
-                {FIELDS.map((f) => (
+                {fields.map((f) => (
                     <label key={f.key} className="block">
                         <span className="mb-1 block text-xs font-medium text-muted-foreground">
                             {f.label} <span className="font-normal opacity-60">· {f.hint}</span>
@@ -147,7 +165,7 @@ export function CreativeConceptDecision({ decision, isSubmitting, onSubmit }: Cr
                     className="gap-1.5 text-muted-foreground"
                 >
                     <Sparkle className="size-3.5" />
-                    Let AI decide
+                    {t('actions.letAiDecide')}
                 </Button>
                 <Button
                     size="sm"
@@ -156,7 +174,7 @@ export function CreativeConceptDecision({ decision, isSubmitting, onSubmit }: Cr
                     className="gap-1.5 bg-gradient-to-r from-violet-600 to-indigo-600 text-white hover:from-violet-700 hover:to-indigo-700"
                 >
                     <Check className="size-4" />
-                    {dirty ? 'Save & continue' : 'Approve direction'}
+                    {dirty ? t('actions.saveAndContinue') : t('actions.approveDirection')}
                 </Button>
             </div>
         </div>

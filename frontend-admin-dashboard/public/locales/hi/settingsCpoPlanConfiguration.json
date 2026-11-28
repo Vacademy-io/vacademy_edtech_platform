@@ -1,0 +1,93 @@
+{
+    "installmentPresets": {
+        "annual": "वार्षिक",
+        "halfYearly": "अर्धवार्षिक",
+        "quarterly": "त्रैमासिक",
+        "monthly": "मासिक",
+        "custom": "कस्टम"
+    },
+    "feeTypePresets": {
+        "tuitionFee": {
+            "label": "ट्यूशन शुल्क",
+            "description": "शैक्षणिक वर्ष के लिए नियमित ट्यूशन शुल्क"
+        },
+        "examFee": {
+            "label": "परीक्षा शुल्क",
+            "description": "परीक्षा और मूल्यांकन शुल्क"
+        },
+        "libraryFee": {
+            "label": "पुस्तकालय शुल्क",
+            "description": "पुस्तकालय पहुंच और संसाधन शुल्क"
+        },
+        "transportFee": {
+            "label": "परिवहन शुल्क",
+            "description": "स्कूल परिवहन शुल्क"
+        },
+        "hostelFee": {
+            "label": "छात्रावास शुल्क",
+            "description": "छात्रावास आवास शुल्क"
+        },
+        "labFee": {
+            "label": "प्रयोगशाला शुल्क",
+            "description": "प्रयोगशाला उपयोग और सामग्री शुल्क"
+        }
+    },
+    "feeTypeEditor": {
+        "defaultName": "शुल्क प्रकार {{number}}",
+        "installmentCount_one": "{{count}} किस्त",
+        "installmentCount_other": "{{count}} किस्तें",
+        "remove": "हटाएं",
+        "feeName": {
+            "label": "शुल्क का नाम",
+            "placeholder": "जैसे. ट्यूशन शुल्क"
+        },
+        "description": {
+            "label": "विवरण",
+            "placeholder": "संक्षिप्त विवरण"
+        },
+        "totalAmount": {
+            "label": "कुल राशि (₹)",
+            "placeholder": "जैसे. 50000"
+        },
+        "hasInstallments": "किस्तें हैं",
+        "refundable": "वापसी योग्य",
+        "latePenalty": "विलंब शुल्क",
+        "penaltyPercentagePlaceholder": "%",
+        "paymentFrequency": "भुगतान आवृत्ति",
+        "installmentCountPlaceholder": "किस्तों की संख्या",
+        "installmentTable": {
+            "remaining": "₹{{amount}} आवंटित करना शेष है",
+            "exceeds": "कुल राशि से ₹{{amount}} अधिक है",
+            "columns": {
+                "number": "#",
+                "amount": "राशि (₹)",
+                "startDate": "प्रारंभ तिथि",
+                "endDate": "अंतिम तिथि",
+                "dueDate": "देय तिथि"
+            },
+            "total": "कुल"
+        }
+    },
+    "classMultiSelect": {
+        "label": "कक्षा चुनें",
+        "placeholder": "कक्षाएं चुनें...",
+        "selectedCount_one": "{{count}} कक्षा चयनित",
+        "selectedCount_other": "{{count}} कक्षाएं चयनित",
+        "searchPlaceholder": "कक्षाएं खोजें...",
+        "noClassesAvailable": "कोई कक्षा उपलब्ध नहीं है",
+        "noSearchResults": "आपकी खोज से कोई कक्षा मेल नहीं खाती"
+    },
+    "summary": {
+        "feeTypes": "शुल्क प्रकार",
+        "totalAmount": "कुल राशि"
+    },
+    "status": {
+        "label": "स्थिति",
+        "active": "सक्रिय",
+        "draft": "ड्राफ्ट"
+    },
+    "feeTypesSection": {
+        "title": "शुल्क प्रकार",
+        "addFeeType": "शुल्क प्रकार जोड़ें"
+    }
+}

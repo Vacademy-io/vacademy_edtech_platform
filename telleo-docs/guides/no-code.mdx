@@ -1,0 +1,60 @@
+---
+title: "Zapier, Make and n8n"
+description: "Connect Telleo to any tool that can send and receive HTTP requests, without writing a server."
+---
+
+Telleo has no app in these marketplaces yet, but it does not need one: every automation tool can make an HTTP request and catch a webhook. You need two steps:
+
+1. **Start a call:** an HTTP request to `POST https://api.telleo.ai/v1/calls`.
+2. **Receive the result:** a webhook trigger whose URL you set as your Telleo webhook.
+
+## Start a call
+
+Configure your tool's HTTP step like this:
+
+| Setting | Value |
+|---|---|
+| Method | `POST` |
+| URL | `https://api.telleo.ai/v1/calls` |
+| Headers | `X-API-Key: vak_call_…` · `Content-Type: application/json` · `Idempotency-Key: <the record id from the trigger>` |
+| Body (JSON) | see below |
+
+```json
+{
+  "agent_id": "17ea33d2-5b6c-4c1e-9a1f-2d4e6f8a9b0c",
+  "phone_number": "{{phone}}",
+  "contact": { "name": "{{name}}", "external_id": "{{record_id}}" },
+  "variables": { "course": "{{course}}" }
+}
+```
+
+Replace `{{…}}` with the fields your tool offers from the trigger (a new Google Sheets row, a Facebook lead, a new CRM contact). Make sure the phone number reaches Telleo as `+91XXXXXXXXXX`; most tools have a text formatter step for that.
+
+<Tabs>
+  <Tab title="Zapier">
+    Add an action **Webhooks by Zapier → Custom Request** (Webhooks is available on Zapier's paid plans). Choose `POST`, paste the URL, put the JSON in **Data** and add the three headers.
+  </Tab>
+  <Tab title="Make">
+    Add the **HTTP → Make a request** module. Method `POST`, body type **Raw**, content type **JSON (application/json)**, and the headers above.
+  </Tab>
+  <Tab title="n8n">
+    Add an **HTTP Request** node. Method `POST`, **Send Headers** on with the three headers, **Send Body** as JSON.
+  </Tab>
+</Tabs>
+
+## Receive the result
+
+1. Create a webhook trigger in your tool: **Webhooks by Zapier → Catch Hook**, Make **Webhooks → Custom webhook**, or the n8n **Webhook** node (method `POST`).
+2. Copy its URL into **Webhook** on the **CRM → Calling → AI Calling Settings → API & webhooks** card and save.
+3. Click **Send test event** so the tool learns the shape of the data. For a realistic sample, also place a [test call](/concepts/test-mode).
+4. Map `data.contact.external_id`, `data.outcome.disposition`, `data.outcome.summary` and the other fields into the next step (update a row, a CRM record, send a WhatsApp…).
+
+<Note>
+Automation tools usually cannot check the `Telleo-Signature` header. Keep the hook URL private and, if the tool supports it, filter on `type` being `call.completed` or `call.not_connected`. For anything sensitive, receive webhooks on your own server and [verify them](/webhooks/verify-signatures).
+</Note>
+
+## Example: Google Sheets → call → Google Sheets
+
+1. **Trigger:** new row in *Leads* (columns: name, phone, course).
+2. **HTTP request:** `POST /v1/calls` with the row number as `external_id` and `Idempotency-Key`.
+3. **Second scenario:** Catch the webhook → **Update row** where row number = `data.contact.external_id`, writing disposition, summary and lead rating.

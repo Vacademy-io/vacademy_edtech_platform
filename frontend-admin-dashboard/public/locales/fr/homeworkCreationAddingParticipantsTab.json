@@ -1,0 +1,9 @@
+{
+    "tabs": {
+        "selectBatch": "Sélectionner un lot",
+        "selectIndividually": "Sélectionner individuellement"
+    },
+    "batchList": {
+        "selectSectionPlaceholder": "Sélectionner une section"
+    }
+}

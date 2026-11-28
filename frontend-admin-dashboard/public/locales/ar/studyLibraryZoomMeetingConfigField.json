@@ -1,0 +1,44 @@
+{
+    "loadingAccounts": "جارٍ تحميل حسابات Zoom…",
+    "notSetUpMessage": "لم يتم إعداد تكامل Zoom لهذا المعهد. أضف حساب Zoom ضمن <strong>الإعدادات ← الجلسة المباشرة ← تكامل Zoom</strong>، أو الصق رابط اجتماع في حقل رابط الحصة المباشرة أدناه.",
+    "zoomMeetingSettings": "إعدادات اجتماع Zoom",
+    "zoomAccount": "حساب Zoom",
+    "defaultSuffix": "(افتراضي)",
+    "section": {
+        "entrySecurity": "الدخول والأمان",
+        "audioVideoDefaults": "إعدادات الصوت / الفيديو الافتراضية",
+        "inMeetingFeatures": "ميزات أثناء الاجتماع"
+    },
+    "field": {
+        "enableWaitingRoom": "تفعيل غرفة الانتظار",
+        "allowJoinBeforeHost": "السماح بالانضمام قبل المضيف",
+        "requireZoomLogin": "طلب تسجيل الدخول إلى Zoom للانضمام",
+        "registrationApproval": "موافقة التسجيل",
+        "alternativeHosts": "المضيفون البديلون (عناوين بريد إلكتروني مفصولة بفواصل)",
+        "alternativeHostsPlaceholder": "مثال: cohost1@inst.edu, cohost2@inst.edu",
+        "muteOnEntry": "كتم صوت المشاركين عند الدخول",
+        "startHostVideoOn": "بدء فيديو المضيف مفعّلًا",
+        "startParticipantVideoOn": "بدء فيديو المشاركين مفعّلًا",
+        "audio": "الصوت",
+        "enableBreakoutRooms": "تفعيل الغرف الفرعية",
+        "startInFocusMode": "البدء في وضع التركيز",
+        "allowMultipleDevices": "السماح بالانضمام من أجهزة متعددة",
+        "addIdentityWatermark": "إضافة علامة مائية للهوية",
+        "automaticRecording": "التسجيل التلقائي"
+    },
+    "approval": {
+        "noneRequired": "لا يلزم التسجيل",
+        "automatic": "الموافقة تلقائيًا",
+        "manual": "الموافقة يدويًا"
+    },
+    "audio": {
+        "computerAndTelephony": "الكمبيوتر + الهاتف",
+        "computerOnly": "صوت الكمبيوتر فقط",
+        "telephonyOnly": "الهاتف فقط"
+    },
+    "recording": {
+        "cloud": "التسجيل على سحابة Zoom",
+        "local": "تسجيل محلي (جهاز المضيف)",
+        "none": "عدم التسجيل"
+    }
+}

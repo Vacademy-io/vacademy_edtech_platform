@@ -364,7 +364,7 @@ export function GlobalDefaultsSection({
                 selectedTags={globalDefaults.tags}
                 onConfirm={(tags) => onUpdate({ tags })}
                 title="Default Tags"
-                description="These tags will be applied to every new course/book by default."
+                description={`These tags will be applied to every new ${getTerminology(ContentTerms.Course, SystemTerms.Course).toLocaleLowerCase()}/book by default.`}
             />
         </div>
     );

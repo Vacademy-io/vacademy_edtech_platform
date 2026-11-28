@@ -1,0 +1,52 @@
+{
+    "navHeading": "Bibliothèque",
+    "pageTitle": "{{title}} — Bibliothèque",
+    "toast": {
+        "alreadyOwned": "Vous avez déjà cette bibliothèque",
+        "unlocked": "{{title}} est à vous. Elle ne sera plus facturée.",
+        "unlockFailed": "Impossible de déverrouiller cette bibliothèque"
+    },
+    "notFound": {
+        "message": "Cette bibliothèque n'est pas disponible",
+        "back": "Retour à la base de connaissances"
+    },
+    "backButton": "Bibliothèque",
+    "facts": {
+        "sources_one": "{{formatted}} source",
+        "sources_many": "{{formatted}} sources",
+        "sources_other": "{{formatted}} sources",
+        "pages_one": "{{formatted}} page",
+        "pages_many": "{{formatted}} pages",
+        "pages_other": "{{formatted}} pages"
+    },
+    "unlocked": {
+        "chip": "Déverrouillée",
+        "heading": "À vous de l'utiliser",
+        "description": "Cette bibliothèque est disponible partout où vous créez des sujets d'examen ou des évaluations.",
+        "createPaper": "Créer un sujet d'examen"
+    },
+    "locked": {
+        "credits_one": "{{count}} crédit",
+        "credits_many": "{{count}} crédits",
+        "credits_other": "{{count}} crédits",
+        "description": "Paiement unique. Elle est à vous définitivement, y compris le contenu que nous y ajouterons plus tard.",
+        "unlockButton": "Déverrouiller cette bibliothèque",
+        "unlocking": "Déverrouillage…",
+        "creditNote": "La génération de sujets utilise des crédits comme d'habitude, en plus de ceci."
+    },
+    "about": {
+        "heading": "À propos de cette bibliothèque"
+    },
+    "topics": {
+        "heading": "Ce qu'elle contient",
+        "description": "Chaque sujet couvert par cette bibliothèque. Les questions sont rédigées à partir de ceux-ci, et chacune cite la page dont elle provient.",
+        "preparing": "Les sujets de cette bibliothèque sont encore en préparation."
+    },
+    "capabilities": {
+        "heading": "Ce que vous pouvez créer",
+        "questionPapers": "Sujets d'examen",
+        "assessmentSections": "Sections d'évaluation",
+        "courses": "Cours",
+        "comingSoon": "Bientôt disponible"
+    }
+}

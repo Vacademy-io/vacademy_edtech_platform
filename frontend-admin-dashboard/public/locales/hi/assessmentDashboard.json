@@ -1,0 +1,290 @@
+{
+    "page": {
+        "description": "आपके टेस्ट कैसे रहे: भागीदारी, स्कोर, लंबित मूल्यांकन और फ़ॉलो-अप के लिए छात्र।"
+    },
+    "hero": {
+        "eyebrow": "असेसमेंट एनालिटिक्स",
+        "title": "असेसमेंट डैशबोर्ड",
+        "compared": "{{range}} से तुलना"
+    },
+    "share": {
+        "csv": "CSV निर्यात करें",
+        "pdf": "PDF डाउनलोड करें"
+    },
+    "filters": {
+        "rangeLabel": "तारीख़ की सीमा",
+        "allOf": "सभी {{term}}",
+        "types": "टेस्ट के प्रकार",
+        "allTypes": "सभी टेस्ट प्रकार",
+        "clear": "हटाएँ",
+        "refresh": "रीफ़्रेश करें",
+        "startDate": "शुरू की तारीख़",
+        "endDate": "अंतिम तारीख़",
+        "apply": "लागू करें",
+        "invalidRange": "अंतिम तारीख़ शुरू की तारीख़ के बाद होनी चाहिए",
+        "rangeTooLong": "अधिकतम {{days}} दिनों की सीमा चुनें",
+        "updatedAt": "{{time}} पर अपडेट · हर मिनट रीफ़्रेश"
+    },
+    "presets": {
+        "today": "आज",
+        "last5": "पिछले 5 दिन",
+        "last7": "पिछले 7 दिन",
+        "last30": "पिछले 30 दिन",
+        "next7": "अगले 7 दिन",
+        "custom": "कस्टम"
+    },
+    "error": {
+        "title": "डैशबोर्ड लोड नहीं हो सका",
+        "body": "अपना कनेक्शन जाँचें और फिर से कोशिश करें।",
+        "retry": "फिर से कोशिश करें"
+    },
+    "warnings": {
+        "enrollmentUnavailable": "अभी {{term}} की सदस्यता लोड नहीं हो सकी, इसलिए केवल पंजीकृत छात्र गिने जा रहे हैं। \"प्रयास नहीं किया\" की संख्या असल से कम हो सकती है।"
+    },
+    "delta": {
+        "points": "{{v}} अंक",
+        "percent": "{{v}}%",
+        "plain": "{{v}}",
+        "vs": "{{range}} की तुलना में"
+    },
+    "kpis": {
+        "tests": "टेस्ट",
+        "testsDetail": "{{closed}} बंद · {{live}} लाइव · {{upcoming}} आगामी · {{open}} कभी भी",
+        "participation": "भागीदारी",
+        "participationDetail": "{{expected}} में से {{attempted}} {{term}} ने बंद टेस्ट दिए",
+        "noClosed": "इस अवधि में अभी तक कोई बंद टेस्ट नहीं",
+        "submissions": "सबमिशन",
+        "submissionsDetail": "{{n}} {{term}} द्वारा",
+        "avgScore": "औसत स्कोर",
+        "avgScoreDetail": "{{n}} मूल्यांकित प्रयासों में · सर्वोच्च {{top}}",
+        "noScores": "अभी तक कोई मूल्यांकित प्रयास नहीं",
+        "notAttempted": "प्रयास नहीं किया",
+        "notAttemptedDetail_one": "{{count}} बंद टेस्ट में छूटे प्रयास",
+        "notAttemptedDetail_other": "{{count}} बंद टेस्टों में छूटे प्रयास",
+        "backlog": "लंबित मूल्यांकन",
+        "backlogDetail": "{{evaluate}} का मूल्यांकन बाकी · {{release}} के परिणाम जारी करने बाकी",
+        "backlogClear": "सब कुछ मूल्यांकित और जारी हो चुका है",
+        "noSubmissions": "इस अवधि में कोई सबमिशन नहीं"
+    },
+    "trend": {
+        "title": "दैनिक गतिविधि",
+        "metrics": {
+            "submissions": "सबमिशन",
+            "score": "औसत स्कोर",
+            "learners": "छात्र",
+            "tests": "टेस्ट"
+        },
+        "subtitles": {
+            "submissions": "प्रति दिन सबमिट किए गए प्रयास",
+            "score": "प्रति दिन सबमिट किए गए प्रयासों का औसत स्कोर",
+            "learners": "प्रति दिन सबमिट करने वाले अलग-अलग छात्र",
+            "tests": "प्रति दिन खुलने वाले टेस्ट"
+        }
+    },
+    "empty": {
+        "noActivity": "इस अवधि में कोई टेस्ट या सबमिशन नहीं",
+        "noSubmissions": "इस अवधि में कोई सबमिशन नहीं",
+        "noTests": "इस अवधि में कोई टेस्ट नहीं",
+        "noBatches": "इस अवधि में कोई {{term}} नहीं",
+        "noMatch": "इन फ़िल्टरों से कोई टेस्ट मेल नहीं खाता"
+    },
+    "donut": {
+        "title": "किसने टेस्ट दिए",
+        "subtitle_one": "{{count}} बंद टेस्ट में",
+        "subtitle_other": "{{count}} बंद टेस्टों में",
+        "attempted": "प्रयास किया",
+        "notAttempted": "प्रयास नहीं किया",
+        "center": "भागीदारी"
+    },
+    "scores": {
+        "title": "स्कोर वितरण",
+        "subtitle": "{{n}} मूल्यांकित प्रयास · औसत {{avg}}",
+        "band": "{{band}}%",
+        "learners": "{{n}} प्रयास",
+        "legend": {
+            "low": "50% से कम",
+            "mid": "50–75%",
+            "high": "75% और उससे अधिक"
+        }
+    },
+    "heatmap": {
+        "title": "छात्र कब सबमिट करते हैं",
+        "subtitle": "सप्ताह के दिन और घंटे के अनुसार सबमिशन, आपके टाइमज़ोन में",
+        "cell": "{{n}} सबमिशन",
+        "fewer": "कम",
+        "more": "ज़्यादा"
+    },
+    "types": {
+        "title": "टेस्ट के प्रकार",
+        "subtitle": "इस अवधि में हर प्रकार के कितने टेस्ट हुए",
+        "meta": "{{n}} सबमिशन · औसत {{avg}}"
+    },
+    "playModes": {
+        "exam": "परीक्षा",
+        "mock": "मॉक टेस्ट",
+        "practice": "अभ्यास",
+        "survey": "सर्वेक्षण",
+        "offline": "ऑफ़लाइन परीक्षा",
+        "assignment": "असाइनमेंट",
+        "other": "अन्य"
+    },
+    "liveNow": {
+        "title": "अभी लाइव",
+        "none": "अभी कोई टेस्ट नहीं चल रहा है",
+        "autoRefresh": "संख्याएँ हर मिनट अपडेट होती हैं",
+        "endsAt": "{{time}} पर समाप्त",
+        "submitted": "{{n}} ने सबमिट किया",
+        "writing": "{{n}} लिख रहे हैं",
+        "notStarted": "{{n}} ने शुरू नहीं किया",
+        "ofExpected": "{{n}} छात्रों में से",
+        "open": "खोलें"
+    },
+    "status": {
+        "ALL": "सभी",
+        "CLOSED": "बंद",
+        "LIVE": "लाइव",
+        "UPCOMING": "आगामी",
+        "OPEN": "कभी भी"
+    },
+    "table": {
+        "title": "सभी टेस्ट",
+        "subtitle": "{{n}} टेस्ट · खोलने के लिए किसी पर क्लिक करें",
+        "truncated": "पहले {{limit}} टेस्ट दिखाए जा रहे हैं — बाकी देखने के लिए अवधि छोटी करें",
+        "search": "टेस्ट, विषय या बैच खोजें",
+        "untitled": "बिना शीर्षक का टेस्ट",
+        "when": "कब",
+        "anytime": "कभी भी",
+        "test": "टेस्ट",
+        "status": "स्थिति",
+        "participation": "भागीदारी",
+        "avgScore": "औसत स्कोर",
+        "range": "{{low}} – {{high}}",
+        "submissions": "सबमिट किए",
+        "writing": "{{n}} लिख रहे हैं",
+        "evaluation": "मूल्यांकन",
+        "allDone": "सब पूरा"
+    },
+    "insights": {
+        "best": "सबसे अच्छे स्कोर वाला टेस्ट",
+        "bestMeta": "औसत {{avg}} · {{n}} प्रयास",
+        "lowest": "सबसे कम भागीदारी",
+        "lowestMeta": "{{rate}} ने दिया · {{missed}} ने नहीं दिया",
+        "topBatch": "सबसे अच्छा बैच",
+        "topBatchMeta": "औसत {{avg}} · भागीदारी {{rate}}",
+        "backlog": "मूल्यांकन",
+        "backlogTitle": "{{n}} प्रयास प्रतीक्षा में",
+        "backlogMeta_one": "{{count}} टेस्ट में",
+        "backlogMeta_other": "{{count}} टेस्टों में",
+        "backlogNone": "सब अप-टू-डेट है",
+        "backlogNoneMeta": "मूल्यांकन या जारी करने के लिए कुछ भी बाकी नहीं"
+    },
+    "batches": {
+        "title": "{{term}} का प्रदर्शन",
+        "subtitle": "बंद टेस्टों में भागीदारी और औसत स्कोर",
+        "unknown": "अज्ञात बैच",
+        "sort": {
+            "lowest": "सबसे कम पहले",
+            "highest": "सबसे ज़्यादा पहले",
+            "score": "स्कोर के अनुसार"
+        },
+        "meta_one": "{{count}} टेस्ट · {{attempted}}/{{expected}} ने प्रयास किया · औसत {{avg}}",
+        "meta_other": "{{count}} टेस्ट · {{attempted}}/{{expected}} ने प्रयास किया · औसत {{avg}}",
+        "checked": "{{total}} में से {{done}} कॉपियाँ चेक"
+    },
+    "top": {
+        "title": "शीर्ष {{term}}",
+        "subtitle": "मूल्यांकित टेस्टों में सबसे ज़्यादा औसत स्कोर",
+        "tests_one": "{{count}} टेस्ट",
+        "tests_other": "{{count}} टेस्ट",
+        "best": "सर्वश्रेष्ठ {{best}}"
+    },
+    "queue": {
+        "title": "मूल्यांकन कतार",
+        "subtitle_one": "{{count}} टेस्ट में काम बाकी है",
+        "subtitle_other": "{{count}} टेस्टों में काम बाकी है",
+        "empty": "कुछ भी बाकी नहीं",
+        "allClear": "हर सबमिशन का मूल्यांकन हो चुका है और उसका परिणाम जारी हो चुका है",
+        "done": "{{done}}/{{total}} मूल्यांकित",
+        "toEvaluate": "{{n}} का मूल्यांकन बाकी",
+        "toRelease": "{{n}} जारी करने बाकी",
+        "open": "टेस्ट खोलें",
+        "by": "चेक किया: {{names}}"
+    },
+    "followUp": {
+        "title": "फ़ॉलो-अप के लिए {{term}}",
+        "viewLabel": "कौन से छात्र",
+        "views": {
+            "missed": "छोड़े गए टेस्ट",
+            "low": "कम स्कोर"
+        },
+        "threshold": "कम से कम छोड़े",
+        "missedPlus": "{{n}}+ छोड़े",
+        "missedSubtitle": "{{n}} छात्रों ने {{missed}} या उससे ज़्यादा बंद टेस्ट छोड़े",
+        "missedNone": "किसी ने {{missed}} या उससे ज़्यादा बंद टेस्ट नहीं छोड़े",
+        "lowSubtitle": "{{n}} छात्रों का औसत {{line}} से कम है",
+        "lowNone": "किसी का औसत {{line}} से कम नहीं है",
+        "messageAll": "{{n}} को WhatsApp करें",
+        "email": "ईमेल",
+        "csv": "CSV",
+        "showingTop": "{{total}} में से {{shown}} दिखाए जा रहे हैं",
+        "learnersCount": "{{n}} छात्र",
+        "nobody": "संदेश भेजने के लिए कोई नहीं है",
+        "missedOf": "{{missed}}/{{expected}} छोड़े",
+        "took": "{{rate}} दिए",
+        "scoredTests_one": "{{count}} मूल्यांकित टेस्ट",
+        "scoredTests_other": "{{count}} मूल्यांकित टेस्ट",
+        "avg": "औसत {{avg}}",
+        "lastSubmitted": "आख़िरी सबमिशन {{date}}",
+        "neverSubmitted": "इस अवधि में कोई सबमिशन नहीं"
+    },
+    "csv": {
+        "name": "नाम",
+        "email": "ईमेल",
+        "mobile": "मोबाइल",
+        "batch": "बैच",
+        "testsSet": "निर्धारित टेस्ट",
+        "testsTaken": "दिए गए टेस्ट",
+        "testsMissed": "छोड़े गए टेस्ट",
+        "testsScored": "मूल्यांकित टेस्ट",
+        "avgScore": "औसत स्कोर %",
+        "bestScore": "सर्वश्रेष्ठ स्कोर %",
+        "lastSubmitted": "आख़िरी सबमिशन",
+        "start": "खुलने का समय",
+        "end": "बंद होने का समय",
+        "test": "टेस्ट",
+        "type": "प्रकार",
+        "visibility": "एक्सेस",
+        "status": "स्थिति",
+        "subject": "विषय",
+        "batches": "बैच",
+        "expected": "निर्धारित छात्र",
+        "attempted": "प्रयास किया",
+        "participation": "भागीदारी %",
+        "notAttempted": "प्रयास नहीं किया",
+        "submissions": "सबमिशन",
+        "highestScore": "सबसे ज़्यादा स्कोर %",
+        "lowestScore": "सबसे कम स्कोर %",
+        "evaluated": "मूल्यांकित",
+        "awaitingEvaluation": "मूल्यांकन की प्रतीक्षा",
+        "awaitingRelease": "जारी होने की प्रतीक्षा",
+        "checkedBy": "किसने चेक किया"
+    },
+    "copyCheck": {
+        "title": "कॉपी चेकिंग",
+        "subtitle": "{{total}} में से {{checked}} सबमिशन चेक हुए · {{waiting}} बाकी",
+        "segments": {
+            "teacher": "टीचर्स ने चेक किए",
+            "ai": "AI ने चेक किए",
+            "auto": "ऑटो-ग्रेडेड",
+            "other": "मार्क्स सीधे दर्ज किए",
+            "waiting": "चेक होना बाकी"
+        },
+        "teachersTitle": "किसने कॉपियाँ चेक कीं",
+        "noTeachers": "इस अवधि में किसी टीचर ने कॉपी चेक नहीं की",
+        "copies": "{{n}} कॉपियाँ",
+        "tests_one": "{{count}} टेस्ट",
+        "tests_other": "{{count}} टेस्ट",
+        "perCopy": "~{{minutes}} मिनट प्रति कॉपी",
+        "lastChecked": "आख़िरी बार {{date}} को चेक किया"
+    }
+}

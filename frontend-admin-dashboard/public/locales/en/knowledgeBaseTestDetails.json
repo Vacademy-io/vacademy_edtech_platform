@@ -1,0 +1,48 @@
+{
+    "title": {
+        "label": "Question paper name",
+        "placeholder": "e.g. Class 10 Science — Unit Test 2",
+        "help": "Printed at the top of the paper. Leave blank and the planner names it from the syllabus."
+    },
+    "duration": {
+        "label": "Test duration",
+        "help": "Printed as “Time Allowed”.",
+        "minutes_one": "{{count}} minute",
+        "minutes_other": "{{count}} minutes"
+    },
+    "difficulty": {
+        "label": "Difficulty level",
+        "help": "Overall level of the questions.",
+        "easy": "Easy",
+        "medium": "Medium",
+        "hard": "Hard",
+        "mixed": "Mixed"
+    },
+    "grade": {
+        "label": "Class or level",
+        "placeholder": "e.g. Class 10"
+    },
+    "language": {
+        "label": "Paper language",
+        "help": "The language the questions are written in.",
+        "english": "English",
+        "hindi": "Hindi"
+    },
+    "examStyle": {
+        "label": "Follow a pattern (optional)",
+        "placeholder": "e.g. CBSE board pattern"
+    },
+    "instructions": {
+        "label": "General instructions",
+        "reset": "Use defaults",
+        "help": "One instruction per line, printed as (i), (ii)… under the marks strip. Edit freely."
+    },
+    "diagrams": {
+        "label": "Generate diagrams where a question needs one",
+        "help": "Diagrams from the book are always used. Turn this on to also draw a labelled figure for questions that need one the book does not have — about a minute per figure, billed per image. Review every drawn figure before printing."
+    },
+    "examDate": {
+        "label": "Exam date (optional)",
+        "help": "Printed in the Date field on the paper. Leave blank to print a line for the student to fill."
+    }
+}

@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Level, Stream, Subject } from '@/types/community/types';
 import { useEffect } from 'react';
 import { useSelectedFilterStore } from '../-store/useSlectedFilterOption';
+import { useTranslation } from 'react-i18next';
 
 interface FilterLevelDropdownProps {
     placeholder?: string;
@@ -29,9 +30,10 @@ interface FilterDifficultiesDropdownProps {
 }
 
 export const FilterStreamDropdown = ({
-    placeholder = 'Select an option',
+    placeholder,
     FilterList,
 }: FilterStreamDropdownProps) => {
+    const { t } = useTranslation('communityFilterDropdown');
     const [selectedValue, setSelectedValue] = useState<string>('');
     const { setSelected } = useSelectedFilterStore();
     useEffect(() => {
@@ -49,7 +51,7 @@ export const FilterStreamDropdown = ({
     return (
         <Select value={selectedValue} onValueChange={setSelectedValue}>
             <SelectTrigger className="w-[250px] !outline-none">
-                <SelectValue placeholder={placeholder} />
+                <SelectValue placeholder={placeholder ?? t('selectOption')} />
             </SelectTrigger>
             <SelectContent>
                 {FilterList.map((option) => (
@@ -63,9 +65,10 @@ export const FilterStreamDropdown = ({
 };
 
 export const FilterLevelDropdown = ({
-    placeholder = 'Select an option',
+    placeholder,
     FilterList,
 }: FilterLevelDropdownProps) => {
+    const { t } = useTranslation('communityFilterDropdown');
     const [selectedValue, setSelectedValue] = useState<string>('');
     const { setSelected } = useSelectedFilterStore();
     useEffect(() => {
@@ -82,7 +85,7 @@ export const FilterLevelDropdown = ({
     return (
         <Select value={selectedValue} onValueChange={setSelectedValue}>
             <SelectTrigger className="w-[240px] !outline-none">
-                <SelectValue placeholder={placeholder} />
+                <SelectValue placeholder={placeholder ?? t('selectOption')} />
             </SelectTrigger>
             <SelectContent>
                 {FilterList.map((option) => (
@@ -96,9 +99,10 @@ export const FilterLevelDropdown = ({
 };
 
 export const FilterSubjectDropdown = ({
-    placeholder = 'Select an option',
+    placeholder,
     FilterList,
 }: FilterSubjectDropdownProps) => {
+    const { t } = useTranslation('communityFilterDropdown');
     const [selectedValue, setSelectedValue] = useState<string>('');
     const { setSelected } = useSelectedFilterStore();
     useEffect(() => {
@@ -116,7 +120,7 @@ export const FilterSubjectDropdown = ({
     return (
         <Select value={selectedValue} onValueChange={setSelectedValue}>
             <SelectTrigger className="w-[250px] !outline-none">
-                <SelectValue placeholder={placeholder} />
+                <SelectValue placeholder={placeholder ?? t('selectOption')} />
             </SelectTrigger>
             <SelectContent>
                 {FilterList.map((option) => (
@@ -129,9 +133,10 @@ export const FilterSubjectDropdown = ({
     );
 };
 export const FilterDifficultiesDropdown = ({
-    placeholder = 'Select an option',
+    placeholder,
     FilterList,
 }: FilterDifficultiesDropdownProps) => {
+    const { t } = useTranslation('communityFilterDropdown');
     const [selectedValue, setSelectedValue] = useState<string>('');
     const { setSelected } = useSelectedFilterStore();
     useEffect(() => {
@@ -143,7 +148,7 @@ export const FilterDifficultiesDropdown = ({
     return (
         <Select value={selectedValue} onValueChange={setSelectedValue}>
             <SelectTrigger className="w-[250px] !outline-none">
-                <SelectValue placeholder={placeholder} />
+                <SelectValue placeholder={placeholder ?? t('selectOption')} />
             </SelectTrigger>
             <SelectContent>
                 {FilterList.map((option) => (
@@ -156,9 +161,10 @@ export const FilterDifficultiesDropdown = ({
     );
 };
 export const FilterTypesDropdown = ({
-    placeholder = 'Select an option',
+    placeholder,
     FilterList,
 }: FilterDifficultiesDropdownProps) => {
+    const { t } = useTranslation('communityFilterDropdown');
     const [selectedValue, setSelectedValue] = useState<string>('');
     const { setSelected } = useSelectedFilterStore();
     useEffect(() => {
@@ -170,7 +176,7 @@ export const FilterTypesDropdown = ({
     return (
         <Select value={selectedValue} onValueChange={setSelectedValue}>
             <SelectTrigger className="w-[250px] !outline-none">
-                <SelectValue placeholder={placeholder} />
+                <SelectValue placeholder={placeholder ?? t('selectOption')} />
             </SelectTrigger>
             <SelectContent>
                 {FilterList.map((option) => (
@@ -184,6 +190,7 @@ export const FilterTypesDropdown = ({
 };
 
 export const SearchableFilterDropdown = () => {
+    const { t } = useTranslation('communityFilterDropdown');
     const [search, setSearch] = useState('');
     const options = [
         { label: 'Light', value: 'light' },
@@ -198,13 +205,13 @@ export const SearchableFilterDropdown = () => {
     return (
         <Select>
             <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Theme" />
+                <SelectValue placeholder={t('theme')} />
             </SelectTrigger>
             <SelectContent>
                 {/* Search Input */}
                 <div className="p-2">
                     <Input
-                        placeholder="Search..."
+                        placeholder={t('searchPlaceholder')}
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                         className="w-full"
@@ -219,7 +226,7 @@ export const SearchableFilterDropdown = () => {
                         </SelectItem>
                     ))
                 ) : (
-                    <div className="p-2 text-sm text-gray-500">No results found</div>
+                    <div className="p-2 text-sm text-gray-500">{t('noResultsFound')}</div>
                 )}
             </SelectContent>
         </Select>

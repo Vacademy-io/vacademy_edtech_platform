@@ -3,6 +3,7 @@ package vacademy.io.admin_core_service.features.user_subscription.controller;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import vacademy.io.admin_core_service.features.admin_activity_logs.annotation.Auditable;
 import vacademy.io.admin_core_service.features.common.enums.StatusEnum;
 import vacademy.io.admin_core_service.features.user_subscription.dto.PaymentOptionDTO;
 import vacademy.io.admin_core_service.features.user_subscription.dto.PaymentOptionFilterDTO;
@@ -18,9 +19,25 @@ public class PaymentOptionController {
     @Autowired
     private PaymentOptionService paymentOptionService;
 
+    /**
+     * Create — or, when the body carries an existing id (the Settings page edits
+     * this way), replace — a payment option. Returns the saved option so the client
+     * and the audit row get the server-generated id.
+     *
+     * <p>The audit action is decided by the pre-call snapshot: a row that already
+     * existed makes this an UPDATE, otherwise a CREATE.
+     */
     @PostMapping
-    public ResponseEntity<Boolean> savePaymentOption(@RequestBody PaymentOptionDTO paymentOptionDTO) {
-        return ResponseEntity.ok(paymentOptionService.savePaymentOption(paymentOptionDTO));
+    @Auditable(
+            entityType = "PAYMENT_PLAN",
+            action = "CREATE",
+            actionExpr = "#before != null ? 'UPDATE' : 'CREATE'",
+            captureBefore = "@paymentOptionService.auditSnapshot(#paymentOptionDTO?.id)",
+            entityIdExpr = "#result?.body?.id",
+            descriptionExpr = "(#before != null ? 'updated' : 'created') + ' payment plan ' + #paymentOptionDTO?.name")
+    public ResponseEntity<PaymentOptionDTO> savePaymentOption(@RequestBody PaymentOptionDTO paymentOptionDTO,
+                                                              @RequestAttribute("user") CustomUserDetails userDetails) {
+        return ResponseEntity.ok(paymentOptionService.savePaymentOption(paymentOptionDTO, userDetails));
     }
 
     @PostMapping("/get-payment-options")
@@ -29,6 +46,11 @@ public class PaymentOptionController {
     }
 
     @PostMapping("/make-default-payment-option")
+    @Auditable(
+            entityType = "PAYMENT_PLAN",
+            action = "MAKE_DEFAULT",
+            entityIdExpr = "#paymentOptionId",
+            descriptionExpr = "'made payment plan ' + @paymentOptionService.auditName(#paymentOptionId) + ' the default'")
     public ResponseEntity<String> changeDefaultPaymentOption(String source,
                                                                              String sourceId,
                                                                              String paymentOptionId,
@@ -37,11 +59,22 @@ public class PaymentOptionController {
     }
 
     @DeleteMapping
+    @Auditable(
+            entityType = "PAYMENT_PLAN",
+            action = "DELETE",
+            entityIdExpr = "T(java.lang.String).join(',', #paymentOptionIds)",
+            descriptionExpr = "'deleted ' + @paymentOptionService.auditLabel(#paymentOptionIds)")
     public ResponseEntity<String> deletePaymentOptions(@RequestBody List<String> paymentOptionIds, @RequestAttribute("user") CustomUserDetails userDetails) {
         return ResponseEntity.ok(paymentOptionService.deletePaymentOption(paymentOptionIds,userDetails));
     }
 
     @PutMapping
+    @Auditable(
+            entityType = "PAYMENT_PLAN",
+            action = "UPDATE",
+            captureBefore = "@paymentOptionService.auditSnapshot(#paymentOptionDTO?.id)",
+            entityIdExpr = "#paymentOptionDTO?.id",
+            descriptionExpr = "'updated payment plan ' + #paymentOptionDTO?.name")
     public ResponseEntity<PaymentOptionDTO> editPaymentOption(@RequestBody PaymentOptionDTO paymentOptionDTO) {
         return ResponseEntity.ok(paymentOptionService.editPaymentOption(paymentOptionDTO));
     }

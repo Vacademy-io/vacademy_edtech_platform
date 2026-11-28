@@ -1,0 +1,19 @@
+{
+    "title": "تحديد الفاتورة كمدفوعة",
+    "descriptionPrefix": "يسجّل دفعة يدوية / غير متصلة مقابل",
+    "descriptionSuffix": "ويحوّل حالتها إلى مدفوعة. كلا الحقلين أدناه اختياريان.",
+    "thisInvoice": "هذه الفاتورة",
+    "fields": {
+        "transactionReference": "مرجع المعاملة",
+        "transactionReferencePlaceholder": "رقم الشيك، مرجع UPI، رقم الإيصال.",
+        "notes": "ملاحظات",
+        "notesPlaceholder": "ملاحظة اختيارية (تُعرض في البريد الإلكتروني والعرض الجانبي)"
+    },
+    "cancel": "إلغاء",
+    "saving": "جارٍ الحفظ…",
+    "markAsPaid": "تحديد كمدفوعة",
+    "toasts": {
+        "markedPaid": "تم تحديد الفاتورة {{invoice}} كمدفوعة",
+        "failed": "فشل تحديد الفاتورة كمدفوعة"
+    }
+}

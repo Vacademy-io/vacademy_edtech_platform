@@ -1,0 +1,11 @@
+{
+    "menu": {
+        "increaseAssessmentTime": "Augmenter le temps d'évaluation",
+        "closeSubmission": "Clôturer la soumission"
+    },
+    "actionInfo": {
+        "selectedStudents_one": "{{count}} étudiant",
+        "selectedStudents_many": "{{count}} étudiants",
+        "selectedStudents_other": "{{count}} étudiants"
+    }
+}

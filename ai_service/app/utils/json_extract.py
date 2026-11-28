@@ -112,7 +112,12 @@ _CONTROL_TO_LATEX = {
     "\b": "\\b",   # \beta, \binom, \bar
     "\f": "\\f",   # \frac, \forall
 }
-_MATH_SPAN_RE = re.compile(r"\$\$.*?\$\$|\$[^$]*\$", re.DOTALL)
+# `$$…$$` / `$…$` / `\[…\]` / `\(…\)`. Generators pick their own delimiters, and
+# the LaTeX-style ones are what the question generator's prompts ask for, so
+# restricting this to dollars left every `\(…\)` paper unrepaired.
+_MATH_SPAN_RE = re.compile(
+    r"\$\$.*?\$\$|\$[^$]*\$|\\\[.*?\\\]|\\\(.*?\\\)", re.DOTALL
+)
 
 
 def restore_math_control_chars(text: Optional[str]) -> str:
@@ -125,10 +130,10 @@ def restore_math_control_chars(text: Optional[str]) -> str:
     CARRIAGE-RETURN + "ight)". Nothing errors; the paper just prints "ight)".
     Observed live in a generated JEE paper.
 
-    A control character immediately followed by a letter, INSIDE a `$…$` span,
-    cannot be anything but this — real formatting never appears mid-formula. The
-    restriction to math spans is what keeps a genuine "line1\\nline2" in prose
-    untouched.
+    A control character immediately followed by a letter, INSIDE a math span
+    (`$…$`, `$$…$$`, `\\(…\\)` or `\\[…\\]`), cannot be anything but this — real
+    formatting never appears mid-formula. The restriction to math spans is what
+    keeps a genuine "line1\\nline2" in prose untouched.
     """
     if not text or not any(c in text for c in _CONTROL_TO_LATEX):
         return text or ""

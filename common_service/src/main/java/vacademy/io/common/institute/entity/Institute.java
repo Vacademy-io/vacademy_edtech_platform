@@ -59,6 +59,18 @@ public class Institute {
     @Column(name = "admin_portal_base_url")
     private String adminPortalBaseUrl;
 
+    /**
+     * Custom live-class hostname for this institute, e.g. "meet.zoeedtech.com".
+     * Null means "use the platform default" (the BBB pool server's own domain).
+     *
+     * Stored as a bare hostname — no scheme, no path, no port. Only the join URL
+     * handed to a participant is rewritten to this host; every control-plane call
+     * to BBB keeps using the pool server's api_url, so a broken custom domain
+     * costs branding on a link rather than a class. See BbbMeetingManager.
+     */
+    @Column(name = "live_session_base_url")
+    private String liveSessionBaseUrl;
+
     @Column(name = "description")
     private String description;
 

@@ -1,0 +1,24 @@
+{
+    "header": {
+        "title": "Actions sur les évaluations",
+        "description": "Contrôlez si ce rôle peut créer, modifier et supprimer des évaluations, et gérer les dossiers d’évaluations. Toutes les options sont activées par défaut ; en désactiver une masque cette action partout où elle apparaît."
+    },
+    "rows": {
+        "showCreateAssessment": {
+            "label": "Afficher le bouton « Créer une évaluation »",
+            "hint": "En-tête de la liste des évaluations, le sélecteur de type d'évaluation, les raccourcis « Créer … » de la barre latérale et l'option « Créer une nouvelle évaluation » à l'intérieur d'une diapositive."
+        },
+        "showEditAssessment": {
+            "label": "Afficher le bouton « Modifier l'évaluation »",
+            "hint": "Le bouton crayon sur les détails de l'évaluation, qui rouvre l'assistant de création pour une évaluation existante."
+        },
+        "showDeleteAssessment": {
+            "label": "Afficher l'option « Supprimer l'évaluation »",
+            "hint": "L'entrée Supprimer dans le menu « … » de chaque carte d'évaluation, sur les listes Évaluations, Centre d'évaluation et Devoirs."
+        },
+        "showManageFolders": {
+            "label": "Gérer les dossiers d’évaluations",
+            "hint": "Nouveau dossier, modification et suppression des dossiers, glisser des tests dans un dossier et « Déplacer vers un dossier ». Désactivé, ce rôle peut toujours ouvrir les dossiers et voir leurs tests."
+        }
+    }
+}

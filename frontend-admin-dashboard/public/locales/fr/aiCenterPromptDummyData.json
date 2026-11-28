@@ -1,0 +1,14 @@
+{
+    "topic": {
+        "heading": "Sujet",
+        "description": "Par exemple, sélectionnez un ensemble de questions couvrant les principes clés de la photosynthèse, y compris le processus, les facteurs qui l'affectent et son importance dans l'écosystème. Concentrez-vous sur la compréhension conceptuelle et l'application"
+    },
+    "pages": {
+        "heading": "Pages",
+        "description": "Par exemple, sélectionnez des questions des pages 5 à 10 traitant du processus de la photosynthèse et des concepts associés."
+    },
+    "questionNo": {
+        "heading": "Numéros de questions",
+        "description": "Par exemple, sélectionnez 10 questions portant sur le processus de la photosynthèse."
+    }
+}

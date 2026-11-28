@@ -3,16 +3,9 @@ package vacademy.io.admin_core_service.features.reporting.service;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.web.client.RestTemplateBuilder;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
 import vacademy.io.admin_core_service.features.ai_models.service.AIModelRegistryService;
+import vacademy.io.admin_core_service.features.ai_models.service.LlmGatewayRouter;
 import vacademy.io.admin_core_service.features.ai_usage.enums.ApiProvider;
 import vacademy.io.admin_core_service.features.ai_usage.enums.RequestType;
 import vacademy.io.admin_core_service.features.ai_usage.service.AiTokenUsageService;
@@ -57,7 +50,6 @@ import java.util.UUID;
 @Slf4j
 public class ReportNarratorService {
 
-    private static final String API_URL = "https://openrouter.ai/api/v1/chat/completions";
     /** Model registry use case. "analytics" is what the other report generators use. */
     private static final String USE_CASE = "analytics";
     /**
@@ -66,6 +58,8 @@ public class ReportNarratorService {
      * generous; but it IS a ceiling, because a hung call would stall the whole run.
      */
     private static final Duration TIMEOUT = Duration.ofSeconds(75);
+    /** The whole chain walk (default, then fallback) stays inside this. */
+    private static final Duration TIME_BUDGET = Duration.ofSeconds(150);
     /**
      * Reasoning made an earlier draft four times longer than useful. The budget is
      * stated in the prompt AND capped here, because an eight-paragraph essay at the
@@ -74,25 +68,19 @@ public class ReportNarratorService {
     private static final int MAX_ACTIONS = 5;
     private static final int MAX_ROWS_PER_SECTION = 12;
 
-    private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
     private final AiTokenUsageService aiTokenUsageService;
     private final AIModelRegistryService modelRegistry;
-    private final String apiKey;
+    private final LlmGatewayRouter gatewayRouter;
 
-    public ReportNarratorService(RestTemplateBuilder builder,
-                                 ObjectMapper objectMapper,
+    public ReportNarratorService(ObjectMapper objectMapper,
                                  AiTokenUsageService aiTokenUsageService,
                                  AIModelRegistryService modelRegistry,
-                                 @Value("${openrouter.api.key:}") String apiKey) {
-        this.restTemplate = builder
-                .setConnectTimeout(Duration.ofSeconds(10))
-                .setReadTimeout(TIMEOUT)
-                .build();
+                                 LlmGatewayRouter gatewayRouter) {
         this.objectMapper = objectMapper;
         this.aiTokenUsageService = aiTokenUsageService;
         this.modelRegistry = modelRegistry;
-        this.apiKey = apiKey;
+        this.gatewayRouter = gatewayRouter;
     }
 
     /** One piece of advice: what to do, why, and who it concerns. */
@@ -115,49 +103,33 @@ public class ReportNarratorService {
      */
     public Narrative narrate(String instituteName, String periodLabel,
                              List<SectionFacts> facts, String instituteId) {
-        if (apiKey == null || apiKey.isBlank()) {
-            log.warn("[reporting] no openrouter key configured — skipping AI analysis");
-            return null;
-        }
         if (facts == null || facts.stream().allMatch(SectionFacts::isEmpty)) {
             return null; // nothing to analyse; the static report says so itself
         }
 
-        String model = firstModel();
-        if (model == null) {
+        List<String> models = modelChain();
+        if (models.isEmpty()) {
             log.warn("[reporting] no model available for use case '{}' — skipping AI analysis", USE_CASE);
             return null;
         }
 
         try {
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_JSON);
-            headers.setBearerAuth(apiKey);
-
             Map<String, Object> payload = Map.of(
-                    "model", model,
                     "messages", List.of(
                             Map.of("role", "system", "content", SYSTEM_PROMPT),
                             Map.of("role", "user", "content",
                                     userPrompt(instituteName, periodLabel, facts))),
                     "response_format", Map.of("type", "json_object"));
 
-            ResponseEntity<String> response = restTemplate.exchange(
-                    API_URL, HttpMethod.POST, new HttpEntity<>(payload, headers), String.class);
+            // Walks the chain (Isoquant for routed models, OpenRouter on a gateway failure,
+            // then the fallback model). GLM gets reasoning headroom + effort low.
+            LlmGatewayRouter.LlmResult result = gatewayRouter.chat(models, payload, TIMEOUT, null, TIME_BUDGET);
+            recordUsage(objectMapper.readTree(result.body()), result.modelId(), instituteId);
 
-            if (!response.getStatusCode().is2xxSuccessful() || response.getBody() == null) {
-                log.warn("[reporting] narrator HTTP {} — sending static report",
-                        response.getStatusCode());
-                return null;
-            }
+            String content = result.content();
+            if (content == null || content.isBlank()) return null;
 
-            JsonNode root = objectMapper.readTree(response.getBody());
-            recordUsage(root, model, instituteId);
-
-            JsonNode message = root.path("choices").path(0).path("message").path("content");
-            if (message.isMissingNode() || message.asText().isBlank()) return null;
-
-            Narrative narrative = parse(objectMapper.readTree(message.asText()));
+            Narrative narrative = parse(objectMapper.readTree(stripFences(content)));
             if (narrative == null || !narrative.isUsable()) {
                 log.warn("[reporting] narrator returned nothing usable — sending static report");
                 return null;
@@ -173,14 +145,27 @@ public class ReportNarratorService {
         }
     }
 
-    private String firstModel() {
+    private List<String> modelChain() {
         try {
             List<String> priority = modelRegistry.getModelPriority(USE_CASE);
-            return priority == null || priority.isEmpty() ? null : priority.get(0);
+            return priority == null ? List.of() : priority;
         } catch (Exception e) {
             log.warn("[reporting] model registry lookup failed for '{}'", USE_CASE, e);
-            return null;
+            return List.of();
         }
+    }
+
+    /** Some models wrap JSON in a markdown fence even in json_object mode. */
+    private static String stripFences(String content) {
+        String s = content.strip();
+        if (s.startsWith("```")) {
+            int firstNewline = s.indexOf('\n');
+            int lastFence = s.lastIndexOf("```");
+            if (firstNewline >= 0 && lastFence > firstNewline) {
+                s = s.substring(firstNewline + 1, lastFence).strip();
+            }
+        }
+        return s;
     }
 
     private Narrative parse(JsonNode json) {

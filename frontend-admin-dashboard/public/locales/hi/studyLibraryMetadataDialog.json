@@ -1,0 +1,14 @@
+{
+    "courseDetails": "कोर्स विवरण",
+    "editYourCourseMetadata": "अपने कोर्स का मेटाडेटा संपादित करें",
+    "courseThumbnail": "कोर्स थंबनेल",
+    "courseThumbnailAlt": "कोर्स थंबनेल",
+    "courseName": "कोर्स का नाम",
+    "enterCourseName": "कोर्स का नाम दर्ज करें",
+    "courseDescription": "कोर्स विवरण",
+    "enterCourseDescription": "कोर्स विवरण दर्ज करें",
+    "tags": "टैग",
+    "addTags": "टैग जोड़ें...",
+    "cancel": "रद्द करें",
+    "saveChanges": "परिवर्तन सहेजें"
+}

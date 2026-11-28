@@ -1,0 +1,19 @@
+{
+    "title": "Offer Pricing",
+    "toggle": {
+        "enabled": "Enabled",
+        "disabled": "Disabled"
+    },
+    "alert": {
+        "description": "Allow admins to set an offer price below the MRP on individual {{coursesTerm}}. When enabled, an \"Apply Offer Price\" action appears on the {{courseTerm}} management page."
+    },
+    "rounding": {
+        "label": "Offer price rounding",
+        "description": "Round the discounted price to a whole unit (₹1, $1, etc.). Applies to the price saved when an offer is applied — regardless of currency.",
+        "options": {
+            "none": "Off (keep decimals as computed)",
+            "ceil": "Round up (e.g. 479.20 → 480)",
+            "floor": "Round down (e.g. 479.80 → 479)"
+        }
+    }
+}

@@ -4,6 +4,7 @@ import { GET_STUDENTS_CSV } from '@/constants/urls';
 import { StudentFilterRequest } from '@/types/student-table-types';
 import { toast } from 'sonner';
 import { getAccessiblePackageFilters } from '@/lib/auth/facultyAccessUtils';
+import type { TFunction } from 'i18next';
 
 interface ExportParams {
     filters: StudentFilterRequest;
@@ -11,7 +12,11 @@ interface ExportParams {
     pageSize?: number;
 }
 
-export const exportStudentsCsv = async ({ filters, pageNo = 0, pageSize = 10 }: ExportParams) => {
+export const buildExportStudentsCsv = (t: TFunction) => async ({
+    filters,
+    pageNo = 0,
+    pageSize = 10,
+}: ExportParams) => {
     try {
         // Sub-org admin: restrict export to accessible package sessions only
         const accessibleFilters = getAccessiblePackageFilters();
@@ -47,6 +52,6 @@ export const exportStudentsCsv = async ({ filters, pageNo = 0, pageSize = 10 }: 
         link.parentNode?.removeChild(link);
         window.URL.revokeObjectURL(url);
     } catch {
-        toast.error('Error exporting CSV');
+        toast.error(t('manageStudentsExportStudentsCsvService:errors.exportFailed'));
     }
 };
