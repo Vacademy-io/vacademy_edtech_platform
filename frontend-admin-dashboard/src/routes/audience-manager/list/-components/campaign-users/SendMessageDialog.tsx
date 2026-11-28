@@ -330,8 +330,10 @@ export function SendMessageDialog({
         if (channel !== 'EMAIL') return;
         let cancelled = false;
         getEmailConfigurations()
-            .then((configs) => {
+            .then((result) => {
                 if (cancelled) return;
+                // A non-list answer threw inside the state update below and took the page down.
+                const configs = Array.isArray(result) ? result : [];
                 setEmailSenders(configs);
                 // Keep the current pick if it still exists, else use the first sender.
                 setEmailType((prev) =>
