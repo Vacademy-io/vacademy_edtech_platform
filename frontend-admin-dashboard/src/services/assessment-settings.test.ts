@@ -30,19 +30,15 @@ describe('AI copy checking settings', () => {
         });
     });
 
-    it('keeps the institute defaults when settings are loaded', () => {
+    it('drops institute-wide instructions and spelling choice: they belong to each test', () => {
         const merged = mergeWithDefaults({
             aiCopyCheck: {
                 commentPlacement: 'OUTSIDE',
                 instructions: 'Follow the CBSE scheme.',
                 languageFeedback: 'HIGHLIGHT',
-            },
+            } as never,
         });
-        expect(merged.aiCopyCheck).toEqual({
-            commentPlacement: 'OUTSIDE',
-            instructions: 'Follow the CBSE scheme.',
-            languageFeedback: 'HIGHLIGHT',
-        });
+        expect(merged.aiCopyCheck).toEqual({ commentPlacement: 'OUTSIDE' });
     });
 
     it('loads settings saved before these fields existed exactly as before', () => {
@@ -68,7 +64,8 @@ describe('AI copy checking settings', () => {
             instructions: null,
             language_feedback: 'HIGHLIGHT',
         });
-        expect(toCopyCheckConfig(EMPTY_COPY_CHECK_SETTINGS).language_feedback).toBe('OFF');
+        // A test that made no choice checks spelling and grammar.
+        expect(toCopyCheckConfig(EMPTY_COPY_CHECK_SETTINGS).language_feedback).toBe('HIGHLIGHT');
     });
 });
 

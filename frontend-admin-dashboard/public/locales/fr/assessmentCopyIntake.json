@@ -219,7 +219,7 @@
         "instructionsHint": "Utilisées pour chaque copie de cette évaluation, avec le corrigé et la grille",
         "instructionsDefaultHint": "Utilisées pour chaque évaluation qui n'a pas ses propres consignes",
         "language": "Signaler les fautes d'orthographe et de grammaire",
-        "languageHint": "Chaque faute est soulignée avec sa correction et listée dans le commentaire de la réponse. Aucun point n'est retiré. Pour les réponses rédigées en anglais."
+        "languageHint": "Chaque faute est soulignée avec sa correction et listée dans le commentaire de la réponse. Aucun point n'est retiré. Pour les réponses rédigées en anglais et en hindi."
     },
     "criteria": {
         "title": "Critères d'évaluation",

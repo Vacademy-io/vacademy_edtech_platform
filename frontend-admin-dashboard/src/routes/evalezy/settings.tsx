@@ -6,10 +6,6 @@ import { WarningCircle } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 import { CommentPlacementPicker } from '@/components/common/ai-copy-check/CommentPlacementPicker';
 import {
-    CopyCheckSettingsFields,
-    EMPTY_COPY_CHECK_SETTINGS,
-} from '@/components/common/ai-copy-check/CopyCheckSettingsFields';
-import {
     PenStylePicker,
     normalizePenStyle,
 } from '@/components/common/ai-copy-check/PenStylePicker';
@@ -137,20 +133,6 @@ function EvalezySettings() {
                     disabled={busy}
                     value={normalizeCommentPlacement(ai.commentPlacement)}
                     onChange={(commentPlacement) => patchAi({ commentPlacement })}
-                />
-            </Section>
-            <Section>
-                <CopyCheckSettingsFields
-                    withPaper={false}
-                    disabled={busy}
-                    value={{
-                        ...EMPTY_COPY_CHECK_SETTINGS,
-                        instructions: ai.instructions ?? '',
-                        languageFeedback: ai.languageFeedback ?? 'OFF',
-                    }}
-                    onChange={({ instructions, languageFeedback }) =>
-                        patchAi({ instructions, languageFeedback })
-                    }
                 />
             </Section>
             <Section>

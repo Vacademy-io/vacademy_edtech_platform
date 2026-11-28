@@ -140,10 +140,6 @@ export interface AiCopyCheckSettings {
     commentPlacement: CommentPlacement;
     /** The pen every checked copy is drawn with. Absent = the usual red pen. */
     penStyle?: PenStyle;
-    /** Marking instructions for the AI, used when an assessment has none of its own. */
-    instructions?: string;
-    /** Used when an assessment has made no choice of its own. */
-    languageFeedback?: LanguageFeedback;
     /** Whether uploaded copies are matched to students. Absent = ASK. */
     studentMapping?: StudentMapping;
     /** The language of the AI's remarks. Absent = AUTO. */

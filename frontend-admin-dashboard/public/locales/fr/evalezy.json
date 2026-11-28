@@ -165,7 +165,7 @@
         "saveFailed": "Impossible d'enregistrer les paramètres. Réessayez.",
         "loadFailed": "Impossible de charger les paramètres. Rien n'a été modifié.",
         "adminOnly": "Seul un administrateur de votre établissement peut les modifier.",
-        "fromAssessment": "Stylo, commentaires et consignes : voir Paramètres d'évaluation"
+        "fromAssessment": "Stylo et commentaires : voir Paramètres d'évaluation"
     },
     "credits": {
         "title": "Crédits IA",

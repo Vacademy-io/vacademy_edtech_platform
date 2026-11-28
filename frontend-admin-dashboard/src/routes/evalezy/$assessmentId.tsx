@@ -159,8 +159,9 @@ function EvalezyAssessmentPage() {
     const [scannerOpen, setScannerOpen] = useState(false);
     const [readingPhotos, setReadingPhotos] = useState(false);
     const [settingsOpen, setSettingsOpen] = useState(false);
-    // How copies are marked comes from Evaluation settings, read fresh; only the subject and the
-    // class belong to this assessment. A failed read sends no placement: the last one stays.
+    // The pen and the comments template come from Evaluation settings, read fresh; the subject,
+    // class, instructions and spelling check belong to this test. A failed read sends no
+    // placement: the last one stays.
     const { data: checkSettings } = useQuery({
         queryKey: ['EVALEZY_CHECK_SETTINGS', instituteId],
         queryFn: loadAssessmentSettingsStrict,
@@ -345,8 +346,8 @@ function EvalezyAssessmentPage() {
                 checkSettings
                     ? normalizeCommentPlacement(checkSettings.aiCopyCheck?.commentPlacement)
                     : null,
-                // Blank clears the assessment's own, so every check reads the institute's at dispatch.
-                { ...toCopyCheckConfig(copyCheckSettings), instructions: null, language_feedback: undefined },
+                // The test's own settings, as shown under "Checking settings".
+                toCopyCheckConfig(copyCheckSettings),
                 mapStudents
             );
             return { batch, sent: new Set(uploaded.map((u) => u.copyId)) };
@@ -569,7 +570,6 @@ function EvalezyAssessmentPage() {
                                 value={copyCheckSettings}
                                 onChange={setCopyCheckSettings}
                                 disabled={sending}
-                                withInstituteFields={false}
                             />
                             {isUserAdmin() && (
                                 <Link

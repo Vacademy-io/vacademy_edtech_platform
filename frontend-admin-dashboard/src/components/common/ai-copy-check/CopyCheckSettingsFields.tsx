@@ -3,7 +3,6 @@ import { useTranslation } from 'react-i18next';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
-import { getAssessmentSettings } from '@/services/assessment-settings';
 import type { CopyCheckConfig, LanguageFeedback } from '@/types/assessment-settings';
 
 /** Longest marking instructions the AI is given (the server keeps the same cap). */
@@ -16,11 +15,12 @@ export interface CopyCheckSettingsValue {
     languageFeedback: LanguageFeedback;
 }
 
+/** A test that has made no choice yet: no instructions, spelling and grammar check ON. */
 export const EMPTY_COPY_CHECK_SETTINGS: CopyCheckSettingsValue = {
     subject: '',
     level: '',
     instructions: '',
-    languageFeedback: 'OFF',
+    languageFeedback: 'HIGHLIGHT',
 };
 
 /** The value as sent with a batch; blanks clear the assessment's own setting. */
@@ -32,24 +32,21 @@ export const toCopyCheckConfig = (value: CopyCheckSettingsValue): CopyCheckConfi
 });
 
 /**
- * How the AI checks the copies: the subject and class it marks as, the
- * institute's own marking instructions, and whether spelling and grammar
- * errors are highlighted with corrections (never deducted). `withPaper` adds
- * the subject and class, which belong to one assessment, not to the institute.
+ * How the AI checks one test's copies: the subject and class it marks as, the
+ * test's own marking instructions, and whether spelling and grammar errors are
+ * highlighted with corrections (never deducted). All of it belongs to the test.
+ * `withPaper` false leaves out the subject and class.
  */
 export const CopyCheckSettingsFields = ({
     value,
     onChange,
     disabled,
     withPaper = true,
-    withInstituteFields = true,
 }: {
     value: CopyCheckSettingsValue;
     onChange: (value: CopyCheckSettingsValue) => void;
     disabled?: boolean;
     withPaper?: boolean;
-    /** False hides the instructions and language check, for a screen that takes them from settings. */
-    withInstituteFields?: boolean;
 }) => {
     const { t } = useTranslation('assessmentCopyIntake');
     const set = (patch: Partial<CopyCheckSettingsValue>) => onChange({ ...value, ...patch });
@@ -83,56 +80,50 @@ export const CopyCheckSettingsFields = ({
                     </label>
                 </div>
             )}
-            {withInstituteFields && (
-                <>
-                    <label className="flex flex-col gap-1">
-                        <span className="text-body font-medium text-neutral-800">
-                            {t('aiSettings.instructions')}
-                        </span>
-                        <Textarea
-                            value={value.instructions}
-                            maxLength={INSTRUCTIONS_MAX}
-                            rows={4}
-                            // Same size as the Subject / Class inputs above (the base Textarea is 16px on phones).
-                            className="text-sm"
-                            placeholder={t('aiSettings.instructionsPlaceholder')}
-                            onChange={(e) => set({ instructions: e.target.value })}
-                            disabled={disabled}
-                        />
-                        <span className="text-caption text-neutral-500">
-                            {withPaper
-                                ? t('aiSettings.instructionsHint')
-                                : t('aiSettings.instructionsDefaultHint')}
-                            {' · '}
-                            {value.instructions.length}/{INSTRUCTIONS_MAX}
-                        </span>
-                    </label>
-                    <label className="flex items-start justify-between gap-3 rounded-md border border-neutral-200 p-3">
-                        <span className="flex flex-col">
-                            <span className="text-body font-medium text-neutral-800">
-                                {t('aiSettings.language')}
-                            </span>
-                            <span className="text-caption text-neutral-500">
-                                {t('aiSettings.languageHint')}
-                            </span>
-                        </span>
-                        <Switch
-                            checked={value.languageFeedback === 'HIGHLIGHT'}
-                            onCheckedChange={(on) => set({ languageFeedback: on ? 'HIGHLIGHT' : 'OFF' })}
-                            disabled={disabled}
-                        />
-                    </label>
-                </>
-            )}
+            <label className="flex flex-col gap-1">
+                <span className="text-body font-medium text-neutral-800">
+                    {t('aiSettings.instructions')}
+                </span>
+                <Textarea
+                    value={value.instructions}
+                    maxLength={INSTRUCTIONS_MAX}
+                    rows={4}
+                    // Same size as the Subject / Class inputs above (the base Textarea is 16px on phones).
+                    className="text-sm"
+                    placeholder={t('aiSettings.instructionsPlaceholder')}
+                    onChange={(e) => set({ instructions: e.target.value })}
+                    disabled={disabled}
+                />
+                <span className="text-caption text-neutral-500">
+                    {t('aiSettings.instructionsHint')}
+                    {' · '}
+                    {value.instructions.length}/{INSTRUCTIONS_MAX}
+                </span>
+            </label>
+            <label className="flex items-start justify-between gap-3 rounded-md border border-neutral-200 p-3">
+                <span className="flex flex-col">
+                    <span className="text-body font-medium text-neutral-800">
+                        {t('aiSettings.language')}
+                    </span>
+                    <span className="text-caption text-neutral-500">
+                        {t('aiSettings.languageHint')}
+                    </span>
+                </span>
+                <Switch
+                    checked={value.languageFeedback === 'HIGHLIGHT'}
+                    onCheckedChange={(on) => set({ languageFeedback: on ? 'HIGHLIGHT' : 'OFF' })}
+                    disabled={disabled}
+                />
+            </label>
         </div>
     );
 };
 
 /**
- * The settings for a batch, each time the dialog opens: the assessment's own
- * (as last sent), with the institute's instructions and language choice
- * (Settings → Assessment) where it has none. Until those answer - or if they
- * cannot - the fields are empty; what the teacher has typed is never overwritten.
+ * The test's own settings, read each time the dialog opens (as last saved or
+ * sent). A test that has made no choice gets no instructions and the spelling
+ * and grammar check ON. Until they answer - or if they cannot - the fields hold
+ * those defaults; what the teacher has typed is never overwritten.
  */
 export const useCopyCheckSettings = (
     open: boolean,
@@ -148,20 +139,17 @@ export const useCopyCheckSettings = (
         touched.current = false;
         setValue(EMPTY_COPY_CHECK_SETTINGS);
         let cancelled = false;
-        Promise.allSettled([load.current(), getAssessmentSettings(true)]).then(
-            ([own, institute]) => {
-                if (cancelled || touched.current) return;
-                const mine = own.status === 'fulfilled' ? own.value ?? {} : {};
-                const defaults =
-                    institute.status === 'fulfilled' ? institute.value.aiCopyCheck : undefined;
-                setValue({
-                    subject: mine.subject ?? '',
-                    level: mine.level ?? '',
-                    instructions: mine.instructions ?? defaults?.instructions ?? '',
-                    languageFeedback: mine.language_feedback ?? defaults?.languageFeedback ?? 'OFF',
-                });
-            }
-        );
+        Promise.allSettled([load.current()]).then(([own]) => {
+            if (cancelled || touched.current) return;
+            const mine = own.status === 'fulfilled' ? own.value ?? {} : {};
+            setValue({
+                subject: mine.subject ?? '',
+                level: mine.level ?? '',
+                instructions: mine.instructions ?? '',
+                languageFeedback:
+                    mine.language_feedback ?? EMPTY_COPY_CHECK_SETTINGS.languageFeedback,
+            });
+        });
         return () => {
             cancelled = true;
         };

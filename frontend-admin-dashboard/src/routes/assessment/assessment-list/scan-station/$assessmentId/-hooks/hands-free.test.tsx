@@ -162,11 +162,13 @@ describe('hands-free run', () => {
             preferred_model: null,
             notify_email: false,
             comment_placement: 'OUTSIDE',
+            // The test's own settings only: the institute's old instructions are not used,
+            // and a test that made no choice checks spelling and grammar.
             copy_check_config: {
                 subject: 'Science',
                 level: null,
-                instructions: 'Be kind',
-                language_feedback: 'ON',
+                instructions: null,
+                language_feedback: 'HIGHLIGHT',
             },
             map_students: false,
         });
@@ -180,7 +182,7 @@ describe('hands-free run', () => {
             subject: null,
             level: null,
             instructions: null,
-            language_feedback: 'OFF',
+            language_feedback: 'HIGHLIGHT',
         });
         expect(body.comment_placement).toBe('INSIDE');
         expect(body.map_students).toBe(true);

@@ -56,12 +56,7 @@ export const mergeWithDefaults = (
         examExperience: mergeExamExperience(settings?.examExperience),
         aiCopyCheck: {
             commentPlacement: normalizeCommentPlacement(settings?.aiCopyCheck?.commentPlacement),
-            ...(typeof settings?.aiCopyCheck?.instructions === 'string' && {
-                instructions: settings.aiCopyCheck.instructions,
-            }),
-            ...(settings?.aiCopyCheck?.languageFeedback === 'HIGHLIGHT' && {
-                languageFeedback: 'HIGHLIGHT' as const,
-            }),
+            // Instructions and the spelling check belong to each test (copy_check_config), not here.
             ...(settings?.aiCopyCheck?.penStyle && {
                 penStyle: settings.aiCopyCheck.penStyle,
             }),
