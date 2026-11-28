@@ -200,7 +200,7 @@ def test_hindi_is_measured_as_set_not_as_pen_strokes():
     assert annotator._text_width("भावार्थ अधूरा", "x", 12.0, None) > 30.0
 
 
-def test_english_copies_keep_the_english_panel():
+def test_english_panel_lists_every_cut_and_the_unanswered_question():
     pdf, layout = _scan()
     verdicts = [{"question_id": "q1", "question_number": 1, "marks_awarded": 1, "max_marks": 2,
                  "feedback": "Good start.",
@@ -213,11 +213,11 @@ def test_english_copies_keep_the_english_panel():
     page = fitz.open(stream=out, filetype="pdf")[0]
     panel = page.get_text("text", clip=fitz.Rect(595, 0, page.rect.width, page.rect.height))
     assert "TEACHER COMMENTS" in panel and "Q1: 1/2 (Partial)" in panel
-    # The English template reads cuts from "max_marks" as it always has.
-    assert "-1" not in panel
-    # The English template is otherwise as before: an unanswered question is not
-    # listed, and nothing on it went through the shaper (saved as before).
-    assert "Q2" not in panel
+    # Every cut's reason (read from "max", without its "1 mark deducted because"
+    # lead), and the unanswered question with its mark - English copies too.
+    assert "-1 Example missing" in panel and "deducted" not in panel
+    assert "Q2: 0/3 (Incorrect)" in panel and "Not attempted." in panel
+    # An English copy writes nothing through the shaper (saved as before).
     assert annotator._SHAPED_WRITES[0] == 0
 
 
