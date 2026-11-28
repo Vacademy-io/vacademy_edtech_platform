@@ -192,8 +192,8 @@ def test_exam_context_reaches_the_grader(env):
 
 
 def test_mark_changed_in_enforcement_is_resent_before_complete(env, monkeypatch):
-    def enforcing(verdicts, layout_map, meta=None, paper_max=None, choice_groups=None):
-        out = real_apply_enforcement(verdicts, layout_map, meta, paper_max=paper_max, choice_groups=choice_groups)
+    def enforcing(verdicts, layout_map, meta=None, paper_max=None, choice_groups=None, **kwargs):
+        out = real_apply_enforcement(verdicts, layout_map, meta, paper_max=paper_max, choice_groups=choice_groups, **kwargs)
         verdicts[1]["marks_awarded"] = 5.0  # e.g. an MCQ key override
         return out
 
@@ -212,8 +212,8 @@ def test_resent_annotations_carry_the_enforced_score(env, monkeypatch):
         {"style": "underline", "text": "", "target": "p1_r2"},
     ])
 
-    def enforcing(verdicts, layout_map, meta=None, paper_max=None, choice_groups=None):
-        out = real_apply_enforcement(verdicts, layout_map, meta, paper_max=paper_max, choice_groups=choice_groups)
+    def enforcing(verdicts, layout_map, meta=None, paper_max=None, choice_groups=None, **kwargs):
+        out = real_apply_enforcement(verdicts, layout_map, meta, paper_max=paper_max, choice_groups=choice_groups, **kwargs)
         verdicts[1]["marks_awarded"] = 5.0
         return out
 
@@ -787,3 +787,10 @@ def test_the_institute_can_keep_every_copys_remarks_in_english(env, monkeypatch)
     assert "feedback_language" not in env["grader"].exam_context
     _run(_payload(exam_context={"remarks_language": "AUTO"}))
     assert env["grader"].exam_context.get("feedback_language") == "hi"
+
+
+def test_dashboard_copies_ask_for_a_remark_on_every_answer_and_api_copies_do_not(env):
+    _run(_payload())
+    assert env["grader"].exam_context.get("full_remarks") is True
+    _run(_payload(billing_actor="apikey:key-1", page_count=1, rate_snapshot=SNAPSHOT))
+    assert "full_remarks" not in env["grader"].exam_context

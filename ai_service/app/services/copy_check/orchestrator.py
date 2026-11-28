@@ -885,6 +885,10 @@ async def run(req: dict[str, Any], job_id: str, db: Session) -> str:
                                 or (detected is not None and float(detected.share or 0) >= 0.5)))
         if hindi_notes and isinstance(getattr(grader, "exam_context", None), dict):
             grader.exam_context = {**grader.exam_context, "feedback_language": "hi"}
+        # A dashboard copy gets a remark on every attempted answer, written
+        # instructions or none (prompt_builder FULL_REMARKS; enforce keeps them).
+        if getattr(grader, "grading_instructions", False) and isinstance(getattr(grader, "exam_context", None), dict):
+            grader.exam_context = {**grader.exam_context, "full_remarks": True}
 
         # 1b. Re-read the handwriting with a vision model, and merge the OCR's
         # word-level boxes into real lines. render_worker runs PaddleOCR's
@@ -1300,7 +1304,9 @@ async def run(req: dict[str, Any], job_id: str, db: Session) -> str:
         # choice groups, else None (enforce sums every question, as before).
         paper_max = resolve_paper_max(questions, choice_groups, req.get("paper_max"))
         verdicts, _total, enforce_report, unmarked = apply_enforcement(
-            verdicts, layout_map, questions_meta, paper_max=paper_max, choice_groups=choice_groups)
+            verdicts, layout_map, questions_meta, paper_max=paper_max, choice_groups=choice_groups,
+            # A dashboard copy keeps a remark on every full-mark written answer.
+            full_remarks=bool(getattr(grader, "grading_instructions", False)))
         if unmarked:
             logger.warning("copy-check %s: enforce could not place a mark for %s; shipping the copy without them",
                            process_id, unmarked)

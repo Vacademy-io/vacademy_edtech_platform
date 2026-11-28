@@ -357,6 +357,24 @@ FEEDBACK_LANGUAGE_HINDI = (
 )
 
 
+# A copy checked from the dashboard - with or without written instructions -
+# must read as properly checked: a remark on every attempted answer, not only
+# where marks were cut. Overrides the "praise on one in three" rule above;
+# enforce.py keeps these notes when full_remarks is on.
+FULL_REMARKS = (
+    "\n\nREMARKS ON EVERY ANSWER\n"
+    "The teacher wants every answer to show that it was read:\n"
+    "- Every attempted written answer (not an MCQ, true/false, fill-in-the-blank, one-word or "
+    "short answer) gets exactly one `margin_note` below its last row.\n"
+    "- Marks lost: that note is the deduction reason, as above.\n"
+    "- Full marks: that note says what makes this answer right, specific to it (\"All three "
+    "reasons given\", \"Diagram labelled, process correct\") - never a bare \"Good\" or "
+    "\"Correct\". This replaces the \"one in three\" praise limit above.\n"
+    "- `feedback`: two or three sentences - what the answer did well, what it missed (if "
+    "anything) and how to improve it."
+)
+
+
 # The institute's "Remarks language" (ASSESSMENT_SETTING.aiCopyCheck.remarksLanguage,
 # sent by assessment-service as exam_context.remarks_language): AUTO (or unset)
 # writes a Hindi or Sanskrit copy's remarks in Hindi; ENGLISH keeps every copy's
@@ -389,6 +407,9 @@ def examiner_instructions_block(exam_context: Any) -> str:
     # Set by the orchestrator on a dashboard check of a Hindi or Sanskrit copy.
     if str(ctx.get("feedback_language") or "").strip().lower() == "hi":
         language += FEEDBACK_LANGUAGE_HINDI
+    # Set by the orchestrator on every dashboard check.
+    if ctx.get("full_remarks") is True:
+        language += FULL_REMARKS
     if not text:
         return language
     return language + (
