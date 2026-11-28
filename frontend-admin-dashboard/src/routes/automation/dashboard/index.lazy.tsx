@@ -77,6 +77,7 @@ function AutomationDashboardPage() {
                 tone: 'danger',
                 title: t('autoDash.insights.worst.title', {
                     name: failing[0].name,
+                    count: failing[0].failed,
                     total: formatNumber(failing[0].failed),
                 }),
                 text: failing[0].last_error || t('autoDash.insights.worst.text'),
@@ -95,7 +96,7 @@ function AutomationDashboardPage() {
             insights.push({
                 key: 'idle',
                 tone: 'warning',
-                title: t('autoDash.insights.idle.title', { total: idle }),
+                title: t('autoDash.insights.idle.title', { count: idle, total: formatNumber(idle) }),
                 text: t('autoDash.insights.idle.text', { days }),
                 href: '/workflow/list',
             });
