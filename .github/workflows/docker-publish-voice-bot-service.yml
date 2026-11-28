@@ -190,6 +190,10 @@ jobs:
           # Navana (Bodhi) TTS. Lives in the `voice-bot` ENVIRONMENT like the Vertex
           # key (the repo is at GitHub's 100-secret limit).
           NAVANA_API_KEY: ${{ secrets.NAVANA_API_KEY }}
+          # Plivo TTS (koyal-v1, default voice Meera). Also in the `voice-bot`
+          # environment. Unset = Plivo agents speak through Sarvam instead.
+          PLIVO_TTS_AUTH_ID: ${{ secrets.PLIVO_TTS_AUTH_ID }}
+          PLIVO_TTS_AUTH_TOKEN: ${{ secrets.PLIVO_TTS_AUTH_TOKEN }}
         run: |
           if kubectl get deployment "$DEPLOYMENT_NAME" --namespace "$NAMESPACE" >/dev/null 2>&1; then
             # VOICE_BOT_CLIENT_NAME/SECRET must match a row in admin_core's
@@ -212,6 +216,12 @@ jobs:
             if [ -n "${NAVANA_API_KEY:-}" ]; then
               NAVANA_ENV="NAVANA_API_KEY=$NAVANA_API_KEY"
             fi
+            PLIVO_ID_ENV=""
+            PLIVO_TOKEN_ENV=""
+            if [ -n "${PLIVO_TTS_AUTH_ID:-}" ] && [ -n "${PLIVO_TTS_AUTH_TOKEN:-}" ]; then
+              PLIVO_ID_ENV="PLIVO_TTS_AUTH_ID=$PLIVO_TTS_AUTH_ID"
+              PLIVO_TOKEN_ENV="PLIVO_TTS_AUTH_TOKEN=$PLIVO_TTS_AUTH_TOKEN"
+            fi
 
             # ADMIN_CORE_BASE is the in-cluster admin-core Service: the bot's
             # /admin-core-service/internal/voice-bot/* calls stay inside the
@@ -221,6 +231,8 @@ jobs:
               --namespace "$NAMESPACE" \
               ${EXTRA_ENV:+"$EXTRA_ENV"} \
               ${NAVANA_ENV:+"$NAVANA_ENV"} \
+              ${PLIVO_ID_ENV:+"$PLIVO_ID_ENV"} \
+              ${PLIVO_TOKEN_ENV:+"$PLIVO_TOKEN_ENV"} \
               PUBLIC_BASE=https://backend-stage.vacademy.io/voice-bot-service \
               ADMIN_CORE_BASE=http://admin-core-service:8072 \
               VOICE_BOT_CLIENT_NAME=${{ vars.VOICE_BOT_CLIENT_NAME || 'voice_bot_service' }} \
@@ -262,6 +274,8 @@ jobs:
           NAVANA_API_KEY: ${{ secrets.NAVANA_API_KEY }}
           # A second Sarvam ACCOUNT's key, STT only (providers.SarvamKeyPool).
           SARVAM_API_KEY_2: ${{ secrets.SARVAM_API_KEY_2 }}
+          PLIVO_TTS_AUTH_ID: ${{ secrets.PLIVO_TTS_AUTH_ID }}
+          PLIVO_TTS_AUTH_TOKEN: ${{ secrets.PLIVO_TTS_AUTH_TOKEN }}
           HOST: ${{ vars.VOICE_BOT_MUMBAI_HOST }}
           ECR_REGISTRY: public.ecr.aws/e0x1f4p4
           REPOSITORY: voice-bot-service/voice-bot-service-repo
@@ -286,6 +300,11 @@ jobs:
              if [ -n '$NAVANA_API_KEY' ]; then \
                sed -i '/^NAVANA_API_KEY=/d' .env; \
                echo 'NAVANA_API_KEY=$NAVANA_API_KEY' >> .env; \
+             fi; \
+             if [ -n '$PLIVO_TTS_AUTH_ID' ] && [ -n '$PLIVO_TTS_AUTH_TOKEN' ]; then \
+               sed -i '/^PLIVO_TTS_AUTH_ID=/d;/^PLIVO_TTS_AUTH_TOKEN=/d' .env; \
+               echo 'PLIVO_TTS_AUTH_ID=$PLIVO_TTS_AUTH_ID' >> .env; \
+               echo 'PLIVO_TTS_AUTH_TOKEN=$PLIVO_TTS_AUTH_TOKEN' >> .env; \
              fi; \
              if [ -n '$SARVAM_API_KEY_2' ]; then \
                sed -i '/^SARVAM_API_KEY_2=/d' .env; \
